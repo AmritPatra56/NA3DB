@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NA3DB report</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="interface">
+        <div class="rail">
+            <div class="rail-icons">
+                <a href="#" class="rail-logo">
+                    <img src="assets/logo_ibt.svg" alt="IBT logo">
+                </a>
+                <a href="index.html" class="rail-item" data-page="index.html" title="Structure query">
+                    <img src="assets/search.svg" alt="Search">
+                </a>
+                <a href="#" class="rail-item">
+                    <img src="assets/Q.png" alt="Questions" class="icon-narrow">
+                </a>
+                <a href="report.html" class="rail-item active" data-page="report.html" title="Report">
+                    <img src="assets/report.svg" alt="Report">
+                </a>
+            </div>
+            <div class="rail-brand">NA3DB</div>
+        </div>
+        <div class="query_panel">
+            <div class="query_panel_header">
+                <h1>Report</h1>
+            </div>
+            <div class="query_panel_body" id="report_fields"></div>
+            <div class="query_panel_footer">
+                <button type="button" class="search" id="export_button">Export to CSV</button>
+            </div>
+        </div>
+        <div class="results_area">
+            <div class="results_area_header">
+                <h1 class="report_count">Entries (0)</h1>
+            </div>
+            <div class="results_area_body">
+                <div class="report_summary"></div>
+            </div>
+        </div>
+    </div>
+    <script src="api.js"></script>
+    <script src="shared.js"></script>
+    <script src="report.js"></script>
+</body>
+</html>

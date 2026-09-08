@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NA3DB</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="interface">
+        <div class="rail">
+            <div class="rail-icons">
+                <a href="#" class="rail-logo">
+                    <img src="assets/logo_ibt.svg" alt="IBT logo">
+                </a>
+                <a href="index.html" class="rail-item active" data-page="index.html" title="Structure query">
+                    <img src="assets/search.svg" alt="Search">
+                </a>
+                <a href="#" class="rail-item">
+                    <img src="assets/Q.png" alt="Questions" class="icon-narrow">
+                </a>
+                <a href="report.html" class="rail-item" data-page="report.html" title="Report">
+                    <img src="assets/report.svg" alt="Report">
+                </a>
+            </div>
+            <div class="rail-brand">NA3DB</div>
+        </div>
+        <form class="query_panel" id="query_form">
+            <div class="query_panel_header">
+                <h1>Structure query</h1>
+            </div>
+            <div class="query_panel_body">
+                <div class="category demographics">
+                    <div class="category_header">
+                        <div class="category_title">
+                            <span class="category_dot"></span>
+                            <h2>Demographics</h2>
+                        </div>
+                        <img src="assets/arrow.svg" alt="" class="category_arrow">
+                    </div>
+                    <div class="category_body">
+                        <div class="field">
+                            <label for="entry_id">Entry ID</label>
+                            <input type="text" id="entry_id" name="entry_id">
+                        </div>
+
+                        <div class="field">
+                            <label for="author_name">Author name</label>
+                            <input type="text" id="author_name" name="author_name">
+                        </div>
+
+                        <div class="pill_group">
+                            <div class="group_label">Experimental method</div>
+                            <div class="pill_field" data-name="experimental_method">
+                                <button type="button" class="pill selected" data-value="any">Any</button>
+                                <button type="button" class="pill" data-value="X-RAY DIFFRACTION">X-ray</button>
+                                <button type="button" class="pill" data-value="ELECTRON MICROSCOPY">EM</button>
+                                <button type="button" class="pill" data-value="SOLID-STATE NMR">Solid NMR</button>
+                                <button type="button" class="pill" data-value="SOLUTION NMR">NMR</button>
+                                <button type="button" class="pill" data-value="NEUTRON DIFFRACTION">Neutron</button>
+                                <button type="button" class="pill" data-value="ELECTRON CRYSTALLOGRAPHY">Electron cryst.</button>
+                                <button type="button" class="pill" data-value="POWDER DIFFRACTION">Powder</button>
+                                <button type="button" class="pill" data-value="FIBER DIFFRACTION">Fiber</button>
+                                <button type="button" class="pill" data-value="SOLUTION SCATTERING">Scattering</button>
+                                <button type="button" class="pill" data-value="EPR">EPR</button>
+                                <button type="button" class="pill" data-value="FLUORESCENCE TRANSFER">FRET</button>
+                                <button type="button" class="pill" data-value="INFRARED SPECTROSCOPY">IR</button>
+                                <button type="button" class="pill" data-value="THEORETICAL MODEL">Model</button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+
+
+                <div class="category features">
+                    <div class="category_header">
+                        <div class="category_title">
+                            <span class="category_dot"></span>
+                            <h2>3D Features</h2>
+                        </div>
+                        <img src="assets/arrow.svg" alt="" class="category_arrow">
+                    </div>
+
+                    <div class="category_body">
+                        <div class="field">
+                            <div class="group_label">Confal score</div>
+                            <div class="range_row">
+                                <input type="number" id="confal_min" name="confal_min" placeholder="min" >
+                                <span class="range_dash"></span>
+                                <input type="number" id="confal_max" name="confal_max" placeholder="max" >
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="assigned_ntc">Assigned ntc</label>
+                            <input type="text" id="assigned_ntc" name="assigned_ntc" >
+                        </div>
+                        <p class="field_note">Confal score and NtC assignment come from DNATCO. Not loaded yet, so these two filters return nothing.</p>
+                    </div>
+                </div>
+
+
+
+
+                <div class="category components">
+                    <div class="category_header">
+                        <div class="category_title">
+                            <span class="category_dot"></span>
+                            <h2>Structure Components</h2>
+                        </div>
+                        <img src="assets/arrow.svg" alt="" class="category_arrow">
+                    </div>
+
+                    <div class="category_body">
+                        <div class="field">
+                            <label for="entity_name">Entity name</label>
+                            <input type="text" id="entity_name" name="entity_name">
+                        </div>
+
+                        <div class="field">
+                            <label for="source_organism">Source organism</label>
+                            <input type="text" id="source_organism" name="source_organism">
+                        </div>
+
+                        <div class="field">
+                            <label for="nonstandard_residue">Non-standard residue</label>
+                            <input type="text" id="nonstandard_residue" name="nonstandard_residue">
+                        </div>
+
+                        <div class="pill_group">
+                            <div class="group_label">Polymer type</div>
+                            <div class="pill_field" data-name="polymer_type">
+                                <button type="button" class="pill selected" data-value="any">Any</button>
+                                <button type="button" class="pill" data-value="Nucleic acid">Nucleic acid</button>
+                                <button type="button" class="pill" data-value="Oligosaccharide">Oligosaccharide</button>
+                                <button type="button" class="pill" data-value="Protein">Protein</button>
+                                <button type="button" class="pill" data-value="Protein/NA">Protein/NA</button>
+                                <button type="button" class="pill" data-value="Protein/Oligosaccharide">Protein/Oligosaccharide</button>
+                                <button type="button" class="pill" data-value="Other">Other</button>
+
+                            </div>
+                        </div>
+                        
+
+                        <div class="pill_group">
+                            <div class="group_label">Monomer standard flag</div>
+                            <div class="pill_field" data-name="monomer_flag">
+                                <button type="button" class="pill" data-value="Standard">Standard</button>
+                                <button type="button" class="pill" data-value="Non-Standard">Non-Standard</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+
+
+                
+            </div>
+
+
+            <div class="query_panel_footer">
+                <button type="submit" class="search">Search</button>
+            </div>
+
+
+        </form>
+        <div class="results_area">
+            <div class="results_area_header">
+                <h1>Entries (0)</h1>
+                <span class="results_range">1 – 50 of 0</span>
+            </div>
+            <div class="results_area_body">
+                <div class="results_list"></div>
+                <div class="loading_state hidden">
+                    <span class="spinner"></span>
+                    <span>Searching...</span>
+                </div>
+                <div class="error_state hidden">
+                    <span class="error_text"></span>
+                </div>
+                <div class="empty_state">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                        <path d="M11 8v6M8 11h6" />
+                    </svg>
+                    <span>No entries found</span>
+                </div>
+            </div>
+            <div class="pagination"></div>
+        </div>
+        <aside class="detail_panel hidden">
+            <div class="detail_header">
+                <h2 class="detail_id"></h2>
+                <button type="button" class="detail_close" aria-label="Close">&times;</button>
+            </div>
+            <div class="detail_body"></div>
+        </aside>
+    </div>
+    <script src="api.js"></script>
+    <script src="shared.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
