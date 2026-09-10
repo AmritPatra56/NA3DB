@@ -161,10 +161,9 @@ function render_results(list) {
     container.innerHTML = list.map(row_html).join("");
 }
 
-// What the results area is currently showing: rows per page, which page, and every match.
-let PAGE_SIZE = 10;
+// What the results area is showing: the last reply from the server.
 let current_page = 1;
-let current_results = [];
+let current_reply = { results: [], total: 0, page: 1, pages: 0, page_size: 10 };
 
 // Writes the "Entries (120)" count and the "1 - 10 of 120" range above the list.
 function update_header(total, start, shown) {
@@ -275,38 +274,17 @@ function render_pagination(total_pages) {
     bar.innerHTML = html;
 }
 
-// Redraws the whole results area from current_results.
-// Called after a search and after every page click.
+// Redraws the whole results area from the last server reply.
+// It no longer slices anything. The server already did.
 function show_page() {
-    let total = current_results.length;
-    let total_pages = Math.ceil(total / PAGE_SIZE);
-    let start = (current_page - 1) * PAGE_SIZE;
-    let page_items = current_results.slice(start, start + PAGE_SIZE);
+    let start = (current_reply.page - 1) * current_reply.page_size;
 
-    render_results(page_items);
-    update_header(total, start, page_items.length);
-    update_empty_state(total);
-    render_pagination(total_pages);
+    render_results(current_reply.results);
+    update_header(current_reply.total, start, current_reply.results.length);
+    update_empty_state(current_reply.total);
+    render_pagination(current_reply.pages);
 }
 
-// The whole search in one place: show the spinner, ask api.js, draw the answer
-// or the error message, then hide the spinner whichever of the two happened.
-// Turns the filters object into a query string, leaving out anything the user left blank.
-function filters_to_params(filters) {
-    let params = new URLSearchParams();
-
-    Object.keys(filters).forEach(function (key) {
-        let value = filters[key];
-
-        if (Array.isArray(value)) {
-            if (value.length > 0) params.set(key, value.join(","));
-        } else if (value !== "") {
-            params.set(key, value);
-        }
-    });
-
-    return params;
-}
 
 // Puts the current search in the address bar, without reloading the page.
 // Adds a history entry so the back button works, unless the URL is already that search.
@@ -320,17 +298,17 @@ function update_url(filters) {
     sync_rail_links();
 }
 
-async function run_search() {
+// The whole search in one place: show the spinner, ask the server, draw the answer
+// or the error message, then hide the spinner whichever of the two happened.
+async function run_search(page = 1) {
     set_loading(true);
 
     let filters = read_filters();
     update_url(filters);
 
     try {
-        let list = await search_entries(filters);
-
-        current_results = list;
-        current_page = 1;
+        current_reply = await search_entries(filters, page);
+        current_page = current_reply.page;
         show_page();
     } catch (err) {
         show_error(err.message);
@@ -452,14 +430,13 @@ results_list.addEventListener("click", function (e) {
 document.querySelector(".detail_close").addEventListener("click", close_detail);
 
 
-// Clicking a page button only redraws from memory. No new search is made.
+// Clicking a page button asks the server for that page.
 let pagination = document.querySelector(".pagination");
 
 pagination.addEventListener("click", function (e) {
     if (!e.target.dataset.page) return;
 
-    current_page = Number(e.target.dataset.page);
-    show_page();
+    run_search(Number(e.target.dataset.page));
 });
 
 // Back and forward buttons. The browser has already changed the URL,

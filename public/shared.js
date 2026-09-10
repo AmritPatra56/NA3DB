@@ -40,6 +40,23 @@ function params_to_filters(params) {
     return filters;
 }
 
+// Turns the filters object into a query string, leaving out anything the user left blank.
+function filters_to_params(filters) {
+    let params = new URLSearchParams();
+
+    Object.keys(filters).forEach(function (key) {
+        let value = filters[key];
+
+        if (Array.isArray(value)) {
+            if (value.length > 0) params.set(key, value.join(","));
+        } else if (value !== "") {
+            params.set(key, value);
+        }
+    });
+
+    return params;
+}
+
 
 // Keeps the current search in the rail links, so it survives moving between pages.
 function sync_rail_links() {

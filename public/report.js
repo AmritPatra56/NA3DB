@@ -147,11 +147,17 @@ async function load_report_entries() {
 
     try {
         let filters = params_to_filters(new URLSearchParams(location.search));
+        let reply = await export_entries(filters);
 
-        report_entries = await search_entries(filters);
+        report_entries = reply.results;
 
-        count.textContent = `Entries (${report_entries.length})`;
+        count.textContent = `Entries (${reply.total})`;
         summary.textContent = describe_filters(filters);
+
+        if (reply.truncated) {
+            summary.textContent += `  ·  Only the first ${reply.results.length} entries will be exported.`;
+        }
+
         update_export_button();
     } catch (err) {
         summary.textContent = err.message;

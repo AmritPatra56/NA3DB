@@ -1,0 +1,26 @@
+{
+  "name": "na3db",
+  "version": "1.0.0",
+  "description": "NA3DB, a database of nucleic acid 3D structures.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmritPatra56/na3db.git"
+  },
+  "keywords": [],
+  "author": "Amrit Patra",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/AmritPatra56/na3db/issues"
+  },
+  "homepage": "https://github.com/AmritPatra56/na3db#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
