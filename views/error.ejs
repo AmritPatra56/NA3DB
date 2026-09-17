@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NA3DB - page not found</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="interface">
+        <%- include("includes/rail.ejs") %>
+        <div class="results_area">
+            <div class="results_area_header">
+                <h1>Page not found</h1>
+            </div>
+            <div class="results_area_body">
+                <div class="empty_state">
+                    <p class="error_text">There is nothing at <%= tried %>.</p>
+                    <a class="detail_link" href="/">Back to structure query</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

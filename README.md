@@ -8,8 +8,8 @@ Under active development. See [What is not done yet](#what-is-not-done-yet).
 
 ## Requirements
 
-Node 24 or newer. Nothing else. Express is installed by npm and there is no
-database to set up yet.
+Node 24 or newer. Nothing else. Express and EJS are installed by npm and there
+is no database to set up yet.
 
 ## Running it
 
@@ -36,31 +36,54 @@ values in later.
 
 ## How it is organised
 
-There are two sides and one rule.
+There are three folders and one rule.
 
 **Everything inside `public/` is downloaded by every visitor. Everything
-outside it can only be read by the server.** That is why the frontend lives in
-a folder and the server code and the data do not.
+outside it can only be read by the server.** That is why the browser's files
+live in a folder of their own, and the server code, the templates and the data
+do not.
 
 Server side, at the root:
 
 | file | job |
 | --- | --- |
-| `server.js` | The only file that knows about HTTP. Routes, port, static files, error handling. No filtering logic. |
+| `server.js` | The only file that knows about HTTP. Routes, port, static files, rendering, error handling. No filtering logic. |
 | `search.js` | Decides what matches, in what order, and which slice. Knows nothing about HTTP or the screen. |
 | `entries.json` | The data. 120 entries, read and parsed once at startup. |
+
+Page templates, in `views/`:
+
+| file | job |
+| --- | --- |
+| `index.ejs` | Structure of the search page. |
+| `report.ejs` | Structure of the report page. |
+| `error.ejs` | Shown for any address that matches nothing. |
+| `includes/rail.ejs` | The sidebar. Written once, included by all three pages. |
+
+These are rendered by the server and only the resulting HTML is sent. The
+templates themselves are never downloadable, which is why `views/` sits outside
+`public/` — put it inside and `/index.ejs` would serve the source instead of
+the page.
+
+Each route tells the rail which icon to highlight by passing a `page` value, so
+the one shared copy still knows where it is:
+
+```js
+res.render("report", { page: "report" });
+```
 
 Browser side, in `public/`:
 
 | file | job |
 | --- | --- |
-| `index.html` | Structure of the search page. |
-| `report.html` | Structure of the report page. |
 | `style.css` | Every visual decision. |
 | `shared.js` | The eleven filter names, and conversion between a query string and a filters object. Used by both pages. |
 | `api.js` | The browser's only door to the server. |
 | `app.js` | The search page. Reads the form, draws results, runs the detail panel. Decides nothing about the data. |
 | `report.js` | The report page. Field selection and CSV building. |
+
+There is no HTML in `public/`. The split is exact: `public/` is what the
+browser downloads, `views/` is what the server builds.
 
 `scripts/` holds the loader that generated `entries.json`. It is a development
 tool, not part of the running site, and it deliberately sits outside `public/`.
@@ -71,6 +94,21 @@ pill filters mean "any one of these", how many rows fit on a page, or what
 order results come in. All of that is in `search.js`. That is what makes
 replacing `entries.json` with PostgreSQL a change to one file rather than to
 the whole project.
+
+## Pages
+
+| address | page |
+| --- | --- |
+| `GET /` | Structure query. |
+| `GET /report` | Report. Reads its filters from its own query string, so a link carries the search with it. |
+| anything else | The not-found page, with status 404. |
+
+Filters travel in the query string, so `/report?entry_id=tna` reports on exactly
+what `/?entry_id=tna` found. The rail links rewrite themselves to carry the
+current search across.
+
+An unknown address under `/api` returns JSON; any other unknown address returns
+the HTML page. Browsers and `api.js` each get the format they can use.
 
 ## API
 

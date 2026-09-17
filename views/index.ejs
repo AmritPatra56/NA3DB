@@ -4,27 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NA3DB</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="interface">
-        <div class="rail">
-            <div class="rail-icons">
-                <a href="#" class="rail-logo">
-                    <img src="assets/logo_ibt.svg" alt="IBT logo">
-                </a>
-                <a href="index.html" class="rail-item active" data-page="index.html" title="Structure query">
-                    <img src="assets/search.svg" alt="Search">
-                </a>
-                <a href="#" class="rail-item">
-                    <img src="assets/Q.png" alt="Questions" class="icon-narrow">
-                </a>
-                <a href="report.html" class="rail-item" data-page="report.html" title="Report">
-                    <img src="assets/report.svg" alt="Report">
-                </a>
-            </div>
-            <div class="rail-brand">NA3DB</div>
-        </div>
+        <%- include("includes/rail.ejs") %>
         <form class="query_panel" id="query_form">
             <div class="query_panel_header">
                 <h1>Structure query</h1>
@@ -36,7 +20,7 @@
                             <span class="category_dot"></span>
                             <h2>Demographics</h2>
                         </div>
-                        <img src="assets/arrow.svg" alt="" class="category_arrow">
+                        <img src="/assets/arrow.svg" alt="" class="category_arrow">
                     </div>
                     <div class="category_body">
                         <div class="field">
@@ -80,7 +64,7 @@
                             <span class="category_dot"></span>
                             <h2>3D Features</h2>
                         </div>
-                        <img src="assets/arrow.svg" alt="" class="category_arrow">
+                        <img src="/assets/arrow.svg" alt="" class="category_arrow">
                     </div>
 
                     <div class="category_body">
@@ -109,7 +93,7 @@
                             <span class="category_dot"></span>
                             <h2>Structure Components</h2>
                         </div>
-                        <img src="assets/arrow.svg" alt="" class="category_arrow">
+                        <img src="/assets/arrow.svg" alt="" class="category_arrow">
                     </div>
 
                     <div class="category_body">
@@ -202,8 +186,8 @@
             <div class="detail_body"></div>
         </aside>
     </div>
-    <script src="api.js"></script>
-    <script src="shared.js"></script>
-    <script src="app.js"></script>
+    <script src="/api.js"></script>
+    <script src="/shared.js"></script>
+    <script src="/app.js"></script>
 </body>
 </html>

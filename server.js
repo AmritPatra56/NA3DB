@@ -7,6 +7,11 @@ const app = express();
 
 app.use(express.static(path.join(import.meta.dirname, "public")));
 
+// Pages are built from templates in views/, which sits outside public/ so the
+// template source is never downloadable. Only the rendered HTML is sent.
+app.set("view engine", "ejs");
+app.set("views", path.join(import.meta.dirname, "views"));
+
 // Says whether the server is alive. Deliberately touches no data.
 app.get("/api/health", (req, res) => {
     res.json({ ok: true });
@@ -15,6 +20,18 @@ app.get("/api/health", (req, res) => {
 // How many entries the database holds.
 app.get("/api/stats", (req, res) => {
     res.json({ total: entries.length });
+});
+
+
+app.get("/", (req, res) => {
+    res.render("index", { page: "search" });
+});
+
+
+
+// The report page. Built from views/report.ejs, not served as a file.
+app.get("/report", (req, res) => {
+    res.render("report", { page: "report" });
 });
 
 // Runs a search and returns one page of matching entries.
@@ -44,6 +61,12 @@ app.get("/api/export", (req, res) => {
 // Anything under /api that got this far matched no route above.
 app.use("/api", (req, res) => {
     res.status(404).json({ error: `No such endpoint: ${req.method} ${req.originalUrl}` });
+});
+
+// Any page that matched nothing above. Sits below the /api catch-all so API
+// paths still get JSON, and above the error handler so it is not mistaken for one.
+app.use((req, res) => {
+    res.status(404).render("error", { page: "none", tried: req.originalUrl });
 });
 
 // The last thing in the chain. Anything that threw anywhere above lands here.

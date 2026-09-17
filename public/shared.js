@@ -1,5 +1,5 @@
 // shared.js - the things both pages need.
-// Loaded by index.html and report.html, before their own script.
+// Loaded by both pages, before their own script.
 
 
 // Every filter the app has, split by how it is read from the form.
