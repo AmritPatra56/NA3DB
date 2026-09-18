@@ -1,7 +1,7 @@
 import express from "express";
 import path from "node:path";
 import entries from "./entries.json" with { type: "json" };
-import { search_entries, export_entries, query_problem } from "./search.js";
+import { search_entries, export_entries, find_entry, query_problem } from "./search.js";
 
 const app = express();
 
@@ -34,8 +34,22 @@ app.get("/report", (req, res) => {
     res.render("report", { page: "report" });
 });
 
-// Runs a search and returns one page of matching entries.
-app.get("/api/search", (req, res) => {
+// One structure's own page. The id is in the path so the address can be
+// bookmarked, shared and cited. An unknown id is a real 404, not a 200 that
+// happens to say "not found".
+app.get("/structure/:id", (req, res) => {
+    let entry = find_entry(entries, req.params.id);
+
+    if (!entry) {
+        res.status(404).render("error", { page: "none", tried: req.originalUrl });
+        return;
+    }
+
+    res.render("structure", { page: "search", entry });
+});
+
+// One page of entries, narrowed by whatever filters were passed.
+app.get("/api/entries", (req, res) => {
     let problem = query_problem(req.query);
 
     if (problem) {
@@ -44,6 +58,19 @@ app.get("/api/search", (req, res) => {
     }
 
     res.json(search_entries(entries, req.query));
+});
+
+// One entry, by its PDB id. The id is in the path rather than the query string
+// because it names *which* entry you want, instead of narrowing a list.
+app.get("/api/entries/:id", (req, res) => {
+    let entry = find_entry(entries, req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    res.json(entry);
 });
 
 // Returns every matching entry for the report page, not just one page.

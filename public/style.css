@@ -531,6 +531,11 @@ input::placeholder {
     color: var(--accent);
 }
 
+/* Only fires when there are two links, and only on the second one. */
+.detail_link + .detail_link {
+    margin-left: 18px;
+}
+
 .detail_status {
     display: flex;
     align-items: center;

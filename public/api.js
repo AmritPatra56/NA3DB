@@ -25,7 +25,7 @@ async function search_entries(filters, page = 1) {
 
     if (page > 1) params.set("page", page);
 
-    return get_json("/api/search?" + params.toString());
+    return get_json("/api/entries?" + params.toString());
 }
 
 // Asks the server for every entry matching the filters, for the report page.

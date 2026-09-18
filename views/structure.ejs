@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NA3DB — <%= entry.pdb_id %></title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="interface">
+        <%- include("includes/rail.ejs") %>
+        <div class="results_area">
+            <div class="results_area_header">
+                <h1><%= entry.pdb_id %></h1>
+            </div>
+            <div class="results_area_body">
+                <div class="detail_body">
+<%
+// Label and value for every field worth showing, then drop the ones this entry
+// has nothing for. Most entries are missing at least one, and a row reading
+// "null" is worse than no row at all.
+const rows = [
+    ["Title",                 entry.title],
+    ["Author",                entry.author],
+    ["Method",                entry.method],
+    ["Resolution",            entry.resolution === null ? null : entry.resolution + " Å"],
+    ["Deposited",             entry.deposition_date],
+    ["Entity",                entry.entity_name],
+    ["Source organism",       entry.source_organism],
+    ["Non-standard residues", entry.nonstandard_residue],
+    ["Polymer type",          entry.polymer_type],
+    ["Monomer flag",          entry.monomer_flag],
+    ["Confal score",          entry.confal_score],
+    ["Assigned NtC",          entry.assigned_ntc]
+].filter(function (row) {
+    return row[1] !== null && row[1] !== undefined && row[1] !== "";
+});
+%>
+                    <% for (const row of rows) { %>
+                        <div class="detail_field">
+                            <div class="detail_label"><%= row[0] %></div>
+                            <div class="detail_value"><%= row[1] %></div>
+                        </div>
+                    <% } %>
+
+                    <a class="detail_link" target="_blank" rel="noopener"
+                       href="https://www.rcsb.org/structure/<%= entry.pdb_id %>">View on rcsb.org</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

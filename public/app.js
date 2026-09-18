@@ -372,6 +372,7 @@ function render_detail(data) {
     body.innerHTML = fields + `
         <a class="detail_link" target="_blank" rel="noopener"
            href="https://www.rcsb.org/structure/${data.rcsb_id}">View on rcsb.org</a>
+        <a class="detail_link" href="/structure/${data.rcsb_id}">Open full page</a>
     `;
 }
 

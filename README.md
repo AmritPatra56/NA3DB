@@ -57,8 +57,9 @@ Page templates, in `views/`:
 | --- | --- |
 | `index.ejs` | Structure of the search page. |
 | `report.ejs` | Structure of the report page. |
+| `structure.ejs` | One structure's own page, at `/structure/<id>`. |
 | `error.ejs` | Shown for any address that matches nothing. |
-| `includes/rail.ejs` | The sidebar. Written once, included by all three pages. |
+| `includes/rail.ejs` | The sidebar. Written once, included by every page. |
 
 These are rendered by the server and only the resulting HTML is sent. The
 templates themselves are never downloadable, which is why `views/` sits outside
@@ -101,27 +102,40 @@ the whole project.
 | --- | --- |
 | `GET /` | Structure query. |
 | `GET /report` | Report. Reads its filters from its own query string, so a link carries the search with it. |
+| `GET /structure/:id` | One structure, by its PDB id. |
 | anything else | The not-found page, with status 404. |
 
 Filters travel in the query string, so `/report?entry_id=tna` reports on exactly
 what `/?entry_id=tna` found. The rail links rewrite themselves to carry the
 current search across.
 
+`/structure/4TNA` is built on the server, so the whole record is in the HTML
+before any script runs, and an id that does not exist returns a genuine **404**
+rather than a 200 page that says "not found". That distinction matters for a
+database whose links are meant to be cited: a link checker, a crawler or a
+journal's reference validator only sees the status code. Ids are matched
+case-insensitively, so `/structure/4tna` works too.
+
 An unknown address under `/api` returns JSON; any other unknown address returns
 the HTML page. Browsers and `api.js` each get the format they can use.
 
 ## API
 
-Four endpoints, all returning JSON.
+Five endpoints, all returning JSON.
 
 | endpoint | returns |
 | --- | --- |
 | `GET /api/health` | `{"ok":true}`. Touches no data on purpose, so it stays trustworthy when everything else is broken. |
 | `GET /api/stats` | `{"total":120}`. How many entries exist. |
-| `GET /api/search` | One page of matching entries, plus the counts needed to draw pagination. |
+| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. |
+| `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
 | `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. |
 
-`/api/search` returns:
+The two are different questions, and they fail differently. `/api/entries`
+narrows a list, so matching nothing is a successful `200` with an empty
+`results`. `/api/entries/4TNA` names one thing, so an unknown id is a `404`.
+
+`/api/entries` returns:
 
 ```json
 {
@@ -151,13 +165,14 @@ that field. Any unknown parameter is ignored.
 | `experimental_method` | one of, comma-separated |
 | `polymer_type` | one of, comma-separated |
 | `monomer_flag` | one of, comma-separated |
-| `page` | whole number, 1 or more. `/api/search` only. |
+| `page` | whole number, 1 or more. `/api/entries` only. |
 
 Examples:
 
 ```
-/api/search?entry_id=tna
-/api/search?polymer_type=Nucleic%20acid&page=2
+/api/entries?entry_id=tna
+/api/entries?polymer_type=Nucleic%20acid&page=2
+/api/entries/4TNA
 /api/export?source_organism=sacch
 ```
 
@@ -180,6 +195,11 @@ the client.
   this project's own database once the data is loaded.
 - **The page number is not in the URL.** Reloading a page of results takes you
   back to page 1.
+- **A structure can be viewed two ways.** The slide-out panel reads from RCSB
+  and shows a few fields this database does not hold yet; `/structure/<id>`
+  reads from here. Once the real database is connected, `/structure/<id>` will
+  show everything the panel does and the panel will be retired, so clicking a
+  result goes straight to its page.
 - **No 3D viewer.** Planned. It needs `Cross-Origin-Opener-Policy: same-origin`
   and `Cross-Origin-Embedder-Policy: require-corp` on every response, including
   worker scripts, so the reverse proxy in front of this app has to be able to

@@ -156,6 +156,17 @@ export function export_entries(all, query) {
     };
 }
 
+// Finds one entry by its PDB id, case-insensitively, because 4tna and 4TNA
+// are the same structure.
+// Returns undefined when there is no such entry. What that *means* is the
+// caller's problem — this file does not know what a 404 is.
+export function find_entry(all, id) {
+    let wanted = as_text(id).trim().toUpperCase();
+
+    return all.find(function (entry) {
+        return as_text(entry.pdb_id).toUpperCase() === wanted;
+    });
+}
 
 // Checks the query for things that cannot be answered.
 // Returns a message describing the first problem found, or null if the query is fine.
