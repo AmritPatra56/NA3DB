@@ -8,8 +8,8 @@ Under active development. See [What is not done yet](#what-is-not-done-yet).
 
 ## Requirements
 
-Node 24 or newer. Nothing else. Express and EJS are installed by npm and there
-is no database to set up yet.
+Node 24 or newer. Nothing else. Express and EJS are installed by npm, the test
+runner is built into Node, and there is no database to set up yet.
 
 ## Running it
 
@@ -30,6 +30,37 @@ in a `.env` file:
 PORT=5000 npm run dev
 ```
 
+## Tests
+
+```bash
+npm test
+```
+
+Sixty tests, no test framework installed — `node --test` ships with Node. They
+run in well under a second and need no server running: `server.js` exports the
+app and only calls `listen` when it is run directly, so a test can import it
+and start it on a free port while `npm run dev` still holds 4000.
+
+| file | covers |
+| --- | --- |
+| `search.test.js` | Lookup, filtering, paging, validation and result order. No HTTP involved. |
+| `server.test.js` | Routes, status codes, response formats, and which files must not be downloadable. |
+
+Two of those are worth their weight on their own. `search.test.js` is the
+written-down specification of what filtering means — contains-matching,
+case-insensitive, pills mean "any of these" within a field and "all of these"
+across fields, a null confal score excludes. When that file is rewritten
+against SQL, those tests are how it will be judged.
+
+`server.test.js` checks that `server.js`, `search.js`, `entries.json`,
+`package.json`, `.env` and the raw templates all return 404. A single careless
+change to the `express.static` line would serve the whole project directory,
+with no error and no visible difference.
+
+A green suite proves less than it looks. Each group here was checked by
+deliberately breaking the code it covers and confirming the right tests failed;
+three tests that looked fine turned out to prove nothing until that was done.
+
 `.env` is never committed. Copy `.env.example` to `.env` and edit it. A value
 already set in the shell wins over the file, which is how Docker will pass real
 values in later.
@@ -47,9 +78,10 @@ Server side, at the root:
 
 | file | job |
 | --- | --- |
-| `server.js` | The only file that knows about HTTP. Routes, port, static files, rendering, error handling. No filtering logic. |
+| `server.js` | The only file that knows about HTTP. Routes, port, static files, rendering, error handling. No filtering logic. Exports the app; only listens when run directly, so tests can import it. |
 | `search.js` | Decides what matches, in what order, and which slice. Knows nothing about HTTP or the screen. |
 | `entries.json` | The data. 120 entries, read and parsed once at startup. |
+| `search.test.js`, `server.test.js` | The tests. Outside `public/`, like everything else the browser has no business reading. |
 
 Page templates, in `views/`:
 

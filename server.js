@@ -106,9 +106,15 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: "Something went wrong on the server" });
 });
 
-// The port to listen on. Docker or a hosting platform decides this, not the code.
-const port = Number(process.env.PORT) || 4000;
+export default app;
 
-app.listen(port, () => {
-    console.log(`app is running on port ${port}`);
-});
+// Only listen when this file is run directly. A test imports it instead and
+// starts its own server on a free port, so importing must have no side effects.
+if (import.meta.main) {
+    // The port to listen on. Docker or a hosting platform decides this, not the code.
+    const port = Number(process.env.PORT) || 4000;
+
+    app.listen(port, () => {
+        console.log(`app is running on port ${port}`);
+    });
+}
