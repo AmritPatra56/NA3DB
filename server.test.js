@@ -5,6 +5,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert";
 import { once } from "node:events";
 import app from "./server.js";
+import { close as close_db } from "./db.js";
 
 let base;
 let server;
@@ -17,8 +18,12 @@ before(async () => {
     base = `http://localhost:${server.address().port}`;
 });
 
-// Without this the test process never exits.
-after(() => server.close());
+// Both of these or the test process never exits: the HTTP server holds the
+// port, and the database pool holds its connections for idleTimeoutMillis.
+after(async () => {
+    server.close();
+    await close_db();
+});
 
 
 // --- pages --------------------------------------------------------------
@@ -54,9 +59,25 @@ test("an unknown structure is a real 404, not a 200 that says not found", async 
 
 // --- the API ------------------------------------------------------------
 
-test("/api/health answers without touching the data", async () => {
-    assert.deepEqual(await (await fetch(base + "/api/health")).json(), { ok: true });
+test("/api/health reports the database is reachable", async () => {
+    let res = await fetch(base + "/api/health");
+    let body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(body, { ok: true, database: "up" });
 });
+
+// Asserts the TYPE, not the value. 120 becomes 1,489 when the real structures
+// are loaded, and that is not a reason for a test to go red.
+test("/api/stats counts the entries in the database", async () => {
+    let res = await fetch(base + "/api/stats");
+    let body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.equal(typeof body.total, "number");
+    assert.ok(body.total > 0);
+});
+
 
 test("/api/entries returns a page and the counts to draw pagination", async () => {
     let body = await (await fetch(base + "/api/entries")).json();
@@ -121,6 +142,10 @@ test("an unknown page answers in HTML", async () => {
 const private_files = [
     "/server.js",
     "/search.js",
+    "/search.reference.mjs",
+    "/db.js",
+    "/db/init.sql",
+    "/db/seed.sql",
     "/entries.json",
     "/index.ejs",
     "/structure.ejs",

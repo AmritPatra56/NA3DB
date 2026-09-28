@@ -1,5 +1,8 @@
 // search.js - decides which entries match a set of filters.
 // Server-side only. It never touches HTTP and it never touches the screen.
+// It does now talk to PostgreSQL, which is the only thing it depends on.
+
+import { query } from "./db.js";
 
 // Every filter the search accepts, split by how its value is shaped.
 // The single source of truth for filter names on the server.
@@ -57,48 +60,115 @@ function query_to_filters(query) {
     return filters;
 }
 
-// True if the entry's text contains the filter text. An empty filter box matches everything.
-function text_matches(entry_value, filter_value) {
-    if (filter_value === "") return true;
-    if (!entry_value) return false;
-    return entry_value.toLowerCase().includes(filter_value.toLowerCase());
+// Builds the WHERE clause for a search, and the values that go with it.
+// Every value becomes a numbered placeholder — $1, $2 — so nothing a visitor
+// types can ever be read as SQL.
+//
+// Only entry_id filters a column on `entry`. Everything else lives in another
+// table, which is why the rest are EXISTS rather than plain comparisons.
+// Wraps a value for a "contains" search, with the pattern characters escaped.
+// In ILIKE, % means "any run of characters" and _ means "any one character".
+// A search box promises to find what you typed, so a % the user types must
+// stay a literal %. Backslash is ILIKE's escape character, so it goes first.
+function like_contains(text) {
+    return "%" + String(text).replace(/[\\%_]/g, "\\$&") + "%";
 }
 
-// True if the entry's value is one of the selected pills. No pills selected matches everything.
-function pill_matches(entry_value, selected) {
-    if (selected.length === 0) return true;
-    return selected.includes(entry_value);
-}
 
-// Runs every filter against one entry. It must survive all of them to come back true.
-function matches(entry, f) {
-    if (!text_matches(entry.pdb_id, f.entry_id)) return false;
-    if (!text_matches(entry.author, f.author_name)) return false;
-    if (!text_matches(entry.assigned_ntc, f.assigned_ntc)) return false;
-    if (!text_matches(entry.entity_name, f.entity_name)) return false;
-    if (!text_matches(entry.source_organism, f.source_organism)) return false;
-    if (!text_matches(entry.nonstandard_residue, f.nonstandard_residue)) return false;
+export function build_where(query_params) {
+    let f = query_to_filters(query_params);
 
-    if (!pill_matches(entry.method, f.experimental_method)) return false;
-    if (!pill_matches(entry.polymer_type, f.polymer_type)) return false;
-    if (!pill_matches(entry.monomer_flag, f.monomer_flag)) return false;
+    let where = ["TRUE"];
+    let values = [];
 
-    // confal_score is null for every entry until DNATCO results are loaded,
-    // so any confal filter can only exclude.
-    if (f.confal_min !== "" || f.confal_max !== "") {
-        if (entry.confal_score === null) return false;
-        if (f.confal_min !== "" && entry.confal_score < Number(f.confal_min)) return false;
-        if (f.confal_max !== "" && entry.confal_score > Number(f.confal_max)) return false;
+    // Adds one clause. The value goes on the list, and every ? in the clause
+    // becomes the number it landed at. Written with ? because that is what
+    // mysql2 uses; PostgreSQL wants $1, $2, so the conversion happens here.
+    function add(clause, value) {
+        values.push(value);
+        where.push(clause.replaceAll("?", "$" + values.length));
     }
 
-    return true;
-}
+    // ILIKE is PostgreSQL's case-insensitive LIKE. Plain LIKE and = are
+    // case-SENSITIVE here, unlike MySQL. The % go on in our code, so what
+    // the visitor typed stays a value.
+    if (f.entry_id) {
+        add("AND e.id ILIKE ?", like_contains(f.entry_id));
+    }
 
-// Keeps only the entries that pass matches(). This is what becomes a SQL WHERE clause later.
-function filter_entries(all, f) {
-    return all.filter(function (entry) {
-        return matches(entry, f);
-    });
+    if (f.author_name) {
+        add(`AND EXISTS (SELECT 1 FROM citation_author ca
+                         WHERE ca.entry_id = e.id
+                           AND ca.citation_id = 'primary'
+                           AND ca.name ILIKE ?)`, like_contains(f.author_name));
+    }
+
+    if (f.entity_name) {
+        add(`AND EXISTS (SELECT 1 FROM entity ent
+                         WHERE ent.entry_id = e.id
+                           AND ent.pdbx_description ILIKE ?)`, like_contains(f.entity_name));
+    }
+
+    if (f.source_organism) {
+        add(`AND EXISTS (SELECT 1 FROM entity_src_gen g
+                         WHERE g.entry_id = e.id
+                           AND g.pdbx_gene_src_scientific_name ILIKE ?)`,
+            like_contains(f.source_organism));
+    }
+
+    // Searches the residue CODE as well as its name. Upstream checks only the
+    // name, so typing "PSU" finds nothing there — and a code is what people type.
+    if (f.nonstandard_residue) {
+        add(`AND EXISTS (SELECT 1 FROM entity_poly_seq eps
+                         JOIN chem_comp cc ON cc.id = eps.mon_id
+                         WHERE eps.entry_id = e.id
+                           AND cc.mon_nstd_flag = 'n'
+                           AND (cc.id ILIKE ? OR cc.name ILIKE ?))`,
+            like_contains(f.nonstandard_residue));
+    }
+
+    if (f.assigned_ntc) {
+        add(`AND EXISTS (SELECT 1 FROM ndb_struct_ntc_step_summary ss
+                         WHERE ss.entry_id = e.id
+                           AND ss.assigned_ntc ILIKE ?)`, like_contains(f.assigned_ntc));
+    }
+
+    // A method IS a column, but on another table, so EXISTS as usual.
+    // = ANY(?) takes the whole array as ONE parameter, however many pills
+    // were clicked. With IN (...) the number of placeholders would change.
+    if (f.experimental_method.length > 0) {
+        add(`AND EXISTS (SELECT 1 FROM exptl x
+                         WHERE x.entry_id = e.id AND x.method = ANY(?))`,
+            f.experimental_method);
+    }
+
+    // Filters on the SAME expression the SELECT displays, so a result can
+    // never disagree with the page it links to.
+    if (f.polymer_type.length > 0) {
+        add(`AND (${POLYMER_TYPE_SQL}) = ANY(?)`, f.polymer_type);
+    }
+
+    if (f.monomer_flag.length > 0) {
+        add(`AND (${MONOMER_FLAG_SQL}) = ANY(?)`, f.monomer_flag);
+    }
+
+    // A range. An entry with no NtC row matches neither end, which is what
+    // the JavaScript did with "if (entry.confal_score === null) return false".
+    // Number() because a URL gives a string and PostgreSQL will not always
+    // infer the type when comparing a REAL column against text.
+    if (f.confal_min !== "") {
+        add(`AND EXISTS (SELECT 1 FROM ndb_struct_ntc_overall o
+                         WHERE o.entry_id = e.id AND o.confal_score >= ?)`,
+            Number(f.confal_min));
+    }
+
+    if (f.confal_max !== "") {
+        add(`AND EXISTS (SELECT 1 FROM ndb_struct_ntc_overall o
+                         WHERE o.entry_id = e.id AND o.confal_score <= ?)`,
+            Number(f.confal_max));
+    }
+
+    return { where: where.join("\n    "), values };
 }
 
 
@@ -116,56 +186,158 @@ function as_page(value) {
     return n;
 }
 
-// Filters and sorts, which both the paged search and the full export need.
-// One copy of this means a search and a report can never disagree.
-function matching_entries(all, query) {
-    let matching = filter_entries(all, query_to_filters(query));
+// One page of matching entries, plus the counts the screen needs to draw
+// pagination. Two queries sent at the same time: one for the rows, one for
+// the total. Two rather than one, because a page past the end returns no
+// rows — and a count carried inside those rows would have nowhere to live.
+export async function search_entries(query_params) {
+    let { where, values } = build_where(query_params);
+    let page = as_page(query_params.page);
+    let offset = (page - 1) * PAGE_SIZE;
 
-    matching.sort(function (a, b) {
-        return a.pdb_id.localeCompare(b.pdb_id);
-    });
+    let [rows, counted] = await Promise.all([
+        // LIMIT and OFFSET are written straight in, not parameterised. That
+        // is safe because as_page guarantees a whole number, so offset can
+        // only ever be digits. Everything from outside still goes in $1, $2.
+        query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
+               WHERE ${where}
+               ORDER BY e.id
+               LIMIT ${PAGE_SIZE} OFFSET ${offset}`, values),
 
-    return matching;
-}
+        query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)
+    ]);
 
-// The paged door into this file. Cuts one page out of the matching entries.
-// Returns that page plus everything the caller needs to draw pagination.
-export function search_entries(all, query) {
-    let matching = matching_entries(all, query);
-    let page = as_page(query.page);
-    let start = (page - 1) * PAGE_SIZE;
+    let total = Number(counted.rows[0].n);
 
     return {
-        results: matching.slice(start, start + PAGE_SIZE),
-        total: matching.length,
-        page: page,
-        pages: Math.ceil(matching.length / PAGE_SIZE),
+        results:   rows.rows,
+        total:     total,
+        page:      page,
+        pages:     Math.ceil(total / PAGE_SIZE),
         page_size: PAGE_SIZE
     };
 }
 
 // The unpaged door, for the report. Every matching entry, up to the limit.
 // Says whether it had to stop early, so the page can warn the user.
-export function export_entries(all, query) {
-    let matching = matching_entries(all, query);
+export async function export_entries(query_params) {
+    let { where, values } = build_where(query_params);
+
+    let [rows, counted] = await Promise.all([
+        query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
+               WHERE ${where}
+               ORDER BY e.id
+               LIMIT ${EXPORT_LIMIT}`, values),
+
+        query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)
+    ]);
+
+    let total = Number(counted.rows[0].n);
 
     return {
-        results: matching.slice(0, EXPORT_LIMIT),
-        total: matching.length,
-        truncated: matching.length > EXPORT_LIMIT
+        results:   rows.rows,
+        total:     total,
+        truncated: total > rows.rows.length
     };
 }
+
+
+// Three questions about what an entry contains, written once. They appear in
+// the SELECT (to show the type) and in the WHERE (to filter on it), and they
+// must be the same question in both places or a search can contradict a page.
+const HAS_PROTEIN = `EXISTS (SELECT 1 FROM entity_poly ep
+                             WHERE ep.entry_id = e.id AND ep.type ILIKE '%polypeptide%')`;
+const HAS_NA      = `EXISTS (SELECT 1 FROM entity_poly ep
+                             WHERE ep.entry_id = e.id AND ep.type ILIKE '%nucleotide%')`;
+const HAS_SACC    = `EXISTS (SELECT 1 FROM entity_poly ep
+                             WHERE ep.entry_id = e.id AND ep.type ILIKE '%saccharide%')`;
+
+const HAS_NONSTANDARD = `EXISTS (SELECT 1 FROM entity_poly_seq eps
+                                 JOIN chem_comp cc ON cc.id = eps.mon_id
+                                 WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n')`;
+
+// Order matters. Protein/NA is tested first because such an entry also has a
+// nucleic acid, and would otherwise stop at 'Nucleic acid'.
+const POLYMER_TYPE_SQL = `CASE
+        WHEN ${HAS_PROTEIN} AND ${HAS_NA}   THEN 'Protein/NA'
+        WHEN ${HAS_PROTEIN} AND ${HAS_SACC} THEN 'Protein/Oligosaccharide'
+        WHEN ${HAS_NA}                      THEN 'Nucleic acid'
+        WHEN ${HAS_SACC}                    THEN 'Oligosaccharide'
+        WHEN ${HAS_PROTEIN}                 THEN 'Protein'
+        ELSE 'Other'
+    END`;
+
+const MONOMER_FLAG_SQL =
+    `CASE WHEN ${HAS_NONSTANDARD} THEN 'Non-Standard' ELSE 'Standard' END`;
+
+
+// The columns that make up one entry, gathered from the tables that hold them.
+// LEFT JOIN, not JOIN: three entries have no resolution row and 52 have no
+// organism row, and those must still come back — with null, not missing.
+const ENTRY_COLUMNS = `
+    e.id                                    AS pdb_id,
+    s.title,
+    ca.name                                 AS author,
+    ex.method,
+    rf.d_resolution_high                    AS resolution,
+    ds.recvd_initial_deposition_date::text  AS deposition_date,
+    ent.pdbx_description                    AS entity_name,
+    -- COALESCE to '' because entries.json represents a missing organism that
+    -- way, and a port should not change the shape the frontend already
+    -- expects. null is arguably more correct; that is a later decision.
+    COALESCE(src.pdbx_gene_src_scientific_name, '') AS source_organism,
+
+    -- Computed, not stored. The SAME expressions the WHERE clause filters on.
+    ${POLYMER_TYPE_SQL} AS polymer_type,
+    ${MONOMER_FLAG_SQL} AS monomer_flag,
+
+    -- Many rows folded into the one comma-joined string the frontend expects.
+    -- ORDER BY is not decoration: without it the order is not promised, and
+    -- the same entry could come back differently on different days.
+    COALESCE((
+        SELECT string_agg(DISTINCT cc.id, ', ' ORDER BY cc.id)
+        FROM entity_poly_seq eps
+        JOIN chem_comp cc ON cc.id = eps.mon_id
+        WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
+    ), '') AS nonstandard_residue,
+
+    -- Both of these are null for every entry until the DNATCO data is
+    -- loaded. Expected, not a bug.
+    ntc.confal_score,
+
+    (SELECT string_agg(DISTINCT ss.assigned_ntc, ', ' ORDER BY ss.assigned_ntc)
+     FROM ndb_struct_ntc_step_summary ss
+     WHERE ss.entry_id = e.id) AS assigned_ntc
+`;
+
+const ENTRY_JOINS = `
+    FROM entry e
+    LEFT JOIN struct s                ON s.entry_id   = e.id
+    LEFT JOIN exptl ex                ON ex.entry_id  = e.id
+    LEFT JOIN reflns rf               ON rf.entry_id  = e.id
+    LEFT JOIN pdbx_database_status ds ON ds.entry_id  = e.id
+    LEFT JOIN citation_author ca      ON ca.entry_id  = e.id
+                                     AND ca.citation_id = 'primary'
+                                     AND ca.ordinal = 1
+    LEFT JOIN entity ent              ON ent.entry_id = e.id AND ent.id = '1'
+    LEFT JOIN entity_src_gen src      ON src.entry_id = e.id AND src.entity_id = '1'
+
+    LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id
+`;
 
 // Finds one entry by its PDB id, case-insensitively, because 4tna and 4TNA
 // are the same structure.
 // Returns undefined when there is no such entry. What that *means* is the
 // caller's problem — this file does not know what a 404 is.
-export function find_entry(all, id) {
-    let wanted = as_text(id).trim().toUpperCase();
+export async function find_entry(id) {
+    let result = await query(
+        `SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
+         WHERE UPPER(e.id) = UPPER($1)
+         LIMIT 1`,
+        [as_text(id).trim()]
+    );
 
-    return all.find(function (entry) {
-        return as_text(entry.pdb_id).toUpperCase() === wanted;
-    });
+    return result.rows[0];
 }
 
 // Checks the query for things that cannot be answered.

@@ -1,34 +1,40 @@
 // search.test.js - checks that search.js still answers the way it used to.
 // Run with: npm test
 
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert";
+import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
-import { find_entry, export_entries, search_entries, query_problem } from "./search.js";
+import { find_entry, export_entries, search_entries, query_problem,
+         build_where } from "./search.js";
+import { query, close as close_db } from "./db.js";
+
+// search.js now holds database connections. Without this, npm test never exits.
+after(() => close_db());
 
 
-test("finds an entry by its exact id", () => {
-    assert.equal(find_entry(entries, "4TNA").pdb_id, "4TNA");
+test("finds an entry by its exact id", async () => {
+    assert.equal((await find_entry("4TNA")).pdb_id, "4TNA");
 });
 
-test("ignores case, because 4tna and 4TNA are the same structure", () => {
-    assert.equal(find_entry(entries, "4tna").pdb_id, "4TNA");
+test("ignores case, because 4tna and 4TNA are the same structure", async () => {
+    assert.equal((await find_entry("4tna")).pdb_id, "4TNA");
 });
 
-test("returns undefined for an id that does not exist", () => {
-    assert.equal(find_entry(entries, "ZZZZ"), undefined);
+test("returns undefined for an id that does not exist", async () => {
+    assert.equal(await find_entry("ZZZZ"), undefined);
 });
 
 
 // --- filtering ----------------------------------------------------------
 
-test("no filters returns every entry", () => {
-    assert.equal(export_entries(entries, {}).total, entries.length);
+test("no filters returns every entry", async () => {
+    assert.equal((await export_entries({})).total, entries.length);
 });
 
-test("an unknown parameter is ignored", () => {
-    assert.deepEqual(export_entries(entries, { nonsense: "x" }),
-                     export_entries(entries, {}));
+test("an unknown parameter is ignored", async () => {
+    assert.deepEqual(await export_entries({ nonsense: "x" }),
+                     await export_entries({}));
 });
 
 
@@ -41,8 +47,8 @@ const text_cases = [
 ];
 
 for (const [field, value, read] of text_cases) {
-    test(`${field} matches anywhere in the text, ignoring case`, () => {
-        let found = export_entries(entries, { [field]: value }).results;
+    test(`${field} matches anywhere in the text, ignoring case`, async () => {
+        let found = (await export_entries({ [field]: value })).results;
 
         assert.ok(found.length > 0, "the test value should match something");
 
@@ -51,15 +57,15 @@ for (const [field, value, read] of text_cases) {
         }
     });
 
-    test(`${field} gives the same answer in upper case`, () => {
-        assert.deepEqual(export_entries(entries, { [field]: value }),
-                         export_entries(entries, { [field]: value.toUpperCase() }));
+    test(`${field} gives the same answer in upper case`, async () => {
+        assert.deepEqual(await export_entries({ [field]: value }),
+                         await export_entries({ [field]: value.toUpperCase() }));
     });
 }
 
 
-test("a pill filter keeps only the chosen values", () => {
-    let found = export_entries(entries, { polymer_type: "Nucleic acid" }).results;
+test("a pill filter keeps only the chosen values", async () => {
+    let found = (await export_entries({ polymer_type: "Nucleic acid" })).results;
 
     assert.ok(found.length > 0);
     for (const entry of found) assert.equal(entry.polymer_type, "Nucleic acid");
@@ -68,13 +74,13 @@ test("a pill filter keeps only the chosen values", () => {
 // Uses experimental_method rather than polymer_type: every entry is either
 // "Nucleic acid" or "Protein/NA", so a two-pill test on that field would pass
 // even with the filter removed entirely.
-test("two pills mean either one, and nothing else", () => {
+test("two pills mean either one, and nothing else", async () => {
     let a = "SOLUTION NMR";
     let b = "X-RAY DIFFRACTION";
 
-    let only_a = export_entries(entries, { experimental_method: a }).total;
-    let only_b = export_entries(entries, { experimental_method: b }).total;
-    let either = export_entries(entries, { experimental_method: `${a},${b}` });
+    let only_a = (await export_entries({ experimental_method: a })).total;
+    let only_b = (await export_entries({ experimental_method: b })).total;
+    let either = await export_entries({ experimental_method: `${a},${b}` });
 
     // A method is one value per entry, so the two sets cannot overlap.
     assert.equal(either.total, only_a + only_b);
@@ -87,11 +93,11 @@ test("two pills mean either one, and nothing else", () => {
     }
 });
 
-test("two different filters must both hold", () => {
-    let found = export_entries(entries, {
+test("two different filters must both hold", async () => {
+    let found = (await export_entries({
         entry_id: "tna",
         polymer_type: "Nucleic acid"
-    }).results;
+    })).results;
 
     for (const entry of found) {
         assert.ok(entry.pdb_id.toLowerCase().includes("tna"));
@@ -101,22 +107,22 @@ test("two different filters must both hold", () => {
 
 // Documents a known limitation rather than a bug: confal_score is null for
 // every entry until DNATCO data is loaded, so any confal filter excludes all.
-test("a confal filter matches nothing while DNATCO data is missing", () => {
-    assert.equal(export_entries(entries, { confal_min: "0" }).total, 0);
+test("a confal filter matches nothing while DNATCO data is missing", async () => {
+    assert.equal((await export_entries({ confal_min: "0" })).total, 0);
 });
 
 
 // --- paging -------------------------------------------------------------
 
-test("a page holds no more than the page size", () => {
-    let first = search_entries(entries, {});
+test("a page holds no more than the page size", async () => {
+    let first = await search_entries({});
 
     assert.equal(first.results.length, first.page_size);
     assert.equal(first.page, 1);
 });
 
-test("pages is the total divided by page size, rounded up", () => {
-    let r = search_entries(entries, {});
+test("pages is the total divided by page size, rounded up", async () => {
+    let r = await search_entries({});
 
     assert.equal(r.pages, Math.ceil(r.total / r.page_size));
 });
@@ -125,36 +131,36 @@ test("pages is the total divided by page size, rounded up", () => {
 // instead of up is invisible above. This uses a filter that leaves a
 // remainder, and checks the behaviour rounding would break: the last page
 // must exist and hold the leftovers.
-test("the last page is reachable when the total does not divide evenly", () => {
+test("the last page is reachable when the total does not divide evenly", async () => {
     let query = { source_organism: "sacch" };
-    let r = search_entries(entries, query);
+    let r = await search_entries(query);
 
     assert.ok(r.total % r.page_size !== 0,
         "this filter must leave a remainder, or the test proves nothing");
 
     assert.equal(r.pages, Math.ceil(r.total / r.page_size));
 
-    let last = search_entries(entries, { ...query, page: String(r.pages) });
+    let last = await search_entries({ ...query, page: String(r.pages) });
     assert.ok(last.results.length > 0, "the last page must hold the remainder");
 
-    let past = search_entries(entries, { ...query, page: String(r.pages + 1) });
+    let past = await search_entries({ ...query, page: String(r.pages + 1) });
     assert.equal(past.results.length, 0, "there must be nothing after the last page");
 });
 
 // The important one. Off-by-one slicing shows up here and almost nowhere else.
-test("walking every page yields every entry exactly once, in order", () => {
-    let all = export_entries(entries, {}).results;
+test("walking every page yields every entry exactly once, in order", async () => {
+    let all = (await export_entries({})).results;
     let walked = [];
 
-    for (let page = 1; page <= search_entries(entries, {}).pages; page++) {
-        walked.push(...search_entries(entries, { page: String(page) }).results);
+    for (let page = 1; page <= (await search_entries({})).pages; page++) {
+        walked.push(...(await search_entries({ page: String(page) })).results);
     }
 
     assert.deepEqual(walked, all);
 });
 
-test("a page past the end is empty but still reports the true total", () => {
-    let r = search_entries(entries, { page: "999" });
+test("a page past the end is empty but still reports the true total", async () => {
+    let r = await search_entries({ page: "999" });
 
     assert.equal(r.results.length, 0);
     assert.equal(r.total, entries.length);
@@ -165,8 +171,8 @@ test("a page past the end is empty but still reports the true total", () => {
 const bad_pages = ["abc", "0", "-5", "", "999999999999"];
 
 for (const value of bad_pages) {
-    test(`page="${value}" never crashes and never returns a broken page`, () => {
-        let r = search_entries(entries, { page: value });
+    test(`page="${value}" never crashes and never returns a broken page`, async () => {
+        let r = await search_entries({ page: value });
 
         assert.ok(Number.isInteger(r.page) && r.page >= 1);
         assert.ok(Array.isArray(r.results));
@@ -177,31 +183,31 @@ for (const value of bad_pages) {
 // Checked against a list sorted here, not against another call to search.js.
 // The walking test above compares one result to another, so both sides share
 // matching_entries() and a broken sort cancels out.
-test("results come back in id order", () => {
-    let ids = export_entries(entries, {}).results.map((e) => e.pdb_id);
+test("results come back in id order", async () => {
+    let ids = (await export_entries({})).results.map((e) => e.pdb_id);
     let expected = [...ids].sort((a, b) => a.localeCompare(b));
 
     assert.deepEqual(ids, expected);
 });
 
-test("the first page starts at the first id overall", () => {
+test("the first page starts at the first id overall", async () => {
     let all_ids = entries.map((e) => e.pdb_id).sort((a, b) => a.localeCompare(b));
 
-    assert.equal(search_entries(entries, {}).results[0].pdb_id, all_ids[0]);
+    assert.equal((await search_entries({})).results[0].pdb_id, all_ids[0]);
 });
 
 
 // --- export -------------------------------------------------------------
 
-test("export returns every match, not one page", () => {
-    let r = export_entries(entries, {});
+test("export returns every match, not one page", async () => {
+    let r = await export_entries({});
 
     assert.equal(r.results.length, entries.length);
-    assert.ok(r.results.length > search_entries(entries, {}).page_size);
+    assert.ok(r.results.length > (await search_entries({})).page_size);
 });
 
-test("export is not truncated at this size", () => {
-    assert.equal(export_entries(entries, {}).truncated, false);
+test("export is not truncated at this size", async () => {
+    assert.equal((await export_entries({})).truncated, false);
 });
 
 
@@ -231,7 +237,131 @@ for (const [query, expected] of bad_queries) {
 }
 
 // The gate rejects it; the floor survives it anyway.
-test("the gate and the floor disagree on purpose", () => {
+test("the gate and the floor disagree on purpose", async () => {
     assert.ok(query_problem({ page: "2.9" }), "the gate should reject a fractional page");
-    assert.equal(search_entries(entries, { page: "2.9" }).page, 2);
+    assert.equal((await search_entries({ page: "2.9" })).page, 2);
+});
+
+
+// --- the SQL WHERE builder ----------------------------------------------
+// build_where is not wired into anything yet. These run its output against
+// the real database and check it gives the answer the JavaScript version does.
+
+// Runs a filter against the database and returns how many entries match.
+async function count(filters) {
+    let { where, values } = build_where(filters);
+    let r = await query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values);
+    return Number(r.rows[0].n);
+}
+
+// Each row: the filter, and the answer entries.json gives for the same question.
+const text_answers = [
+    [{},                                             120],
+    [{ entry_id: "tna" },                              2],
+    [{ entry_id: "TNA" },                              2],
+    [{ author_name: "hingerty" },                      1],
+    [{ source_organism: "sacch" },                    11],
+    [{ entity_name: "tRNA" },                         16],
+    [{ nonstandard_residue: "PSU" },                  10],
+    [{ assigned_ntc: "AA00" },                         0],
+    [{ entry_id: "tna", source_organism: "sacch" },    2]
+];
+
+for (const [filters, expected] of text_answers) {
+    test(`SQL filter ${JSON.stringify(filters)} matches the JSON answer`, async () => {
+        assert.equal(await count(filters), expected);
+    });
+}
+
+test("a filter with no value is left out of the WHERE entirely", () => {
+    assert.deepEqual(build_where({}), { where: "TRUE", values: [] });
+});
+
+test("placeholders are numbered in the order the values were added", () => {
+    let built = build_where({ entry_id: "tna", source_organism: "sacch" });
+
+    assert.match(built.where, /\$1/);
+    assert.match(built.where, /\$2/);
+    assert.deepEqual(built.values, ["%tna%", "%sacch%"]);
+});
+
+test("a value never reaches the SQL text", () => {
+    let built = build_where({ entry_id: "' OR '1'='1" });
+
+    assert.ok(!built.where.includes("OR '1'='1"), "the value must stay a parameter");
+    assert.deepEqual(built.values, ["%' OR '1'='1%"]);
+});
+
+
+// Pills and the score range. Same rule: every number is what the JavaScript
+// version returns for the same filter.
+const pill_answers = [
+    [{ polymer_type: "Nucleic acid" },                            60],
+    [{ polymer_type: "Protein/NA" },                              60],
+    [{ polymer_type: "Nucleic acid,Protein/NA" },                120],
+    [{ polymer_type: "any" },                                    120],
+    [{ experimental_method: "SOLUTION NMR" },                      3],
+    [{ experimental_method: "SOLUTION NMR,X-RAY DIFFRACTION" },   68],
+    [{ monomer_flag: "Standard" },                                87],
+    [{ monomer_flag: "Non-Standard" },                            33],
+    [{ confal_min: "0" },                                          0],
+    [{ confal_max: "100" },                                        0],
+    [{ entry_id: "tna", monomer_flag: "Non-Standard" },            2]
+];
+
+for (const [filters, expected] of pill_answers) {
+    test(`SQL filter ${JSON.stringify(filters)} matches the JSON answer`, async () => {
+        assert.equal(await count(filters), expected);
+    });
+}
+
+test("a whole pill list goes in as ONE parameter", () => {
+    let built = build_where({ experimental_method: "SOLUTION NMR,X-RAY DIFFRACTION" });
+
+    assert.equal(built.values.length, 1, "two pills, still one parameter");
+    assert.deepEqual(built.values[0], ["SOLUTION NMR", "X-RAY DIFFRACTION"]);
+    assert.match(built.where, /= ANY\(\$1\)/);
+});
+
+
+// --- the indexes the search depends on ----------------------------------
+// Not a speed test — those are flaky. This checks the indexes EXIST, which
+// catches the real mistake: loading init.sql and forgetting indexes.sql.
+// Without idx_entry_id_upper, find_entry scans every row instead of seeking.
+
+const REQUIRED_INDEXES = [
+    "idx_entry_id_upper",
+    "idx_entry_id_trgm",
+    "idx_citation_author_name_trgm",
+    "idx_entity_description_trgm",
+    "idx_src_gen_organism_trgm",
+    "idx_entity_poly_entry_type",
+    "idx_poly_seq_entry_mon"
+];
+
+test("every index the search relies on is present", async () => {
+    let r = await query("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'");
+    let present = new Set(r.rows.map((row) => row.indexname));
+
+    for (const name of REQUIRED_INDEXES) {
+        assert.ok(present.has(name),
+            `${name} is missing — run: psql -d na3db -f db/indexes.sql`);
+    }
+});
+
+// With only 120 rows PostgreSQL rightly prefers a sequential scan — reading
+// 120 rows is cheaper than a seek. So this asks whether the index CAN serve
+// the query, by telling the planner it may not scan. That answer does not
+// change with the size of the table, which is what makes the test stable.
+test("the id lookup CAN be served by an index, not only by a scan", async () => {
+    await query("BEGIN");
+    await query("SET LOCAL enable_seqscan = off");
+    let r = await query(
+        "EXPLAIN SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1)", ["4tna"]);
+    await query("COMMIT");
+
+    let plan = r.rows.map((row) => row["QUERY PLAN"]).join(" ");
+
+    assert.match(plan, /idx_entry_id_upper/,
+        `find_entry would scan every row. Plan was: ${plan}`);
 });
