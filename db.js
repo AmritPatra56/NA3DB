@@ -57,6 +57,30 @@ export async function query(text, values = []) {
     }
 }
 
+// Runs `work` inside one transaction, on ONE connection held for its whole
+// life. query() borrows a different connection each call, so BEGIN and COMMIT
+// sent through it can land on different sessions — the transaction would be
+// opened on one and committed on another, quietly doing nothing.
+//
+// `work` is given a query function bound to that single client.
+export async function transaction(work) {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+        let result = await work((text, values) => client.query(text, values));
+        await client.query("COMMIT");
+        return result;
+    } catch (err) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw err;
+    } finally {
+        // Without this the connection is never returned. Ten of these and a
+        // pool of ten is empty and the app hangs with no error.
+        client.release();
+    }
+}
+
 // Closes every connection. Tests need this or the process never exits.
 export function close() {
     return pool.end();

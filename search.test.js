@@ -7,7 +7,7 @@ import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
 import { find_entry, export_entries, search_entries, query_problem,
          build_where } from "./search.js";
-import { query, close as close_db } from "./db.js";
+import { query, transaction, close as close_db } from "./db.js";
 
 // search.js now holds database connections. Without this, npm test never exits.
 after(() => close_db());
@@ -354,11 +354,13 @@ test("every index the search relies on is present", async () => {
 // the query, by telling the planner it may not scan. That answer does not
 // change with the size of the table, which is what makes the test stable.
 test("the id lookup CAN be served by an index, not only by a scan", async () => {
-    await query("BEGIN");
-    await query("SET LOCAL enable_seqscan = off");
-    let r = await query(
-        "EXPLAIN SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1)", ["4tna"]);
-    await query("COMMIT");
+    // transaction(), not four separate query() calls: SET LOCAL only affects
+    // the transaction it runs in, and the pool hands out a different
+    // connection each call. This used to pass by luck.
+    let r = await transaction(async (q) => {
+        await q("SET LOCAL enable_seqscan = off");
+        return q("EXPLAIN SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1)", ["4tna"]);
+    });
 
     let plan = r.rows.map((row) => row["QUERY PLAN"]).join(" ");
 
