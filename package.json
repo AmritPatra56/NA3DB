@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
     "dev": "node --env-file-if-exists=.env --watch server.js",
-    "test": "node --env-file-if-exists=.env --test"
+    "test": "node --env-file-if-exists=.env.test --test"
   },
   "repository": {
     "type": "git",

@@ -33,9 +33,16 @@ At the `postgres=#` prompt:
 
 ```sql
 CREATE ROLE na3db LOGIN PASSWORD 'pick_a_password';
-CREATE DATABASE na3db OWNER na3db;
+CREATE DATABASE na3db      OWNER na3db;
+CREATE DATABASE na3db_test OWNER na3db;
 \q
 ```
+
+**Two databases, on purpose.** `na3db` is what the application reads and what
+the loaders will eventually fill with real structures. `na3db_test` holds the
+120 seeded entries and nothing else, forever — every expected number in the
+test suite traces back to those 120, so they have to stay fixed. See
+[Two databases](#two-databases) below.
 
 The database must be **owned** by that role, or loading the schema fails with
 `permission denied for schema public`.
@@ -44,13 +51,16 @@ The database must be **owned** by that role, or loading the schema fails with
 `psql -d na3db` will connect with no password at all. The application still
 connects over TCP with a password, so set one either way.*
 
-**3. Build the database — three files, in this order:**
+**3. Build both databases — the same three files, in this order:**
 
 ```bash
-psql -h localhost -U na3db -d na3db -f db/init.sql      # 39 tables
-node db/make_seed.mjs                                    # writes db/seed.sql
-psql -h localhost -U na3db -d na3db -f db/seed.sql      # 120 entries
-psql -h localhost -U na3db -d na3db -f db/indexes.sql   # search indexes
+node db/make_seed.mjs                       # writes db/seed.sql from entries.json
+
+for db in na3db na3db_test; do
+  psql -h localhost -U na3db -d $db -f db/init.sql      # 39 tables
+  psql -h localhost -U na3db -d $db -f db/seed.sql      # 120 entries
+  psql -h localhost -U na3db -d $db -f db/indexes.sql   # search indexes
+done
 ```
 
 | file | what it does |
@@ -60,14 +70,15 @@ psql -h localhost -U na3db -d na3db -f db/indexes.sql   # search indexes
 | `db/seed.sql` | Generated. 120 entries, for development and tests. |
 | `db/indexes.sql` | Indexes the search needs, plus the `pg_trgm` extension. |
 
-**4. Tell the app how to connect:**
+**4. Tell the app how to connect — two files:**
 
 ```bash
-cp .env.example .env
+cp .env.example .env         # then set DB_USER and DB_PASSWORD
+cp .env .env.test            # then change DB_NAME to na3db_test
 ```
 
-Then edit `.env` and set `DB_USER` and `DB_PASSWORD` to what you chose.
-`.env` is never committed — that is why `.env.example` exists.
+Neither is committed. `.gitignore` has `.env*` with `!.env.example`, so the
+template is tracked and anything holding a real password is not.
 
 **5. Run it:**
 
@@ -94,6 +105,52 @@ To wipe everything including the schema:
 psql -d na3db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 ```
 
+## Two databases
+
+```
+na3db        the application    npm start · npm run dev    reads .env
+na3db_test   the tests          npm test                   reads .env.test
+```
+
+Same PostgreSQL server, same schema, same seed. They differ in exactly one
+line of configuration:
+
+```
+.env       DB_NAME=na3db
+.env.test  DB_NAME=na3db_test
+```
+
+`db.js` reads `process.env.DB_NAME` and has no opinion about what is in it,
+which is why no code changes to move between them — and why there is one
+codebase rather than a copy of the project per environment.
+
+**Why the split exists.** Every expected number in the test suite traces back
+to the 120 seeded entries:
+
+```js
+[{}, 120]
+[{ entry_id: "tna" }, 2]
+[{ polymer_type: "Nucleic acid" }, 60]
+```
+
+They are a yardstick, not arbitrary values. When the loaders fill `na3db` with
+1,489 real structures, those numbers must stay measurable — so the tests read
+a database the loaders never touch.
+
+You can see it work. Add a row to the application's database and the suite is
+unaffected; point the suite at that same database and ten tests go red from one
+extra row:
+
+```bash
+psql -d na3db -c "INSERT INTO entry (id) VALUES ('MARKER');"
+npm test                  # 136 pass — reads na3db_test
+DB_NAME=na3db npm test    # 10 fail  — a shell variable wins over the file
+psql -d na3db -c "DELETE FROM entry WHERE id = 'MARKER';"
+```
+
+That last command is also how you run the suite against the real data
+deliberately, once there is any.
+
 ## Running it day to day
 
 `npm run dev` restarts the server whenever a server file changes. `npm start`
@@ -115,8 +172,10 @@ npm test
 ```
 
 **136 tests, about two seconds, no test framework installed** — `node --test`
-ships with Node. They need a running PostgreSQL with the schema and seed data
-loaded, because they check the real SQL rather than a pretend version of it.
+ships with Node. They check the real SQL rather than a pretend version of it,
+so they need a running PostgreSQL — specifically `na3db_test`, which holds the
+120 seeded entries and is never touched by the loaders. See
+[Two databases](#two-databases).
 
 | file | covers |
 | --- | --- |
