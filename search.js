@@ -148,8 +148,17 @@ export function build_where(query_params) {
         add(`AND (${POLYMER_TYPE_SQL}) = ANY(?)`, f.polymer_type);
     }
 
-    if (f.monomer_flag.length > 0) {
-        add(`AND (${MONOMER_FLAG_SQL}) = ANY(?)`, f.monomer_flag);
+    // Not `(CASE ... END) = ANY(?)` like polymer_type. Wrapping it in a CASE
+    // forces PostgreSQL to evaluate the subquery for EVERY entry, because it
+    // has to produce a value to compare. A bare EXISTS stops at the first
+    // matching residue. With 3.8M rows in entity_poly_seq that is 750 ms
+    // versus 20 ms. Selecting both pills is the same as selecting neither.
+    if (f.monomer_flag.length === 1) {
+        if (f.monomer_flag[0] === "Non-Standard") {
+            where.push(`AND ${HAS_NONSTANDARD}`);
+        } else if (f.monomer_flag[0] === "Standard") {
+            where.push(`AND NOT ${HAS_NONSTANDARD}`);
+        }
     }
 
     // A range. An entry with no NtC row matches neither end, which is what
