@@ -21,17 +21,27 @@
 // "null" is worse than no row at all.
 const rows = [
     ["Title",                 entry.title],
-    ["Author",                entry.author],
+    ["Authors",               entry.all_authors || entry.author],
+    ["Published",             entry.published],
     ["Method",                entry.method],
     ["Resolution",            entry.resolution === null ? null : entry.resolution + " Å"],
     ["Deposited",             entry.deposition_date],
     ["Entity",                entry.entity_name],
     ["Source organism",       entry.source_organism],
-    ["Non-standard residues", entry.nonstandard_residue],
+    ["Composition",           entry.polymer_composition],
     ["Polymer type",          entry.polymer_type],
+    ["Chains",                entry.chain_count],
+    ["Residues",              entry.residue_count],
+    ["Atoms",                 entry.atom_count === null ? null : entry.atom_count.toLocaleString("en-GB")],
     ["Monomer flag",          entry.monomer_flag],
+    ["Non-standard residues", entry.nonstandard_residue],
     ["Confal score",          entry.confal_score],
-    ["Assigned NtC",          entry.assigned_ntc]
+    ["Confal percentile",     entry.confal_percentile],
+    ["NtC steps",             entry.ntc_step_count],
+    ["NtC classes",           entry.ntc_classes],
+    ["Assigned NtC",          entry.assigned_ntc],
+    ["DOI",                   entry.doi],
+    ["PubMed",                entry.pubmed]
 ].filter(function (row) {
     return row[1] !== null && row[1] !== undefined && row[1] !== "";
 });

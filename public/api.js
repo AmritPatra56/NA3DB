@@ -34,13 +34,12 @@ async function export_entries(filters) {
     return get_json("/api/export?" + filters_to_params(filters).toString());
 }
 
-// Asks the real Protein Data Bank for one structure's full record.
-async function fetch_pdb_entry(pdb_id) {
-    let res = await fetch(`https://data.rcsb.org/rest/v1/core/entry/${pdb_id}`);
-
-    if (!res.ok) {
-        throw new Error(`Entry ${pdb_id} could not be loaded (status ${res.status})`);
-    }
-
-    return await res.json();
+// Asks our own server for one structure's full record.
+//
+// This used to call data.rcsb.org directly. That made every click on a result
+// depend on a server 8,000 km away — and asked someone else for information
+// this database already holds. It now returns more than RCSB did: every
+// author, the confal percentile, and the NtC classes, which only DNATCO has.
+async function fetch_entry_detail(pdb_id) {
+    return get_json("/api/entries/" + encodeURIComponent(pdb_id));
 }

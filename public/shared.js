@@ -22,6 +22,26 @@ let PILL_FILTERS = [
 ];
 
 
+// Makes one value safe to put inside HTML. This is the browser's version of
+// EJS's <%= %>, and it has to be used on every value that reaches innerHTML.
+//
+// & must be replaced FIRST. Do it later and you would re-escape the & in the
+// replacements you just made, turning < into &amp;lt; instead of &lt;.
+//
+// Quotes are included because values also land inside attributes, where a
+// stray " would end the attribute early and let the rest be read as markup.
+function escape_html(value) {
+    if (value === null || value === undefined) return "";
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+
 // Turns a query string into the filters object search_entries expects.
 // A parameter that is not in the URL becomes an empty value, not a missing key.
 function params_to_filters(params) {

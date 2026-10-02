@@ -118,12 +118,19 @@ export function build_where(query_params) {
 
     // Searches the residue CODE as well as its name. Upstream checks only the
     // name, so typing "PSU" finds nothing there — and a code is what people type.
+    //
+    // The chem_comp lookup is wrapped in ARRAY(SELECT ...) rather than joined.
+    // A join makes the subquery correlated — it mentions e.id — so PostgreSQL
+    // re-runs the whole chem_comp scan once per entry: 1,489 x 33,146 rows.
+    // ARRAY(SELECT ...) mentions nothing outside itself, so it becomes an
+    // InitPlan and runs exactly once. 435 ms against 7 ms.
     if (f.nonstandard_residue) {
         add(`AND EXISTS (SELECT 1 FROM entity_poly_seq eps
-                         JOIN chem_comp cc ON cc.id = eps.mon_id
                          WHERE eps.entry_id = e.id
-                           AND cc.mon_nstd_flag = 'n'
-                           AND (cc.id ILIKE ? OR cc.name ILIKE ?))`,
+                           AND eps.mon_id = ANY (ARRAY(
+                               SELECT cc.id FROM chem_comp cc
+                               WHERE cc.mon_nstd_flag = 'n'
+                                 AND (cc.id ILIKE ? OR cc.name ILIKE ?))))`,
             like_contains(f.nonstandard_residue));
     }
 
@@ -153,11 +160,12 @@ export function build_where(query_params) {
     // has to produce a value to compare. A bare EXISTS stops at the first
     // matching residue. With 3.8M rows in entity_poly_seq that is 750 ms
     // versus 20 ms. Selecting both pills is the same as selecting neither.
+    // Reads the stored column. Selecting both pills is the same as neither.
     if (f.monomer_flag.length === 1) {
         if (f.monomer_flag[0] === "Non-Standard") {
-            where.push(`AND ${HAS_NONSTANDARD}`);
+            where.push("AND e.has_nonstandard_residue");
         } else if (f.monomer_flag[0] === "Standard") {
-            where.push(`AND NOT ${HAS_NONSTANDARD}`);
+            where.push("AND NOT e.has_nonstandard_residue");
         }
     }
 
@@ -205,13 +213,24 @@ export async function search_entries(query_params) {
     let offset = (page - 1) * PAGE_SIZE;
 
     let [rows, counted] = await Promise.all([
-        // LIMIT and OFFSET are written straight in, not parameterised. That
-        // is safe because as_page guarantees a whole number, so offset can
-        // only ever be digits. Everything from outside still goes in $1, $2.
+        // The ids are found first, then the columns are built for those ten.
+        //
+        // Done the obvious way — the columns in the same query as the LIMIT —
+        // PostgreSQL computes all thirteen for every row up to the offset and
+        // then discards them. Several of those columns are subqueries, so the
+        // last page cost 1.7 seconds: 1,490 rows of work to return ten.
+        //
+        // LIMIT and OFFSET are written straight in, not parameterised. That is
+        // safe because as_page guarantees a whole number, so offset can only
+        // ever be digits. Everything from outside still goes in $1, $2.
         query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
-               WHERE ${where}
-               ORDER BY e.id
-               LIMIT ${PAGE_SIZE} OFFSET ${offset}`, values),
+               WHERE e.id IN (
+                   SELECT e.id FROM entry e
+                   WHERE ${where}
+                   ORDER BY e.id
+                   LIMIT ${PAGE_SIZE} OFFSET ${offset}
+               )
+               ORDER BY e.id`, values),
 
         query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)
     ]);
@@ -286,19 +305,31 @@ const MONOMER_FLAG_SQL =
 const ENTRY_COLUMNS = `
     e.id                                    AS pdb_id,
     s.title,
-    ca.name                                 AS author,
+    -- A scalar subquery, not a join. citation_author has a generated id, so
+    -- nothing stops two rows sharing (entry_id, citation_id, ordinal) — and a
+    -- join on that would return the entry twice.
+    (SELECT ca.name FROM citation_author ca
+     WHERE ca.entry_id = e.id AND ca.citation_id = 'primary'
+     ORDER BY ca.ordinal, ca.id LIMIT 1)      AS author,
     ex.method,
     rf.d_resolution_high                    AS resolution,
     ds.recvd_initial_deposition_date::text  AS deposition_date,
     ent.pdbx_description                    AS entity_name,
-    -- COALESCE to '' because entries.json represents a missing organism that
-    -- way, and a port should not change the shape the frontend already
-    -- expects. null is arguably more correct; that is a later decision.
-    COALESCE(src.pdbx_gene_src_scientific_name, '') AS source_organism,
+    -- Also a scalar subquery, and this one is not hypothetical: 18 entries
+    -- have several entity_src_gen rows for entity 1 — usually the same
+    -- organism recorded more than once. Joined, they turned 1,489 entries
+    -- into 1,512 rows. COALESCE to '' because entries.json represents a
+    -- missing organism that way.
+    COALESCE((SELECT g.pdbx_gene_src_scientific_name FROM entity_src_gen g
+              WHERE g.entry_id = e.id AND g.entity_id = '1'
+              ORDER BY g.id LIMIT 1), '')     AS source_organism,
 
     -- Computed, not stored. The SAME expressions the WHERE clause filters on.
     ${POLYMER_TYPE_SQL} AS polymer_type,
-    ${MONOMER_FLAG_SQL} AS monomer_flag,
+    -- Reads the stored column rather than asking entity_poly_seq. See
+    -- db/migrations/006 for why: 0.9 ms against 276 ms.
+    CASE WHEN e.has_nonstandard_residue THEN 'Non-Standard' ELSE 'Standard' END
+                                            AS monomer_flag,
 
     -- Many rows folded into the one comma-joined string the frontend expects.
     -- ORDER BY is not decoration: without it the order is not promised, and
@@ -325,11 +356,7 @@ const ENTRY_JOINS = `
     LEFT JOIN exptl ex                ON ex.entry_id  = e.id
     LEFT JOIN reflns rf               ON rf.entry_id  = e.id
     LEFT JOIN pdbx_database_status ds ON ds.entry_id  = e.id
-    LEFT JOIN citation_author ca      ON ca.entry_id  = e.id
-                                     AND ca.citation_id = 'primary'
-                                     AND ca.ordinal = 1
     LEFT JOIN entity ent              ON ent.entry_id = e.id AND ent.id = '1'
-    LEFT JOIN entity_src_gen src      ON src.entry_id = e.id AND src.entity_id = '1'
 
     LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id
 `;
@@ -338,9 +365,51 @@ const ENTRY_JOINS = `
 // are the same structure.
 // Returns undefined when there is no such entry. What that *means* is the
 // caller's problem — this file does not know what a 404 is.
+// Extra columns for a single entry. Deliberately NOT part of ENTRY_COLUMNS:
+// every one is a subquery, and a search returning ten rows should not pay for
+// information only the detail view shows.
+//
+// This is what replaced the browser's call to data.rcsb.org. It gives more
+// than RCSB did — every author rather than the first, the confal percentile
+// and the NtC classes — because this database holds the DNATCO analysis.
+const DETAIL_COLUMNS = `
+    (SELECT string_agg(ca.name, ', ' ORDER BY ca.ordinal, ca.id)
+     FROM citation_author ca
+     WHERE ca.entry_id = e.id AND ca.citation_id = 'primary')     AS all_authors,
+
+    (SELECT c.title FROM citation c
+     WHERE c.entry_id = e.id AND c.id = 'primary')                AS citation_title,
+
+    (SELECT trim(concat_ws(' ', c.journal_abbrev, c.year::text))
+     FROM citation c
+     WHERE c.entry_id = e.id AND c.id = 'primary')                AS published,
+
+    (SELECT c.pdbx_database_id_doi FROM citation c
+     WHERE c.entry_id = e.id AND c.id = 'primary')                AS doi,
+
+    (SELECT c.pdbx_database_id_pubmed FROM citation c
+     WHERE c.entry_id = e.id AND c.id = 'primary')                AS pubmed,
+
+    (SELECT count(*) FROM entity_poly_seq s WHERE s.entry_id = e.id)::int  AS residue_count,
+    (SELECT count(*) FROM struct_asym a    WHERE a.entry_id = e.id)::int   AS chain_count,
+    (SELECT count(*) FROM entity n         WHERE n.entry_id = e.id)::int   AS entity_count,
+    (SELECT count(*) FROM atom_site t      WHERE t.entry_id = e.id)::int   AS atom_count,
+
+    ntc.confal_percentile,
+    ntc.num_steps                                                  AS ntc_step_count,
+
+    (SELECT string_agg(DISTINCT ss.assigned_ntc, ', ' ORDER BY ss.assigned_ntc)
+     FROM ndb_struct_ntc_step_summary ss
+     WHERE ss.entry_id = e.id AND ss.assigned_ntc <> 'NANT')       AS ntc_classes,
+
+    (SELECT string_agg(DISTINCT ep.type, ', ' ORDER BY ep.type)
+     FROM entity_poly ep WHERE ep.entry_id = e.id)                 AS polymer_composition
+`;
+
+
 export async function find_entry(id) {
     let result = await query(
-        `SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
+        `SELECT ${ENTRY_COLUMNS}, ${DETAIL_COLUMNS} ${ENTRY_JOINS}
          WHERE UPPER(e.id) = UPPER($1)
          LIMIT 1`,
         [as_text(id).trim()]

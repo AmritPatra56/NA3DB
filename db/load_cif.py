@@ -77,6 +77,69 @@ def external_uri():
     )
 
 
+def entry_id_from(path):
+    """The PDB id a file holds, taken from its name. Checked against all 1,489
+    files: the filename always matches the data_ block inside."""
+    return Path(path).stem.upper()
+
+
+def already_loaded(conn):
+    """The entries that finished. Anything in `entry` but not here is partial."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT entry_id FROM loaded_entries")
+        return {r[0] for r in cur.fetchall()}
+
+
+def clean_partial_entries(conn):
+    """Removes any structure that was being written when a previous run stopped.
+
+    Deleting the entry is enough: all 30 tables that reference it are
+    ON DELETE CASCADE, so the atoms, authors and NtC steps go with it.
+    """
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT id FROM entry
+            WHERE id NOT IN (SELECT entry_id FROM loaded_entries)
+        """)
+        partial = [r[0] for r in cur.fetchall()]
+
+        if not partial:
+            return []
+
+        log.warning("Found %d partial entr%s from an interrupted run: %s",
+                    len(partial), "y" if len(partial) == 1 else "ies",
+                    ", ".join(partial[:10]) + ("..." if len(partial) > 10 else ""))
+        cur.execute("DELETE FROM entry WHERE id = ANY(%s)", (partial,))
+        conn.commit()
+        log.warning("Deleted them. They will be loaded again.")
+        return partial
+
+
+def mark_loaded(conn, cur, entry_id, path):
+    """Records that a file finished, and fills in the columns that are derived
+    from its rows rather than read from the file.
+
+    Until the loaded_entries row exists the entry counts as partial, which is
+    what makes an interrupted run safe to repeat.
+    """
+    # entry.has_nonstandard_residue is stored rather than worked out on every
+    # search — 0.9 ms against 276 ms. See db/migrations/006. It can only stay
+    # true if it is written here, once the residues for this entry are in.
+    cur.execute("""
+        UPDATE entry SET has_nonstandard_residue = EXISTS (
+            SELECT 1 FROM entity_poly_seq eps
+            JOIN chem_comp cc ON cc.id = eps.mon_id
+            WHERE eps.entry_id = %s AND cc.mon_nstd_flag = 'n'
+        ) WHERE id = %s
+    """, (entry_id, entry_id))
+
+    cur.execute("""
+        INSERT INTO loaded_entries (entry_id, source) VALUES (%s, %s)
+        ON CONFLICT (entry_id) DO UPDATE SET loaded_at = now()
+    """, (entry_id, os.path.basename(path)))
+    conn.commit()
+
+
 ALL_TABLES = [
     # T1
     "entry", "pdbx_database_status", "struct", "citation", "citation_author",
@@ -1125,6 +1188,9 @@ def main():
                    help="Embedded mode only: drop and recreate the nadb database")
     p.add_argument("--env-file", default=".env",
                    help="File holding DB_HOST, DB_USER and friends (default: .env)")
+    p.add_argument("--reload", action="store_true",
+                   help="Load files even if they are already recorded as complete. "
+                        "Each one is deleted first, so nothing is duplicated.")
     args = p.parse_args()
 
     pgdata = Path(args.pgdata)
@@ -1181,15 +1247,41 @@ def main():
         log.error("No CIF files found"); sys.exit(1)
     log.info("Found %d CIF file(s)", len(cif_files))
 
+    # Repair anything a previous run left half-written, then work out what is
+    # still to do. Both need one connection before the loop starts.
+    with psycopg.connect(db_uri) as conn:
+        clean_partial_entries(conn)
+        done = set() if args.reload else already_loaded(conn)
+
+    pending = [f for f in cif_files if entry_id_from(f) not in done]
+    skipped = len(cif_files) - len(pending)
+
+    if skipped:
+        log.info("Skipping %d file(s) already loaded. %d to do.", skipped, len(pending))
+    if not pending:
+        log.info("Nothing to do — every file is already loaded.")
+        return
+
     # Load files
     totals = {t: 0 for t in ALL_TABLES}
     errors = []
 
-    for fp in cif_files:
+    for fp in pending:
+        eid = entry_id_from(fp)
         try:
             with psycopg.connect(db_uri) as conn:
                 with conn.cursor() as cur:
+                    # --reload: remove the old copy first, or its rows would be
+                    # written a second time in the tables with generated ids.
+                    if args.reload:
+                        cur.execute("DELETE FROM entry WHERE id = %s", (eid,))
+                        conn.commit()
+
                     S = process_cif(cur, conn, fp)
+
+                    if S:
+                        mark_loaded(conn, cur, eid, fp)
+
                 if not S:
                     errors.append(fp)
                 for t, n in S.items():
@@ -1202,7 +1294,7 @@ def main():
     # Summary
     log.info("")
     log.info("══════════════════════════════════════════════════")
-    log.info("  LOAD COMPLETE — %d file(s), %d error(s)", len(cif_files), len(errors))
+    log.info("  LOAD COMPLETE — %d file(s), %d error(s)", len(pending), len(errors))
     log.info("══════════════════════════════════════════════════")
     log.info("  %-40s  %s", "Table", "Rows")
     log.info("  " + "-"*50)

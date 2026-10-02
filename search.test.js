@@ -367,3 +367,24 @@ test("the id lookup CAN be served by an index, not only by a scan", async () => 
     assert.match(plan, /idx_entry_id_upper/,
         `find_entry would scan every row. Plan was: ${plan}`);
 });
+
+
+// --- derived columns must not drift -------------------------------------
+// entry.has_nonstandard_residue is stored rather than computed per query,
+// which is only safe while it still agrees with the rows it was derived from.
+// A loader that forgets to maintain it would otherwise give quietly wrong
+// answers, with nothing to say so.
+
+test("the stored monomer flag still agrees with the residues", async () => {
+    let r = await query(`
+        SELECT count(*) AS wrong FROM entry e
+        WHERE e.has_nonstandard_residue IS DISTINCT FROM EXISTS (
+            SELECT 1 FROM entity_poly_seq eps
+            JOIN chem_comp cc ON cc.id = eps.mon_id
+            WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
+        )
+    `);
+
+    assert.equal(Number(r.rows[0].wrong), 0,
+        "has_nonstandard_residue has drifted — re-run db/migrations/006 to recompute");
+});

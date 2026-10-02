@@ -140,16 +140,19 @@ function row_html(entry) {
     let resolution = entry.resolution === null ? "" : entry.resolution.toFixed(2) + " Å";
     let method = method_labels[entry.method] || entry.method;
 
+    // Every value is escaped. These come from the database, which is curated —
+    // but "it is curated" is a fact about today, and this is the one place a
+    // title could become markup.
     return `
-        <div class="result_row" data-id="${entry.pdb_id}">
+        <div class="result_row" data-id="${escape_html(entry.pdb_id)}">
             <div class="result_meta">
-                <div class="result_id">${entry.pdb_id}</div>
-                <div class="result_date">${entry.deposition_date}</div>
-                <div class="result_res">${resolution}</div>
+                <div class="result_id">${escape_html(entry.pdb_id)}</div>
+                <div class="result_date">${escape_html(entry.deposition_date)}</div>
+                <div class="result_res">${escape_html(resolution)}</div>
             </div>
             <div class="result_main">
-                <div class="result_title">${entry.title}</div>
-                <div class="result_method">${method}</div>
+                <div class="result_title">${escape_html(entry.title)}</div>
+                <div class="result_method">${escape_html(method)}</div>
             </div>
         </div>
     `;
@@ -319,60 +322,58 @@ async function run_search(page = 1) {
 
 // Turns one PDB record into the label and value pairs the panel shows.
 // A field the record does not carry is left out rather than shown empty.
-function detail_rows(data) {
-    let info = data.rcsb_entry_info;
-    let rows = [];
+function detail_rows(entry) {
+    // Label and value for every field worth showing, then drop the ones this
+    // entry has nothing for. The shape is our own API's, not RCSB's.
+    let rows = [
+        ["Title",            entry.title],
+        ["Method",           entry.method],
+        ["Resolution",       entry.resolution === null ? null : entry.resolution.toFixed(2) + " Å"],
+        ["Deposited",        entry.deposition_date],
+        ["Authors",          entry.all_authors],
+        ["Published",        entry.published],
+        ["Entity",           entry.entity_name],
+        ["Source organism",  entry.source_organism],
+        ["Composition",      entry.polymer_composition],
+        ["Chains",           entry.chain_count],
+        ["Residues",         entry.residue_count],
+        ["Atoms",            entry.atom_count === null ? null : entry.atom_count.toLocaleString()],
+        ["Non-standard",     entry.nonstandard_residue],
 
-    if (data.struct) rows.push(["Title", data.struct.title]);
-    if (data.exptl) rows.push(["Method", data.exptl[0].method]);
+        // DNATCO analysis. RCSB does not have any of this.
+        ["Confal score",     entry.confal_score],
+        ["Confal percentile", entry.confal_percentile],
+        ["NtC steps",        entry.ntc_step_count],
+        ["NtC classes",      entry.ntc_classes]
+    ];
 
-    if (info.resolution_combined) {
-        rows.push(["Resolution", info.resolution_combined[0].toFixed(2) + " Å"]);
-    }
-
-    if (data.rcsb_accession_info) {
-        rows.push(["Deposited", data.rcsb_accession_info.deposit_date.slice(0, 10)]);
-    }
-
-    if (data.audit_author) {
-        rows.push(["Authors", data.audit_author.map(function (a) {
-            return a.name;
-        }).join(", ")]);
-    }
-
-    if (data.rcsb_primary_citation) {
-        let c = data.rcsb_primary_citation;
-        rows.push(["Published", c.journal_abbrev + " " + c.year]);
-    }
-
-    if (data.struct_keywords) rows.push(["Keywords", data.struct_keywords.text]);
-
-    rows.push(["Composition", info.polymer_composition]);
-
-    if (info.deposited_polymer_monomer_count) {
-        rows.push(["Residues", info.deposited_polymer_monomer_count]);
-    }
-
-    return rows;
+    return rows.filter(function (row) {
+        return row[1] !== null && row[1] !== undefined && row[1] !== "";
+    });
 }
 
 // Draws those pairs into the panel body, plus a link out to the PDB page.
 function render_detail(data) {
     let body = document.querySelector(".detail_body");
 
+    // This data comes from RCSB, a server we do not control, so escaping it is
+    // not a precaution against our own data — it is the only thing standing
+    // between their response and our page.
     let fields = detail_rows(data).map(function (row) {
         return `
             <div class="detail_field">
-                <div class="detail_label">${row[0]}</div>
-                <div class="detail_value">${row[1]}</div>
+                <div class="detail_label">${escape_html(row[0])}</div>
+                <div class="detail_value">${escape_html(row[1])}</div>
             </div>
         `;
     }).join("");
 
+    let id = escape_html(data.pdb_id);
+
     body.innerHTML = fields + `
         <a class="detail_link" target="_blank" rel="noopener"
-           href="https://www.rcsb.org/structure/${data.rcsb_id}">View on rcsb.org</a>
-        <a class="detail_link" href="/structure/${data.rcsb_id}">Open full page</a>
+           href="https://www.rcsb.org/structure/${id}">View on rcsb.org</a>
+        <a class="detail_link" href="/structure/${id}">Open full page</a>
     `;
 }
 
@@ -398,10 +399,10 @@ async function open_detail(pdb_id) {
     panel.classList.remove("hidden");
 
     detail_wanted = pdb_id;
-    show_detail_status("Loading " + pdb_id + " from the PDB", false);
+    show_detail_status("Loading " + pdb_id, false);
 
     try {
-        let data = await fetch_pdb_entry(pdb_id);
+        let data = await fetch_entry_detail(pdb_id);
 
         if (detail_wanted !== pdb_id) return;
         render_detail(data);
