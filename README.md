@@ -344,9 +344,6 @@ Browser side, in `public/`:
 There is no HTML in `public/`. The split is exact: `public/` is what the
 browser downloads, `views/` is what the server builds.
 
-`scripts/` holds the loader that generated `entries.json`. It is a development
-tool, not part of the running site, and it deliberately sits outside `public/`.
-
 The second rule follows from the first: **the browser draws, the server
 decides.** The frontend does not know that a confal score is a number, that
 pill filters mean "any one of these", how many rows fit on a page, or what
