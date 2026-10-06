@@ -1,35 +1,15 @@
-// shared.js - the things both pages need.
-// Loaded by both pages, before their own script.
+// shared.js - what both pages need. Loaded before their own script.
 
 
-// Every filter the app has, split by how it is read from the form.
-// This list is the single source of truth for the filter names.
-let TEXT_FILTERS = [
-    "entry_id",
-    "author_name",
-    "confal_min",
-    "confal_max",
-    "assigned_ntc",
-    "entity_name",
-    "source_organism",
-    "nonstandard_residue"
-];
-
-let PILL_FILTERS = [
-    "experimental_method",
-    "polymer_type",
-    "monomer_flag"
-];
+// The filter names, injected by the server in the page above this script.
+// filters.js already sorted them, so nothing is decided here.
+let TEXT_FILTERS = REGISTRY.text_filters;
+let PILL_FILTERS = REGISTRY.pill_filters;
 
 
-// Makes one value safe to put inside HTML. This is the browser's version of
-// EJS's <%= %>, and it has to be used on every value that reaches innerHTML.
-//
-// & must be replaced FIRST. Do it later and you would re-escape the & in the
-// replacements you just made, turning < into &amp;lt; instead of &lt;.
-//
-// Quotes are included because values also land inside attributes, where a
-// stray " would end the attribute early and let the rest be read as markup.
+// Makes one value safe for HTML. Needed on everything reaching innerHTML.
+// & goes first or it re-escapes the replacements. Quotes are included because
+// values also land in attributes, where a stray " would end one early.
 function escape_html(value) {
     if (value === null || value === undefined) return "";
 
@@ -42,8 +22,8 @@ function escape_html(value) {
 }
 
 
-// Turns a query string into the filters object search_entries expects.
-// A parameter that is not in the URL becomes an empty value, not a missing key.
+// A query string as a filters object. A parameter the URL omits becomes an
+// empty value, not a missing key.
 function params_to_filters(params) {
     let filters = {};
 
@@ -60,7 +40,7 @@ function params_to_filters(params) {
     return filters;
 }
 
-// Turns the filters object into a query string, leaving out anything the user left blank.
+// The filters object as a query string, leaving out anything left blank.
 function filters_to_params(filters) {
     let params = new URLSearchParams();
 
@@ -78,7 +58,7 @@ function filters_to_params(filters) {
 }
 
 
-// Keeps the current search in the rail links, so it survives moving between pages.
+// Carries the current search into the rail links, so it survives a page move.
 function sync_rail_links() {
     document.querySelectorAll(".rail-item[data-page]").forEach(function (link) {
         link.href = link.dataset.page + location.search;

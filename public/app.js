@@ -1,6 +1,5 @@
-// app.js - the screen.
-// Reads the form, draws the results, and shows the loading and error states.
-// It never decides which entries match. That is api.js.
+// app.js - the screen. Reads the form, draws the results, shows the loading
+// and error states. It never decides which entries match.
 
 
 // Clicking a category header folds that section of the form open or shut.
@@ -64,8 +63,7 @@ function read_pills(name) {
         });
 }
 
-// Turns the whole form into one filters object.
-// The only function that converts the screen into data.
+// The whole form as one filters object. The only screen-to-data function.
 function read_filters() {
     let filters = {};
 
@@ -89,8 +87,7 @@ function select_pills(name, values) {
     });
 }
 
-// Sets the form to exactly what the query string says. The opposite of read_filters.
-// A field the URL does not mention is reset, not left alone.
+// The form set to what the query string says. A field the URL omits is reset.
 function params_to_form(params) {
     let shape = read_filters();
 
@@ -134,15 +131,13 @@ let method_labels = {
     "THEORETICAL MODEL": "Model"
 };
 
-// Builds the HTML for one result row.
-// Guards resolution, which is null for NMR structures, and unknown method names.
+// One result row. Guards resolution, null for NMR, and unknown methods.
 function row_html(entry) {
     let resolution = entry.resolution === null ? "" : entry.resolution.toFixed(2) + " Å";
     let method = method_labels[entry.method] || entry.method;
 
-    // Every value is escaped. These come from the database, which is curated —
-    // but "it is curated" is a fact about today, and this is the one place a
-    // title could become markup.
+    // Escaped even though the data is ours: this is where a title would
+    // otherwise become markup.
     return `
         <div class="result_row" data-id="${escape_html(entry.pdb_id)}">
             <div class="result_meta">
@@ -182,15 +177,13 @@ function update_header(total, start, shown) {
     }
 }
 
-// Shows "No entries found" when the count is zero.
-// The only function allowed to decide whether that box appears.
+// Shows "No entries found" when the count is zero, and nothing else does.
 function update_empty_state(count) {
     let empty = document.querySelector(".empty_state");
     empty.classList.toggle("hidden", count > 0);
 }
 
-// Switches the whole screen between waiting and not waiting:
-// spinner, results list, error box and the Search button, all from one true or false.
+// Switches spinner, list, error box and Search button between waiting and not.
 function set_loading(is_loading) {
     let loading = document.querySelector(".loading_state");
     let list = document.querySelector(".results_list");
@@ -220,8 +213,7 @@ function show_error(message) {
     update_header(0, 0, 0);
 }
 
-// Works out which page numbers to show, with "..." for the gaps.
-// Pure arithmetic, touches no HTML.
+// Which page numbers to show, with "..." for the gaps. No HTML.
 function page_numbers(page, total_pages) {
     let pages = [];
 
@@ -277,8 +269,7 @@ function render_pagination(total_pages) {
     bar.innerHTML = html;
 }
 
-// Redraws the whole results area from the last server reply.
-// It no longer slices anything. The server already did.
+// Redraws the results area from the last reply. The server did the slicing.
 function show_page() {
     let start = (current_reply.page - 1) * current_reply.page_size;
 
@@ -289,8 +280,8 @@ function show_page() {
 }
 
 
-// Puts the current search in the address bar, without reloading the page.
-// Adds a history entry so the back button works, unless the URL is already that search.
+// The current search in the address bar, with a history entry so Back works,
+// unless the URL already is that search.
 function update_url(filters) {
     let query = filters_to_params(filters).toString();
     let url = query === "" ? location.pathname : location.pathname + "?" + query;
@@ -301,8 +292,8 @@ function update_url(filters) {
     sync_rail_links();
 }
 
-// The whole search in one place: show the spinner, ask the server, draw the answer
-// or the error message, then hide the spinner whichever of the two happened.
+// The whole search: spinner on, ask the server, draw the answer or the error,
+// spinner off either way.
 async function run_search(page = 1) {
     set_loading(true);
 
@@ -320,50 +311,17 @@ async function run_search(page = 1) {
     }
 }
 
-// Turns one PDB record into the label and value pairs the panel shows.
-// A field the record does not carry is left out rather than shown empty.
-function detail_rows(entry) {
-    // Label and value for every field worth showing, then drop the ones this
-    // entry has nothing for. The shape is our own API's, not RCSB's.
-    let rows = [
-        ["Title",            entry.title],
-        ["Method",           entry.method],
-        ["Resolution",       entry.resolution === null ? null : entry.resolution.toFixed(2) + " Å"],
-        ["Deposited",        entry.deposition_date],
-        ["Authors",          entry.all_authors],
-        ["Published",        entry.published],
-        ["Entity",           entry.entity_name],
-        ["Source organism",  entry.source_organism],
-        ["Composition",      entry.polymer_composition],
-        ["Chains",           entry.chain_count],
-        ["Residues",         entry.residue_count],
-        ["Atoms",            entry.atom_count === null ? null : entry.atom_count.toLocaleString()],
-        ["Non-standard",     entry.nonstandard_residue],
-
-        // DNATCO analysis. RCSB does not have any of this.
-        ["Confal score",     entry.confal_score],
-        ["Confal percentile", entry.confal_percentile],
-        ["NtC steps",        entry.ntc_step_count],
-        ["NtC classes",      entry.ntc_classes]
-    ];
-
-    return rows.filter(function (row) {
-        return row[1] !== null && row[1] !== undefined && row[1] !== "";
-    });
-}
-
-// Draws those pairs into the panel body, plus a link out to the PDB page.
+// The rows into the panel body, plus a link out to the PDB page.
 function render_detail(data) {
     let body = document.querySelector(".detail_body");
 
-    // This data comes from RCSB, a server we do not control, so escaping it is
-    // not a precaution against our own data — it is the only thing standing
-    // between their response and our page.
-    let fields = detail_rows(data).map(function (row) {
+    // Built by detail.js on the server, so this panel and the structure page
+    // show the same fields in the same units. Escaped anyway: innerHTML.
+    let fields = data.rows.map(function (row) {
         return `
             <div class="detail_field">
-                <div class="detail_label">${escape_html(row[0])}</div>
-                <div class="detail_value">${escape_html(row[1])}</div>
+                <div class="detail_label">${escape_html(row.label)}</div>
+                <div class="detail_value">${escape_html(row.value)}</div>
             </div>
         `;
     }).join("");
@@ -377,8 +335,8 @@ function render_detail(data) {
     `;
 }
 
-// Which structure the panel is waiting for.
-// A reply that arrives for anything else is stale and gets thrown away.
+// Which structure the panel is waiting for. A reply for anything else is
+// stale and thrown away.
 let detail_wanted = null;
 
 // Replaces the panel body with a single line: a spinner while loading, or a message.
@@ -418,8 +376,8 @@ function close_detail() {
     document.querySelector(".detail_panel").classList.add("hidden");
 }
 
-// Clicking anywhere on a result row opens that structure's panel.
-// The listener sits on the list, not the rows, because the rows are rebuilt on every search.
+// A click anywhere on a row opens its panel. The listener is on the list,
+// because the rows are rebuilt on every search.
 let results_list = document.querySelector(".results_list");
 
 results_list.addEventListener("click", function (e) {
@@ -441,8 +399,7 @@ pagination.addEventListener("click", function (e) {
     run_search(Number(e.target.dataset.page));
 });
 
-// Back and forward buttons. The browser has already changed the URL,
-// so refill the form from it and search again.
+// Back and forward: the URL has already changed, so refill the form and search.
 window.addEventListener("popstate", function () {
     params_to_form(new URLSearchParams(location.search));
     run_search();

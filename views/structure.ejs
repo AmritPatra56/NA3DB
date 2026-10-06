@@ -15,41 +15,11 @@
             </div>
             <div class="results_area_body">
                 <div class="detail_body">
-<%
-// Label and value for every field worth showing, then drop the ones this entry
-// has nothing for. Most entries are missing at least one, and a row reading
-// "null" is worse than no row at all.
-const rows = [
-    ["Title",                 entry.title],
-    ["Authors",               entry.all_authors || entry.author],
-    ["Published",             entry.published],
-    ["Method",                entry.method],
-    ["Resolution",            entry.resolution === null ? null : entry.resolution + " Å"],
-    ["Deposited",             entry.deposition_date],
-    ["Entity",                entry.entity_name],
-    ["Source organism",       entry.source_organism],
-    ["Composition",           entry.polymer_composition],
-    ["Polymer type",          entry.polymer_type],
-    ["Chains",                entry.chain_count],
-    ["Residues",              entry.residue_count],
-    ["Atoms",                 entry.atom_count === null ? null : entry.atom_count.toLocaleString("en-GB")],
-    ["Monomer flag",          entry.monomer_flag],
-    ["Non-standard residues", entry.nonstandard_residue],
-    ["Confal score",          entry.confal_score],
-    ["Confal percentile",     entry.confal_percentile],
-    ["NtC steps",             entry.ntc_step_count],
-    ["NtC classes",           entry.ntc_classes],
-    ["Assigned NtC",          entry.assigned_ntc],
-    ["DOI",                   entry.doi],
-    ["PubMed",                entry.pubmed]
-].filter(function (row) {
-    return row[1] !== null && row[1] !== undefined && row[1] !== "";
-});
-%>
+<%# Rows from detail.js, which the search page's panel reads too. %>
                     <% for (const row of rows) { %>
                         <div class="detail_field">
-                            <div class="detail_label"><%= row[0] %></div>
-                            <div class="detail_value"><%= row[1] %></div>
+                            <div class="detail_label"><%= row.label %></div>
+                            <div class="detail_value"><%= row.value %></div>
                         </div>
                     <% } %>
 

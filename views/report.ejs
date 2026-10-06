@@ -27,6 +27,8 @@
             </div>
         </div>
     </div>
+    <!-- Injected, not fetched: the scripts below run at once and need it. -->
+    <script>window.REGISTRY = <%- registry_json %>;</script>
     <script src="/api.js"></script>
     <script src="/shared.js"></script>
     <script src="/report.js"></script>

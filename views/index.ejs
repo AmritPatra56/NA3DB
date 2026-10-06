@@ -14,134 +14,68 @@
                 <h1>Structure query</h1>
             </div>
             <div class="query_panel_body">
-                <div class="category demographics">
+<%# The form, generated from the registry. Nothing here names a filter. %>
+<% for (const group of registry.groups) { %>
+    <%
+        // A range filter draws its partner, so note what is already drawn.
+        const mine  = registry.filters.filter((f) => f.group === group.name);
+        const drawn = new Set();
+    %>
+                <div class="category <%= group.slug %>">
                     <div class="category_header">
                         <div class="category_title">
                             <span class="category_dot"></span>
-                            <h2>Demographics</h2>
-                        </div>
-                        <img src="/assets/arrow.svg" alt="" class="category_arrow">
-                    </div>
-                    <div class="category_body">
-                        <div class="field">
-                            <label for="entry_id">Entry ID</label>
-                            <input type="text" id="entry_id" name="entry_id">
-                        </div>
-
-                        <div class="field">
-                            <label for="author_name">Author name</label>
-                            <input type="text" id="author_name" name="author_name">
-                        </div>
-
-                        <div class="pill_group">
-                            <div class="group_label">Experimental method</div>
-                            <div class="pill_field" data-name="experimental_method">
-                                <button type="button" class="pill selected" data-value="any">Any</button>
-                                <button type="button" class="pill" data-value="X-RAY DIFFRACTION">X-ray</button>
-                                <button type="button" class="pill" data-value="ELECTRON MICROSCOPY">EM</button>
-                                <button type="button" class="pill" data-value="SOLID-STATE NMR">Solid NMR</button>
-                                <button type="button" class="pill" data-value="SOLUTION NMR">NMR</button>
-                                <button type="button" class="pill" data-value="NEUTRON DIFFRACTION">Neutron</button>
-                                <button type="button" class="pill" data-value="ELECTRON CRYSTALLOGRAPHY">Electron cryst.</button>
-                                <button type="button" class="pill" data-value="POWDER DIFFRACTION">Powder</button>
-                                <button type="button" class="pill" data-value="FIBER DIFFRACTION">Fiber</button>
-                                <button type="button" class="pill" data-value="SOLUTION SCATTERING">Scattering</button>
-                                <button type="button" class="pill" data-value="EPR">EPR</button>
-                                <button type="button" class="pill" data-value="FLUORESCENCE TRANSFER">FRET</button>
-                                <button type="button" class="pill" data-value="INFRARED SPECTROSCOPY">IR</button>
-                                <button type="button" class="pill" data-value="THEORETICAL MODEL">Model</button>
-                            </div>
-                        </div>
-                        
-                    </div>
-                </div>
-
-
-
-                <div class="category features">
-                    <div class="category_header">
-                        <div class="category_title">
-                            <span class="category_dot"></span>
-                            <h2>3D Features</h2>
+                            <h2><%= group.name %></h2>
                         </div>
                         <img src="/assets/arrow.svg" alt="" class="category_arrow">
                     </div>
 
                     <div class="category_body">
+                    <% for (const f of mine) { %>
+                        <% if (drawn.has(f.key)) continue; %>
+                        <% drawn.add(f.key); %>
+
+                        <% if (f.kind === "text") { %>
                         <div class="field">
-                            <div class="group_label">Confal score</div>
+                            <label for="<%= f.key %>"><%= f.label %></label>
+                            <input type="text" id="<%= f.key %>" name="<%= f.key %>">
+                        </div>
+
+                        <% } else if (f.kind === "range") { %>
+                        <% const hi = mine.find((x) => x.key === f.pair_with); %>
+                        <% drawn.add(hi.key); %>
+                        <div class="field">
+                            <div class="group_label"><%= f.label %></div>
                             <div class="range_row">
-                                <input type="number" id="confal_min" name="confal_min" placeholder="min" >
+                                <input type="number" id="<%= f.key %>" name="<%= f.key %>"
+                                       placeholder="<%= f.placeholder %>">
                                 <span class="range_dash"></span>
-                                <input type="number" id="confal_max" name="confal_max" placeholder="max" >
+                                <input type="number" id="<%= hi.key %>" name="<%= hi.key %>"
+                                       placeholder="<%= hi.placeholder %>">
                             </div>
                         </div>
-                        <div class="field">
-                            <label for="assigned_ntc">Assigned ntc</label>
-                            <input type="text" id="assigned_ntc" name="assigned_ntc" >
-                        </div>
-                        <p class="field_note">Confal score runs 0 to 96, and NtC assignment is one of 97 conformer classes such as AA00. Both come from DNATCO; two structures have no score.</p>
-                    </div>
-                </div>
 
-
-
-
-                <div class="category components">
-                    <div class="category_header">
-                        <div class="category_title">
-                            <span class="category_dot"></span>
-                            <h2>Structure Components</h2>
-                        </div>
-                        <img src="/assets/arrow.svg" alt="" class="category_arrow">
-                    </div>
-
-                    <div class="category_body">
-                        <div class="field">
-                            <label for="entity_name">Entity name</label>
-                            <input type="text" id="entity_name" name="entity_name">
-                        </div>
-
-                        <div class="field">
-                            <label for="source_organism">Source organism</label>
-                            <input type="text" id="source_organism" name="source_organism">
-                        </div>
-
-                        <div class="field">
-                            <label for="nonstandard_residue">Non-standard residue</label>
-                            <input type="text" id="nonstandard_residue" name="nonstandard_residue">
-                        </div>
-
+                        <% } else { %>
                         <div class="pill_group">
-                            <div class="group_label">Polymer type</div>
-                            <div class="pill_field" data-name="polymer_type">
+                            <div class="group_label"><%= f.label %></div>
+                            <div class="pill_field" data-name="<%= f.key %>">
+                                <% if (f.any) { %>
                                 <button type="button" class="pill selected" data-value="any">Any</button>
-                                <button type="button" class="pill" data-value="Nucleic acid">Nucleic acid</button>
-                                <button type="button" class="pill" data-value="Oligosaccharide">Oligosaccharide</button>
-                                <button type="button" class="pill" data-value="Protein">Protein</button>
-                                <button type="button" class="pill" data-value="Protein/NA">Protein/NA</button>
-                                <button type="button" class="pill" data-value="Protein/Oligosaccharide">Protein/Oligosaccharide</button>
-                                <button type="button" class="pill" data-value="Other">Other</button>
-
+                                <% } %>
+                                <% for (const o of f.options) { %>
+                                <button type="button" class="pill" data-value="<%= o.value %>"><%= o.label %></button>
+                                <% } %>
                             </div>
                         </div>
-                        
+                        <% } %>
+                    <% } %>
 
-                        <div class="pill_group">
-                            <div class="group_label">Monomer standard flag</div>
-                            <div class="pill_field" data-name="monomer_flag">
-                                <button type="button" class="pill" data-value="Standard">Standard</button>
-                                <button type="button" class="pill" data-value="Non-Standard">Non-Standard</button>
-                            </div>
-                        </div>
-
+                    <% if (group.note) { %>
+                        <p class="field_note"><%= group.note %></p>
+                    <% } %>
                     </div>
                 </div>
-
-
-
-
-                
+<% } %>
             </div>
 
 
@@ -186,6 +120,8 @@
             <div class="detail_body"></div>
         </aside>
     </div>
+    <!-- Injected, not fetched: the scripts below run at once and need it. -->
+    <script>window.REGISTRY = <%- registry_json %>;</script>
     <script src="/api.js"></script>
     <script src="/shared.js"></script>
     <script src="/app.js"></script>

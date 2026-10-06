@@ -1,27 +1,11 @@
-// report.js - the report page.
-// Reads the search out of the URL, counts the matching entries,
-// and lets you pick which fields the CSV should contain.
+// report.js - the report page. Reads the search from the URL, counts the
+// matching entries, and picks which fields the CSV holds.
 
 
-// Every field that can go in a report, with the label shown next to its checkbox
-// and the category it belongs to. The order here is the column order in the CSV.
-let REPORT_FIELDS = [
-    { key: "pdb_id",              label: "Entry ID",              group: "Demographics" },
-    { key: "title",               label: "Title",                 group: "Demographics" },
-    { key: "author",              label: "Author name",           group: "Demographics" },
-    { key: "method",              label: "Experimental method",   group: "Demographics" },
-    { key: "deposition_date",     label: "Deposition date",       group: "Demographics" },
-    { key: "resolution",          label: "Resolution",            group: "Demographics" },
-
-    { key: "confal_score",        label: "Overall confal score",  group: "3D Features" },
-    { key: "assigned_ntc",        label: "Assigned NtC",          group: "3D Features" },
-
-    { key: "entity_name",         label: "Entity name",           group: "Structure Components" },
-    { key: "source_organism",     label: "Source organism",       group: "Structure Components" },
-    { key: "nonstandard_residue", label: "Non-standard residue",  group: "Structure Components" },
-    { key: "polymer_type",        label: "Polymer type",          group: "Structure Components" },
-    { key: "monomer_flag",        label: "Monomer standard flag", group: "Structure Components" }
-];
+// The entry-scope columns, in registry order, which is the CSV column order.
+let REPORT_FIELDS = REGISTRY.columns.filter(function (c) {
+    return c.scope === "entry";
+});
 
 // Ticked when the page opens, so the report is usable without choosing anything.
 let DEFAULT_FIELDS = ["pdb_id", "title", "method", "deposition_date"];
@@ -45,15 +29,15 @@ function fields_html() {
 
             return `
                 <label class="check_row">
-                    <input type="checkbox" value="${field.key}"${checked}>
-                    <span>${field.label}</span>
+                    <input type="checkbox" value="${escape_html(field.key)}"${checked}>
+                    <span>${escape_html(field.label)}</span>
                 </label>
             `;
         }).join("");
 
         return `
             <div class="report_group">
-                <h2 class="report_group_title">${name}</h2>
+                <h2 class="report_group_title">${escape_html(name)}</h2>
                 ${boxes}
             </div>
         `;
@@ -69,9 +53,8 @@ function read_selected_fields() {
     });
 }
 
-// Makes one value safe to put in a CSV cell.
-// Anything containing a comma, a quote or a line break has to be wrapped in quotes,
-// and a quote inside the text is written twice.
+// One value as a CSV cell: a comma, quote or line break means the whole cell
+// is quoted, and a quote inside it is written twice.
 function csv_escape(value) {
     let text = value === null ? "" : String(value);
 
@@ -82,7 +65,7 @@ function csv_escape(value) {
     return text;
 }
 
-// Builds the whole file: a header row of labels, then one row per entry.
+// The whole file: a header row of labels, then one row per entry.
 function build_csv(keys, entries) {
     let chosen = REPORT_FIELDS.filter(function (field) {
         return keys.includes(field.key);
