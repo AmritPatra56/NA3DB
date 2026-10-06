@@ -42,7 +42,7 @@ for (const e of entries) {
     body.push(`INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date)`
             + ` VALUES (${id}, ${q(e.deposition_date)});`);
 
-    // citation first — citation_author's foreign key points at it
+    // citation first, because citation_author's foreign key points at it
     body.push(`INSERT INTO citation (id, entry_id) VALUES ('primary', ${id});`);
     body.push(`INSERT INTO citation_author (entry_id, citation_id, name, ordinal)`
             + ` VALUES (${id}, 'primary', ${q(e.author)}, 1);`);
@@ -64,7 +64,7 @@ for (const e of entries) {
     }
 
     // Residues. Every entry gets one ordinary residue. An entry that lists
-    // non-standard ones gets a row for each, flagged 'n' — and THAT is what
+    // non-standard ones gets a row for each, flagged 'n', which is what
     // makes it "Non-Standard". There is no monomer_flag column anywhere.
     let residues = [["A", "y"]];
 
@@ -81,12 +81,9 @@ for (const e of entries) {
     });
 }
 
-// chem_comp is a GLOBAL table — one row per distinct residue code, shared by
-// every entry that uses it. ON CONFLICT DO NOTHING makes re-running harmless.
-// name is NULL on purpose: entries.json lists residue CODES and has no
-// chemical names. Real names arrive with the loaders in Phase 6. Keeping it
-// honest is also what lets a test tell "search the code" apart from
-// "search the name".
+// chem_comp is global: one row per residue code, shared by every entry using
+// it. name is NULL because entries.json has codes and no chemical names, which
+// also lets a test tell "search the code" from "search the name".
 const comps = [...chem_comps].map(([code, flag]) =>
     `INSERT INTO chem_comp (id, name, mon_nstd_flag)`
   + ` VALUES (${q(code)}, NULL, ${q(flag)}) ON CONFLICT (id) DO NOTHING;`);
@@ -94,4 +91,4 @@ const comps = [...chem_comps].map(([code, flag]) =>
 const sql = ["BEGIN;", ...comps, ...body, "COMMIT;"].join("\n") + "\n";
 
 writeFileSync(new URL("./seed.sql", import.meta.url), sql);
-console.log(`wrote db/seed.sql — ${entries.length} entries, ${chem_comps.size} residue codes`);
+console.log(`wrote db/seed.sql: ${entries.length} entries, ${chem_comps.size} residue codes`);

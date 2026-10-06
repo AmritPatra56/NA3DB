@@ -1,12 +1,12 @@
-// db.js - the one place that knows how to reach PostgreSQL.
-// Nothing else in the project builds a connection or a connection string.
+// db.js - the one place that knows how to reach PostgreSQL. Nothing else in
+// the project builds a connection or a connection string.
 
 import pg from "pg";
 
 const { Pool } = pg;
 
-// Raised when the database cannot be reached or cannot accept work. It is not
-// a bug in our SQL, so it deserves a different answer than a 500.
+// The database is unreachable or cannot accept work. Not a bug in our SQL, so
+// it gets a 503 rather than a 500.
 export class DatabaseUnavailable extends Error {
     constructor(cause) {
         super("The database is unavailable");
@@ -19,10 +19,9 @@ export class DatabaseUnavailable extends Error {
 const UNREACHABLE = new Set(["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT",
                              "ECONNRESET", "EHOSTUNREACH", "EPIPE"]);
 
-// PostgreSQL error codes are five characters and the first two are the class.
-//   08 connection exception    28 invalid authorization
-//   53 insufficient resources  57 operator intervention (shutdown, cancel)
-// Anything else — 42 undefined table, 22 bad data — is our own mistake.
+// The first two characters of a PostgreSQL error code are its class: 08
+// connection, 28 authorization, 53 resources, 57 shutdown or cancel.
+// Anything else (42 undefined table, 22 bad data) is our own mistake.
 const UNAVAILABLE_CLASSES = new Set(["08", "28", "53", "57"]);
 
 function is_unavailable(err) {
@@ -31,8 +30,8 @@ function is_unavailable(err) {
     return /timeout exceeded when trying to connect/i.test(err.message || "");
 }
 
-// A pool, not a single connection. A web server answers several requests at
-// once, and one connection can only run one query at a time.
+// A pool, not one connection: a server answers several requests at once and a
+// connection runs one query at a time.
 const pool = new Pool({
     host:     process.env.DB_HOST,
     port:     Number(process.env.DB_PORT),
@@ -45,9 +44,8 @@ const pool = new Pool({
     connectionTimeoutMillis: 5000   // give up asking for one after 5s
 });
 
-// Runs one query and returns { rows, rowCount }.
-// Values ALWAYS go in the second argument, never inside the text — that is
-// what makes it impossible for a value to be read as SQL.
+// One query, returning { rows, rowCount }. Values always go in the second
+// argument, never in the text, so a value can never be read as SQL.
 export async function query(text, values = []) {
     try {
         return await pool.query(text, values);
@@ -57,12 +55,9 @@ export async function query(text, values = []) {
     }
 }
 
-// Runs `work` inside one transaction, on ONE connection held for its whole
-// life. query() borrows a different connection each call, so BEGIN and COMMIT
-// sent through it can land on different sessions — the transaction would be
-// opened on one and committed on another, quietly doing nothing.
-//
-// `work` is given a query function bound to that single client.
+// Runs `work` in one transaction on one held connection, and hands it a query
+// function bound to that client. query() borrows a different connection each
+// call, so a BEGIN and COMMIT through it could land on different sessions.
 export async function transaction(work) {
     const client = await pool.connect();
 
@@ -75,8 +70,7 @@ export async function transaction(work) {
         await client.query("ROLLBACK").catch(() => {});
         throw err;
     } finally {
-        // Without this the connection is never returned. Ten of these and a
-        // pool of ten is empty and the app hangs with no error.
+        // Without this the connection never goes back and the pool drains.
         client.release();
     }
 }

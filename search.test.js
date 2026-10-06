@@ -71,9 +71,8 @@ test("a pill filter keeps only the chosen values", async () => {
     for (const entry of found) assert.equal(entry.polymer_type, "Nucleic acid");
 });
 
-// Uses experimental_method rather than polymer_type: every entry is either
-// "Nucleic acid" or "Protein/NA", so a two-pill test on that field would pass
-// even with the filter removed entirely.
+// experimental_method, not polymer_type: every entry is one of two polymer
+// types, so that test would pass with the filter removed.
 test("two pills mean either one, and nothing else", async () => {
     let a = "SOLUTION NMR";
     let b = "X-RAY DIFFRACTION";
@@ -127,10 +126,8 @@ test("pages is the total divided by page size, rounded up", async () => {
     assert.equal(r.pages, Math.ceil(r.total / r.page_size));
 });
 
-// The unfiltered total divides evenly by the page size, so rounding down
-// instead of up is invisible above. This uses a filter that leaves a
-// remainder, and checks the behaviour rounding would break: the last page
-// must exist and hold the leftovers.
+// The unfiltered total divides evenly, hiding a round-down bug. This uses a
+// filter that leaves a remainder, so the last page must hold the leftovers.
 test("the last page is reachable when the total does not divide evenly", async () => {
     let query = { source_organism: "sacch" };
     let r = await search_entries(query);
@@ -180,9 +177,8 @@ for (const value of bad_pages) {
 }
 
 
-// Checked against a list sorted here, not against another call to search.js.
-// The walking test above compares one result to another, so both sides share
-// matching_entries() and a broken sort cancels out.
+// Sorted here rather than by a second call to search.js, where a broken sort
+// would appear on both sides and cancel out.
 test("results come back in id order", async () => {
     let ids = (await export_entries({})).results.map((e) => e.pdb_id);
     let expected = [...ids].sort((a, b) => a.localeCompare(b));
@@ -244,8 +240,8 @@ test("the gate and the floor disagree on purpose", async () => {
 
 
 // --- the SQL WHERE builder ----------------------------------------------
-// build_where is not wired into anything yet. These run its output against
-// the real database and check it gives the answer the JavaScript version does.
+// build_where's output run against the database, checked against the answers
+// the JavaScript version gives.
 
 // Runs a filter against the database and returns how many entries match.
 async function count(filters) {
@@ -325,9 +321,8 @@ test("a whole pill list goes in as ONE parameter", () => {
 
 
 // --- the indexes the search depends on ----------------------------------
-// Not a speed test — those are flaky. This checks the indexes EXIST, which
-// catches the real mistake: loading init.sql and forgetting indexes.sql.
-// Without idx_entry_id_upper, find_entry scans every row instead of seeking.
+// Not a speed test, those are flaky. It checks the indexes exist, which is the
+// real mistake: loading init.sql and forgetting the migrations.
 
 const REQUIRED_INDEXES = [
     "idx_entry_id_upper",
@@ -345,14 +340,12 @@ test("every index the search relies on is present", async () => {
 
     for (const name of REQUIRED_INDEXES) {
         assert.ok(present.has(name),
-            `${name} is missing — run: psql -d na3db -f db/indexes.sql`);
+            `${name} is missing, run: node --env-file-if-exists=.env db/migrate.mjs`);
     }
 });
 
-// With only 120 rows PostgreSQL rightly prefers a sequential scan — reading
-// 120 rows is cheaper than a seek. So this asks whether the index CAN serve
-// the query, by telling the planner it may not scan. That answer does not
-// change with the size of the table, which is what makes the test stable.
+// With 120 rows a sequential scan is genuinely cheaper, so this asks whether
+// the index can serve the query at all. That answer does not change with size.
 test("the id lookup CAN be served by an index, not only by a scan", async () => {
     // transaction(), not four separate query() calls: SET LOCAL only affects
     // the transaction it runs in, and the pool hands out a different
@@ -370,10 +363,8 @@ test("the id lookup CAN be served by an index, not only by a scan", async () => 
 
 
 // --- derived columns must not drift -------------------------------------
-// entry.has_nonstandard_residue is stored rather than computed per query,
-// which is only safe while it still agrees with the rows it was derived from.
-// A loader that forgets to maintain it would otherwise give quietly wrong
-// answers, with nothing to say so.
+// has_nonstandard_residue is stored, not computed, which is only safe while it
+// agrees with the rows behind it. A loader that forgets it would be silent.
 
 test("the stored monomer flag still agrees with the residues", async () => {
     let r = await query(`
@@ -386,5 +377,5 @@ test("the stored monomer flag still agrees with the residues", async () => {
     `);
 
     assert.equal(Number(r.rows[0].wrong), 0,
-        "has_nonstandard_residue has drifted — re-run db/migrations/006 to recompute");
+        "has_nonstandard_residue has drifted, re-run db/migrations/006 to recompute");
 });

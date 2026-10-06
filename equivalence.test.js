@@ -1,12 +1,7 @@
-// equivalence.test.js - the proof that moving to PostgreSQL changed no answers.
-//
-// It runs every filter through TWO implementations and demands they agree:
-//   search.js            the SQL the application actually uses
-//   search.reference.mjs the JavaScript it used before, over entries.json
-//
-// This is called differential testing. Instead of hand-writing what each
-// answer should be, it compares against a version already known to be right.
-// That is what lets it cover 150+ filter combinations rather than a dozen.
+// equivalence.test.js - proof that moving to PostgreSQL changed no answers.
+// Every filter goes through both search.js (the SQL) and search.reference.mjs
+// (the old JavaScript) and the two must agree. Comparing against a version
+// already known to be right is what makes 150+ combinations affordable.
 
 import test, { after } from "node:test";
 import assert from "node:assert";

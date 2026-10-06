@@ -1,18 +1,9 @@
--- "Does this entry contain a non-standard residue?" was answered per query by
--- scanning entity_poly_seq — 1,712 rows per entry, 1,489 times, hash-joined
--- against the 217 non-standard codes. 276 ms, the slowest filter on the page.
+-- "Any non-standard residue?" cost 276 ms per search, scanning 1,712 rows per
+-- entry across 1,489 entries. Three cheaper query shapes were tried and the
+-- best reached 141 ms, so the answer is stored instead: 0.9 ms.
 --
--- Three cheaper query shapes were tried first. ARRAY(SELECT ...), which fixed
--- the nonstandard_residue filter, made this one worse (821 ms) because 217
--- codes are not selective enough to seek on. Inverting the search and indexing
--- (mon_id, entry_id) got it to 141 ms. Neither is close to reading a column.
---
--- So the answer is stored. It is written once by the loader rather than worked
--- out on every search: 0.9 ms instead of 276 ms.
---
--- The cost is that it can go stale. db/load_cif.py sets it for every entry it
--- loads, and search.test.js checks the stored value still agrees with the
--- computed one, so a drift is a test failure rather than a silent wrong answer.
+-- A stored answer can go stale. load_cif.py sets it for every entry it loads,
+-- and search.test.js checks it still agrees with the computed value.
 
 ALTER TABLE entry ADD COLUMN IF NOT EXISTS has_nonstandard_residue BOOLEAN;
 

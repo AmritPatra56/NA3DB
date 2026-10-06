@@ -1,9 +1,6 @@
-// search.reference.mjs - the JavaScript filtering this project used before it
-// moved to PostgreSQL, kept ONLY so the tests can check that the SQL gives the
-// same answers. The application never imports this file.
-//
-// It is deliberately independent: it does its own query parsing rather than
-// borrowing search.js's, so a bug there cannot hide in both places at once.
+// search.reference.mjs - the JavaScript filtering used before PostgreSQL, kept
+// only so the tests can check the SQL agrees. The app never imports it, and it
+// parses queries itself so a bug cannot hide in both places.
 
 import entries from "./entries.json" with { type: "json" };
 

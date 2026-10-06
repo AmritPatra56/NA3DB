@@ -21,8 +21,7 @@ from datetime import date
 
 import psycopg
 
-# Only needed for embedded mode. Importing it is not an error when it is
-# missing, because the normal path connects to a real PostgreSQL instead.
+# Embedded mode only; missing is fine, the normal path uses a real server.
 try:
     import pgserver
 except ImportError:
@@ -35,8 +34,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("nadb_pg")
 
-# Embedded mode builds the database from nothing, so it needs the schema.
-# 001_init.sql is byte-identical to the old final_schema_postgres.sql.
+# Embedded mode builds from nothing, so it needs the schema itself.
 SCHEMA_FILE = Path(__file__).parent / "migrations" / "001_init.sql"
 PGDATA_DIR  = Path(__file__).parent.parent / "nadb_pgdata"
 DB_NAME     = "nadb"
@@ -45,8 +43,8 @@ ATOM_BATCH  = 5_000
 def load_env_file(path):
     """Reads KEY=value lines from the same .env the application uses.
 
-    A variable already set in the shell wins over the file — the same rule as
-    Node's --env-file — which is how a server or a container passes real
+    A variable already set in the shell wins over the file, the same rule as
+    Node's --env-file, which is how a server or a container passes real
     values in without editing anything.
     """
     p = Path(path)
@@ -122,9 +120,8 @@ def mark_loaded(conn, cur, entry_id, path):
     Until the loaded_entries row exists the entry counts as partial, which is
     what makes an interrupted run safe to repeat.
     """
-    # entry.has_nonstandard_residue is stored rather than worked out on every
-    # search — 0.9 ms against 276 ms. See db/migrations/006. It can only stay
-    # true if it is written here, once the residues for this entry are in.
+    # has_nonstandard_residue is stored, not computed per search (migration
+    # 006), so it has to be written here once this entry's residues are in.
     cur.execute("""
         UPDATE entry SET has_nonstandard_residue = EXISTS (
             SELECT 1 FROM entity_poly_seq eps
@@ -1196,28 +1193,25 @@ def main():
     pgdata = Path(args.pgdata)
     pgdata.mkdir(parents=True, exist_ok=True)
 
-    # Work out where we are writing BEFORE scanning the disk, so the log
-    # always says which database was chosen even if no files are found.
+    # Decided before scanning the disk, so the log names the database even
+    # when no files are found.
     load_env_file(args.env_file)
     db_uri = external_uri()
 
     if db_uri:
-        # A real PostgreSQL. The database already exists and db/migrate.mjs
-        # owns its schema, so there is nothing to create and nothing to apply.
-        # One thing should own the schema, and that is the migration runner.
+        # A real server: db/migrate.mjs owns the schema, so nothing to apply.
         log.info("Using PostgreSQL at %s/%s",
                  os.environ["DB_HOST"], os.environ.get("DB_NAME", "na3db"))
-        log.info("Schema is owned by db/migrations — not applying %s",
+        log.info("Schema is owned by db/migrations, not applying %s",
                  SCHEMA_FILE.name)
     else:
-        # No DB_HOST: fall back to the embedded server, which builds the
-        # database from nothing and therefore has to create the schema itself.
+        # No DB_HOST: the embedded server, which creates its own schema.
         if pgserver is None:
             log.error("No DB_HOST set and pgserver is not installed.")
             log.error("Either set DB_HOST (see .env) or: pip install pgserver")
             sys.exit(1)
 
-        log.info("No DB_HOST set — starting embedded postgres at %s", pgdata)
+        log.info("No DB_HOST set, starting embedded postgres at %s", pgdata)
         server = pgserver.get_server(str(pgdata))
         log.info("Server URI: %s", server.get_uri())
 
@@ -1247,8 +1241,7 @@ def main():
         log.error("No CIF files found"); sys.exit(1)
     log.info("Found %d CIF file(s)", len(cif_files))
 
-    # Repair anything a previous run left half-written, then work out what is
-    # still to do. Both need one connection before the loop starts.
+    # Repair what a previous run left half-written, then list what is left.
     with psycopg.connect(db_uri) as conn:
         clean_partial_entries(conn)
         done = set() if args.reload else already_loaded(conn)
@@ -1271,8 +1264,8 @@ def main():
         try:
             with psycopg.connect(db_uri) as conn:
                 with conn.cursor() as cur:
-                    # --reload: remove the old copy first, or its rows would be
-                    # written a second time in the tables with generated ids.
+                    # --reload: drop the old copy, or rows double in the
+                    # tables with generated ids.
                     if args.reload:
                         cur.execute("DELETE FROM entry WHERE id = %s", (eid,))
                         conn.commit()

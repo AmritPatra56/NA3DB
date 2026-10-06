@@ -1,9 +1,5 @@
-// errors.test.js - what the app says when something is broken.
-//
-// Two different failures deserve two different answers:
-//   the database is away   → 503, "try again shortly"    (not our bug)
-//   our SQL is wrong       → 500, "something went wrong"  (our bug)
-// And a browser gets a page while a script gets JSON.
+// errors.test.js - what the app says when something is broken. 503 when the
+// database is away, 500 when our SQL is wrong, and a page or JSON to match.
 
 import test, { before, after } from "node:test";
 import assert from "node:assert";

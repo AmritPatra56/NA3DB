@@ -1,20 +1,12 @@
--- indexes.sql - indexes the search needs, beyond the keys init.sql creates.
---
--- init.sql already indexes every foreign key, which covers the joins. These
--- cover the two things the search does that a plain btree cannot help with:
--- looking up an id case-insensitively, and "contains" text matching.
---
--- Run after init.sql:  psql -d na3db -f db/indexes.sql
+-- Indexes beyond the foreign keys 001 already covers: a case-insensitive id
+-- lookup and "contains" text matching, neither of which a plain btree helps.
 
--- find_entry compares UPPER(e.id), and a btree on id cannot answer that.
--- A functional index stores the uppercased value, so the lookup is a seek
--- rather than a scan of every row.
+-- find_entry compares UPPER(e.id); a functional index stores that value, so
+-- the lookup seeks instead of scanning.
 CREATE INDEX IF NOT EXISTS idx_entry_id_upper ON entry (UPPER(id));
 
--- Trigram indexes make ILIKE '%text%' fast. A btree is useless for a pattern
--- that does not start at the beginning of the value; a trigram index breaks
--- each value into three-character pieces and indexes those instead.
--- pg_trgm is a trusted extension, so the database owner can create it.
+-- Trigram indexes make ILIKE '%text%' fast: a btree cannot help a pattern
+-- that does not start at the beginning of the value.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE INDEX IF NOT EXISTS idx_entry_id_trgm
@@ -29,9 +21,8 @@ CREATE INDEX IF NOT EXISTS idx_entity_description_trgm
 CREATE INDEX IF NOT EXISTS idx_src_gen_organism_trgm
     ON entity_src_gen USING gin (pdbx_gene_src_scientific_name gin_trgm_ops);
 
--- The polymer_type and monomer_flag expressions ask "does this entry have a
--- polymer of type X" and "any non-standard residue" once per row. These make
--- each of those a seek instead of a scan.
+-- polymer_type and monomer_flag ask their question once per row, so each of
+-- those lookups needs to be a seek.
 CREATE INDEX IF NOT EXISTS idx_entity_poly_entry_type
     ON entity_poly (entry_id, type);
 
