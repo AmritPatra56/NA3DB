@@ -11,118 +11,119 @@ Under active development. See [What is not done yet](#what-is-not-done-yet).
 
 ## Requirements
 
-- **Node 24 or newer** — the code uses `import.meta.dirname` and `import.meta.main`
+- **Node 24 or newer**: the code uses `import.meta.dirname` and `import.meta.main`
 - **PostgreSQL 16 or newer**
 
 Everything else comes from npm: Express, EJS and `pg`. Three dependencies.
 
 ## Setting it up
 
-From nothing to a working NA3DB, in five steps.
+### Quick start
 
-**1. Install PostgreSQL** (Ubuntu/Debian; use your package manager elsewhere):
+This gets a working NA3DB with the 120-entry sample data. It needs no
+structure files, so it works on a fresh clone.
 
 ```bash
+# 1. PostgreSQL, and a role and two databases owned by it
 sudo apt install -y postgresql postgresql-client
+sudo -u postgres psql -c "CREATE ROLE na3db LOGIN PASSWORD 'pick_a_password'"
+sudo -u postgres psql -c "CREATE DATABASE na3db      OWNER na3db"
+sudo -u postgres psql -c "CREATE DATABASE na3db_test OWNER na3db"
+
+# 2. Config. Edit .env and put your password in DB_PASSWORD,
+#    then edit .env.test and change DB_NAME to na3db_test
+cp .env.example .env
+cp .env .env.test
+
+# 3. Build the schema in both
+npm install
+node --env-file-if-exists=.env      db/migrate.mjs
+node --env-file-if-exists=.env.test db/migrate.mjs
+
+# 4. Load the sample data into both (psql asks for the password each time)
+psql -h localhost -U na3db -d na3db      -f db/seed.sql
+psql -h localhost -U na3db -d na3db_test -f db/seed.sql
+
+# 5. Check and run
+npm test
+npm run dev
 ```
 
-**2. Create a role and a database:**
+Open <http://localhost:4000>. You should see **Entries (120)**.
 
-```bash
-sudo -u postgres psql
-```
+If `npm test` fails with `no password supplied`, `.env.test` is missing or has
+no `DB_PASSWORD`. If a page is blank, check that `DB_NAME` in `.env` is `na3db`
+and not `na3db_test`.
 
-At the `postgres=#` prompt:
+To load the real 1,489 structures instead, see
+[Loading the real data](#loading-the-real-data).
 
-```sql
-CREATE ROLE na3db LOGIN PASSWORD 'pick_a_password';
-CREATE DATABASE na3db      OWNER na3db;
-CREATE DATABASE na3db_test OWNER na3db;
-\q
-```
+### What each step is for
 
-**Two databases, on purpose.** `na3db` is what the application reads and what
-the loaders will eventually fill with real structures. `na3db_test` holds the
-120 seeded entries and nothing else, forever — every expected number in the
-test suite traces back to those 120, so they have to stay fixed. See
-[Two databases](#two-databases) below.
+**The two databases are not optional.** `na3db` is what the application reads.
+`na3db_test` is what `npm test` reads, and it must hold the 120-entry seed and
+nothing else, because every expected number in the suite is counted from those
+120. See [Two databases](#two-databases).
 
-The database must be **owned** by that role, or loading the schema fails with
+**The role must own both databases**, or applying the schema fails with
 `permission denied for schema public`.
 
-*Shortcut for your own machine: name the role after your Linux username and
-`psql -d na3db` will connect with no password at all. The application still
-connects over TCP with a password, so set one either way.*
+*On your own machine you can name the role after your Linux username, and
+`psql -d na3db` will then connect with no password. The application still
+connects over TCP with a password, so set one anyway.*
 
-**3. Build both databases.** The schema is applied by the migration runner;
-data is loaded separately, because it is data rather than structure:
+**The config files hold the password, so they are not committed.**
+`.gitignore` has `.env*` with `!.env.example`, so the template is tracked and
+nothing holding a real password is. They have to exist before step 3, because
+that is where `migrate.mjs` reads the user and password from.
 
-```bash
-node --env-file-if-exists=.env      db/migrate.mjs     # schema + indexes
-node --env-file-if-exists=.env.test db/migrate.mjs
-```
+**The schema and the data are loaded separately.** `migrate.mjs` applies every
+file in `db/migrations/` that has not run yet, each in a transaction, recording
+it in `schema_migrations`. Running it twice does nothing. The data is loaded by
+hand because it is data rather than structure, which is also why `db/seed.sql`
+is not a migration.
 
-The test database always gets the 120-entry seed — see [Two databases](#two-databases):
+| file | what it does |
+| --- | --- |
+| `db/migrate.mjs` | Applies any migration that has not run yet. Safe to run twice. |
+| `db/migrations/*.sql` | The schema, one file per change, applied in filename order. |
+| `db/seed.sql` | Committed. 120 entries across 10 tables, for development and tests. |
+| `db/make_seed.mjs` | Regenerates `db/seed.sql` from `entries.json`. Only needed if `entries.json` changes. |
 
-```bash
-node db/make_seed.mjs                                   # writes db/seed.sql
-psql -h localhost -U na3db -d na3db_test -f db/seed.sql
-```
+### Loading the real data
 
-The application's database gets the real structures, parsed from DNATCO CIF
-files. About 90 minutes for the full set:
+The 1,489 structures come from DNATCO CIF files, which are not in this
+repository. With a copy of them:
 
 ```bash
 python3 db/load_cif.py --cif-dir /path/to/dnatco_extended_1500
 ```
 
-It reads the same `.env` the application does. One file first is a good idea —
-it prints a 21-point check of what it wrote:
+About 90 minutes for the full set. It reads the same `.env` the application
+does, so it writes to `na3db` and never touches `na3db_test`.
+
+Try one file first. It prints a 21-point check of what it wrote:
 
 ```bash
 python3 db/load_cif.py --cif /path/to/1dn8.cif
 ```
 
-**An interrupted run is repaired by running it again.** The loader records
-each structure in `loaded_entries` only once its file has finished, so anything
-in `entry` without a record is partial — it deletes and redoes those, and skips
+**An interrupted run is repaired by running it again.** A structure is recorded
+in `loaded_entries` only once its file has finished, so anything in `entry`
+without a record is partial. The loader deletes and redoes those, and skips
 everything already done.
 
-That matters because re-running a file does *not* repair it on its own: tables
-with a generated id (`atom_site`, `citation_author`, `entity_poly_seq`) have
-nothing to conflict on, so the rows would go in twice. To redo a file
-deliberately, use `--reload`, which deletes the entry first:
+That matters because re-running a file does *not* repair it on its own: the
+tables with a generated id (`atom_site`, `citation_author`, `entity_poly_seq`)
+have nothing to conflict on, so the rows would simply go in twice. To redo a
+finished file deliberately, use `--reload`, which deletes the entry first:
 
 ```bash
 python3 db/load_cif.py --reload --cif /path/to/6wlo.cif
 ```
 
-| file | what it does |
-| --- | --- |
-| `db/migrate.mjs` | Applies any migration that has not run yet. Safe to run twice. |
-| `db/migrations/*.sql` | The schema, one file per change, applied in order. |
-| `db/make_seed.mjs` | Turns `entries.json` into SQL, spread across 10 tables. |
-| `db/seed.sql` | Generated. 120 entries, for development and tests. |
-
-**4. Tell the app how to connect — two files:**
-
-```bash
-cp .env.example .env         # then set DB_USER and DB_PASSWORD
-cp .env .env.test            # then change DB_NAME to na3db_test
-```
-
-Neither is committed. `.gitignore` has `.env*` with `!.env.example`, so the
-template is tracked and anything holding a real password is not.
-
-**5. Run it:**
-
-```bash
-npm install
-npm test          # 137 tests, about two seconds
-npm run dev
-```
-
-Then open <http://localhost:4000>.
+Once the real data is in, reload the seed into `na3db_test` only, not into
+`na3db`.
 
 ### Changing the schema
 
@@ -144,7 +145,7 @@ It applies only what has not run, inside a transaction, and records it in
 **Never edit a migration that has already run.** It has been applied on your
 machine and on the server; editing the file changes neither of those, and
 leaves your repository quietly disagreeing with both databases. Migrations are
-append-only — to change something, add another one.
+append-only, to change something, add another one.
 
 Three digits in the number, not one: `9_x.sql` sorts after `10_x.sql`
 alphabetically, and alphabetical order is how the runner decides what to do first.
@@ -188,7 +189,7 @@ line of configuration:
 ```
 
 `db.js` reads `process.env.DB_NAME` and has no opinion about what is in it,
-which is why no code changes to move between them — and why there is one
+which is why no code changes to move between them, and why there is one
 codebase rather than a copy of the project per environment.
 
 **Why the split exists.** Every expected number in the test suite traces back
@@ -201,18 +202,17 @@ to the 120 seeded entries:
 ```
 
 They are a yardstick, not arbitrary values. `na3db` now holds 1,489 real
-structures and almost none of the seeded 120 — only two overlap — so a test
+structures and almost none of the seeded 120, only two overlap, so a test
 suite pointed at it would be measuring nothing. That is why the tests read a
 database the loader never touches.
 
 You can see it work. Add a row to the application's database and the suite is
-unaffected; point the suite at that same database and ten tests go red from one
-extra row:
+unaffected; point the suite at that same database and most of it goes red:
 
 ```bash
 psql -d na3db -c "INSERT INTO entry (id) VALUES ('MARKER');"
-npm test                  # 136 pass — reads na3db_test
-DB_NAME=na3db npm test    # 10 fail  — a shell variable wins over the file
+npm test                  # 149 pass, reads na3db_test
+DB_NAME=na3db npm test    # 71 fail, a shell variable wins over the file
 psql -d na3db -c "DELETE FROM entry WHERE id = 'MARKER';"
 ```
 
@@ -239,16 +239,16 @@ or a hosting platform passes real values in.
 npm test
 ```
 
-**137 tests, about two seconds, no test framework installed** — `node --test`
+**149 tests, about two seconds, no test framework installed**: `node --test`
 ships with Node. They check the real SQL rather than a pretend version of it,
-so they need a running PostgreSQL — specifically `na3db_test`, which holds the
+so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 120 seeded entries and is never touched by the loaders. See
 [Two databases](#two-databases).
 
 | file | covers |
 | --- | --- |
 | `search.test.js` | Filtering, paging, validation, ordering, and that the indexes exist. |
-| `server.test.js` | Routes, status codes, response formats, and which files must not be downloadable. |
+| `server.test.js` | Routes, status codes, response formats, which files must not be downloadable, that no SQL reaches `/api/fields`, and that the generated form carries a control for every filter. |
 | `equivalence.test.js` | 150+ filter combinations checked against the JavaScript implementation this replaced. |
 | `errors.test.js` | 503 versus 500, HTML versus JSON, and that nothing leaks. |
 
@@ -258,7 +258,7 @@ agree: the SQL in `search.js`, and `search.reference.mjs`, which is the
 JavaScript this project used before PostgreSQL, still reading `entries.json`.
 
 That is called differential testing, and it is what makes it possible to cover
-150+ combinations rather than a dozen — including 60 generated from a fixed
+150+ combinations rather than a dozen, including 60 generated from a fixed
 seed, so any failure is reproducible. It found four bugs a hand-written suite
 would have missed, among them that `%` and `_` were being treated as wildcards
 in a search box documented as "contains".
@@ -271,7 +271,7 @@ difference.
 
 **A green suite proves less than it looks.** Every group here was checked by
 deliberately breaking the code it covers and confirming the right tests failed.
-Several tests that looked fine turned out to prove nothing until that was done —
+Several tests that looked fine turned out to prove nothing until that was done:
 one test file was empty and still reported `pass 1`.
 
 ## How it is organised
@@ -288,9 +288,11 @@ Server side, at the root:
 | file | job |
 | --- | --- |
 | `server.js` | The only file that knows about HTTP. Routes, port, static files, rendering, error handling. No filtering logic. Exports the app; only listens when run directly, so tests can import it. |
-| `search.js` | Builds the SQL. Decides what matches, in what order, and which slice. Knows nothing about HTTP or the screen. |
+| `filters.js` | The registry. Every question the search can answer and every column it can return, as data: labels, categories, pill options, and the SQL for each. The one file a new field is added to. |
+| `search.js` | The SQL engine. Turns the registry into `WHERE` clauses and `SELECT` lists, runs them, pages the results. Knows nothing about HTTP or the screen. |
+| `detail.js` | The display engine. Turns one entry into the labelled rows the detail panel and the structure page both draw. |
 | `db.js` | The only file that opens a database connection. A pool, one `query()` function, and the `DatabaseUnavailable` error. |
-| `entries.json` | 120 PDB records. No longer read by the running app — it is the source for the seed and the yardstick for the tests. |
+| `entries.json` | 120 PDB records. No longer read by the running app, it is the source for the seed and the yardstick for the tests. |
 | `search.reference.mjs` | The JavaScript filtering this project used before SQL. Kept only so the tests can check the SQL agrees with it. |
 | `*.test.js` | The tests. Outside `public/`, like everything else the browser has no business reading. |
 
@@ -307,7 +309,7 @@ The database, in `db/`:
 | `migrations/006_store_monomer_flag.sql` | Stores `entry.has_nonstandard_residue` instead of working it out per query. |
 | `load_cif.py` | Parses DNATCO CIF files into all 39 tables. Reads the same `.env` as the app; falls back to an embedded PostgreSQL when `DB_HOST` is unset. |
 | `make_seed.mjs` | Turns `entries.json` into SQL across 10 tables. |
-| `seed.sql` | Generated by the above. Test data only — deliberately **not** a migration, because it is data rather than structure. |
+| `seed.sql` | Generated by the above. Test data only, deliberately **not** a migration, because it is data rather than structure. |
 
 Page templates, in `views/`:
 
@@ -321,7 +323,7 @@ Page templates, in `views/`:
 
 These are rendered by the server and only the resulting HTML is sent. The
 templates themselves are never downloadable, which is why `views/` sits outside
-`public/` — put it inside and `/index.ejs` would serve the source instead of
+`public/`, put it inside and `/index.ejs` would serve the source instead of
 the page.
 
 Each route tells the rail which icon to highlight by passing a `page` value, so
@@ -336,7 +338,7 @@ Browser side, in `public/`:
 | file | job |
 | --- | --- |
 | `style.css` | Every visual decision. |
-| `shared.js` | The eleven filter names, and conversion between a query string and a filters object. Used by both pages. |
+| `shared.js` | HTML escaping, and conversion between a query string and a filters object. Takes the filter names from the registry the server injects. |
 | `api.js` | The browser's only door to the server. Nothing in the browser contacts any other host. |
 | `app.js` | The search page. Reads the form, draws results, runs the detail panel. Decides nothing about the data. |
 | `report.js` | The report page. Field selection and CSV building. |
@@ -354,13 +356,65 @@ browser at all. `search.js` was rewritten from array filtering to SQL, about
 sixty lines of JavaScript were deleted, and `app.js`, `api.js`, `report.js` and
 every template were left exactly as they were.
 
+### Adding a filter or a column
+
+Every searchable question and every returnable column lives in `filters.js`.
+Adding one is one object in that file; nothing else is edited.
+
+A filter object:
+
+```js
+{
+    key:   "journal",              // the name in the URL and the form
+    label: "Journal",              // what the reader sees
+    group: "Demographics",         // which category box it sits in
+    kind:  "text",                 // text, range or pills
+    where: `AND EXISTS (SELECT 1 FROM citation c
+                        WHERE c.entry_id = e.id AND c.journal_abbrev ILIKE ?)`
+}
+```
+
+That is enough for the form to grow an input, the search to understand the
+parameter, and `GET /api/fields` to advertise it. `kind` decides how the value
+is read and drawn: `text` is a contains-search, `range` is one end of a pair
+(joined by `pair_with`), `pills` is a set of buttons listed in `options`. A
+filter whose SQL takes no parameter uses `clause`, a function returning the
+finished clause, instead of `where`.
+
+A column object:
+
+```js
+{
+    key:    "journal_name",        // the SQL alias and the JSON property
+    label:  "Journal",
+    group:  "Citation",
+    scope:  "detail",              // entry = every result, detail = one entry
+    select: `(SELECT c.journal_abbrev FROM citation c
+              WHERE c.entry_id = e.id AND c.id = 'primary')`
+}
+```
+
+That gives a CSV column, a row in the detail panel and a row on the structure
+page. `decimals`, `unit` and `thousands` format the value; `in_detail: false`
+keeps a fetched column out of the detail rows; `fallback` names another column
+to use when this one is empty.
+
+Columns and filters are two lists because they overlap without containing each
+other: `title` is shown and not searched, `confal_score` has two filters
+pointing at it, and three columns are named differently from their filter.
+
+**The SQL never reaches the browser.** `public_registry()` picks the safe
+fields by name rather than stripping the unsafe ones, so a field added later
+stays on the server unless it is deliberately listed. `server.test.js` asserts
+that no SQL keyword appears in the response.
+
 ### One entry comes from seven tables
 
 The flat shape the browser receives is assembled by the database:
 
 | what you see | where it lives |
 | --- | --- |
-| `pdb_id` | `entry.id` — unique ignoring case, so `4TNA` and `4tna` cannot both exist |
+| `pdb_id` | `entry.id`: unique ignoring case, so `4TNA` and `4tna` cannot both exist |
 | `title` | `struct.title` |
 | `author` | `citation_author.name` |
 | `method` | `exptl.method` |
@@ -369,10 +423,10 @@ The flat shape the browser receives is assembled by the database:
 | `entity_name` | `entity.pdbx_description` |
 | `source_organism` | `entity_src_gen.pdbx_gene_src_scientific_name` |
 | `polymer_type` | **computed** from every `entity_poly.type` the entry has |
-| `monomer_flag` | **computed** — does any residue have `chem_comp.mon_nstd_flag = 'n'`? |
+| `monomer_flag` | **computed**: does any residue have `chem_comp.mon_nstd_flag = 'n'`? |
 | `nonstandard_residue` | **aggregated** from `entity_poly_seq` joined to `chem_comp` |
-| `confal_score` | `ndb_struct_ntc_overall` — 0 to 96, absent for 2 structures |
-| `assigned_ntc` | `ndb_struct_ntc_step_summary` — one of 97 classes, e.g. `AA00` |
+| `confal_score` | `ndb_struct_ntc_overall`: 0 to 96, absent for 2 structures |
+| `assigned_ntc` | `ndb_struct_ntc_step_summary`: one of 97 classes, e.g. `AA00` |
 
 The last five are not columns anywhere. `polymer_type` in particular has to be
 worked out from what the entry contains, and the order of the tests matters: a
@@ -412,12 +466,13 @@ the HTML page. Browsers and `api.js` each get the format they can use.
 
 ## API
 
-Five endpoints, all returning JSON.
+Six endpoints, all returning JSON.
 
 | endpoint | returns |
 | --- | --- |
-| `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` with `"down"`. Runs `SELECT 1` — it tests the connection, never the data. |
+| `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` with `"down"`. Runs `SELECT 1`: it tests the connection, never the data. |
 | `GET /api/stats` | `{"total":1489}`. Counted fresh on every request. |
+| `GET /api/fields` | The filters and columns this API understands, so a client can discover them instead of hard-coding them. Labels, categories, kinds and pill options; never the SQL. |
 | `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. |
 | `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
 | `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. |
@@ -475,11 +530,11 @@ Two kinds of failure are told apart, because they need different responses:
 
 | status | means | example |
 | --- | --- | --- |
-| `503` | the database is unreachable or refusing work — try again | PostgreSQL restarting |
+| `503` | the database is unreachable or refusing work, try again | PostgreSQL restarting |
 | `500` | a fault in this code | a query naming a table that does not exist |
 
 A browser gets the styled error page for either; a request under `/api` gets
-JSON. The message is always generic — the host, the port and the failing query
+JSON. The message is always generic, the host, the port and the failing query
 go to the server log, never to the client.
 
 ## Performance
@@ -518,11 +573,11 @@ AND (CASE WHEN EXISTS (...) THEN 'Non-Standard' ELSE 'Standard' END) = ANY($1)
 Wrapping a subquery in a `CASE` forces PostgreSQL to evaluate it for *every*
 row, because it has to produce a value to compare. A bare `EXISTS` stops at the
 first match. That took it to 232 ms. Getting the rest meant storing the answer:
-`entry.has_nonstandard_residue`, written by the loader, read as a column —
+`entry.has_nonstandard_residue`, written by the loader and read as a column, at
 **4 ms**. See `db/migrations/006`.
 
 **`nonstandard_residue`, 385 ms.** The subquery joined `chem_comp`, and because
-it also mentioned `e.id` the whole thing was correlated — PostgreSQL re-ran the
+it also mentioned `e.id` the whole thing was correlated, PostgreSQL re-ran the
 `chem_comp` scan once per entry. An index made it *worse*; rewriting as
 `IN (...)` changed nothing. The fix was to make that part uncorrelated:
 
@@ -533,11 +588,11 @@ AND eps.mon_id = ANY (ARRAY(SELECT cc.id FROM chem_comp cc WHERE ...))
 `ARRAY(SELECT ...)` mentions nothing outside itself, so it becomes an InitPlan
 and runs exactly once. **16 ms.**
 
-**The last page, 1,747 ms.** Not the `OFFSET` — that costs 1 ms on its own. The
+**The last page, 1,747 ms.** Not the `OFFSET`: that costs 1 ms on its own. The
 cost was that all thirteen columns, several of them subqueries, were computed
 for every row up to the offset and then thrown away. The ids are now found
 first and the columns built for those ten. **11 ms**, and numbered pages are
-kept — keyset pagination was not needed.
+kept, keyset pagination was not needed.
 
 That change also exposed a correctness bug. The joins to `citation_author` and
 `entity_src_gen` could return an entry more than once: 18 entries have several
@@ -547,7 +602,7 @@ Both are scalar subqueries now, which can only ever return one row.
 
 **The detail panel, 400–800 ms and sometimes nothing.** It fetched each
 structure from `data.rcsb.org`. It now reads this database, which is faster and
-shows more — every author rather than the first, plus the confal percentile and
+shows more, every author rather than the first, plus the confal percentile and
 NtC classes that RCSB does not have.
 
 ### Beyond this size
@@ -571,7 +626,7 @@ measured on a 200,000-entry copy:
 - **The count on every search.** Counting all matches is linear. Capping it
   ("1000+") or using PostgreSQL's estimate for large results is the usual fix.
 
-All three live in `search.js` and the schema — the browser is unaffected.
+All three live in `search.js` and the schema, the browser is unaffected.
 
 Disk: 1,489 structures occupy **9.6 GB**, of which `atom_site` is 7.6 GB. At
 200,000 structures that would be roughly 200 GB, which is why the production
@@ -584,7 +639,7 @@ host needs real storage rather than a default volume.
 - **A structure can still be viewed two ways.** The slide-out panel and
   `/structure/<id>` now read the same data and show the same fields, so the
   panel could be retired and a click could go straight to the page.
-- **Two structures have no confal score.** `2JJA` and `363D` — DNATCO produced
+- **Two structures have no confal score.** `2JJA` and `363D`: DNATCO produced
   no overall analysis for them. Expected, not a bug.
 - **`entry.has_nonstandard_residue` is derived.** It is written by the loader
   rather than computed per query, so it could drift from the rows it came from.
@@ -593,7 +648,7 @@ host needs real storage rather than a default volume.
 - **No automated backups.** `pg_dump -Fc` takes about four minutes and produces
   1.2 GB from a 9.6 GB database. Nothing runs it on a schedule yet, and no
   restore has been tested.
-- **`public/app.js` is 453 lines doing five jobs** — reading the form, drawing
+- **`public/app.js` is 411 lines doing five jobs**, reading the form, drawing
   results, pagination, the detail panel, and history. It works, and it is the
   next file that will want splitting.
 - **No 3D viewer.** Planned, and the atom coordinates are loaded. It needs
