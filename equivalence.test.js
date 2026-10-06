@@ -11,10 +11,12 @@ import { close } from "./db.js";
 
 after(() => close());
 
-// Asserts the SQL and the reference return the same entries, in the same order.
+// Asserts the SQL and the reference match the same entries. Both sides are put
+// in id order first: which entries match is the claim here, and the order they
+// come back in is covered by the sort tests in search.test.js.
 async function agree(filters) {
-    let sql = (await export_entries(filters)).results.map((r) => r.pdb_id);
-    let ref = reference_ids(filters);
+    let sql = (await export_entries(filters)).results.map((r) => r.pdb_id).sort();
+    let ref = reference_ids(filters).slice().sort();
 
     assert.deepEqual(sql, ref,
         `SQL and reference disagree for ${JSON.stringify(filters)}`);
@@ -35,7 +37,7 @@ const VALUES = {
     confal_max:          ["100"]
 };
 
-test("no filters at all returns every entry, in the same order", async () => {
+test("no filters at all returns every entry", async () => {
     await agree({});
 });
 

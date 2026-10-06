@@ -217,6 +217,23 @@ test("the form draws one box per group, in registry order", async () => {
                  reg.groups.filter((g) => g.note).length);
 });
 
+// --- sorting ------------------------------------------------------------
+test("the page offers every sort the registry defines, and no SQL", async () => {
+    let html = await (await fetch(base + "/")).text();
+    let reg  = await (await fetch(base + "/api/fields")).json();
+
+    assert.equal(reg.sorts.length, 8);
+
+    for (const sort of reg.sorts) {
+        assert.ok(html.includes(`value="${sort.key}"`), `no option for ${sort.key}`);
+        assert.ok(html.includes(sort.label), `no label for ${sort.key}`);
+        assert.deepEqual(Object.keys(sort).sort(), ["key", "label"]);
+    }
+
+    assert.ok(!/NULLS LAST|ORDER BY|LEFT JOIN/i.test(JSON.stringify(reg)),
+              "the ORDER BY must stay on the server");
+});
+
 // --- the detail rows ----------------------------------------------------
 // The panel and the structure page were two hand-written lists and had
 // drifted: 17 rows against 22, two ways to print a resolution. These keep them

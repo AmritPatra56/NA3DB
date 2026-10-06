@@ -164,6 +164,68 @@ export const TEXT_FILTERS = of_kind("text", "range");
 export const PILL_FILTERS = of_kind("pills");
 
 
+// The orders the results can be put in. `join` is what the paging query needs
+// in scope to see the column, and `sql` is the ORDER BY. e.id is appended as a
+// tiebreaker: 1,489 entries share only 292 resolutions, and without a unique
+// last key a tied row can land on two pages or on none. `unique: true` says a
+// column is already unique and needs no tiebreaker.
+//
+// NULLS LAST in both directions, because a missing value is not a small one:
+// 629 structures have no resolution, and they belong at the end either way.
+export const SORTS = [
+    {
+        key: "deposition_desc", label: "Deposition date, newest first",
+        join: "LEFT JOIN pdbx_database_status ds ON ds.entry_id = e.id",
+        sql: "ds.recvd_initial_deposition_date DESC NULLS LAST"
+    },
+    {
+        key: "deposition_asc", label: "Deposition date, oldest first",
+        join: "LEFT JOIN pdbx_database_status ds ON ds.entry_id = e.id",
+        sql: "ds.recvd_initial_deposition_date ASC NULLS LAST"
+    },
+    {
+        key: "resolution_asc", label: "Resolution, best first",
+        join: "LEFT JOIN reflns rf ON rf.entry_id = e.id",
+        sql: "rf.d_resolution_high ASC NULLS LAST"
+    },
+    {
+        key: "resolution_desc", label: "Resolution, worst first",
+        join: "LEFT JOIN reflns rf ON rf.entry_id = e.id",
+        sql: "rf.d_resolution_high DESC NULLS LAST"
+    },
+    {
+        key: "confal_desc", label: "Confal score, highest first",
+        join: "LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id",
+        sql: "ntc.confal_score DESC NULLS LAST"
+    },
+    {
+        key: "confal_asc", label: "Confal score, lowest first",
+        join: "LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id",
+        sql: "ntc.confal_score ASC NULLS LAST"
+    },
+
+    // On `entry` itself, so no join, and unique, so no tiebreaker.
+    {
+        key: "id_asc", label: "Entry ID, A to Z",
+        join: "", sql: "e.id ASC", unique: true
+    },
+    {
+        key: "id_desc", label: "Entry ID, Z to A",
+        join: "", sql: "e.id DESC", unique: true
+    }
+];
+
+// The order used when the URL asks for nothing, or asks for something unknown.
+// By key and not by position, so reordering the dropdown cannot change it.
+export const DEFAULT_SORT = SORTS.find((s) => s.key === "id_asc");
+
+// One sort by key, never a value from the URL reaching the SQL: an unknown key
+// falls back to the default rather than being interpolated.
+export function sort_by(key) {
+    return SORTS.find((s) => s.key === key) || DEFAULT_SORT;
+}
+
+
 // One object per returnable column. A separate list from FILTERS because the
 // two overlap without containing each other: `title` is shown and not searched.
 // scope "entry" is fetched for every result, "detail" only for one entry.
@@ -355,6 +417,9 @@ export const COLUMNS = [
 export function public_registry() {
     return {
         groups: GROUPS,
+
+        sorts: SORTS.map(({ key, label }) => ({ key, label })),
+        default_sort: DEFAULT_SORT.key,
 
         filters: FILTERS.map(({ key, label, group, kind,
                                options, any, placeholder, pair_with }) =>

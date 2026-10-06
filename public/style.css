@@ -644,6 +644,56 @@ input::placeholder {
     color: var(--text-dim);
 }
 
+.results_tools {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.sort_field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 12px;
+}
+
+.sort_field span {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.sort_field select {
+    font-weight: 600;
+    padding: 6px 8px;
+    border-radius: 5px;
+
+    font: inherit;
+    font-size: 12px;
+
+    background-color: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--input-border);
+    outline: none;
+
+    cursor: pointer;
+}
+
+.sort_field select:hover {
+    border-color: var(--input-border-hover);
+}
+
+.sort_field select:focus {
+    border-color: var(--focus);
+}
+
+/* The list itself is drawn by the browser, which ignores a transparent
+   background, so the options need a real one in both themes. */
+.sort_field select option {
+    background-color: var(--bg-secondary);
+    color: var(--text-muted);
+}
+
 
 
 /* <---------------------results---------------------------> */

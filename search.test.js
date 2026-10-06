@@ -7,6 +7,7 @@ import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
 import { find_entry, export_entries, search_entries, query_problem,
          build_where } from "./search.js";
+import { SORTS, DEFAULT_SORT, sort_by } from "./filters.js";
 import { query, transaction, close as close_db } from "./db.js";
 
 // search.js now holds database connections. Without this, npm test never exits.
@@ -178,12 +179,15 @@ for (const value of bad_pages) {
 
 
 // Sorted here rather than by a second call to search.js, where a broken sort
-// would appear on both sides and cancel out.
-test("results come back in id order", async () => {
+// would appear on both sides and cancel out. No sort in the query means the
+// registry's default, which is entry id, and the export uses the same order
+// as the screen.
+test("results come back in id order when nothing asks otherwise", async () => {
     let ids = (await export_entries({})).results.map((e) => e.pdb_id);
     let expected = [...ids].sort((a, b) => a.localeCompare(b));
 
     assert.deepEqual(ids, expected);
+    assert.equal(DEFAULT_SORT.key, "id_asc");
 });
 
 test("the first page starts at the first id overall", async () => {
@@ -319,6 +323,54 @@ test("a whole pill list goes in as ONE parameter", () => {
     assert.match(built.where, /= ANY\(\$1\)/);
 });
 
+
+// --- sorting --------------------------------------------------------------
+// The seed carries resolutions and deposition dates but no confal scores, so
+// the confal orders are checked for acceptance and stability, not for order.
+
+for (const sort of SORTS) {
+    test(`sort ${sort.key} returns every entry exactly once`, async () => {
+        let first = await search_entries({ sort: sort.key });
+        let seen = [];
+
+        for (let page = 1; page <= first.pages; page++) {
+            let r = await search_entries({ sort: sort.key, page: String(page) });
+            r.results.forEach((e) => seen.push(e.pdb_id));
+        }
+
+        // Ties are what break this: without e.id as a last key a tied row can
+        // land on two pages, or on none.
+        assert.equal(seen.length, first.total);
+        assert.equal(new Set(seen).size, first.total, "a row appeared twice");
+    });
+}
+
+test("resolution sorts ascending, with the missing ones last", async () => {
+    let r = await export_entries({ sort: "resolution_asc" });
+    let got = r.results.map((e) => e.resolution);
+
+    let present = got.filter((v) => v !== null);
+    let sorted = [...present].sort((a, b) => a - b);
+
+    assert.deepEqual(present, sorted);
+    assert.deepEqual(got.slice(present.length), got.slice(present.length).map(() => null),
+                     "a missing resolution is not a small one");
+});
+
+test("deposition date sorts newest first", async () => {
+    let r = await search_entries({ sort: "deposition_desc" });
+    let dates = r.results.map((e) => e.deposition_date);
+
+    assert.deepEqual(dates, [...dates].sort().reverse());
+});
+
+test("an unknown sort falls back to the default instead of failing", async () => {
+    let bad = await search_entries({ sort: "'; DROP TABLE entry--" });
+    let def = await search_entries({ sort: DEFAULT_SORT.key });
+
+    assert.deepEqual(bad.results.map((e) => e.pdb_id), def.results.map((e) => e.pdb_id));
+    assert.equal(sort_by("nonsense").key, DEFAULT_SORT.key);
+});
 
 // --- the indexes the search depends on ----------------------------------
 // Not a speed test, those are flaky. It checks the indexes exist, which is the

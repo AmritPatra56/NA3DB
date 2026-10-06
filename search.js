@@ -2,7 +2,7 @@
 // Server only. It never touches HTTP and never touches the screen.
 
 import { query } from "./db.js";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS } from "./filters.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, sort_by } from "./filters.js";
 
 
 // One raw query value as a single string, whatever shape it arrived in.
@@ -113,6 +113,12 @@ export async function search_entries(query_params) {
     let page = as_page(query_params.page);
     let offset = (page - 1) * PAGE_SIZE;
 
+    // Looked up by key, so nothing from the URL is ever interpolated into the
+    // ORDER BY. e.id last breaks ties, or a tied row could appear on two pages;
+    // a column that is already unique does not need it.
+    let sort = sort_by(as_text(query_params.sort));
+    let order = sort.unique ? sort.sql : `${sort.sql}, e.id`;
+
     let [rows, counted] = await Promise.all([
         // Ids first, then the columns for those ten. With the columns in the
         // same query as the LIMIT, PostgreSQL builds all thirteen for every
@@ -121,11 +127,12 @@ export async function search_entries(query_params) {
         query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
                WHERE e.id IN (
                    SELECT e.id FROM entry e
+                   ${sort.join}
                    WHERE ${where}
-                   ORDER BY e.id
+                   ORDER BY ${order}
                    LIMIT ${PAGE_SIZE} OFFSET ${offset}
                )
-               ORDER BY e.id`, values),
+               ORDER BY ${order}`, values),
 
         query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)
     ]);
@@ -146,10 +153,15 @@ export async function search_entries(query_params) {
 export async function export_entries(query_params) {
     let { where, values } = build_where(query_params);
 
+    // The same order the screen used, so a downloaded CSV matches what was on
+    // it. No extra join: ENTRY_JOINS already has every table a sort needs.
+    let sort = sort_by(as_text(query_params.sort));
+    let order = sort.unique ? sort.sql : `${sort.sql}, e.id`;
+
     let [rows, counted] = await Promise.all([
         query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
                WHERE ${where}
-               ORDER BY e.id
+               ORDER BY ${order}
                LIMIT ${EXPORT_LIMIT}`, values),
 
         query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)

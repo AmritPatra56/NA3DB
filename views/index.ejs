@@ -88,7 +88,17 @@
         <div class="results_area">
             <div class="results_area_header">
                 <h1>Entries (0)</h1>
-                <span class="results_range">1 – 50 of 0</span>
+                <div class="results_tools">
+                    <label class="sort_field">
+                        <span>Sort by</span>
+                        <select id="sort_by" name="sort">
+                        <% for (const s of registry.sorts) { %>
+                            <option value="<%= s.key %>"><%= s.label %></option>
+                        <% } %>
+                        </select>
+                    </label>
+                    <span class="results_range">1 – 50 of 0</span>
+                </div>
             </div>
             <div class="results_area_body">
                 <div class="results_list"></div>

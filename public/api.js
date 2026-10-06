@@ -18,10 +18,11 @@ async function get_json(url) {
 }
 
 // One page of search results: { results, total, page, pages, page_size }.
-async function search_entries(filters, page = 1) {
+async function search_entries(filters, page = 1, sort = "") {
     let params = filters_to_params(filters);
 
     if (page > 1) params.set("page", page);
+    if (sort) params.set("sort", sort);
 
     return get_json("/api/entries?" + params.toString());
 }

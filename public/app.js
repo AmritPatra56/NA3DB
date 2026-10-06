@@ -280,6 +280,14 @@ function show_page() {
 }
 
 
+// The sort control, and the order the URL asks for. An unknown key is left to
+// the server, which falls back to its default rather than failing.
+let sort_select = document.getElementById("sort_by");
+
+function sort_from_url() {
+    return new URLSearchParams(location.search).get("sort") || REGISTRY.default_sort;
+}
+
 // The page the URL asks for, or 1 when it says nothing usable.
 function page_from_url() {
     let n = Number(new URLSearchParams(location.search).get("page"));
@@ -294,6 +302,7 @@ function update_url(filters, page) {
     let params = filters_to_params(filters);
 
     if (page > 1) params.set("page", page);
+    if (sort_select.value !== REGISTRY.default_sort) params.set("sort", sort_select.value);
 
     let query = params.toString();
     let url = query === "" ? location.pathname : location.pathname + "?" + query;
@@ -318,7 +327,7 @@ async function run_search(page = 1) {
     update_url(filters, page);
 
     try {
-        current_reply = await search_entries(filters, page);
+        current_reply = await search_entries(filters, page, sort_select.value);
         current_page = current_reply.page;
         show_page();
     } catch (err) {
@@ -408,6 +417,12 @@ results_list.addEventListener("click", function (e) {
 document.querySelector(".detail_close").addEventListener("click", close_detail);
 
 
+// A different order is a different first page, so it starts again at page 1.
+sort_select.addEventListener("change", function () {
+    run_search();
+});
+
+
 // Clicking a page button asks the server for that page.
 let pagination = document.querySelector(".pagination");
 
@@ -420,10 +435,12 @@ pagination.addEventListener("click", function (e) {
 // Back and forward: the URL has already changed, so refill the form and search.
 window.addEventListener("popstate", function () {
     params_to_form(new URLSearchParams(location.search));
+    sort_select.value = sort_from_url();
     run_search(page_from_url());
 });
 
 // On load, take the search out of the URL, fill the form in, then run it.
 params_to_form(new URLSearchParams(location.search));
+sort_select.value = sort_from_url();
 sync_rail_links();
 run_search(page_from_url());
