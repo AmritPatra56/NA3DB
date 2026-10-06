@@ -20,14 +20,16 @@ function display(value, column) {
     return column.unit ? `${text} ${column.unit}` : text;
 }
 
-// Every row the detail views show, in registry order. An empty value is
-// dropped rather than drawn blank.
-export function detail_rows(entry) {
+// The rows a detail view shows, in registry order. An empty value is dropped
+// rather than drawn blank. view "panel" is the short list beside the results;
+// "page" is everything, for /structure/:id.
+export function detail_rows(entry, view = "page") {
     let rows = [];
 
     for (const column of COLUMNS) {
         // === false, not falsy: every other column has undefined here.
         if (column.in_detail === false) continue;
+        if (view === "panel" && !column.in_panel) continue;
 
         let raw = entry[column.key];
         if ((raw === null || raw === undefined || raw === "") && column.fallback) {

@@ -212,8 +212,9 @@ test("the form draws one box per group, in registry order", async () => {
     let seen = [...html.matchAll(/class="category ([a-z]+)"/g)].map((m) => m[1]);
     assert.deepEqual(seen, reg.groups.map((g) => g.slug));
 
-    // The note belongs to 3D Features and to nothing else.
-    assert.equal((html.match(/field_note/g) || []).length, 1);
+    // A box gets a note only if its group carries one.
+    assert.equal((html.match(/field_note/g) || []).length,
+                 reg.groups.filter((g) => g.note).length);
 });
 
 // --- the detail rows ----------------------------------------------------
@@ -232,6 +233,25 @@ test("the panel and the structure page draw the same rows", async () => {
 
     // Same count, so the page cannot carry extras either.
     assert.equal((html.match(/detail_field/g) || []).length, api.rows.length);
+});
+
+// The side panel is a summary: every row it shows is one the full page shows
+// too, with the same label and the same formatting, because both come from
+// detail.js reading one registry.
+test("the panel's rows are a subset of the page's", async () => {
+    let api = await (await fetch(base + "/api/entries/4TNA")).json();
+
+    assert.ok(api.panel_rows.length > 0);
+    assert.ok(api.panel_rows.length < api.rows.length,
+              "the panel is meant to be shorter than the page");
+
+    let page = new Map(api.rows.map((r) => [r.label, r.value]));
+
+    for (const row of api.panel_rows) {
+        assert.ok(page.has(row.label), `the page is missing ${row.label}`);
+        assert.equal(page.get(row.label), row.value,
+                     `${row.label} is formatted differently in the two views`);
+    }
 });
 
 test("the raw fields survive beside the formatted rows", async () => {

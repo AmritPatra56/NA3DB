@@ -31,8 +31,7 @@ export const GROUPS = [
     {
         name: "3D Features", slug: "features",
         note: "Confal score runs 0 to 96, and NtC assignment is one of 97 " +
-              "conformer classes such as AA00. Both come from DNATCO; two " +
-              "structures have no score."
+              "conformer classes such as AA00. Both come from DNATCO."
     },
     { name: "Structure Components", slug: "components" }
 ];
@@ -168,7 +167,8 @@ export const PILL_FILTERS = of_kind("pills");
 // One object per returnable column. A separate list from FILTERS because the
 // two overlap without containing each other: `title` is shown and not searched.
 // scope "entry" is fetched for every result, "detail" only for one entry.
-// in_detail: false keeps a fetched column out of the detail rows.
+// in_detail: false keeps a fetched column out of the detail rows, and
+// in_panel: true puts it in the short list the side panel shows.
 export const COLUMNS = [
     // Fetched for the panel's links, but the heading already shows it.
     {
@@ -179,7 +179,8 @@ export const COLUMNS = [
 
     {
         key: "title", label: "Title", group: "Demographics",
-        scope: "entry", select: `s.title`
+        scope: "entry", select: `s.title`,
+        in_panel: true
     },
 
     // A scalar subquery, not a join: citation_author has a generated id, so two
@@ -196,14 +197,16 @@ export const COLUMNS = [
 
     {
         key: "method", label: "Experimental method", group: "Demographics",
-        scope: "entry", select: `ex.method`
+        scope: "entry", select: `ex.method`,
+        in_panel: true
     },
 
     // ::text, not the bare DATE: pg turns a DATE into a JS Date and Prague is
     // ahead of UTC, which moved every deposition date back a day.
     {
         key: "deposition_date", label: "Deposition date", group: "Demographics",
-        scope: "entry", select: `ds.recvd_initial_deposition_date::text`
+        scope: "entry", select: `ds.recvd_initial_deposition_date::text`,
+        in_panel: true
     },
 
     // 2.00 A and 2 A are different claims: the trailing digits say how
@@ -211,7 +214,7 @@ export const COLUMNS = [
     {
         key: "resolution", label: "Resolution", group: "Demographics",
         scope: "entry", select: `rf.d_resolution_high`,
-        decimals: 2, unit: "Å"
+        decimals: 2, unit: "Å", in_panel: true
     },
 
     {
@@ -270,7 +273,7 @@ export const COLUMNS = [
     // list should not mean a missing author.
     {
         key: "all_authors", label: "Authors", group: "Citation",
-        scope: "detail", fallback: "author",
+        scope: "detail", fallback: "author", in_panel: true,
         select: `(SELECT string_agg(ca.name, ', ' ORDER BY ca.ordinal, ca.id)
                   FROM citation_author ca
                   WHERE ca.entry_id = e.id AND ca.citation_id = 'primary')`
@@ -278,7 +281,7 @@ export const COLUMNS = [
 
     {
         key: "published", label: "Published", group: "Citation",
-        scope: "detail",
+        scope: "detail", in_panel: true,
         select: `(SELECT trim(concat_ws(' ', c.journal_abbrev, c.year::text))
                   FROM citation c
                   WHERE c.entry_id = e.id AND c.id = 'primary')`
@@ -357,8 +360,8 @@ export function public_registry() {
                                options, any, placeholder, pair_with }) =>
             ({ key, label, group, kind, options, any, placeholder, pair_with })),
 
-        columns: COLUMNS.map(({ key, label, group, scope }) =>
-            ({ key, label, group, scope })),
+        columns: COLUMNS.map(({ key, label, group, scope, in_panel }) =>
+            ({ key, label, group, scope, in_panel })),
 
         text_filters: TEXT_FILTERS,
         pill_filters: PILL_FILTERS

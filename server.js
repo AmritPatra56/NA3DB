@@ -100,8 +100,13 @@ app.get("/api/entries/:id", async (req, res) => {
     }
 
     // The raw fields and the display rows, never one instead of the other:
-    // entry.resolution stays 2.2, rows has it as "2.20 Å".
-    res.json({ ...entry, rows: detail_rows(entry) });
+    // entry.resolution stays 2.2, rows has it as "2.20 Å". panel_rows is the
+    // short list for the side panel; rows is everything, for the full page.
+    res.json({
+        ...entry,
+        rows: detail_rows(entry),
+        panel_rows: detail_rows(entry, "panel")
+    });
 });
 
 // Returns every matching entry for the report page, not just one page.

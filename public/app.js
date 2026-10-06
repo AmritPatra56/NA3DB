@@ -280,10 +280,22 @@ function show_page() {
 }
 
 
+// The page the URL asks for, or 1 when it says nothing usable.
+function page_from_url() {
+    let n = Number(new URLSearchParams(location.search).get("page"));
+
+    return Number.isInteger(n) && n > 0 ? n : 1;
+}
+
 // The current search in the address bar, with a history entry so Back works,
-// unless the URL already is that search.
-function update_url(filters) {
-    let query = filters_to_params(filters).toString();
+// unless the URL already is that search. The page goes in too, so reloading
+// or sharing the link lands on the same page rather than back at the first.
+function update_url(filters, page) {
+    let params = filters_to_params(filters);
+
+    if (page > 1) params.set("page", page);
+
+    let query = params.toString();
     let url = query === "" ? location.pathname : location.pathname + "?" + query;
 
     if (url === location.pathname + location.search) return;
@@ -297,8 +309,13 @@ function update_url(filters) {
 async function run_search(page = 1) {
     set_loading(true);
 
+    // The entry the panel is showing is not part of the new result set, so it
+    // goes away rather than sitting there beside answers it has nothing to do
+    // with.
+    close_detail();
+
     let filters = read_filters();
-    update_url(filters);
+    update_url(filters, page);
 
     try {
         current_reply = await search_entries(filters, page);
@@ -315,9 +332,10 @@ async function run_search(page = 1) {
 function render_detail(data) {
     let body = document.querySelector(".detail_body");
 
-    // Built by detail.js on the server, so this panel and the structure page
-    // show the same fields in the same units. Escaped anyway: innerHTML.
-    let fields = data.rows.map(function (row) {
+    // panel_rows, not rows: the panel is a summary and the full page below
+    // carries the rest. Both are built by detail.js from one registry, so the
+    // units and labels cannot disagree. Escaped anyway: innerHTML.
+    let fields = data.panel_rows.map(function (row) {
         return `
             <div class="detail_field">
                 <div class="detail_label">${escape_html(row.label)}</div>
@@ -402,10 +420,10 @@ pagination.addEventListener("click", function (e) {
 // Back and forward: the URL has already changed, so refill the form and search.
 window.addEventListener("popstate", function () {
     params_to_form(new URLSearchParams(location.search));
-    run_search();
+    run_search(page_from_url());
 });
 
 // On load, take the search out of the URL, fill the form in, then run it.
 params_to_form(new URLSearchParams(location.search));
 sync_rail_links();
-run_search();
+run_search(page_from_url());
