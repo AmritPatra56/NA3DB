@@ -93,7 +93,7 @@ export function build_where(query_params) {
 
 
 // How many entries one page of results holds.
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 // Cap on one export, so a single request cannot exhaust memory.
 const EXPORT_LIMIT = 5000;
