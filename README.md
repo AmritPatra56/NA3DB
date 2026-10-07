@@ -1,9 +1,10 @@
 # NA3DB
 
 A searchable database of nucleic acid 3D structures, built on data from the
-Protein Data Bank and conformational analysis from DNATCO. Filter structures by
-demographics, 3D features and structural components, then export the results as
-CSV.
+Protein Data Bank and conformational analysis from DNATCO. Search by id,
+molecule, author or organism from one box, narrow by demographics, 3D features
+and structural components, order by resolution or confal score, and export the
+results as CSV.
 
 **1,489 structures · 50.7 million atoms · 1,487 confal scores · 97 NtC classes**
 
@@ -239,7 +240,7 @@ or a hosting platform passes real values in.
 npm test
 ```
 
-**149 tests, about two seconds, no test framework installed**: `node --test`
+**191 tests, about two seconds, no test framework installed**: `node --test`
 ships with Node. They check the real SQL rather than a pretend version of it,
 so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 120 seeded entries and is never touched by the loaders. See
@@ -251,6 +252,7 @@ so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 | `server.test.js` | Routes, status codes, response formats, which files must not be downloadable, that no SQL reaches `/api/fields`, and that the generated form carries a control for every filter. |
 | `equivalence.test.js` | 150+ filter combinations checked against the JavaScript implementation this replaced. |
 | `errors.test.js` | 503 versus 500, HTML versus JSON, and that nothing leaks. |
+| `landing.test.js` | The count-as-you-type logic, run against stubbed browser globals: the debounce, the wording, and that a slow reply arriving late is thrown away. |
 
 `equivalence.test.js` is the unusual one. Instead of hand-written expected
 answers, it runs every filter through **two** implementations and demands they
@@ -291,6 +293,7 @@ Server side, at the root:
 | `filters.js` | The registry. Every question the search can answer and every column it can return, as data: labels, categories, pill options, and the SQL for each. The one file a new field is added to. |
 | `search.js` | The SQL engine. Turns the registry into `WHERE` clauses and `SELECT` lists, runs them, pages the results. Knows nothing about HTTP or the screen. |
 | `detail.js` | The display engine. Turns one entry into the labelled rows the detail panel and the structure page both draw. |
+| `landing.test.js` | Runs `public/landing.js` against stubbed browser globals, so the count logic is tested without a browser. |
 | `db.js` | The only file that opens a database connection. A pool, one `query()` function, and the `DatabaseUnavailable` error. |
 | `entries.json` | 120 PDB records. No longer read by the running app, it is the source for the seed and the yardstick for the tests. |
 | `search.reference.mjs` | The JavaScript filtering this project used before SQL. Kept only so the tests can check the SQL agrees with it. |
@@ -315,7 +318,8 @@ Page templates, in `views/`:
 
 | file | job |
 | --- | --- |
-| `index.ejs` | Structure of the search page. |
+| `landing.ejs` | The landing page at `/`. A plain GET form, so the box works before any script runs. |
+| `search.ejs` | Structure of the search page at `/search`. |
 | `report.ejs` | Structure of the report page. |
 | `structure.ejs` | One structure's own page, at `/structure/<id>`. |
 | `error.ejs` | Shown for any address that matches nothing. |
@@ -323,7 +327,7 @@ Page templates, in `views/`:
 
 These are rendered by the server and only the resulting HTML is sent. The
 templates themselves are never downloadable, which is why `views/` sits outside
-`public/`, put it inside and `/index.ejs` would serve the source instead of
+`public/`, put it inside and `/search.ejs` would serve the source instead of
 the page.
 
 Each route tells the rail which icon to highlight by passing a `page` value, so
@@ -342,6 +346,7 @@ Browser side, in `public/`:
 | `api.js` | The browser's only door to the server. Nothing in the browser contacts any other host. |
 | `app.js` | The search page. Reads the form, draws results, runs the detail panel. Decides nothing about the data. |
 | `report.js` | The report page. Field selection and CSV building. |
+| `landing.js` | The count under the landing box. An addition, never a dependency: the form works without it. |
 
 There is no HTML in `public/`. The split is exact: `public/` is what the
 browser downloads, `views/` is what the server builds.
@@ -394,19 +399,44 @@ A column object:
 }
 ```
 
-That gives a CSV column, a row in the detail panel and a row on the structure
-page. `decimals`, `unit` and `thousands` format the value; `in_detail: false`
-keeps a fetched column out of the detail rows; `fallback` names another column
-to use when this one is empty.
+That gives a CSV column, a row on the structure page and, with `in_panel: true`,
+a row in the side panel beside the results. `decimals`, `unit` and `thousands`
+format the value; `in_detail: false` keeps a fetched column out of the detail
+rows entirely; `fallback` names another column to use when this one is empty.
 
 Columns and filters are two lists because they overlap without containing each
 other: `title` is shown and not searched, `confal_score` has two filters
 pointing at it, and three columns are named differently from their filter.
 
+Three smaller lists live beside those two, and are reached the same way:
+
+| list | holds |
+| --- | --- |
+| `GROUPS` | the category boxes, in the order they appear down the panel |
+| `SORTS` | the eight orders the results can be put in |
+| `EXAMPLES` | the chips under the landing box, each naming a different kind of thing |
+
+A filter marked `prominent: true` is drawn across the top of the page instead of
+inside the panel. That is how the one search box gets there, and `q` is the only
+filter using it today.
+
 **The SQL never reaches the browser.** `public_registry()` picks the safe
 fields by name rather than stripping the unsafe ones, so a field added later
-stays on the server unless it is deliberately listed. `server.test.js` asserts
-that no SQL keyword appears in the response.
+stays on the server unless it is deliberately listed. `server.test.js` walks
+every filter and every column in the response and fails if one carries a field
+that is not on the allowed list, or carries `where`, `clause` or `select`.
+
+### The one search box
+
+`q` is a filter like any other, with a `where` that is an `OR` across five
+fields: the entry id, the title, the authors, the entity descriptions and the
+source organisms. Five `?` marks and one value, because `add()` replaces every
+`?` with the same `$n`.
+
+Residues are deliberately not among them. Folding `entity_poly_seq` into that
+`OR` measured **348-643 ms** against **6-45 ms** without it, because the `OR`
+stops PostgreSQL finishing at the cheap branches. They stay on their own filter,
+which is where the `PSU` example on the landing page points.
 
 ### One entry comes from seven tables
 
@@ -445,14 +475,25 @@ query("SELECT ... WHERE e.id ILIKE $1", ["%' OR '1'='1%"])
 
 | address | page |
 | --- | --- |
-| `GET /` | Structure query. |
+| `GET /` | The landing page: one search box, a line of examples, and a link to the filters. |
+| `GET /search` | Structure query: the filter panel, the results, the sort control. |
 | `GET /report` | Report. Reads its filters from its own query string, so a link carries the search with it. |
 | `GET /structure/:id` | One structure, by its PDB id. |
 | anything else | The not-found page, with status 404. |
 
+`/` with a query string is a link saved before the split, so it is redirected
+with a `301` to `/search` carrying the same query rather than being dropped on
+the landing page.
+
 Filters travel in the query string, so `/report?entry_id=tna` reports on exactly
-what `/?entry_id=tna` found. The rail links rewrite themselves to carry the
-current search across.
+what `/search?entry_id=tna` found. The rail links rewrite themselves to carry
+the current search across. The page number and the chosen order travel too, so
+reloading or sharing a link lands on the same page in the same order.
+
+**The filter panel opens by itself when it is the thing you need.** A plain
+search from the box shows results alone; a search using any filter, or arriving
+with no query at all, opens the panel. The `Filters` button overrides either
+way, and writes its choice into the URL.
 
 `/structure/4TNA` is built on the server, so the whole record is in the HTML
 before any script runs, and an id that does not exist returns a genuine **404**
@@ -466,14 +507,15 @@ the HTML page. Browsers and `api.js` each get the format they can use.
 
 ## API
 
-Six endpoints, all returning JSON.
+Seven endpoints, all returning JSON.
 
 | endpoint | returns |
 | --- | --- |
 | `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` with `"down"`. Runs `SELECT 1`: it tests the connection, never the data. |
 | `GET /api/stats` | `{"total":1489}`. Counted fresh on every request. |
 | `GET /api/fields` | The filters and columns this API understands, so a client can discover them instead of hard-coding them. Labels, categories, kinds and pill options; never the SQL. |
-| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. |
+| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. Takes `page` and `sort`. |
+| `GET /api/count` | How many entries a search would return, and nothing else. 6-45 ms, which is what lets the landing page count as you type. |
 | `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
 | `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. |
 
