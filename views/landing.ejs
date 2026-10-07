@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NA3DB</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="interface">
+        <%- include("includes/rail.ejs") %>
+
+        <div class="landing">
+            <div class="landing_inner">
+                <h1 class="landing_title">NA3DB</h1>
+                <p class="landing_tagline">Nucleic Acid 3D Database</p>
+
+                <%# A plain GET form: the box works before any script runs, and
+                    submitting lands on a real, shareable /search?q= address. %>
+                <form class="landing_search" action="/search" method="get">
+                    <input type="text" name="q" autofocus autocomplete="off"
+                           placeholder="Search an id, molecule, author or organism">
+                    <button type="submit">Search</button>
+                </form>
+
+                <p class="landing_count"></p>
+
+                <p class="landing_examples">
+                    <span class="landing_examples_label">Try</span>
+                    <% for (const example of registry.examples) { %>
+                        <a href="<%= example.url %>">
+                            <strong><%= example.term %></strong>
+                            <span><%= example.kind %></span>
+                        </a>
+                    <% } %>
+                </p>
+
+                <a class="landing_advanced" href="/search">Advanced search</a>
+            </div>
+        </div>
+    </div>
+
+    <%# An addition, not a dependency: the form above is a plain GET and works
+        with or without this. %>
+    <script src="/landing.js"></script>
+</body>
+</html>

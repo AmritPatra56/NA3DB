@@ -37,10 +37,60 @@ export const GROUPS = [
 ];
 
 
+// What to put in the box, shown under it on the landing page. Each one is a
+// different KIND of thing, so reading the line once tells you what the box
+// accepts. `kind` is the label beside it, not a category in the data.
+export const EXAMPLES = [
+    { term: "119D",             kind: "an entry id" },
+    { term: "tRNA",             kind: "a molecule" },
+    { term: "ribozyme",         kind: "an entity" },
+    { term: "Z-DNA",            kind: "a structure" },
+    { term: "Escherichia coli", kind: "an organism" },
+    { term: "Leonard",          kind: "an author" },
+
+    // Residues are not in the box: searching them means scanning 3.8M rows in
+    // entity_poly_seq, which cost 348-643 ms inside the box's OR against 6-45
+    // without it. This one goes to the filter that owns them, which also opens
+    // the panel and shows where that filter lives.
+    { term: "PSU", kind: "a residue", filter: "nonstandard_residue" }
+];
+
+// Where an example sends you. Everything goes through the box unless it names
+// a filter of its own.
+export function example_url(example) {
+    return "/search?" + (example.filter || "q") + "=" + encodeURIComponent(example.term);
+}
+
+
 // One object per searchable question. `kind` decides how the value is read and
 // drawn; `where` is SQL with ? for the value; `clause` is the escape hatch for
 // a filter whose SQL takes no parameter. Never rename a key: bookmarks use it.
 export const FILTERS = [
+    // One box for whatever the visitor already knows: an id, a molecule, a
+    // form, an organism, a person. Five ? marks and one value, because add()
+    // replaces every ? with the same $n.
+    //
+    // No index on struct.title on purpose: scanning 1,489 titles measures
+    // 2.9 ms, faster than the indexed lookups beside it, so an index here
+    // would be upkeep for nothing.
+    {
+        key: "q", label: "Search", group: "Demographics", kind: "text",
+        // Drawn across the top of the page rather than inside the panel.
+        prominent: true,
+        where: `AND (
+                    e.id ILIKE ?
+                 OR EXISTS (SELECT 1 FROM struct st
+                            WHERE st.entry_id = e.id AND st.title ILIKE ?)
+                 OR EXISTS (SELECT 1 FROM citation_author ca
+                            WHERE ca.entry_id = e.id AND ca.name ILIKE ?)
+                 OR EXISTS (SELECT 1 FROM entity en
+                            WHERE en.entry_id = e.id AND en.pdbx_description ILIKE ?)
+                 OR EXISTS (SELECT 1 FROM entity_src_gen sg
+                            WHERE sg.entry_id = e.id
+                              AND sg.pdbx_gene_src_scientific_name ILIKE ?)
+                )`
+    },
+
     // The only filter on a column of `entry` itself. ILIKE because plain LIKE
     // and = are case-sensitive in PostgreSQL, unlike MySQL.
     {
@@ -417,13 +467,18 @@ export const COLUMNS = [
 export function public_registry() {
     return {
         groups: GROUPS,
+        // The URL is worked out here, so the page never has to know which
+        // filter an example uses.
+        examples: EXAMPLES.map((e) =>
+            ({ term: e.term, kind: e.kind, url: example_url(e) })),
 
         sorts: SORTS.map(({ key, label }) => ({ key, label })),
         default_sort: DEFAULT_SORT.key,
 
-        filters: FILTERS.map(({ key, label, group, kind,
+        filters: FILTERS.map(({ key, label, group, kind, prominent,
                                options, any, placeholder, pair_with }) =>
-            ({ key, label, group, kind, options, any, placeholder, pair_with })),
+            ({ key, label, group, kind, prominent,
+               options, any, placeholder, pair_with })),
 
         columns: COLUMNS.map(({ key, label, group, scope, in_panel }) =>
             ({ key, label, group, scope, in_panel })),

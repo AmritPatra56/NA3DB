@@ -324,6 +324,59 @@ test("a whole pill list goes in as ONE parameter", () => {
 });
 
 
+// --- the one search box -------------------------------------------------
+// q is an OR across five fields, so each branch is checked against the
+// dedicated filter for the same field. A dropped branch shows up as a count
+// that stops reaching the one beside it.
+
+test("q finds what each dedicated filter finds", async () => {
+    const branches = [
+        ["tna",      { entry_id: "tna" }],
+        ["Hingerty", { author_name: "Hingerty" }],
+        ["sacch",    { source_organism: "sacch" }],
+        ["DNA",      { entity_name: "DNA" }]
+    ];
+
+    for (const [term, equivalent] of branches) {
+        let via_q  = await search_entries({ q: term });
+        let direct = await search_entries(equivalent);
+
+        assert.ok(direct.total > 0, `${term} should match something directly`);
+        assert.ok(via_q.total >= direct.total,
+                  `q="${term}" found ${via_q.total}, fewer than the ${direct.total} ` +
+                  `its own filter finds, so a branch of the OR is missing`);
+    }
+});
+
+test("q matches a title, which has no filter of its own", async () => {
+    let r = await search_entries({ q: "tRNA" });
+    let by_entity = await search_entries({ entity_name: "tRNA" });
+
+    assert.ok(r.total > by_entity.total,
+              "q should reach titles that entity_name cannot");
+});
+
+test("q finding nothing is an empty result, not an error", async () => {
+    let r = await search_entries({ q: "ZZZZ-no-such-thing" });
+
+    assert.equal(r.total, 0);
+    assert.deepEqual(r.results, []);
+});
+
+test("a % or _ typed in the box stays literal", async () => {
+    let pct = await search_entries({ q: "%" });
+
+    assert.equal(pct.total, 0, "% must not act as a wildcard");
+});
+
+test("the box takes one value for all five of its placeholders", async () => {
+    let built = build_where({ q: "tna" });
+
+    assert.equal(built.values.length, 1, "five ? marks, one value");
+    assert.deepEqual(built.values, ["%tna%"]);
+    assert.equal((built.where.match(/\$1/g) || []).length, 5);
+});
+
 // --- sorting --------------------------------------------------------------
 // The seed carries resolutions and deposition dates but no confal scores, so
 // the confal orders are checked for acceptance and stability, not for order.

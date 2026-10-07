@@ -3,6 +3,7 @@
 
 import test, { before, after } from "node:test";
 import assert from "node:assert";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, EXAMPLES } from "./filters.js";
 import { once } from "node:events";
 import app from "./server.js";
 import { close as close_db } from "./db.js";
@@ -29,7 +30,7 @@ after(async () => {
 // --- pages --------------------------------------------------------------
 
 test("the search page is served at /", async () => {
-    let res = await fetch(base + "/");
+    let res = await fetch(base + "/search");
 
     assert.equal(res.status, 200);
     assert.match(res.headers.get("content-type"), /html/);
@@ -137,6 +138,100 @@ test("an unknown page answers in HTML", async () => {
 
 // --- what must never be downloadable ------------------------------------
 
+// --- the front door ------------------------------------------------------
+test("/ is the landing page, not the search page", async () => {
+    let res  = await fetch(base + "/");
+    let html = await res.text();
+
+    assert.equal(res.status, 200);
+    assert.match(html, /NA3DB/);
+    assert.match(html, /Nucleic Acid 3D Database/);
+
+    // The thing that makes it the landing page: no filter panel.
+    assert.ok(!html.includes("query_panel"), "the landing page carries no filters");
+});
+
+// The box submits natively: a real action and method, and a real submit
+// button. landing.js adds the live count on top, but nothing here depends on
+// it, so the page still works if that script never loads.
+test("the landing box is a form that needs no JavaScript", async () => {
+    let html = await (await fetch(base + "/")).text();
+
+    assert.match(html, /<form[^>]+action="\/search"[^>]+method="get"/);
+    assert.match(html, /name="q"/);
+    assert.match(html, /<button type="submit"/);
+
+    assert.ok(!/onsubmit=|onclick=/.test(html),
+              "nothing on this page may need a handler to work");
+});
+
+test("the landing page links to the filter panel", async () => {
+    let html = await (await fetch(base + "/")).text();
+
+    assert.match(html, /landing_advanced" href="\/search"/);
+});
+
+test("every example is a link, labelled by what kind of thing it is", async () => {
+    let html = await (await fetch(base + "/")).text();
+    let reg  = await (await fetch(base + "/api/fields")).json();
+
+    assert.equal(reg.examples.length, EXAMPLES.length);
+
+    for (const example of reg.examples) {
+        assert.ok(html.includes(`href="${example.url}"`),
+                  `no chip linking to ${example.url}`);
+        assert.ok(html.includes(example.kind),
+                  `${example.term} is not labelled by kind`);
+    }
+
+    // Each one shows a different kind of thing, which is what makes the line
+    // teach rather than just list.
+    let kinds = reg.examples.map((e) => e.kind);
+    assert.equal(new Set(kinds).size, kinds.length, "two examples share a kind");
+});
+
+// The examples are picked for the real database, and na3db_test holds 120
+// different entries, so not every one can match here. What this does catch is
+// a broken q filter or an example that is not a searchable string at all.
+test("the examples are answerable, and some of them match", async () => {
+    let reg = await (await fetch(base + "/api/fields")).json();
+    let matched = 0;
+
+    for (const example of reg.examples) {
+        // The chip's own URL, asked of the API rather than the page.
+        let res  = await fetch(base + "/api/entries" + example.url.slice("/search".length));
+        let body = await res.json();
+
+        assert.equal(res.status, 200, `the example "${example.term}" is not a valid search`);
+        assert.equal(typeof body.total, "number");
+
+        if (body.total > 0) matched++;
+    }
+
+    assert.ok(matched > 0, "not one example matches anything, so the box is broken");
+});
+
+// Every link made before the split carried the search on /. Those have to keep
+// working, so / with a query is sent on rather than shown the landing page.
+test("an old bookmark on / is redirected to /search", async () => {
+    for (const query of ["entry_id=tna", "polymer_type=Protein%2FNA&page=3",
+                         "q=tRNA&sort=confal_desc"]) {
+        let res = await fetch(base + "/?" + query, { redirect: "manual" });
+
+        assert.equal(res.status, 301, `/?${query} should be redirected`);
+        assert.equal(res.headers.get("location"), "/search?" + query);
+    }
+});
+
+test("/search is the page that was on / before", async () => {
+    let res  = await fetch(base + "/search");
+    let html = await res.text();
+
+    assert.equal(res.status, 200);
+    assert.ok(html.includes("query_panel"), "the filter panel lives here now");
+    assert.ok(html.includes("results_list"));
+});
+
 // --- the registry endpoint ----------------------------------------------
 // A promise rather than a behaviour: no SQL crosses this line. It fails the
 // day a field reaches the whitelist by accident.
@@ -152,32 +247,122 @@ test("/api/fields never ships the SQL", async () => {
 test("/api/fields describes every filter and column", async () => {
     let body = await (await fetch(base + "/api/fields")).json();
 
-    assert.equal(body.filters.length, 11);
-    assert.equal(body.columns.length, 24);
-    assert.deepEqual(body.text_filters.length, 8);
-    assert.deepEqual(body.pill_filters.length, 3);
+    // Counted against the registry rather than a number typed here, so adding
+    // a filter does not mean editing this test. What it still catches is the
+    // whitelist silently dropping one.
+    assert.deepEqual(body.filters.map((f) => f.key), FILTERS.map((f) => f.key));
+    assert.deepEqual(body.columns.map((c) => c.key), COLUMNS.map((c) => c.key));
+    assert.deepEqual(body.text_filters, TEXT_FILTERS);
+    assert.deepEqual(body.pill_filters, PILL_FILTERS);
 
-    // The four safe fields, and nothing else.
-    assert.deepEqual(Object.keys(body.filters[0]).sort(),
-                     ["group", "kind", "key", "label"].sort());
-    assert.deepEqual(Object.keys(body.columns[0]).sort(),
-                     ["group", "key", "label", "scope"].sort());
+    // Checked across every filter rather than the first one, so adding a UI
+    // field to one of them cannot quietly change what this proves: the keys
+    // are drawn from the allowed set, and nothing carrying SQL is among them.
+    const FILTER_FIELDS = ["key", "label", "group", "kind", "prominent",
+                           "options", "any", "placeholder", "pair_with"];
+    const COLUMN_FIELDS = ["key", "label", "group", "scope", "in_panel"];
+
+    for (const filter of body.filters) {
+        for (const field of Object.keys(filter)) {
+            assert.ok(FILTER_FIELDS.includes(field),
+                      `${filter.key} ships an unexpected field: ${field}`);
+        }
+        assert.ok(!("where" in filter) && !("clause" in filter),
+                  `${filter.key} ships its SQL`);
+    }
+
+    for (const column of body.columns) {
+        for (const field of Object.keys(column)) {
+            assert.ok(COLUMN_FIELDS.includes(field),
+                      `${column.key} ships an unexpected field: ${field}`);
+        }
+        assert.ok(!("select" in column), `${column.key} ships its SQL`);
+    }
 });
 
 // The injected copy in the page is the one the browser actually runs on.
 test("the search page carries the registry and not the SQL", async () => {
-    let html = (await (await fetch(base + "/")).text());
+    let html = (await (await fetch(base + "/search")).text());
 
     assert.match(html, /window\.REGISTRY = \{/);
     assert.ok(!/ILIKE|string_agg|entity_poly_seq/i.test(html),
               "the page must not contain SQL");
 });
 
+// --- the filter panel, open or closed ------------------------------------
+// Decided on the server so the page arrives in the right state, with no flash
+// of filters appearing and then collapsing.
+const PANEL_CASES = [
+    ["/search",                                   true,  "the Advanced search link"],
+    ["/search?q=tRNA",                            false, "a search from the box"],
+    ["/search?q=tRNA&page=3&sort=confal_desc",    false, "...paged and sorted"],
+    ["/search?entry_id=tna",                      true,  "an old bookmark using a filter"],
+    ["/search?q=tRNA&polymer_type=Protein%2FNA",  true,  "the box plus a filter"],
+    ["/search?q=",                                true,  "an empty box"],
+    ["/search?q=tRNA&panel=open",                 true,  "the toggle says open"],
+    ["/search?panel=closed",                      false, "the toggle says closed"]
+];
+
+for (const [url, open, why] of PANEL_CASES) {
+    test(`the panel is ${open ? "open" : "closed"} for ${why}`, async () => {
+        let html = await (await fetch(base + url)).text();
+        let tag  = html.match(/class="query_panel ([^"]*)"/);
+
+        assert.ok(tag, "the panel should be on the page either way");
+        assert.equal(!tag[1].includes("hidden"), open);
+    });
+}
+
+test("the toggle reports the state it is in", async () => {
+    let shut = await (await fetch(base + "/search?q=tRNA")).text();
+    let open = await (await fetch(base + "/search")).text();
+
+    assert.match(shut, /class="filters_toggle"\s+aria-expanded="false"/);
+    assert.match(open, /class="filters_toggle"\s+aria-expanded="true"/);
+});
+
+// --- the prominent filter ------------------------------------------------
+// q is drawn above the panel rather than inside it. The input keeps its id, so
+// read_filters still finds it, and carries form="query_form" so Enter submits
+// the panel it no longer sits in.
+test("a prominent filter is drawn above the panel, not inside it", async () => {
+    let html = await (await fetch(base + "/search")).text();
+    let reg  = await (await fetch(base + "/api/fields")).json();
+
+    let prominent = reg.filters.filter((f) => f.prominent);
+    assert.ok(prominent.length > 0, "something should be prominent");
+
+    for (const f of prominent) {
+        assert.ok(!html.includes(`<label for="${f.key}">`),
+                  `${f.key} is still drawn as a panel field`);
+
+        let bar = html.slice(html.indexOf('class="top_search"'),
+                             html.indexOf('class="workspace_body"'));
+
+        assert.ok(bar.includes(`id="${f.key}"`), `${f.key} is not in the top bar`);
+        assert.ok(bar.includes('form="query_form"'),
+                  "the top input must submit the panel's form");
+    }
+});
+
+test("every other filter is still drawn inside the panel", async () => {
+    let html = await (await fetch(base + "/search")).text();
+    let reg  = await (await fetch(base + "/api/fields")).json();
+
+    for (const f of reg.filters.filter((x) => !x.prominent)) {
+        if (f.kind === "pills") {
+            assert.ok(html.includes(`data-name="${f.key}"`), `no pills for ${f.key}`);
+        } else {
+            assert.ok(html.includes(`name="${f.key}"`), `no input for ${f.key}`);
+        }
+    }
+});
+
 // --- the generated form -------------------------------------------------
 // A filter in the registry is a control on the form. Fails if one is added
 // and the form does not grow.
 test("the form has a control for every filter in the registry", async () => {
-    let html = await (await fetch(base + "/")).text();
+    let html = await (await fetch(base + "/search")).text();
     let reg  = await (await fetch(base + "/api/fields")).json();
 
     for (const f of reg.filters) {
@@ -197,7 +382,7 @@ test("the form has a control for every filter in the registry", async () => {
 // confal_min and confal_max are two filters and ONE control. pair_with is
 // what tells the template that; without it the form grows two stray boxes.
 test("the form draws one range control, not two", async () => {
-    let html = await (await fetch(base + "/")).text();
+    let html = await (await fetch(base + "/search")).text();
 
     assert.equal((html.match(/range_row/g) || []).length, 1);
     assert.ok(html.includes('placeholder="min"'));
@@ -206,7 +391,7 @@ test("the form draws one range control, not two", async () => {
 
 // One category box per group, each with the slug that colours its dot.
 test("the form draws one box per group, in registry order", async () => {
-    let html = await (await fetch(base + "/")).text();
+    let html = await (await fetch(base + "/search")).text();
     let reg  = await (await fetch(base + "/api/fields")).json();
 
     let seen = [...html.matchAll(/class="category ([a-z]+)"/g)].map((m) => m[1]);
@@ -219,7 +404,7 @@ test("the form draws one box per group, in registry order", async () => {
 
 // --- sorting ------------------------------------------------------------
 test("the page offers every sort the registry defines, and no SQL", async () => {
-    let html = await (await fetch(base + "/")).text();
+    let html = await (await fetch(base + "/search")).text();
     let reg  = await (await fetch(base + "/api/fields")).json();
 
     assert.equal(reg.sorts.length, 8);
@@ -309,9 +494,10 @@ const private_files = [
     "/db/init.sql",
     "/db/seed.sql",
     "/entries.json",
-    "/index.ejs",
+    "/search.ejs",
+    "/landing.ejs",
     "/structure.ejs",
-    "/views/index.ejs",
+    "/views/search.ejs",
     "/package.json",
     "/.env"
 ];

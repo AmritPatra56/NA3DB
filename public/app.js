@@ -303,6 +303,7 @@ function update_url(filters, page) {
 
     if (page > 1) params.set("page", page);
     if (sort_select.value !== REGISTRY.default_sort) params.set("sort", sort_select.value);
+    if (panel_chosen) params.set("panel", panel_is_open() ? "open" : "closed");
 
     let query = params.toString();
     let url = query === "" ? location.pathname : location.pathname + "?" + query;
@@ -415,6 +416,30 @@ results_list.addEventListener("click", function (e) {
 });
 
 document.querySelector(".detail_close").addEventListener("click", close_detail);
+
+
+// Opening or closing the filters. The choice goes in the URL so a reload keeps
+// it, and so a link shared from here opens the way the sender left it.
+let filters_toggle = document.querySelector(".filters_toggle");
+let query_panel = document.querySelector(".query_panel");
+
+// Only written to the URL once someone has actually used the toggle. Until
+// then the server's own rule decides, and the address stays clean.
+let panel_chosen = new URLSearchParams(location.search).has("panel");
+
+function panel_is_open() {
+    return !query_panel.classList.contains("hidden");
+}
+
+filters_toggle.addEventListener("click", function () {
+    let open = !panel_is_open();
+
+    query_panel.classList.toggle("hidden", !open);
+    filters_toggle.setAttribute("aria-expanded", String(open));
+
+    panel_chosen = true;
+    update_url(read_filters(), current_page);
+});
 
 
 // A different order is a different first page, so it starts again at page 1.

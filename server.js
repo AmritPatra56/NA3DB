@@ -1,6 +1,7 @@
 import express from "express";
 import path from "node:path";
-import { search_entries, export_entries, find_entry, query_problem } from "./search.js";
+import { search_entries, export_entries, find_entry, query_problem,
+         count_entries } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry } from "./filters.js";
 import { detail_rows } from "./detail.js";
@@ -49,9 +50,39 @@ app.get("/api/fields", (req, res) => {
 });
 
 
+// The front door. A bare visit gets the landing page; a visit carrying a
+// search is a bookmark from before the split, so it is sent to the page that
+// can answer it rather than being dropped on the floor.
 app.get("/", (req, res) => {
-    res.render("index", { page: "search" });
+    let query = req.originalUrl.split("?")[1];
+
+    if (query) {
+        res.redirect(301, "/search?" + query);
+        return;
+    }
+
+    res.render("landing", { page: "search" });
 });
+
+// The search page: the filter panel, the results and the sort control.
+//
+// The panel starts closed for a plain search from the box, and open for
+// anything else, so arriving from the landing page shows results rather than
+// a wall of filters. ?panel= overrides it, which is what the toggle writes.
+app.get("/search", (req, res) => {
+    res.render("search", { page: "search", panel_open: panel_open(req.query) });
+});
+
+// `q` with nothing but a page or an order beside it is a simple search.
+// Anything else means a filter was used, so the panel that holds it is shown.
+function panel_open(query) {
+    if (query.panel === "open")   return true;
+    if (query.panel === "closed") return false;
+
+    let used = Object.keys(query).filter((k) => k !== "page" && k !== "sort");
+
+    return !(used.length === 1 && used[0] === "q" && query.q !== "");
+}
 
 
 
@@ -87,6 +118,20 @@ app.get("/api/entries", async (req, res) => {
     }
 
     res.json(await search_entries(req.query));
+});
+
+// How many entries a search would return, and nothing else. Separate from
+// /api/entries because the landing page asks this on every keystroke and has
+// no use for the rows.
+app.get("/api/count", async (req, res) => {
+    let problem = query_problem(req.query);
+
+    if (problem) {
+        res.status(400).json({ error: problem });
+        return;
+    }
+
+    res.json({ total: await count_entries(req.query) });
 });
 
 // One entry by its PDB id. In the path, because it names which entry rather

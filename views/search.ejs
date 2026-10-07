@@ -9,7 +9,24 @@
 <body>
     <div class="interface">
         <%- include("includes/rail.ejs") %>
-        <form class="query_panel" id="query_form">
+
+        <div class="workspace">
+<%# The prominent filters, across the top. The input carries form="query_form",
+    so Enter submits the panel below it and app.js needs no new listener:
+    read_filters finds an input by id wherever it sits on the page. %>
+            <div class="top_search">
+            <% for (const f of registry.filters.filter((x) => x.prominent)) { %>
+                <input type="text" id="<%= f.key %>" name="<%= f.key %>"
+                       form="query_form" autocomplete="off"
+                       placeholder="Search an id, molecule, author or organism">
+                <button type="submit" form="query_form">Search</button>
+            <% } %>
+                <button type="button" class="filters_toggle"
+                        aria-expanded="<%= panel_open %>">Filters</button>
+            </div>
+
+            <div class="workspace_body">
+        <form class="query_panel <%= panel_open ? "" : "hidden" %>" id="query_form">
             <div class="query_panel_header">
                 <h1>Structure query</h1>
             </div>
@@ -33,6 +50,8 @@
                     <div class="category_body">
                     <% for (const f of mine) { %>
                         <% if (drawn.has(f.key)) continue; %>
+                        <%# a prominent filter has its own place above the panel %>
+                        <% if (f.prominent) continue; %>
                         <% drawn.add(f.key); %>
 
                         <% if (f.kind === "text") { %>
@@ -129,6 +148,8 @@
             </div>
             <div class="detail_body"></div>
         </aside>
+            </div>
+        </div>
     </div>
     <!-- Injected, not fetched: the scripts below run at once and need it. -->
     <script>window.REGISTRY = <%- registry_json %>;</script>
