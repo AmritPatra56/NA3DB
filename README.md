@@ -529,6 +529,28 @@ Residues are deliberately not among them. Folding `entity_poly_seq` into that
 stops PostgreSQL finishing at the cheap branches. They stay on their own filter,
 which is where the `PSU` example on the landing page points.
 
+**Punctuation is optional, in prose only.** Typing `zdna` finds `Z-DNA`,
+because three of the five branches match a copy of the text with punctuation
+dropped on both sides. Two branches deliberately stay literal:
+
+| branch | matched | why |
+| --- | --- | --- |
+| entry id | literally | `119D` is a name, not a phrase |
+| entity description | literally | these are chemical names. `11,19-DIMETHYL` normalises to `1119dimethyl`, which would then answer a search for `119D` |
+| title, authors, organisms | with punctuation dropped | prose, where a hyphen is a typing choice |
+
+**Spaces survive; only punctuation goes.** Dropping spaces as well looks like
+the same idea and is not: it stops a space separating two words, so
+`ATP-dependent RNA` becomes `dependentrna` and answers a search for `tRNA`.
+Measured on the real data, that turned 163 tRNA hits into 209, and all 46
+extras were wrong. `A DNA` colliding with `A-DNA` is the sharper case, because
+both are things somebody would type. `search.test.js` pins `9IBC` and `1BDN`
+against exactly that.
+
+A search with nothing alphanumeric in it, such as `%`, still finds nothing: the
+stripped value would be empty, and an empty `LIKE` pattern would match every
+row, so it is replaced by one that cannot match.
+
 ### One entry comes from seven tables
 
 The flat shape the browser receives is assembled by the database:

@@ -49,12 +49,36 @@ function like_contains(text) {
     return "%" + String(text).replace(/[\\%_]/g, "\\$&") + "%";
 }
 
+// The same value with punctuation dropped, for matching against prose that
+// has been normalised the same way: typing "zdna" finds "Z-DNA".
+//
+// Spaces survive on purpose. Collapsing them too would run neighbouring words
+// together, and "nt RNA" would become "ntrna" and answer a search for tRNA.
+// Measured on the real data: dropping spaces turned 163 tRNA hits into 209,
+// and all 46 extras were wrong.
+function like_normalised(text) {
+    let stripped = String(text)
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    // Nothing alphanumeric was typed, so there is nothing to match loosely. A
+    // hyphen cannot survive normalisation on either side, so this pattern
+    // matches nothing, which is what keeps a lone "%" finding nothing.
+    if (stripped === "") return "%-%";
+
+    // No escaping needed: % _ and \\ were just stripped.
+    return "%" + stripped + "%";
+}
+
 
 // Per kind: was it filled in, and what goes into the ?. Three rules cover ten
 // of the eleven filters. Lives here, not in the registry, because like_contains
 // is an engine detail. A confal score of 0 is truthy and survives `active`.
 const KINDS = {
-    text:  { active: (v) => v !== "",     param: (v) => like_contains(v) },
+    text:  { active: (v) => v !== "",     param: (v) => like_contains(v),
+             normalised: (v) => like_normalised(v) },
     range: { active: (v) => v !== "",     param: (v) => Number(v) },
     pills: { active: (v) => v.length > 0, param: (v) => v }
 };
@@ -68,9 +92,20 @@ export function build_where(query_params) {
 
     // Every ? in the clause becomes the number the value landed at, so a
     // clause and its value cannot drift apart.
-    function add(clause, value) {
+    // ? is the value. ?~ is the same value with its punctuation dropped, for
+    // the branches matching against normalised prose. ?~ goes first, or the
+    // bare ? would eat its question mark.
+    function add(clause, value, normalised) {
         values.push(value);
-        tests.push(clause.replaceAll("?", "$" + values.length));
+
+        let sql = clause.replaceAll("?~", "\u0000").replaceAll("?", "$" + values.length);
+
+        if (sql.includes("\u0000")) {
+            values.push(normalised);
+            sql = sql.replaceAll("\u0000", "$" + values.length);
+        }
+
+        tests.push(sql);
     }
 
     for (const filter of FILTERS) {
@@ -86,7 +121,8 @@ export function build_where(query_params) {
         let rule = KINDS[filter.kind];
         if (!rule.active(value)) continue;
 
-        add(filter.where, rule.param(value));
+        add(filter.where, rule.param(value),
+            rule.normalised && rule.normalised(value));
     }
 
     // Nothing was asked, so there is nothing to invert either: excluding

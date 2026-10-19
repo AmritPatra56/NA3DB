@@ -372,12 +372,49 @@ test("a % or _ typed in the box stays literal", async () => {
     assert.equal(pct.total, 0, "% must not act as a wildcard");
 });
 
-test("the box takes one value for all five of its placeholders", async () => {
-    let built = build_where({ q: "tna" });
+test("the box takes one typed value and matches it two ways", async () => {
+    let built = build_where({ q: "z-dna" });
 
-    assert.equal(built.values.length, 1, "five ? marks, one value");
-    assert.deepEqual(built.values, ["%tna%"]);
-    assert.equal((built.where.match(/\$1/g) || []).length, 5);
+    // Five branches, two parameters: the literal value for the id and the
+    // entity description, the normalised one for the three prose fields.
+    assert.deepEqual(built.values, ["%z-dna%", "%zdna%"]);
+    assert.equal((built.where.match(/\$1/g) || []).length, 2);
+    assert.equal((built.where.match(/\$2/g) || []).length, 3);
+});
+
+test("punctuation in the box is optional", async () => {
+    let hyphen = await search_entries({ q: "Z-DNA" });
+    let without = await search_entries({ q: "zdna" });
+
+    assert.ok(hyphen.total > 0, "the example needs hits to be worth checking");
+    assert.equal(without.total, hyphen.total, "zdna should find Z-DNA");
+    assert.deepEqual(without.results.map((e) => e.pdb_id).sort(),
+                     hyphen.results.map((e) => e.pdb_id).sort());
+});
+
+test("dropping punctuation does not run neighbouring words together", async () => {
+    // Spaces survive normalisation; only punctuation goes. If spaces went too,
+    // a space would stop separating words and these two would match wrongly:
+    //
+    //   9IBC "ATP-dependent RNA helicase"  -> ...dependentrna... contains trna
+    //   1BDN "THE BEND OF A DNA DODECAMER" -> ...ofadnadodeca... contains adna
+    //
+    // The second is the sharper one, because A-DNA is a real thing to search
+    // for, so the collision is with a term someone would genuinely type.
+    let trna = await export_entries({ q: "tRNA" });
+    let adna = await export_entries({ q: "adna" });
+
+    assert.ok(!trna.results.some((e) => e.pdb_id === "9IBC"),
+              "9IBC has no tRNA in it, only \"dependent RNA\"");
+    assert.ok(!adna.results.some((e) => e.pdb_id === "1BDN"),
+              "1BDN has no A-DNA in it, only \"of A DNA\"");
+});
+
+test("a search with nothing alphanumeric in it still finds nothing", async () => {
+    // "%" strips to empty. The normalised branches must not turn that into a
+    // wildcard that matches the whole table.
+    assert.equal((await search_entries({ q: "%" })).total, 0);
+    assert.equal((await search_entries({ q: "---" })).total, 0);
 });
 
 // --- what a result row carries -------------------------------------------

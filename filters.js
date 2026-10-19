@@ -65,6 +65,12 @@ export function example_url(example) {
 // One object per searchable question. `kind` decides how the value is read and
 // drawn; `where` is SQL with ? for the value; `clause` is the escape hatch for
 // a filter whose SQL takes no parameter. Never rename a key: bookmarks use it.
+// The SQL half of the search box's loose matching: the same punctuation the
+// browser drops from what was typed, dropped from the column being searched.
+// Spaces are kept on both sides. See like_normalised in search.js.
+const normalised = (column) =>
+    `regexp_replace(lower(${column}), '[^a-z0-9 ]', '', 'g')`;
+
 export const FILTERS = [
     // One box for whatever the visitor already knows: an id, a molecule, a
     // form, an organism, a person. Five ? marks and one value, because add()
@@ -79,17 +85,29 @@ export const FILTERS = [
         prominent: true,
         // `match` in the query says whether this clause is used or negated.
         negatable: "match",
+        // Two kinds of field, matched two ways.
+        //
+        // The id and the entity description stay literal, because punctuation
+        // means something in both: 119D is an id, and an entity description
+        // is often a chemical name like 11,19-DIMETHYL..., which normalises
+        // to 1119dimethyl and would then answer a search for 119D.
+        //
+        // The prose fields are matched against a normalised copy, so the
+        // punctuation someone leaves out does not matter: ?~ is the typed
+        // value with its punctuation dropped, and zdna finds Z-DNA.
         where: `AND (
                     e.id ILIKE ?
-                 OR EXISTS (SELECT 1 FROM struct st
-                            WHERE st.entry_id = e.id AND st.title ILIKE ?)
-                 OR EXISTS (SELECT 1 FROM citation_author ca
-                            WHERE ca.entry_id = e.id AND ca.name ILIKE ?)
                  OR EXISTS (SELECT 1 FROM entity en
                             WHERE en.entry_id = e.id AND en.pdbx_description ILIKE ?)
+                 OR EXISTS (SELECT 1 FROM struct st
+                            WHERE st.entry_id = e.id
+                              AND ${normalised("st.title")} LIKE ?~)
+                 OR EXISTS (SELECT 1 FROM citation_author ca
+                            WHERE ca.entry_id = e.id
+                              AND ${normalised("ca.name")} LIKE ?~)
                  OR EXISTS (SELECT 1 FROM entity_src_gen sg
                             WHERE sg.entry_id = e.id
-                              AND sg.pdbx_gene_src_scientific_name ILIKE ?)
+                              AND ${normalised("sg.pdbx_gene_src_scientific_name")} LIKE ?~)
                 )`
     },
 
