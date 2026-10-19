@@ -15,12 +15,23 @@
     so Enter submits the panel below it and app.js needs no new listener:
     read_filters finds an input by id wherever it sits on the page. %>
             <div class="top_search">
-            <% for (const f of registry.filters.filter((x) => x.prominent)) { %>
-                <input type="text" id="<%= f.key %>" name="<%= f.key %>"
-                       form="query_form" autocomplete="off"
-                       placeholder="Search an id, molecule, author or organism">
-                <button type="submit" form="query_form">Search</button>
-            <% } %>
+<%# Column one of the bar, which was empty. Putting it here keeps the box on
+    the centre line and the switch beside the thing it changes. %>
+                <div class="match_switch" role="group" aria-label="How the search matches">
+                <% for (const mode of registry.match_modes) { %>
+                    <button type="button" data-match="<%= mode.key %>"
+                            aria-pressed="<%= match === mode.key %>"><%= mode.label %></button>
+                <% } %>
+                </div>
+
+                <div class="top_search_box">
+                <% for (const f of registry.filters.filter((x) => x.prominent)) { %>
+                    <input type="text" id="<%= f.key %>" name="<%= f.key %>"
+                           form="query_form" autocomplete="off"
+                           placeholder="Search an id, molecule, author or organism">
+                    <button type="submit" form="query_form">Search</button>
+                <% } %>
+                </div>
                 <button type="button" class="filters_toggle"
                         aria-expanded="<%= panel_open %>">Filters</button>
             </div>
@@ -106,8 +117,33 @@
         </form>
         <div class="results_area">
             <div class="results_area_header">
-                <h1>Entries (0)</h1>
+                <div class="results_count">
+                    <h1>Entries (0)</h1>
+<%# A number box, not a list: type any whole number. The suggestions are a
+    convenience and the max is the cap the server enforces anyway. %>
+                    <label class="per_page_field">
+                        <span>Show</span>
+                        <input type="number" id="per_page" name="per_page"
+                               list="per_page_options" inputmode="numeric"
+                               min="1" max="<%= registry.max_page_size %>" step="1"
+                               value="<%= registry.default_page_size %>">
+                        <datalist id="per_page_options">
+                        <% for (const n of registry.page_size_suggestions) { %>
+                            <option value="<%= n %>"></option>
+                        <% } %>
+                        </datalist>
+                        <span>per page</span>
+                    </label>
+                </div>
                 <div class="results_tools">
+<%# Two renderings of the same reply. Switching redraws from what the browser
+    already has, so it never asks the server again. %>
+                    <div class="view_switch" role="group" aria-label="Result layout">
+                        <button type="button" data-view="cards"
+                                aria-pressed="<%= view === "cards" %>">Cards</button>
+                        <button type="button" data-view="lines"
+                                aria-pressed="<%= view === "lines" %>">Lines</button>
+                    </div>
                     <label class="sort_field">
                         <span>Sort by</span>
                         <select id="sort_by" name="sort">
@@ -141,13 +177,6 @@
             </div>
             <div class="pagination"></div>
         </div>
-        <aside class="detail_panel hidden">
-            <div class="detail_header">
-                <h2 class="detail_id"></h2>
-                <button type="button" class="detail_close" aria-label="Close">&times;</button>
-            </div>
-            <div class="detail_body"></div>
-        </aside>
             </div>
         </div>
     </div>

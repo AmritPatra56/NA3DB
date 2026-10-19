@@ -77,6 +77,8 @@ export const FILTERS = [
         key: "q", label: "Search", group: "Demographics", kind: "text",
         // Drawn across the top of the page rather than inside the panel.
         prominent: true,
+        // `match` in the query says whether this clause is used or negated.
+        negatable: "match",
         where: `AND (
                     e.id ILIKE ?
                  OR EXISTS (SELECT 1 FROM struct st
@@ -134,6 +136,7 @@ export const FILTERS = [
     // An entry with no NtC row matches neither end.
     {
         key: "confal_min", label: "Confal score", group: "3D Features", kind: "range",
+        answered_by: "confal_score",
         placeholder: "min", pair_with: "confal_max",
         where: `AND EXISTS (SELECT 1 FROM ndb_struct_ntc_overall o
                             WHERE o.entry_id = e.id AND o.confal_score >= ?)`
@@ -141,6 +144,7 @@ export const FILTERS = [
 
     {
         key: "confal_max", label: "Confal score", group: "3D Features", kind: "range",
+        answered_by: "confal_score",
         placeholder: "max",
         where: `AND EXISTS (SELECT 1 FROM ndb_struct_ntc_overall o
                             WHERE o.entry_id = e.id AND o.confal_score <= ?)`
@@ -148,6 +152,7 @@ export const FILTERS = [
 
     {
         key: "assigned_ntc", label: "Assigned NtC", group: "3D Features", kind: "text",
+        answered_by: "assigned_ntc",
         where: `AND EXISTS (SELECT 1 FROM ndb_struct_ntc_step_summary ss
                             WHERE ss.entry_id = e.id
                               AND ss.assigned_ntc ILIKE ?)`
@@ -195,6 +200,7 @@ export const FILTERS = [
     // pills selected is the same as neither, so nothing is excluded.
     {
         key: "monomer_flag", label: "Monomer standard flag",
+        answered_by: "monomer_flag",
         group: "Structure Components", kind: "pills", any: false,
         options: ["Standard", "Non-Standard"].map(option),
         clause: (v) => {
@@ -276,23 +282,83 @@ export function sort_by(key) {
 }
 
 
+// What the search box means. "excludes" turns its clause into NOT (...), so
+// the two answers always add up to the whole database.
+export const MATCH_MODES = [
+    { key: "contains", label: "Contains" },
+    { key: "excludes", label: "Excludes" }
+];
+
+export const DEFAULT_MATCH = MATCH_MODES[0].key;
+
+// Looked up by key, so an unknown mode falls back rather than reaching the SQL.
+export function match_mode(value) {
+    return MATCH_MODES.some((m) => m.key === value) ? value : DEFAULT_MATCH;
+}
+
+
+// How many results a page holds. Any whole number the visitor types, capped
+// so one request cannot ask for the whole database and every column with it.
+// The suggestions are what the control offers; they are not a restriction.
+export const DEFAULT_PAGE_SIZE = 20;
+export const MAX_PAGE_SIZE = 200;
+export const PAGE_SIZE_SUGGESTIONS = [20, 25, 50, 100];
+
+// A whole number between 1 and the cap, or the default. Safe to write into a
+// LIMIT because what comes back is always digits, the same guarantee as_page
+// gives the OFFSET beside it.
+export function page_size_from(value) {
+    let asked = Math.floor(Number(value));
+
+    if (!Number.isFinite(asked) || asked < 1) return DEFAULT_PAGE_SIZE;
+
+    return Math.min(asked, MAX_PAGE_SIZE);
+}
+
+
 // One object per returnable column. A separate list from FILTERS because the
 // two overlap without containing each other: `title` is shown and not searched.
-// scope "entry" is fetched for every result, "detail" only for one entry.
-// in_detail: false keeps a fetched column out of the detail rows, and
-// in_panel: true puts it in the short list the side panel shows.
+//
+// scope says which query fetches it: "entry" for every result, "detail" only
+// when one entry is asked for. show says where it is DISPLAYED, which is a
+// different question: "page" is the full structure page, "card" a result card.
+// Absent means ["page"] alone; an empty list means the column is fetched but
+// never shown.
 export const COLUMNS = [
-    // Fetched for the panel's links, but the heading already shows it.
+    // Fetched because the links are built from it, shown nowhere: the heading
+    // already says it.
     {
         key: "pdb_id", label: "Entry ID", group: "Demographics",
         scope: "entry", select: `e.id`,
-        in_detail: false
+        show: []
     },
 
     {
         key: "title", label: "Title", group: "Demographics",
         scope: "entry", select: `s.title`,
-        in_panel: true
+        show: ["page", "card"]
+    },
+
+    {
+        key: "method", label: "Experimental method", group: "Demographics",
+        scope: "entry", select: `ex.method`,
+        show: ["page", "card"]
+    },
+
+    // ::text, not the bare DATE: pg turns a DATE into a JS Date and Prague is
+    // ahead of UTC, which moved every deposition date back a day.
+    {
+        key: "deposition_date", label: "Deposition date", group: "Demographics",
+        scope: "entry", select: `ds.recvd_initial_deposition_date::text`,
+        show: ["page", "card"]
+    },
+
+    // 2.00 A and 2 A are different claims: the trailing digits say how
+    // precisely the resolution is known.
+    {
+        key: "resolution", label: "Resolution", group: "Demographics",
+        scope: "entry", select: `rf.d_resolution_high`,
+        decimals: 2, unit: "Å", show: ["page", "card"]
     },
 
     // A scalar subquery, not a join: citation_author has a generated id, so two
@@ -301,32 +367,65 @@ export const COLUMNS = [
     {
         key: "author", label: "Author name", group: "Demographics",
         scope: "entry",
-        in_detail: false,
+        show: [],
         select: `(SELECT ca.name FROM citation_author ca
                   WHERE ca.entry_id = e.id AND ca.citation_id = 'primary'
                   ORDER BY ca.ordinal, ca.id LIMIT 1)`
     },
 
+    // Entry scope, not detail: every result card names its authors. The two
+    // subqueries cost 2-8 ms for a page of twenty.
+    //
+    // Falls back to `author`: some entries record only the first, and a missing
+    // list should not mean a missing author.
     {
-        key: "method", label: "Experimental method", group: "Demographics",
-        scope: "entry", select: `ex.method`,
-        in_panel: true
+        key: "all_authors", label: "Authors", group: "Citation",
+        scope: "entry", fallback: "author", show: ["page", "card"],
+        select: `(SELECT string_agg(ca.name, ', ' ORDER BY ca.ordinal, ca.id)
+                  FROM citation_author ca
+                  WHERE ca.entry_id = e.id AND ca.citation_id = 'primary')`
     },
 
-    // ::text, not the bare DATE: pg turns a DATE into a JS Date and Prague is
-    // ahead of UTC, which moved every deposition date back a day.
     {
-        key: "deposition_date", label: "Deposition date", group: "Demographics",
-        scope: "entry", select: `ds.recvd_initial_deposition_date::text`,
-        in_panel: true
+        key: "published", label: "Published", group: "Citation",
+        scope: "entry", show: ["page", "card"],
+        select: `(SELECT trim(concat_ws(' ', c.journal_abbrev, c.year::text))
+                  FROM citation c
+                  WHERE c.entry_id = e.id AND c.id = 'primary')`
     },
 
-    // 2.00 A and 2 A are different claims: the trailing digits say how
-    // precisely the resolution is known.
     {
-        key: "resolution", label: "Resolution", group: "Demographics",
-        scope: "entry", select: `rf.d_resolution_high`,
-        decimals: 2, unit: "Å", in_panel: true
+        key: "polymer_type", label: "Polymer type", group: "Structure Components",
+        scope: "entry", select: POLYMER_TYPE_SQL,
+        show: ["page", "card"]
+    },
+
+    {
+        key: "entity_name", label: "Entity name", group: "Structure Components",
+        scope: "entry", select: `ent.pdbx_description`,
+        show: ["page", "card"]
+    },
+
+    // Also a scalar subquery, and not hypothetical: 18 entries have several
+    // entity_src_gen rows for entity 1, which joined turned 1,489 into 1,512.
+    {
+        key: "source_organism", label: "Source organism", group: "Structure Components",
+        scope: "entry", show: ["page", "card"],
+        select: `COALESCE((SELECT g.pdbx_gene_src_scientific_name FROM entity_src_gen g
+                           WHERE g.entry_id = e.id AND g.entity_id = '1'
+                           ORDER BY g.id LIMIT 1), '')`
+    },
+
+    {
+        key: "nonstandard_residue", label: "Non-standard residues",
+        group: "Structure Components", scope: "entry",
+        show: ["page", "card"],
+        select: `COALESCE((
+                     SELECT string_agg(DISTINCT cc.id, ', ' ORDER BY cc.id)
+                     FROM entity_poly_seq eps
+                     JOIN chem_comp cc ON cc.id = eps.mon_id
+                     WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
+                 ), '')`
     },
 
     {
@@ -345,58 +444,9 @@ export const COLUMNS = [
     },
 
     {
-        key: "entity_name", label: "Entity name", group: "Structure Components",
-        scope: "entry", select: `ent.pdbx_description`
-    },
-
-    // Also a scalar subquery, and not hypothetical: 18 entries have several
-    // entity_src_gen rows for entity 1, which joined turned 1,489 into 1,512.
-    {
-        key: "source_organism", label: "Source organism", group: "Structure Components",
-        scope: "entry",
-        select: `COALESCE((SELECT g.pdbx_gene_src_scientific_name FROM entity_src_gen g
-                           WHERE g.entry_id = e.id AND g.entity_id = '1'
-                           ORDER BY g.id LIMIT 1), '')`
-    },
-
-    {
-        key: "nonstandard_residue", label: "Non-standard residues",
-        group: "Structure Components", scope: "entry",
-        select: `COALESCE((
-                     SELECT string_agg(DISTINCT cc.id, ', ' ORDER BY cc.id)
-                     FROM entity_poly_seq eps
-                     JOIN chem_comp cc ON cc.id = eps.mon_id
-                     WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
-                 ), '')`
-    },
-
-    {
-        key: "polymer_type", label: "Polymer type", group: "Structure Components",
-        scope: "entry", select: POLYMER_TYPE_SQL
-    },
-
-    {
         key: "monomer_flag", label: "Monomer standard flag", group: "Structure Components",
         scope: "entry",
         select: `CASE WHEN e.has_nonstandard_residue THEN 'Non-Standard' ELSE 'Standard' END`
-    },
-
-    // Falls back to `author`: some entries record only the first, and a missing
-    // list should not mean a missing author.
-    {
-        key: "all_authors", label: "Authors", group: "Citation",
-        scope: "detail", fallback: "author", in_panel: true,
-        select: `(SELECT string_agg(ca.name, ', ' ORDER BY ca.ordinal, ca.id)
-                  FROM citation_author ca
-                  WHERE ca.entry_id = e.id AND ca.citation_id = 'primary')`
-    },
-
-    {
-        key: "published", label: "Published", group: "Citation",
-        scope: "detail", in_panel: true,
-        select: `(SELECT trim(concat_ws(' ', c.journal_abbrev, c.year::text))
-                  FROM citation c
-                  WHERE c.entry_id = e.id AND c.id = 'primary')`
     },
 
     {
@@ -459,7 +509,32 @@ export const COLUMNS = [
                   FROM ndb_struct_ntc_step_summary ss
                   WHERE ss.entry_id = e.id AND ss.assigned_ntc <> 'NANT')`
     }
+
 ];
+
+
+// The columns one view displays, in registry order. `also` names extra keys to
+// include, which is how a card gains a row for the thing that was searched on.
+export function columns_for(view, also = []) {
+    return COLUMNS.filter((c) =>
+        (c.show || ["page"]).includes(view) || also.includes(c.key));
+}
+
+
+// The columns that explain why a result matched this query: for every filter
+// in use that names one, and that is not on the card already.
+export function columns_answering(query) {
+    let keys = new Set();
+
+    for (const filter of FILTERS) {
+        if (!filter.answered_by) continue;
+
+        let value = query[filter.key];
+        if (value !== undefined && value !== "") keys.add(filter.answered_by);
+    }
+
+    return [...keys];
+}
 
 
 // What the browser may see. A whitelist, not the object with `where` removed:
@@ -475,13 +550,20 @@ export function public_registry() {
         sorts: SORTS.map(({ key, label }) => ({ key, label })),
         default_sort: DEFAULT_SORT.key,
 
+        match_modes: MATCH_MODES,
+        default_match: DEFAULT_MATCH,
+
+        page_size_suggestions: PAGE_SIZE_SUGGESTIONS,
+        default_page_size: DEFAULT_PAGE_SIZE,
+        max_page_size: MAX_PAGE_SIZE,
+
         filters: FILTERS.map(({ key, label, group, kind, prominent,
                                options, any, placeholder, pair_with }) =>
             ({ key, label, group, kind, prominent,
                options, any, placeholder, pair_with })),
 
-        columns: COLUMNS.map(({ key, label, group, scope, in_panel }) =>
-            ({ key, label, group, scope, in_panel })),
+        columns: COLUMNS.map(({ key, label, group, scope, show }) =>
+            ({ key, label, group, scope, show })),
 
         text_filters: TEXT_FILTERS,
         pill_filters: PILL_FILTERS

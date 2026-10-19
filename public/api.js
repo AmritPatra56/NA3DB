@@ -18,23 +18,24 @@ async function get_json(url) {
 }
 
 // One page of search results: { results, total, page, pages, page_size }.
-async function search_entries(filters, page = 1, sort = "") {
+async function search_entries(filters, page = 1, sort = "", per_page = "", match = "") {
     let params = filters_to_params(filters);
 
     if (page > 1) params.set("page", page);
     if (sort) params.set("sort", sort);
+    if (per_page) params.set("per_page", per_page);
+    if (match) params.set("match", match);
 
     return get_json("/api/entries?" + params.toString());
 }
 
 // Every matching entry, for the report page: { results, total, truncated }.
-async function export_entries(filters) {
-    return get_json("/api/export?" + filters_to_params(filters).toString());
-}
+// match travels too: it decides which entries match, so a report of an
+// Excludes search would otherwise quietly report the Contains one.
+async function export_entries(filters, match = "") {
+    let params = filters_to_params(filters);
 
-// One structure's full record, from our own server rather than data.rcsb.org.
-// It carries more than RCSB did: every author, the confal percentile and the
-// NtC classes, which come from the DNATCO analysis.
-async function fetch_entry_detail(pdb_id) {
-    return get_json("/api/entries/" + encodeURIComponent(pdb_id));
+    if (match) params.set("match", match);
+
+    return get_json("/api/export?" + params.toString());
 }

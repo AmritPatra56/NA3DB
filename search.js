@@ -2,7 +2,8 @@
 // Server only. It never touches HTTP and never touches the screen.
 
 import { query } from "./db.js";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, sort_by } from "./filters.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, sort_by,
+         page_size_from, match_mode } from "./filters.js";
 
 
 // One raw query value as a single string, whatever shape it arrived in.
@@ -67,9 +68,19 @@ export function build_where(query_params) {
 
     // Every ? in the clause becomes the number the value landed at, so a
     // clause and its value cannot drift apart.
-    function add(clause, value) {
+    //
+    // negate turns "AND <test>" into "AND NOT (<test>)". Safe for any clause
+    // here because none of them can be null: EXISTS is always true or false,
+    // and so is ILIKE against a column that cannot be null. So contains and
+    // excludes always add up to the whole table.
+    function add(clause, value, negate = false) {
         values.push(value);
-        where.push(clause.replaceAll("?", "$" + values.length));
+
+        let sql = clause.replaceAll("?", "$" + values.length);
+
+        where.push(negate
+            ? "AND NOT (" + sql.replace(/^\s*AND\s+/, "") + ")"
+            : sql);
     }
 
     for (const filter of FILTERS) {
@@ -85,15 +96,17 @@ export function build_where(query_params) {
         let rule = KINDS[filter.kind];
         if (!rule.active(value)) continue;
 
-        add(filter.where, rule.param(value));
+        // A negatable filter reads the query parameter it names: the search
+        // box is inverted by ?match=excludes, and nothing else is negatable.
+        let negate = filter.negatable &&
+                     match_mode(as_text(query_params[filter.negatable])) === "excludes";
+
+        add(filter.where, rule.param(value), negate);
     }
 
     return { where: where.join("\n    "), values };
 }
 
-
-// How many entries one page of results holds.
-const PAGE_SIZE = 20;
 
 // Cap on one export, so a single request cannot exhaust memory.
 const EXPORT_LIMIT = 5000;
@@ -111,7 +124,11 @@ function as_page(value) {
 export async function search_entries(query_params) {
     let { where, values } = build_where(query_params);
     let page = as_page(query_params.page);
-    let offset = (page - 1) * PAGE_SIZE;
+
+    // Matched against a list rather than taken from the URL: it is written
+    // straight into the LIMIT, so it can only ever be one of three numbers.
+    let page_size = page_size_from(query_params.per_page);
+    let offset = (page - 1) * page_size;
 
     // Looked up by key, so nothing from the URL is ever interpolated into the
     // ORDER BY. e.id last breaks ties, or a tied row could appear on two pages;
@@ -130,7 +147,7 @@ export async function search_entries(query_params) {
                    ${sort.join}
                    WHERE ${where}
                    ORDER BY ${order}
-                   LIMIT ${PAGE_SIZE} OFFSET ${offset}
+                   LIMIT ${page_size} OFFSET ${offset}
                )
                ORDER BY ${order}`, values),
 
@@ -143,8 +160,8 @@ export async function search_entries(query_params) {
         results:   rows.rows,
         total:     total,
         page:      page,
-        pages:     Math.ceil(total / PAGE_SIZE),
-        page_size: PAGE_SIZE
+        pages:     Math.ceil(total / page_size),
+        page_size: page_size
     };
 }
 

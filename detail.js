@@ -3,7 +3,7 @@
 // facts, search.js makes SQL from them, this makes rows. It runs here so the
 // detail panel and the structure page cannot format the same field differently.
 
-import { COLUMNS } from "./filters.js";
+import { columns_for } from "./filters.js";
 
 // One value as display text, or null when there is nothing to show.
 // The locale is pinned: toLocaleString() with none uses the viewer's machine,
@@ -20,16 +20,16 @@ function display(value, column) {
     return column.unit ? `${text} ${column.unit}` : text;
 }
 
-// The rows a detail view shows, in registry order. An empty value is dropped
-// rather than drawn blank. view "panel" is the short list beside the results;
-// "page" is everything, for /structure/:id.
-export function detail_rows(entry, view = "page") {
+// The rows a view shows, in registry order. An empty value is dropped rather
+// than drawn blank. The view names come from each column's `show` list, so
+// adding a place to display columns in means naming it there, not here.
+//
+// `also` names extra column keys for this one render: a card shows the field
+// that was searched on even when it is not normally on the card.
+export function detail_rows(entry, view = "page", also = []) {
     let rows = [];
 
-    for (const column of COLUMNS) {
-        // === false, not falsy: every other column has undefined here.
-        if (column.in_detail === false) continue;
-        if (view === "panel" && !column.in_panel) continue;
+    for (const column of columns_for(view, also)) {
 
         let raw = entry[column.key];
         if ((raw === null || raw === undefined || raw === "") && column.fallback) {

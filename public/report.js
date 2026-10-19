@@ -13,6 +13,10 @@ let DEFAULT_FIELDS = ["pdb_id", "title", "method", "deposition_date"];
 // The entries the report will cover. Filled once the search comes back.
 let report_entries = [];
 
+// How many rows the preview draws. All 1,489 would be 20,000-odd cells of DOM
+// for a table nobody scrolls to the end of; the file itself is never capped.
+const PREVIEW_ROWS = 200;
+
 
 // Builds the checkbox list, one block per category.
 function fields_html() {
@@ -97,6 +101,59 @@ function download_text(text, filename) {
     URL.revokeObjectURL(url);
 }
 
+// The file as a table: the ticked fields in registry order, one row per entry.
+// It reads the same REPORT_FIELDS and shows the same values build_csv writes,
+// so ticking a box here and opening the download cannot disagree.
+function render_preview() {
+    let container = document.querySelector(".report_preview");
+    let keys = read_selected_fields();
+
+    if (report_entries.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+
+    if (keys.length === 0) {
+        container.innerHTML = `<p class="preview_note">Tick a field to see the report.</p>`;
+        return;
+    }
+
+    let chosen = REPORT_FIELDS.filter(function (field) {
+        return keys.includes(field.key);
+    });
+
+    let head = chosen.map(function (field) {
+        return `<th>${escape_html(field.label)}</th>`;
+    }).join("");
+
+    let shown = report_entries.slice(0, PREVIEW_ROWS);
+
+    let body = shown.map(function (entry) {
+        let cells = chosen.map(function (field) {
+            let value = entry[field.key];
+
+            return `<td>${escape_html(value === null ? "" : value)}</td>`;
+        }).join("");
+
+        return `<tr>${cells}</tr>`;
+    }).join("");
+
+    let note = report_entries.length > shown.length
+        ? `<p class="preview_note">Showing the first ${shown.length} of
+           ${report_entries.length.toLocaleString("en-GB")} rows. The download has all of them.</p>`
+        : "";
+
+    container.innerHTML = `
+        <div class="preview_scroll">
+            <table class="preview_table">
+                <thead><tr>${head}</tr></thead>
+                <tbody>${body}</tbody>
+            </table>
+        </div>
+        ${note}
+    `;
+}
+
 // The export button only works when there are entries and at least one field ticked.
 function update_export_button() {
     let button = document.getElementById("export_button");
@@ -104,55 +161,42 @@ function update_export_button() {
     button.disabled = report_entries.length === 0 || read_selected_fields().length === 0;
 }
 
-// One line saying which filters the report will use.
-function describe_filters(filters) {
-    let parts = [];
-
-    Object.keys(filters).forEach(function (key) {
-        let value = filters[key];
-        let text = Array.isArray(value) ? value.join(", ") : value;
-
-        if (text !== "") parts.push(key + ": " + text);
-    });
-
-    if (parts.length === 0) return "No filters. This report covers every entry.";
-    return "Filters carried over from your search — " + parts.join("  ·  ");
-}
-
 // Runs the search from the URL and shows how many entries the report will cover.
 async function load_report_entries() {
     let count = document.querySelector(".report_count");
-    let summary = document.querySelector(".report_summary");
     let button = document.getElementById("export_button");
 
-    summary.textContent = "Loading the matching entries...";
+    count.textContent = "Loading...";
     button.disabled = true;
 
     try {
-        let filters = params_to_filters(new URLSearchParams(location.search));
-        let reply = await export_entries(filters);
+        let asked = new URLSearchParams(location.search);
+        let filters = params_to_filters(asked);
+
+        // params_to_filters reads the filter keys only, so the match mode has
+        // to be carried across by hand.
+        let reply = await export_entries(filters, asked.get("match") || "");
 
         report_entries = reply.results;
 
         count.textContent = `Entries (${reply.total})`;
-        summary.textContent = describe_filters(filters);
-
-        if (reply.truncated) {
-            summary.textContent += `  ·  Only the first ${reply.results.length} entries will be exported.`;
-        }
 
         update_export_button();
+        render_preview();
     } catch (err) {
-        summary.textContent = err.message;
-        summary.classList.add("detail_error");
+        document.querySelector(".report_preview").innerHTML =
+            `<p class="preview_note">${escape_html(err.message)}</p>`;
     }
 }
 
 
 document.getElementById("report_fields").innerHTML = fields_html();
 
-// Ticking or unticking any box can change whether there is anything to export.
-document.getElementById("report_fields").addEventListener("change", update_export_button);
+// Ticking or unticking a box changes both the button and the table below it.
+document.getElementById("report_fields").addEventListener("change", function () {
+    update_export_button();
+    render_preview();
+});
 
 document.getElementById("export_button").addEventListener("click", function () {
     let csv = build_csv(read_selected_fields(), report_entries);
@@ -160,6 +204,27 @@ document.getElementById("export_button").addEventListener("click", function () {
 
     download_text(csv, `na3db_report_${today}.csv`);
 });
+
+// Opening or closing the field list. The choice goes in the URL beside the
+// search, so a shared link opens the way the sender left it.
+let fields_toggle = document.querySelector(".fields_toggle");
+let fields_panel = document.querySelector(".query_panel");
+
+fields_toggle.addEventListener("click", function () {
+    let open = fields_panel.classList.contains("hidden");
+
+    fields_panel.classList.toggle("hidden", !open);
+    fields_toggle.setAttribute("aria-expanded", String(open));
+
+    let params = new URLSearchParams(location.search);
+
+    if (open) params.delete("fields");
+    else params.set("fields", "closed");
+
+    history.replaceState(null, "", location.pathname + "?" + params.toString());
+    sync_rail_links();
+});
+
 
 sync_rail_links();
 load_report_entries();

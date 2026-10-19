@@ -9,7 +9,7 @@
 <body>
     <div class="interface">
         <%- include("includes/rail.ejs") %>
-        <div class="query_panel">
+        <div class="query_panel <%= fields_open ? "" : "hidden" %>">
             <div class="query_panel_header">
                 <h1>Report</h1>
             </div>
@@ -21,9 +21,18 @@
         <div class="results_area">
             <div class="results_area_header">
                 <h1 class="report_count">Entries (0)</h1>
+<%# Collapses the field list so the table has the whole width. The state goes
+    in the URL, so a link opens the way it was left. %>
+                <button type="button" class="fields_toggle"
+                        aria-expanded="<%= fields_open %>"
+                        aria-label="Show or hide the fields">
+                    <img src="/assets/arrow.svg" alt="">
+                </button>
             </div>
-            <div class="results_area_body">
-                <div class="report_summary"></div>
+            <div class="results_area_body report_body">
+<%# The file as it will be downloaded. Built from the same fields and the same
+    escaping as the CSV, so what is on screen is what lands in the file. %>
+                <div class="report_preview"></div>
             </div>
         </div>
     </div>

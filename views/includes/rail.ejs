@@ -3,15 +3,21 @@
         <a href="/" class="rail-logo" title="NA3DB">
             <img src="/assets/logo_ibt.svg" alt="IBT logo">
         </a>
-        <a href="/search" class="rail-item <%= page === "search" ? "active" : "" %>" data-page="/search" title="Structure query">
+<%# rail_query is for the pages that load no script of their own: the structure
+    page cannot run sync_rail_links, so its links are built here. %>
+        <% const carry = typeof rail_query === "undefined" ? "" : rail_query; %>
+        <a href="/search<%= carry %>" class="rail-item <%= page === "search" ? "active" : "" %>" data-page="/search" title="Structure query">
             <img src="/assets/search.svg" alt="Search">
         </a>
         <a href="#" class="rail-item" title="Questions">
             <img src="/assets/Q.png" alt="Questions" class="icon-narrow">
         </a>
-        <a href="/report" class="rail-item <%= page === "report" ? "active" : "" %>" data-page="/report" title="Report">
+        <%# A report covers a search, so it is not offered before there is one. %>
+        <% if (page !== "landing") { %>
+        <a href="/report<%= carry %>" class="rail-item <%= page === "report" ? "active" : "" %>" data-page="/report" title="Report">
             <img src="/assets/report.svg" alt="Report">
         </a>
+        <% } %>
     </div>
     <div class="rail-brand">NA3DB</div>
 </div>

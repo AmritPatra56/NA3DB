@@ -131,7 +131,35 @@ let method_labels = {
     "THEORETICAL MODEL": "Model"
 };
 
-// One result row. Guards resolution, null for NMR, and unknown methods.
+// One result as a card: the label and value rows detail.js built on the
+// server, so a card and the structure page cannot describe the same entry
+// differently. Clicking anywhere on it opens that page.
+function card_html(entry) {
+    let id = escape_html(entry.pdb_id);
+
+    let rows = entry.card.map(function (row) {
+        return `
+            <div class="card_field">
+                <div class="card_label">${escape_html(row.label)}</div>
+                <div class="card_value">${escape_html(row.value)}</div>
+            </div>
+        `;
+    }).join("");
+
+    return `
+        <article class="result_card" data-id="${id}">
+            <h3 class="card_id">${id}</h3>
+            ${rows}
+            <div class="card_links">
+                <a class="detail_link" target="_blank" rel="noopener"
+                   href="https://www.rcsb.org/structure/${id}">View on rcsb.org</a>
+                <a class="detail_link" href="/structure/${id}">Open full page</a>
+            </div>
+        </article>
+    `;
+}
+
+// One result as a line. Guards resolution, null for NMR, and unknown methods.
 function row_html(entry) {
     let resolution = entry.resolution === null ? "" : entry.resolution.toFixed(2) + " Å";
     let method = method_labels[entry.method] || entry.method;
@@ -153,10 +181,24 @@ function row_html(entry) {
     `;
 }
 
-// Draws one page of rows into the results list, replacing whatever was there.
+// Cards is the default: it is the view that shows the conformational data.
+// "lines" is the only other accepted value, so a stale or hand-edited URL
+// falls back rather than drawing nothing.
+function view_from_url() {
+    return new URLSearchParams(location.search).get("view") === "lines"
+        ? "lines"
+        : "cards";
+}
+
+let current_view = view_from_url();
+
+// Draws one page into the results list, replacing whatever was there.
 function render_results(list) {
     let container = document.querySelector(".results_list");
-    container.innerHTML = list.map(row_html).join("");
+    let cards = current_view === "cards";
+
+    container.classList.toggle("as_cards", cards);
+    container.innerHTML = list.map(cards ? card_html : row_html).join("");
 }
 
 // What the results area is showing: the last reply from the server.
@@ -288,6 +330,51 @@ function sort_from_url() {
     return new URLSearchParams(location.search).get("sort") || REGISTRY.default_sort;
 }
 
+// Whether the box means "find these" or "find everything but these". It only
+// changes what the box does, so it goes in the URL beside the search itself.
+let match_switch = document.querySelector(".match_switch");
+
+function match_from_url() {
+    let asked = new URLSearchParams(location.search).get("match");
+
+    return REGISTRY.match_modes.some((m) => m.key === asked)
+        ? asked
+        : REGISTRY.default_match;
+}
+
+let current_match = match_from_url();
+
+function paint_match_switch() {
+    match_switch.querySelectorAll("button").forEach(function (button) {
+        button.setAttribute("aria-pressed",
+                            String(button.dataset.match === current_match));
+    });
+}
+
+match_switch.addEventListener("click", function (e) {
+    let button = e.target.closest("button[data-match]");
+    if (!button || button.dataset.match === current_match) return;
+
+    current_match = button.dataset.match;
+    paint_match_switch();
+
+    // A different answer, so back to the first page of it.
+    run_search();
+});
+
+
+// How many results a page holds. The server validates it too; this only keeps
+// the control showing what is actually in force.
+let per_page_select = document.getElementById("per_page");
+
+function per_page_from_url() {
+    let asked = Math.floor(Number(new URLSearchParams(location.search).get("per_page")));
+
+    if (!Number.isFinite(asked) || asked < 1) return String(REGISTRY.default_page_size);
+
+    return String(Math.min(asked, REGISTRY.max_page_size));
+}
+
 // The page the URL asks for, or 1 when it says nothing usable.
 function page_from_url() {
     let n = Number(new URLSearchParams(location.search).get("page"));
@@ -304,6 +391,13 @@ function update_url(filters, page) {
     if (page > 1) params.set("page", page);
     if (sort_select.value !== REGISTRY.default_sort) params.set("sort", sort_select.value);
     if (panel_chosen) params.set("panel", panel_is_open() ? "open" : "closed");
+    if (current_view !== "cards") params.set("view", current_view);
+
+    if (Number(per_page_select.value) !== REGISTRY.default_page_size) {
+        params.set("per_page", per_page_select.value);
+    }
+
+    if (current_match !== REGISTRY.default_match) params.set("match", current_match);
 
     let query = params.toString();
     let url = query === "" ? location.pathname : location.pathname + "?" + query;
@@ -319,16 +413,12 @@ function update_url(filters, page) {
 async function run_search(page = 1) {
     set_loading(true);
 
-    // The entry the panel is showing is not part of the new result set, so it
-    // goes away rather than sitting there beside answers it has nothing to do
-    // with.
-    close_detail();
-
     let filters = read_filters();
     update_url(filters, page);
 
     try {
-        current_reply = await search_entries(filters, page, sort_select.value);
+        current_reply = await search_entries(filters, page, sort_select.value,
+                                             per_page_select.value, current_match);
         current_page = current_reply.page;
         show_page();
     } catch (err) {
@@ -338,84 +428,19 @@ async function run_search(page = 1) {
     }
 }
 
-// The rows into the panel body, plus a link out to the PDB page.
-function render_detail(data) {
-    let body = document.querySelector(".detail_body");
-
-    // panel_rows, not rows: the panel is a summary and the full page below
-    // carries the rest. Both are built by detail.js from one registry, so the
-    // units and labels cannot disagree. Escaped anyway: innerHTML.
-    let fields = data.panel_rows.map(function (row) {
-        return `
-            <div class="detail_field">
-                <div class="detail_label">${escape_html(row.label)}</div>
-                <div class="detail_value">${escape_html(row.value)}</div>
-            </div>
-        `;
-    }).join("");
-
-    let id = escape_html(data.pdb_id);
-
-    body.innerHTML = fields + `
-        <a class="detail_link" target="_blank" rel="noopener"
-           href="https://www.rcsb.org/structure/${id}">View on rcsb.org</a>
-        <a class="detail_link" href="/structure/${id}">Open full page</a>
-    `;
-}
-
-// Which structure the panel is waiting for. A reply for anything else is
-// stale and thrown away.
-let detail_wanted = null;
-
-// Replaces the panel body with a single line: a spinner while loading, or a message.
-function show_detail_status(message, is_error) {
-    let body = document.querySelector(".detail_body");
-    let spinner = is_error ? "" : `<span class="spinner"></span>`;
-    let css = is_error ? "detail_status detail_error" : "detail_status";
-
-    body.innerHTML = `<div class="${css}">${spinner}<span class="status_text"></span></div>`;
-    body.querySelector(".status_text").textContent = message;
-}
-
-// Opens the panel, shows a spinner, then fetches that structure's record and draws it.
-async function open_detail(pdb_id) {
-    let panel = document.querySelector(".detail_panel");
-
-    panel.querySelector(".detail_id").textContent = pdb_id;
-    panel.classList.remove("hidden");
-
-    detail_wanted = pdb_id;
-    show_detail_status("Loading " + pdb_id, false);
-
-    try {
-        let data = await fetch_entry_detail(pdb_id);
-
-        if (detail_wanted !== pdb_id) return;
-        render_detail(data);
-    } catch (err) {
-        if (detail_wanted !== pdb_id) return;
-        show_detail_status(err.message, true);
-    }
-}
-
-// Hides the panel and forgets what it was waiting for, so a late reply is ignored.
-function close_detail() {
-    detail_wanted = null;
-    document.querySelector(".detail_panel").classList.add("hidden");
-}
-
-// A click anywhere on a row opens its panel. The listener is on the list,
-// because the rows are rebuilt on every search.
+// A click anywhere on a result opens that structure's page. The listener is on
+// the list, because the results are rebuilt on every search.
 let results_list = document.querySelector(".results_list");
 
 results_list.addEventListener("click", function (e) {
-    let row = e.target.closest(".result_row");
-    if (!row) return;
+    // A link inside a card is its own destination.
+    if (e.target.closest("a")) return;
 
-    open_detail(row.dataset.id);
+    let result = e.target.closest(".result_card, .result_row");
+    if (!result) return;
+
+    location.href = "/structure/" + encodeURIComponent(result.dataset.id);
 });
-
-document.querySelector(".detail_close").addEventListener("click", close_detail);
 
 
 // Opening or closing the filters. The choice goes in the URL so a reload keeps
@@ -442,10 +467,52 @@ filters_toggle.addEventListener("click", function () {
 });
 
 
+// Switching layout redraws what the browser already has. No request: the reply
+// behind the current page carries every field both views need.
+let view_switch = document.querySelector(".view_switch");
+
+function paint_view_switch() {
+    view_switch.querySelectorAll("button").forEach(function (button) {
+        button.setAttribute("aria-pressed",
+                            String(button.dataset.view === current_view));
+    });
+}
+
+view_switch.addEventListener("click", function (e) {
+    let button = e.target.closest("button[data-view]");
+    if (!button || button.dataset.view === current_view) return;
+
+    current_view = button.dataset.view;
+    paint_view_switch();
+
+    if (current_reply) show_page();
+    update_url(read_filters(), current_page);
+});
+
+
 // A different order is a different first page, so it starts again at page 1.
 sort_select.addEventListener("change", function () {
     run_search();
 });
+
+// So is a different page size: page 4 of twenty is not page 4 of a hundred.
+//
+// "change" and not "input": typing 100 passes through 1 and 10 on the way, and
+// a search for each would be three requests and a flash of one result.
+per_page_select.addEventListener("change", function () {
+    per_page_select.value = per_page_clamped();
+    run_search();
+});
+
+// What the box should read after the server has had its say, so a typed 5000
+// settles back to 200 rather than lying about what is on screen.
+function per_page_clamped() {
+    let asked = Math.floor(Number(per_page_select.value));
+
+    if (!Number.isFinite(asked) || asked < 1) return String(REGISTRY.default_page_size);
+
+    return String(Math.min(asked, REGISTRY.max_page_size));
+}
 
 
 // Clicking a page button asks the server for that page.
@@ -461,11 +528,19 @@ pagination.addEventListener("click", function (e) {
 window.addEventListener("popstate", function () {
     params_to_form(new URLSearchParams(location.search));
     sort_select.value = sort_from_url();
+    per_page_select.value = per_page_from_url();
+    current_match = match_from_url();
+    paint_match_switch();
+    current_view = view_from_url();
+    paint_view_switch();
     run_search(page_from_url());
 });
 
 // On load, take the search out of the URL, fill the form in, then run it.
 params_to_form(new URLSearchParams(location.search));
 sort_select.value = sort_from_url();
+per_page_select.value = per_page_from_url();
+paint_match_switch();
+paint_view_switch();
 sync_rail_links();
 run_search(page_from_url());

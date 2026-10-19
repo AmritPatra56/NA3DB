@@ -7,7 +7,10 @@ import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
 import { find_entry, export_entries, search_entries, query_problem,
          build_where } from "./search.js";
-import { SORTS, DEFAULT_SORT, sort_by } from "./filters.js";
+import { SORTS, DEFAULT_SORT, sort_by,
+         columns_answering, columns_for,
+         PAGE_SIZE_SUGGESTIONS, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE,
+         page_size_from, MATCH_MODES, DEFAULT_MATCH, match_mode } from "./filters.js";
 import { query, transaction, close as close_db } from "./db.js";
 
 // search.js now holds database connections. Without this, npm test never exits.
@@ -375,6 +378,175 @@ test("the box takes one value for all five of its placeholders", async () => {
     assert.equal(built.values.length, 1, "five ? marks, one value");
     assert.deepEqual(built.values, ["%tna%"]);
     assert.equal((built.where.match(/\$1/g) || []).length, 5);
+});
+
+// --- what a result row carries -------------------------------------------
+// The card shows the authors and the journal, so both have to arrive with
+// every result rather than only when one entry is fetched. This is the test
+// that fails if either slips back to detail scope.
+test("every result carries its authors and journal, not just the detail view", async () => {
+    let page = await search_entries({});
+
+    assert.ok(page.results.length > 0);
+
+    for (const entry of page.results) {
+        assert.ok("all_authors" in entry, `${entry.pdb_id} has no all_authors`);
+        assert.ok("published" in entry, `${entry.pdb_id} has no published`);
+    }
+
+    // And the fallback still works a row at a time, not just for one entry.
+    let named = page.results.filter((e) => e.all_authors || e.author);
+    assert.ok(named.length > 0, "some entry should name an author");
+});
+
+// --- a card answers the question that was asked -------------------------
+// Pure registry logic, so it is tested here rather than over HTTP: na3db_test
+// has no NtC or confal rows for a round-trip to match against.
+
+test("a filter in use names the column that explains the match", () => {
+    assert.deepEqual(columns_answering({}), []);
+    assert.deepEqual(columns_answering({ q: "tRNA" }), []);
+
+    assert.deepEqual(columns_answering({ assigned_ntc: "AA00" }), ["assigned_ntc"]);
+    assert.deepEqual(columns_answering({ confal_min: "60" }), ["confal_score"]);
+    assert.deepEqual(columns_answering({ confal_max: "90" }), ["confal_score"]);
+    assert.deepEqual(columns_answering({ monomer_flag: "Standard" }), ["monomer_flag"]);
+
+    // Both ends of the range name one column, not two.
+    assert.deepEqual(columns_answering({ confal_min: "60", confal_max: "90" }),
+                     ["confal_score"]);
+});
+
+test("a filter left blank explains nothing", () => {
+    assert.deepEqual(columns_answering({ assigned_ntc: "" }), []);
+    assert.deepEqual(columns_answering({ confal_min: "", monomer_flag: "" }), []);
+});
+
+test("the extra columns come back in registry order, not the order asked for", () => {
+    let plain = columns_for("card").map((c) => c.key);
+
+    // Named backwards on purpose: confal_score sits before assigned_ntc in
+    // COLUMNS, and that is the order the card must draw them in.
+    let asked = columns_for("card", ["assigned_ntc", "confal_score"]).map((c) => c.key);
+
+    assert.equal(asked.length, plain.length + 2);
+    assert.deepEqual(asked.slice(-2), ["confal_score", "assigned_ntc"]);
+
+    // And every column already on the card keeps the place it had.
+    assert.deepEqual(asked.filter((k) => plain.includes(k)), plain);
+});
+
+// --- what the search box means ------------------------------------------
+// "excludes" negates the box's clause, so the two answers partition the table.
+// Nothing else is negatable: a filter opts in by naming the parameter.
+
+test("an unknown match mode falls back to contains", () => {
+    for (const mode of MATCH_MODES) assert.equal(match_mode(mode.key), mode.key);
+
+    for (const bad of ["nonsense", "", null, undefined, "EXCLUDES", "1"]) {
+        assert.equal(match_mode(bad), DEFAULT_MATCH);
+    }
+});
+
+test("contains and excludes partition the whole table", async () => {
+    let all = (await search_entries({})).total;
+
+    for (const term of ["tna", "DNA", "a", "ZZZZ-no-such-thing"]) {
+        let yes = (await search_entries({ q: term })).total;
+        let no  = (await search_entries({ q: term, match: "excludes" })).total;
+
+        assert.equal(yes + no, all,
+                     `"${term}": ${yes} + ${no} should be every entry`);
+    }
+});
+
+test("they match disjoint sets, not merely matching counts", async () => {
+    let yes = await export_entries({ q: "tna" });
+    let no  = await export_entries({ q: "tna", match: "excludes" });
+
+    let kept = new Set(yes.results.map((e) => e.pdb_id));
+
+    for (const entry of no.results) {
+        assert.ok(!kept.has(entry.pdb_id),
+                  `${entry.pdb_id} is in both halves`);
+    }
+});
+
+test("excludes with an empty box excludes nothing", async () => {
+    let all = (await search_entries({})).total;
+
+    assert.equal((await search_entries({ q: "", match: "excludes" })).total, all);
+    assert.equal((await search_entries({ match: "excludes" })).total, all);
+});
+
+test("only the box is negatable, and the other filters are untouched", async () => {
+    // entry_id is not negatable, so match must make no difference to it.
+    let plain = await search_entries({ entry_id: "tna" });
+    let asked = await search_entries({ entry_id: "tna", match: "excludes" });
+
+    assert.equal(asked.total, plain.total);
+});
+
+// --- how many results a page holds --------------------------------------
+// Any whole number, capped. The number reaches a LIMIT, so what matters is
+// that what comes back is always digits between 1 and the cap.
+
+test("any whole number is accepted, and capped", () => {
+    for (const n of [1, 7, 20, 25, 37, 73, 100, MAX_PAGE_SIZE]) {
+        assert.equal(page_size_from(String(n)), n);
+    }
+
+    for (const over of ["201", "5000", "2e3", String(MAX_PAGE_SIZE + 1)]) {
+        assert.equal(page_size_from(over), MAX_PAGE_SIZE,
+                     `${over} should be capped, not refused`);
+    }
+
+    for (const bad of ["0", "-20", "abc", "", null, undefined,
+                       "50; DROP TABLE entry", "1e309", "NaN"]) {
+        assert.equal(page_size_from(bad), DEFAULT_PAGE_SIZE,
+                     `${bad} should fall back to the default`);
+    }
+
+    // A fraction floors rather than reaching the SQL as 12.9.
+    assert.equal(page_size_from("12.9"), 12);
+});
+
+test("whatever comes back is safe to write into a LIMIT", () => {
+    for (const value of ["25", "5000", "abc", "'; DROP TABLE entry--", "12.9",
+                         null, undefined, "-1", "1e309"]) {
+        let size = page_size_from(value);
+
+        assert.ok(Number.isInteger(size), `${value} gave a non-integer`);
+        assert.ok(size >= 1 && size <= MAX_PAGE_SIZE, `${value} gave ${size}`);
+        assert.match(String(size), /^[0-9]+$/, `${value} gave something non-numeric`);
+    }
+});
+
+// 37 is on no list anywhere: the point is that an arbitrary size works.
+for (const size of [...PAGE_SIZE_SUGGESTIONS, 37]) {
+    test(`a page of ${size} holds ${size} and divides the total by it`, async () => {
+        let r = await search_entries({ per_page: String(size) });
+
+        assert.equal(r.page_size, size);
+        assert.equal(r.results.length, Math.min(size, r.total));
+        assert.equal(r.pages, Math.ceil(r.total / size));
+    });
+}
+
+// Off-by-one in the slicing shows up here and almost nowhere else.
+test("walking every page at each size yields every entry once", async () => {
+    for (const size of [20, 37, 100]) {
+        let first = await search_entries({ per_page: String(size) });
+        let seen = [];
+
+        for (let page = 1; page <= first.pages; page++) {
+            let r = await search_entries({ per_page: String(size), page: String(page) });
+            r.results.forEach((e) => seen.push(e.pdb_id));
+        }
+
+        assert.equal(seen.length, first.total, `size ${size} returned the wrong count`);
+        assert.equal(new Set(seen).size, first.total, `size ${size} repeated a row`);
+    }
 });
 
 // --- sorting --------------------------------------------------------------

@@ -138,6 +138,55 @@ test("an unknown page answers in HTML", async () => {
 
 // --- what must never be downloadable ------------------------------------
 
+// --- the report needs a search ------------------------------------------
+// A report covers a search, so there is no way to reach it before making one.
+test("/report with no search sends you to /search", async () => {
+    let res = await fetch(base + "/report", { redirect: "manual" });
+
+    assert.equal(res.status, 302);
+    assert.equal(res.headers.get("location"), "/search");
+});
+
+// A layout choice is not a search, so it must not get past the gate.
+test("a display parameter alone does not open the report", async () => {
+    for (const query of ["fields=closed", "view=lines", "sort=confal_desc",
+                         "per_page=50", "page=3"]) {
+        let res = await fetch(base + "/report?" + query, { redirect: "manual" });
+
+        assert.equal(res.status, 302, `/report?${query} should be turned away`);
+    }
+});
+
+test("the field list opens or closes from the URL", async () => {
+    let open  = await (await fetch(base + "/report?q=tRNA")).text();
+    let shut  = await (await fetch(base + "/report?q=tRNA&fields=closed")).text();
+
+    assert.match(open, /class="query_panel "/);
+    assert.match(open, /fields_toggle"[\s\S]*?aria-expanded="true"/);
+
+    assert.match(shut, /class="query_panel hidden"/);
+    assert.match(shut, /fields_toggle"[\s\S]*?aria-expanded="false"/);
+});
+
+test("/report with a search opens", async () => {
+    for (const query of ["q=tRNA", "entry_id=tna", "polymer_type=Protein%2FNA"]) {
+        let res = await fetch(base + "/report?" + query);
+
+        assert.equal(res.status, 200, `/report?${query} should open`);
+        assert.match(await res.text(), /report_fields/);
+    }
+});
+
+test("the landing page does not offer the report", async () => {
+    let landing = await (await fetch(base + "/")).text();
+    let search  = await (await fetch(base + "/search")).text();
+
+    assert.ok(!landing.includes('href="/report"'),
+              "the landing page must not link to the report");
+    assert.ok(search.includes('href="/report"'),
+              "the search page must");
+});
+
 // --- the front door ------------------------------------------------------
 test("/ is the landing page, not the search page", async () => {
     let res  = await fetch(base + "/");
@@ -260,7 +309,7 @@ test("/api/fields describes every filter and column", async () => {
     // are drawn from the allowed set, and nothing carrying SQL is among them.
     const FILTER_FIELDS = ["key", "label", "group", "kind", "prominent",
                            "options", "any", "placeholder", "pair_with"];
-    const COLUMN_FIELDS = ["key", "label", "group", "scope", "in_panel"];
+    const COLUMN_FIELDS = ["key", "label", "group", "scope", "show"];
 
     for (const filter of body.filters) {
         for (const field of Object.keys(filter)) {
@@ -300,7 +349,8 @@ const PANEL_CASES = [
     ["/search?q=tRNA&polymer_type=Protein%2FNA",  true,  "the box plus a filter"],
     ["/search?q=",                                true,  "an empty box"],
     ["/search?q=tRNA&panel=open",                 true,  "the toggle says open"],
-    ["/search?panel=closed",                      false, "the toggle says closed"]
+    ["/search?panel=closed",                      false, "the toggle says closed"],
+    ["/search?q=tRNA&view=lines",                 false, "a layout choice, not a filter"]
 ];
 
 for (const [url, open, why] of PANEL_CASES) {
@@ -419,8 +469,126 @@ test("the page offers every sort the registry defines, and no SQL", async () => 
               "the ORDER BY must stay on the server");
 });
 
+// scope and show answer different questions, and conflating them is the
+// mistake this field exists to prevent: pdb_id is fetched for every result
+// because the links need it, and displayed nowhere because the heading is it.
+test("a column can be fetched without being displayed", async () => {
+    let reg = await (await fetch(base + "/api/fields")).json();
+    let api = await (await fetch(base + "/api/entries/4TNA")).json();
+
+    let id_column = reg.columns.find((c) => c.key === "pdb_id");
+
+    assert.equal(id_column.scope, "entry", "it is fetched with every result");
+    assert.deepEqual(id_column.show, [], "and shown in no view");
+
+    assert.equal(api.pdb_id, "4TNA", "so the value is there");
+    assert.ok(!api.rows.some((r) => r.label === "Entry ID"), "but never as a row");
+});
+
+// --- the layout switcher -------------------------------------------------
+// Both views draw the same reply, so switching is a redraw rather than a new
+// request. The server renders the pressed state so the right button is lit on
+// arrival instead of correcting itself after the script runs.
+test("the page offers both layouts, with the right one pressed", async () => {
+    for (const [url, pressed] of [["/search", "cards"],
+                                  ["/search?view=lines", "lines"],
+                                  ["/search?view=nonsense", "cards"]]) {
+        let html = await (await fetch(base + url)).text();
+
+        for (const view of ["cards", "lines"]) {
+            let button = html.match(
+                new RegExp(`data-view="${view}"\\s+aria-pressed="(true|false)"`));
+
+            assert.ok(button, `${url}: no ${view} button`);
+            assert.equal(button[1], String(view === pressed),
+                         `${url}: ${view} should be ${view === pressed}`);
+        }
+    }
+});
+
+// --- the result card -----------------------------------------------------
+// Each result carries the rows its card draws, built by detail.js from the
+// same registry the structure page uses, so the two cannot describe one entry
+// differently.
+test("every result carries its card rows", async () => {
+    let body = await (await fetch(base + "/api/entries")).json();
+    let reg  = await (await fetch(base + "/api/fields")).json();
+
+    let expected = reg.columns.filter((c) => (c.show || ["page"]).includes("card"));
+    assert.equal(expected.length, 10);
+
+    for (const entry of body.results) {
+        assert.ok(Array.isArray(entry.card), `${entry.pdb_id} has no card`);
+
+        // In registry order, with the empty ones dropped.
+        let labels = entry.card.map((r) => r.label);
+        let allowed = expected.map((c) => c.label);
+
+        assert.deepEqual(labels, allowed.filter((l) => labels.includes(l)),
+                         `${entry.pdb_id} draws its card out of order`);
+    }
+});
+
+test("the card and the structure page agree on every shared row", async () => {
+    let body = await (await fetch(base + "/api/entries?entry_id=4TNA")).json();
+    let one  = await (await fetch(base + "/api/entries/4TNA")).json();
+
+    let page = new Map(one.rows.map((r) => [r.label, r.value]));
+
+    for (const row of body.results[0].card) {
+        assert.ok(page.has(row.label), `the page is missing ${row.label}`);
+        assert.equal(page.get(row.label), row.value,
+                     `${row.label} differs between the card and the page`);
+    }
+});
+
+// --- a card answers the question that was asked -------------------------
+// If you can filter by it, the result should show it. Three columns are not on
+// the card by default, so a search using one of them adds its row.
+//
+// Only monomer_flag can be checked end to end here: the seed comes from
+// entries.json, which carries no DNATCO data, so na3db_test has no NtC or
+// confal rows for the other two to match. The mapping itself is tested in
+// search.test.js, where it needs no data at all.
+test("searching the monomer flag puts it on the card", async () => {
+    let plain = await (await fetch(base + "/api/entries")).json();
+    let asked = await (await fetch(base + "/api/entries?monomer_flag=Non-Standard")).json();
+
+    assert.ok(asked.results.length > 0);
+    assert.ok(!plain.results[0].card.some((r) => r.label === "Monomer standard flag"),
+              "it should not be on a card by default");
+
+    for (const entry of asked.results) {
+        assert.ok(entry.card.some((r) => r.label === "Monomer standard flag"),
+                  `${entry.pdb_id} does not show it`);
+    }
+});
+
+test("an added row keeps its place in registry order", async () => {
+    let body = await (await fetch(base + "/api/entries?monomer_flag=Non-Standard")).json();
+    let reg  = await (await fetch(base + "/api/fields")).json();
+
+    let order = reg.columns.map((c) => c.label);
+    let labels = body.results[0].card.map((r) => r.label);
+
+    assert.deepEqual(labels, order.filter((l) => labels.includes(l)),
+                     "the extra row was appended instead of placed");
+});
+
+test("the card shows the organism and not the confal score by default", async () => {
+    let reg = await (await fetch(base + "/api/fields")).json();
+
+    let on_card = reg.columns
+        .filter((c) => (c.show || ["page"]).includes("card"))
+        .map((c) => c.label);
+
+    assert.ok(on_card.includes("Source organism"));
+    assert.ok(!on_card.includes("Overall confal score"));
+    assert.equal(on_card.length, 10);
+});
+
 // --- the detail rows ----------------------------------------------------
-// The panel and the structure page were two hand-written lists and had
+// The card and the structure page were two hand-written lists once, and had
 // drifted: 17 rows against 22, two ways to print a resolution. These keep them
 // one list. 4TNA and 3BNA are seed.sql fixtures; the suite uses na3db_test.
 test("the panel and the structure page draw the same rows", async () => {
@@ -435,25 +603,6 @@ test("the panel and the structure page draw the same rows", async () => {
 
     // Same count, so the page cannot carry extras either.
     assert.equal((html.match(/detail_field/g) || []).length, api.rows.length);
-});
-
-// The side panel is a summary: every row it shows is one the full page shows
-// too, with the same label and the same formatting, because both come from
-// detail.js reading one registry.
-test("the panel's rows are a subset of the page's", async () => {
-    let api = await (await fetch(base + "/api/entries/4TNA")).json();
-
-    assert.ok(api.panel_rows.length > 0);
-    assert.ok(api.panel_rows.length < api.rows.length,
-              "the panel is meant to be shorter than the page");
-
-    let page = new Map(api.rows.map((r) => [r.label, r.value]));
-
-    for (const row of api.panel_rows) {
-        assert.ok(page.has(row.label), `the page is missing ${row.label}`);
-        assert.equal(page.get(row.label), row.value,
-                     `${row.label} is formatted differently in the two views`);
-    }
 });
 
 test("the raw fields survive beside the formatted rows", async () => {
@@ -512,4 +661,32 @@ test("but public files are", async () => {
     for (const path of ["/style.css", "/app.js", "/assets/search.svg"]) {
         assert.equal((await fetch(base + path)).status, 200, path);
     }
+});
+
+// --- the report follows the search it came from ---------------------------
+// The report rebuilds its query from the URL, and match is not a filter key,
+// so it has to be carried across deliberately or an Excludes search would
+// quietly report the Contains one.
+test("/api/export honours the match mode", async () => {
+    let all   = (await (await fetch(base + "/api/export")).json()).total;
+    let yes   = (await (await fetch(base + "/api/export?q=tna")).json()).total;
+    let no    = (await (await fetch(base + "/api/export?q=tna&match=excludes")).json()).total;
+
+    assert.ok(yes > 0 && no > 0);
+    assert.equal(yes + no, all, "the two reports should cover everything once");
+});
+
+// A structure page runs no script, so its rail links are built on the server.
+test("the structure page's rail carries that structure", async () => {
+    let html = await (await fetch(base + "/structure/4TNA")).text();
+
+    assert.match(html, /href="\/report\?entry_id=4TNA"/);
+    assert.match(html, /href="\/search\?entry_id=4TNA"/);
+});
+
+test("the report reached from a structure covers only that structure", async () => {
+    let body = await (await fetch(base + "/api/export?entry_id=4TNA")).json();
+
+    assert.equal(body.total, 1);
+    assert.equal(body.results[0].pdb_id, "4TNA");
 });

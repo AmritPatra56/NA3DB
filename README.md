@@ -240,7 +240,7 @@ or a hosting platform passes real values in.
 npm test
 ```
 
-**191 tests, about two seconds, no test framework installed**: `node --test`
+**223 tests, about two seconds, no test framework installed**: `node --test`
 ships with Node. They check the real SQL rather than a pretend version of it,
 so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 120 seeded entries and is never touched by the loaders. See
@@ -292,7 +292,7 @@ Server side, at the root:
 | `server.js` | The only file that knows about HTTP. Routes, port, static files, rendering, error handling. No filtering logic. Exports the app; only listens when run directly, so tests can import it. |
 | `filters.js` | The registry. Every question the search can answer and every column it can return, as data: labels, categories, pill options, and the SQL for each. The one file a new field is added to. |
 | `search.js` | The SQL engine. Turns the registry into `WHERE` clauses and `SELECT` lists, runs them, pages the results. Knows nothing about HTTP or the screen. |
-| `detail.js` | The display engine. Turns one entry into the labelled rows the detail panel and the structure page both draw. |
+| `detail.js` | The display engine. Turns one entry into the labelled rows a result card and the structure page both draw. |
 | `landing.test.js` | Runs `public/landing.js` against stubbed browser globals, so the count logic is tested without a browser. |
 | `db.js` | The only file that opens a database connection. A pool, one `query()` function, and the `DatabaseUnavailable` error. |
 | `entries.json` | 120 PDB records. No longer read by the running app, it is the source for the seed and the yardstick for the tests. |
@@ -344,7 +344,7 @@ Browser side, in `public/`:
 | `style.css` | Every visual decision. |
 | `shared.js` | HTML escaping, and conversion between a query string and a filters object. Takes the filter names from the registry the server injects. |
 | `api.js` | The browser's only door to the server. Nothing in the browser contacts any other host. |
-| `app.js` | The search page. Reads the form, draws results, runs the detail panel. Decides nothing about the data. |
+| `app.js` | The search page. Reads the form, draws the cards or lines, runs the layout and panel controls. Decides nothing about the data. |
 | `report.js` | The report page. Field selection and CSV building. |
 | `landing.js` | The count under the landing box. An addition, never a dependency: the form works without it. |
 
@@ -399,10 +399,34 @@ A column object:
 }
 ```
 
-That gives a CSV column, a row on the structure page and, with `in_panel: true`,
-a row in the side panel beside the results. `decimals`, `unit` and `thousands`
-format the value; `in_detail: false` keeps a fetched column out of the detail
-rows entirely; `fallback` names another column to use when this one is empty.
+That gives a CSV column and a row on the structure page. Where a column is
+displayed is one field:
+
+```js
+show: ["page", "card"]    // the structure page and a result card
+show: []                  // fetched, shown nowhere
+                          // absent means ["page"] alone
+```
+
+`scope` and `show` answer different questions. `scope` is about cost, which
+query fetches it; `show` is about placement. `pdb_id` is `scope: "entry"` and
+`show: []`: fetched with every result because the links are built from it,
+displayed nowhere because the heading already says it.
+
+`decimals`, `unit` and `thousands` format the value, and `fallback` names
+another column to use when this one is empty.
+
+**A card also shows whatever was searched on.** Three columns are not on a card
+by default, so a filter can name the column that explains a match:
+
+```js
+{ key: "assigned_ntc", answered_by: "assigned_ntc", ... }
+{ key: "confal_min",   answered_by: "confal_score", ... }
+```
+
+Search by NtC class and every card gains an Assigned NtC row, placed in
+registry order rather than appended. Without it a search on a field the card
+does not show leaves the reader taking the match on trust.
 
 Columns and filters are two lists because they overlap without containing each
 other: `title` is shown and not searched, `confal_score` has two filters
@@ -414,6 +438,7 @@ Three smaller lists live beside those two, and are reached the same way:
 | --- | --- |
 | `GROUPS` | the category boxes, in the order they appear down the panel |
 | `SORTS` | the eight orders the results can be put in |
+| `MATCH_MODES` | whether the box means Contains or Excludes |
 | `EXAMPLES` | the chips under the landing box, each naming a different kind of thing |
 
 A filter marked `prominent: true` is drawn across the top of the page instead of
@@ -476,8 +501,8 @@ query("SELECT ... WHERE e.id ILIKE $1", ["%' OR '1'='1%"])
 | address | page |
 | --- | --- |
 | `GET /` | The landing page: one search box, a line of examples, and a link to the filters. |
-| `GET /search` | Structure query: the filter panel, the results, the sort control. |
-| `GET /report` | Report. Reads its filters from its own query string, so a link carries the search with it. |
+| `GET /search` | Structure query: the filter panel, the results, and the controls over them. |
+| `GET /report` | Report. Reads its filters from its own query string, so a link carries the search with it. Arriving with no search goes to `/search`. |
 | `GET /structure/:id` | One structure, by its PDB id. |
 | anything else | The not-found page, with status 404. |
 
@@ -487,13 +512,47 @@ the landing page.
 
 Filters travel in the query string, so `/report?entry_id=tna` reports on exactly
 what `/search?entry_id=tna` found. The rail links rewrite themselves to carry
-the current search across. The page number and the chosen order travel too, so
-reloading or sharing a link lands on the same page in the same order.
+the current search across, and the structure page, which runs no script of its
+own, has them built on the server from the id it is showing.
+
+Everything about how the results are shown travels too: the page, the order,
+the layout, how many a page holds, whether the box means Contains or Excludes.
+So reloading or sharing a link lands on exactly what the sender was looking at.
+
+A report covers a search, so the Report icon is not offered on the landing page
+and `/report` turns away anything that is not one. A display parameter is not a
+search: `/report?view=lines` goes to `/search` like a bare `/report` does.
 
 **The filter panel opens by itself when it is the thing you need.** A plain
 search from the box shows results alone; a search using any filter, or arriving
 with no query at all, opens the panel. The `Filters` button overrides either
 way, and writes its choice into the URL.
+
+### What a result looks like
+
+Two layouts, chosen with `Cards | Lines` and remembered in the URL. Switching
+between them redraws what the browser already holds, so it makes no request:
+the reply behind the current page carries every field both views need.
+
+A **card** is the ten fields `show: [..., "card"]` names, drawn by `detail.js`
+from the same registry the structure page reads, so the two cannot describe one
+entry differently. Six across on a wide screen, stepping down to one as the
+space narrows. The count follows the results area rather than the window,
+because a media query cannot see the filter panel: with it open at 1366px the
+results have 856px, and six cards there would be unreadable.
+
+A **line** is the id, date, resolution, title and method. Clicking either opens
+that structure's page.
+
+### The controls over the results
+
+| control | what it does |
+| --- | --- |
+| `Contains \| Excludes` | whether the box finds those entries or everything else. The two always add up to the whole database |
+| `Show _n_ per page` | any whole number, capped at 200 |
+| `Sort by` | eight orders, two each for deposition date, resolution, confal score and entry id |
+| `Cards \| Lines` | the layout |
+| `Filters` | the panel |
 
 `/structure/4TNA` is built on the server, so the whole record is in the HTML
 before any script runs, and an id that does not exist returns a genuine **404**
@@ -514,10 +573,10 @@ Seven endpoints, all returning JSON.
 | `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` with `"down"`. Runs `SELECT 1`: it tests the connection, never the data. |
 | `GET /api/stats` | `{"total":1489}`. Counted fresh on every request. |
 | `GET /api/fields` | The filters and columns this API understands, so a client can discover them instead of hard-coding them. Labels, categories, kinds and pill options; never the SQL. |
-| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. Takes `page` and `sort`. |
+| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. Each result carries the rows its card draws. Takes `page`, `sort`, `per_page` and `match`. |
 | `GET /api/count` | How many entries a search would return, and nothing else. 6-45 ms, which is what lets the landing page count as you type. |
 | `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
-| `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. |
+| `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. Takes `sort` and `match` too, so a downloaded file matches what was on screen. |
 
 The two are different questions, and they fail differently. `/api/entries`
 narrows a list, so matching nothing is a successful `200` with an empty
@@ -528,12 +587,17 @@ narrows a list, so matching nothing is a successful `200` with an empty
 ```json
 {
   "results": [ ... ],
-  "total": 120,
+  "total": 163,
   "page": 1,
-  "pages": 12,
-  "page_size": 10
+  "pages": 9,
+  "page_size": 20
 }
 ```
+
+Each result carries its raw fields **and** the rows a card draws, never one
+instead of the other: `resolution` stays the number `2.2` while `card` has it
+as `"2.20 Å"`. The formatting lives in `detail.js` and cannot cross JSON, so
+the finished list is built on the server rather than in the browser.
 
 `/api/export` returns `results`, `total`, and `truncated`, which says whether
 the cap was reached.
@@ -642,7 +706,8 @@ That change also exposed a correctness bug. The joins to `citation_author` and
 1,489 entries were coming back as 1,512 rows while the total still said 1,489.
 Both are scalar subqueries now, which can only ever return one row.
 
-**The detail panel, 400–800 ms and sometimes nothing.** It fetched each
+**The detail panel, 400–800 ms and sometimes nothing.** This is now history:
+the panel was retired once a result card showed the same rows. It fetched each
 structure from `data.rcsb.org`. It now reads this database, which is faster and
 shows more, every author rather than the first, plus the confal percentile and
 NtC classes that RCSB does not have.
@@ -676,11 +741,6 @@ host needs real storage rather than a default volume.
 
 ## What is not done yet
 
-- **The page number is not in the URL.** Reloading a page of results takes you
-  back to page 1.
-- **A structure can still be viewed two ways.** The slide-out panel and
-  `/structure/<id>` now read the same data and show the same fields, so the
-  panel could be retired and a click could go straight to the page.
 - **Two structures have no confal score.** `2JJA` and `363D`: DNATCO produced
   no overall analysis for them. Expected, not a bug.
 - **`entry.has_nonstandard_residue` is derived.** It is written by the loader
@@ -690,9 +750,15 @@ host needs real storage rather than a default volume.
 - **No automated backups.** `pg_dump -Fc` takes about four minutes and produces
   1.2 GB from a 9.6 GB database. Nothing runs it on a schedule yet, and no
   restore has been tested.
-- **`public/app.js` is 411 lines doing five jobs**, reading the form, drawing
-  results, pagination, the detail panel, and history. It works, and it is the
-  next file that will want splitting.
+- **`public/app.js` is 470 lines doing six jobs**, reading the form, drawing
+  the cards or lines, pagination, the layout and panel controls, and history.
+  It works, and it is the next file that will want splitting.
+- **Searching cannot reach residues.** `nonstandard_residue` has its own filter,
+  but folding `entity_poly_seq` into the search box's `OR` measured 348-643 ms
+  against 6-45 without it, so the box leaves them alone.
+- **Some entity names have a space missing.** `DNA-directedRNA polymerase`
+  appears in 47 rows, so a search for the spaced form misses them. It is in the
+  source data rather than the loader, but it is worth a look.
 - **No 3D viewer.** Planned, and the atom coordinates are loaded. It needs
   `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: require-corp` on every response, including

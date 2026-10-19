@@ -3,7 +3,7 @@ import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
-import { public_registry } from "./filters.js";
+import { public_registry, columns_answering, match_mode } from "./filters.js";
 import { detail_rows } from "./detail.js";
 
 const app = express();
@@ -61,7 +61,7 @@ app.get("/", (req, res) => {
         return;
     }
 
-    res.render("landing", { page: "search" });
+    res.render("landing", { page: "landing" });
 });
 
 // The search page: the filter panel, the results and the sort control.
@@ -70,8 +70,22 @@ app.get("/", (req, res) => {
 // anything else, so arriving from the landing page shows results rather than
 // a wall of filters. ?panel= overrides it, which is what the toggle writes.
 app.get("/search", (req, res) => {
-    res.render("search", { page: "search", panel_open: panel_open(req.query) });
+    res.render("search", {
+        page: "search",
+        panel_open: panel_open(req.query),
+        view: req.query.view === "lines" ? "lines" : "cards",
+        match: match_mode(req.query.match)
+    });
 });
+
+// The parameters that say how to show results rather than which ones. Both
+// the panel rule and the report gate have to ignore them, or a layout choice
+// would look like a search.
+const DISPLAY = ["page", "sort", "view", "per_page", "match", "fields"];
+
+function filters_used(query) {
+    return Object.keys(query).filter((k) => !DISPLAY.includes(k));
+}
 
 // `q` with nothing but a page or an order beside it is a simple search.
 // Anything else means a filter was used, so the panel that holds it is shown.
@@ -79,7 +93,7 @@ function panel_open(query) {
     if (query.panel === "open")   return true;
     if (query.panel === "closed") return false;
 
-    let used = Object.keys(query).filter((k) => k !== "page" && k !== "sort");
+    let used = filters_used(query);
 
     return !(used.length === 1 && used[0] === "q" && query.q !== "");
 }
@@ -87,8 +101,22 @@ function panel_open(query) {
 
 
 // The report page. Built from views/report.ejs, not served as a file.
+//
+// A report is about a search, so arriving with no search at all is a wrong
+// turn rather than a request for everything. Those go to /search, where there
+// is something to do.
 app.get("/report", (req, res) => {
-    res.render("report", { page: "report" });
+    // Counted on the filters alone: ?fields=closed is a layout choice, not a
+    // search, and must not let anyone past the gate.
+    if (filters_used(req.query).length === 0) {
+        res.redirect("/search");
+        return;
+    }
+
+    res.render("report", {
+        page: "report",
+        fields_open: req.query.fields !== "closed"
+    });
 });
 
 // One structure's page. The id is in the path so the address can be cited.
@@ -105,7 +133,14 @@ app.get("/structure/:id", async (req, res) => {
         return;
     }
 
-    res.render("structure", { page: "search", entry, rows: detail_rows(entry) });
+    // The rail on this page has no script to rewrite its links, so it is given
+    // the one filter that makes sense from here: this structure.
+    res.render("structure", {
+        page: "search",
+        entry,
+        rows: detail_rows(entry),
+        rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
+    });
 });
 
 // One page of entries, narrowed by whatever filters were passed.
@@ -117,7 +152,21 @@ app.get("/api/entries", async (req, res) => {
         return;
     }
 
-    res.json(await search_entries(req.query));
+    let found = await search_entries(req.query);
+
+    // The display rows travel with each result, the same way /api/entries/:id
+    // carries them: the formatting lives in detail.js and cannot cross JSON,
+    // so the finished list is built here rather than in the browser. No extra
+    // query - every field is already on the row.
+    // A card also shows whatever was searched on. Filter by NtC class and
+    // every card gains an Assigned NtC row, so a result never has to be taken
+    // on trust. No extra query: the field is already on the row.
+    let answering = columns_answering(req.query);
+
+    found.results = found.results.map((entry) =>
+        ({ ...entry, card: detail_rows(entry, "card", answering) }));
+
+    res.json(found);
 });
 
 // How many entries a search would return, and nothing else. Separate from
@@ -145,13 +194,8 @@ app.get("/api/entries/:id", async (req, res) => {
     }
 
     // The raw fields and the display rows, never one instead of the other:
-    // entry.resolution stays 2.2, rows has it as "2.20 Å". panel_rows is the
-    // short list for the side panel; rows is everything, for the full page.
-    res.json({
-        ...entry,
-        rows: detail_rows(entry),
-        panel_rows: detail_rows(entry, "panel")
-    });
+    // entry.resolution stays 2.2, rows has it as "2.20 Å".
+    res.json({ ...entry, rows: detail_rows(entry) });
 });
 
 // Returns every matching entry for the report page, not just one page.
