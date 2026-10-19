@@ -479,12 +479,53 @@ test("excludes with an empty box excludes nothing", async () => {
     assert.equal((await search_entries({ match: "excludes" })).total, all);
 });
 
-test("only the box is negatable, and the other filters are untouched", async () => {
-    // entry_id is not negatable, so match must make no difference to it.
-    let plain = await search_entries({ entry_id: "tna" });
-    let asked = await search_entries({ entry_id: "tna", match: "excludes" });
+test("every filter is negatable, not only the box", async () => {
+    let all = (await search_entries({})).total;
 
-    assert.equal(asked.total, plain.total);
+    for (const filters of [{ entry_id: "tna" },
+                           { source_organism: "sacch" },
+                           { experimental_method: "X-RAY DIFFRACTION" },
+                           { polymer_type: "Nucleic acid" },
+                           { monomer_flag: "Standard" },
+                           { confal_min: "80" }]) {
+        let yes = (await search_entries(filters)).total;
+        let no  = (await search_entries({ ...filters, match: "excludes" })).total;
+
+        assert.equal(no, all - yes,
+                     `${JSON.stringify(filters)}: excludes should be everything else`);
+    }
+});
+
+test("a filter and the box are inverted together, as one search", async () => {
+    let all = (await search_entries({})).total;
+    let both = { q: "tRNA", experimental_method: "X-RAY DIFFRACTION" };
+
+    let yes = (await search_entries(both)).total;
+    let no  = (await search_entries({ ...both, match: "excludes" })).total;
+
+    assert.equal(yes + no, all, `${yes} + ${no} should be every entry`);
+
+    // The distinction that matters: NOT(a AND b), not NOT(a) AND NOT(b).
+    // Inverting filter by filter would drop every row matching exactly one of
+    // the two, and those rows would then be in neither half.
+    let xray = (await search_entries({ experimental_method: both.experimental_method })).total;
+    let only_one = xray - yes;
+
+    assert.ok(only_one > 0, "the example needs rows matching exactly one of the two");
+    assert.ok(no >= only_one, `${only_one} rows match only the filter and must be in excludes`);
+});
+
+test("excluding a filter and the box keeps the halves disjoint", async () => {
+    let both = { q: "tRNA", experimental_method: "X-RAY DIFFRACTION" };
+
+    let yes = await export_entries(both);
+    let no  = await export_entries({ ...both, match: "excludes" });
+
+    let kept = new Set(yes.results.map((e) => e.pdb_id));
+
+    for (const entry of no.results) {
+        assert.ok(!kept.has(entry.pdb_id), `${entry.pdb_id} is in both halves`);
+    }
 });
 
 // --- how many results a page holds --------------------------------------

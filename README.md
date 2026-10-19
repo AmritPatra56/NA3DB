@@ -504,7 +504,7 @@ Three smaller lists live beside those two, and are reached the same way:
 | --- | --- |
 | `GROUPS` | the category boxes, in the order they appear down the panel |
 | `SORTS` | the eight orders the results can be put in |
-| `MATCH_MODES` | whether the box means Contains or Excludes |
+| `MATCH_MODES` | whether the search means Contains or Excludes |
 | `EXAMPLES` | the chips under the landing box, each naming a different kind of thing |
 
 A filter marked `prominent: true` is drawn across the top of the page instead of
@@ -582,7 +582,8 @@ the current search across, and the structure page, which runs no script of its
 own, has them built on the server from the id it is showing.
 
 Everything about how the results are shown travels too: the page, the order,
-the layout, how many a page holds, whether the box means Contains or Excludes.
+the layout, how many a page holds, whether the search means Contains or
+Excludes.
 So reloading or sharing a link lands on exactly what the sender was looking at.
 
 A report covers a search, so the Report icon is not offered on the landing page
@@ -614,7 +615,7 @@ that structure's page.
 
 | control | what it does |
 | --- | --- |
-| `Contains \| Excludes` | whether the box finds those entries or everything else. The two always add up to the whole database |
+| `Contains \| Excludes` | whether the search finds those entries or every other one. Inverts the whole search, box and filters together, so the two halves always add up to the database |
 | `Show _n_ per page` | any whole number, capped at 200 |
 | `Sort by` | eight orders, two each for deposition date, resolution, confal score and entry id |
 | `Cards \| Lines` | the layout |
@@ -684,6 +685,7 @@ that field. Any unknown parameter is ignored.
 | `polymer_type` | one of, comma-separated |
 | `monomer_flag` | one of, comma-separated |
 | `page` | whole number, 1 or more. `/api/entries` only. |
+| `match` | `contains` or `excludes`. `excludes` inverts the whole search, so the two halves always add up to the database. Anything else is read as `contains`. |
 
 Examples:
 

@@ -63,24 +63,14 @@ const KINDS = {
 export function build_where(query_params) {
     let f = query_to_filters(query_params);
 
-    let where = ["TRUE"];
+    let tests = [];
     let values = [];
 
     // Every ? in the clause becomes the number the value landed at, so a
     // clause and its value cannot drift apart.
-    //
-    // negate turns "AND <test>" into "AND NOT (<test>)". Safe for any clause
-    // here because none of them can be null: EXISTS is always true or false,
-    // and so is ILIKE against a column that cannot be null. So contains and
-    // excludes always add up to the whole table.
-    function add(clause, value, negate = false) {
+    function add(clause, value) {
         values.push(value);
-
-        let sql = clause.replaceAll("?", "$" + values.length);
-
-        where.push(negate
-            ? "AND NOT (" + sql.replace(/^\s*AND\s+/, "") + ")"
-            : sql);
+        tests.push(clause.replaceAll("?", "$" + values.length));
     }
 
     for (const filter of FILTERS) {
@@ -89,24 +79,41 @@ export function build_where(query_params) {
         // A filter writing its own clause, with no parameter. null = inactive.
         if (filter.clause) {
             let sql = filter.clause(value);
-            if (sql) where.push(sql);
+            if (sql) tests.push(sql);
             continue;
         }
 
         let rule = KINDS[filter.kind];
         if (!rule.active(value)) continue;
 
-        // A negatable filter reads the query parameter it names: the search
-        // box is inverted by ?match=excludes, and nothing else is negatable.
-        let negate = filter.negatable &&
-                     match_mode(as_text(query_params[filter.negatable])) === "excludes";
-
-        add(filter.where, rule.param(value), negate);
+        add(filter.where, rule.param(value));
     }
 
-    return { where: where.join("\n    "), values };
-}
+    // Nothing was asked, so there is nothing to invert either: excluding
+    // nothing leaves the whole table.
+    if (tests.length === 0) return { where: "TRUE", values };
 
+    // Each clause carries its own leading AND, which has to come off before
+    // the search can be treated as one expression.
+    let search = tests
+        .map((sql) => sql.replace(/^\s*AND\s+/, ""))
+        .join("\n    AND ");
+
+    // "excludes" inverts the whole search, not each filter inside it. The
+    // question it answers is "everything except what I just asked for", so
+    // contains and excludes always add up to the whole table, whatever is in
+    // the box and the panel together. Inverting filter by filter would not:
+    // with two active, NOT(a) AND NOT(b) leaves every row matching exactly
+    // one of them in neither half.
+    //
+    // NOT never yields null here because no clause can: they are EXISTS,
+    // ILIKE against columns that cannot be null, and IS TRUE / IS NOT TRUE.
+    if (match_mode(as_text(query_params.match)) === "excludes") {
+        return { where: "NOT (\n    " + search + "\n)", values };
+    }
+
+    return { where: search, values };
+}
 
 // Cap on one export, so a single request cannot exhaust memory.
 const EXPORT_LIMIT = 5000;

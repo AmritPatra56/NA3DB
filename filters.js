@@ -205,8 +205,8 @@ export const FILTERS = [
         options: ["Standard", "Non-Standard"].map(option),
         clause: (v) => {
             if (v.length !== 1) return null;
-            if (v[0] === "Non-Standard") return "AND e.has_nonstandard_residue";
-            if (v[0] === "Standard")     return "AND NOT e.has_nonstandard_residue";
+            if (v[0] === "Non-Standard") return "AND e.has_nonstandard_residue IS TRUE";
+            if (v[0] === "Standard")     return "AND e.has_nonstandard_residue IS NOT TRUE";
             return null;
         }
     }
