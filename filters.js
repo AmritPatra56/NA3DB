@@ -85,6 +85,10 @@ export const FILTERS = [
         prominent: true,
         // `match` in the query says whether this clause is used or negated.
         negatable: "match",
+        // Every field this searches is gathered into one row per entry by
+        // the doc materialized view, so this is one lookup rather than the
+        // five correlated subqueries it used to be. See db/migrations/007.
+        //
         // Two kinds of field, matched two ways.
         //
         // The id and the entity description stay literal, because punctuation
@@ -92,23 +96,14 @@ export const FILTERS = [
         // is often a chemical name like 11,19-DIMETHYL..., which normalises
         // to 1119dimethyl and would then answer a search for 119D.
         //
-        // The prose fields are matched against a normalised copy, so the
-        // punctuation someone leaves out does not matter: ?~ is the typed
-        // value with its punctuation dropped, and zdna finds Z-DNA.
-        where: `AND (
-                    e.id ILIKE ?
-                 OR EXISTS (SELECT 1 FROM entity en
-                            WHERE en.entry_id = e.id AND en.pdbx_description ILIKE ?)
-                 OR EXISTS (SELECT 1 FROM struct st
-                            WHERE st.entry_id = e.id
-                              AND ${normalised("st.title")} LIKE ?~)
-                 OR EXISTS (SELECT 1 FROM citation_author ca
-                            WHERE ca.entry_id = e.id
-                              AND ${normalised("ca.name")} LIKE ?~)
-                 OR EXISTS (SELECT 1 FROM entity_src_gen sg
-                            WHERE sg.entry_id = e.id
-                              AND ${normalised("sg.pdbx_gene_src_scientific_name")} LIKE ?~)
-                )`
+        // The prose column is already normalised in the view, so ?~ (the
+        // typed value with its punctuation dropped) is what it is matched
+        // against, and zdna finds Z-DNA.
+        where: `AND EXISTS (SELECT 1 FROM doc d
+                            WHERE d.id = e.id
+                              AND (   d.id       ILIKE ?
+                                   OR d.entities ILIKE ?
+                                   OR d.prose    LIKE  ?~))`
     },
 
     // The only filter on a column of `entry` itself. ILIKE because plain LIKE

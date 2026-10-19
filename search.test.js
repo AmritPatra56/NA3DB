@@ -375,11 +375,11 @@ test("a % or _ typed in the box stays literal", async () => {
 test("the box takes one typed value and matches it two ways", async () => {
     let built = build_where({ q: "z-dna" });
 
-    // Five branches, two parameters: the literal value for the id and the
-    // entity description, the normalised one for the three prose fields.
+    // Three branches over the doc view, two parameters: the literal value
+    // for the id and the entity descriptions, the normalised one for prose.
     assert.deepEqual(built.values, ["%z-dna%", "%zdna%"]);
     assert.equal((built.where.match(/\$1/g) || []).length, 2);
-    assert.equal((built.where.match(/\$2/g) || []).length, 3);
+    assert.equal((built.where.match(/\$2/g) || []).length, 1);
 });
 
 test("punctuation in the box is optional", async () => {
@@ -562,6 +562,44 @@ test("excluding a filter and the box keeps the halves disjoint", async () => {
 
     for (const entry of no.results) {
         assert.ok(!kept.has(entry.pdb_id), `${entry.pdb_id} is in both halves`);
+    }
+});
+
+// --- the search document ------------------------------------------------
+// doc is a materialized view, which means it holds a copy of the text rather
+// than reading it live. A copy can go stale. These turn that into a failing
+// test instead of a quietly wrong search result.
+
+test("the search document has exactly one row per entry", async () => {
+    let missing = await query(`SELECT e.id FROM entry e
+        LEFT JOIN doc d ON d.id = e.id WHERE d.id IS NULL LIMIT 5`);
+    let orphan = await query(`SELECT d.id FROM doc d
+        LEFT JOIN entry e ON e.id = d.id WHERE e.id IS NULL LIMIT 5`);
+
+    assert.deepEqual(missing.rows, [],
+        "entries missing from doc: REFRESH MATERIALIZED VIEW CONCURRENTLY doc");
+    assert.deepEqual(orphan.rows, [], "doc holds entries that no longer exist");
+});
+
+test("the search document still agrees with the tables it was built from", async () => {
+    let drift = await query(`
+        SELECT d.id FROM doc d
+         WHERE d.title IS DISTINCT FROM
+               (SELECT st.title FROM struct st WHERE st.entry_id = d.id)
+         LIMIT 5`);
+
+    assert.deepEqual(drift.rows, [], "doc is stale against struct.title");
+});
+
+test("the document's residues answer the same question the filter does", async () => {
+    // The box will read doc.residues; the panel filter reads entity_poly_seq
+    // joined to chem_comp. They must not be able to disagree.
+    for (const code of ["PSU", "H2U", "5MU"]) {
+        let viaFilter = (await search_entries({ nonstandard_residue: code })).total;
+        let viaDoc = Number((await query(
+            `SELECT count(*) AS n FROM doc WHERE residues ILIKE $1`, [`% ${code} %`])).rows[0].n);
+
+        assert.equal(viaDoc, viaFilter, `${code}: doc says ${viaDoc}, the filter says ${viaFilter}`);
     }
 });
 

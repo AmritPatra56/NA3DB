@@ -1294,6 +1294,23 @@ def main():
     for t in ALL_TABLES:
         log.info("  %-40s  %d", t, totals.get(t, 0))
 
+    # The search document is a materialized view, so it still holds whatever
+    # was in the tables when it was last built. Rebuilding it here is what
+    # keeps the search box agreeing with the data just loaded. CONCURRENTLY
+    # leaves the old copy readable while it runs, so a running server never
+    # sees an empty view.
+    log.info("Rebuilding the search document ...")
+    try:
+        with psycopg.connect(db_uri) as conn:
+            conn.autocommit = True          # REFRESH CONCURRENTLY cannot run in a transaction
+            with conn.cursor() as cur:
+                cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY doc")
+        log.info("  doc rebuilt")
+    except Exception as e:
+        log.error("  could not rebuild doc: %s", e)
+        log.error("  the search box will be stale until you run:")
+        log.error("    psql -d $DB_NAME -c 'REFRESH MATERIALIZED VIEW CONCURRENTLY doc'")
+
     # Verify last loaded entry
     if cif_files and not errors:
         last = cif_files[-1]
