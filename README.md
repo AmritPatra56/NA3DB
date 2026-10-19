@@ -1,14 +1,80 @@
 # NA3DB
 
-A searchable database of nucleic acid 3D structures, built on data from the
-Protein Data Bank and conformational analysis from DNATCO. Search by id,
-molecule, author or organism from one box, narrow by demographics, 3D features
-and structural components, order by resolution or confal score, and export the
-results as CSV.
+**A search engine for the 3D shapes of DNA and RNA.**
+
+Every entry here is a real molecule whose structure was measured in a
+laboratory and published. NA3DB puts 1,489 of them behind one search box: find
+them by id, molecule, author or organism, narrow by how they were measured and
+what shape they take, read any one in full, and download the results as a CSV.
 
 **1,489 structures · 50.7 million atoms · 1,487 confal scores · 97 NtC classes**
 
+The records come from the [Protein Data Bank](https://www.rcsb.org/) and the
+conformational analysis from [DNATCO](https://dnatco.datmos.org/).
+
 Under active development. See [What is not done yet](#what-is-not-done-yet).
+
+## What you can ask it
+
+Type one thing in the box and it searches the id, the title, the authors, the
+molecule descriptions and the source organisms at once. These are the examples
+offered on the landing page, with what they find today:
+
+| you type | you get |
+| --- | --- |
+| `119D` | 1 structure, by its PDB id |
+| `tRNA` | 163 structures whose title or molecule mentions transfer RNA |
+| `ribozyme` | 20 structures of RNA that acts as an enzyme |
+| `Z-DNA` | 7 structures of the left-handed form of DNA |
+| `Escherichia coli` | 86 structures taken from *E. coli* |
+| `Leonard` | 2 structures deposited by an author of that name |
+| `PSU` | 90 structures containing pseudouridine, a modified base |
+
+Open the filter panel and you can be exact instead: solved by X-ray, better
+than 2 Å, containing a modified residue, scoring above 80 for conformational
+quality. Order the results eight ways, read any single structure in full at its
+own address, and export the whole set as a CSV.
+
+Every choice you make is in the URL, so a link carries your search, your page,
+your ordering and your layout to whoever you send it to.
+
+Nothing is behind a login, and the browser contacts no host but this one. It
+runs as a single Node process in front of a single PostgreSQL database.
+
+## Contents
+
+- [What you can ask it](#what-you-can-ask-it)
+- [The words on the screen](#the-words-on-the-screen) — confal, NtC, resolution and the rest, in plain terms
+- [Requirements](#requirements)
+- [Setting it up](#setting-it-up) — [quick start](#quick-start), [the real data](#loading-the-real-data), [schema changes](#changing-the-schema)
+- [Two databases](#two-databases) — why `npm test` reads a different one
+- [Running it day to day](#running-it-day-to-day)
+- [Tests](#tests)
+- [How it is organised](#how-it-is-organised) — [adding a filter](#adding-a-filter-or-a-column), [the search box](#the-one-search-box), [seven tables](#one-entry-comes-from-seven-tables)
+- [Pages](#pages) — [what a result looks like](#what-a-result-looks-like), [the controls](#the-controls-over-the-results)
+- [API](#api)
+- [Performance](#performance) — [beyond this size](#beyond-this-size)
+- [What is not done yet](#what-is-not-done-yet)
+
+**In a hurry?** [Quick start](#quick-start) has it running in five commands.
+
+## The words on the screen
+
+Two sources, each with its own vocabulary. You need these seven to read a
+result:
+
+| word | what it means |
+| --- | --- |
+| **PDB id** | The four-character name a structure was published under, like `4TNA`. It is the permanent, citable handle for that structure. |
+| **Resolution** | How much detail the measurement resolved, in ångström. **Lower is better**: 1.5 Å separates individual atoms, 3.5 Å shows little more than the overall shape. Blank for methods that do not produce one. |
+| **Experimental method** | How the shape was measured. X-ray diffraction is the most common here; NMR and electron microscopy are the others you will meet often. |
+| **Polymer type** | What the entry is made of: DNA, RNA, a hybrid of the two, or a nucleic acid together with a protein. Worked out from the chains it contains rather than stored as a field. |
+| **Non-standard residue** | A building block that is not one of the four usual bases, nearly always a chemical modification of one. `PSU` is pseudouridine, the most common. |
+| **NtC class** | A name for the shape of one step between two neighbouring residues, one of 97, such as `AA00`. It is a vocabulary of known conformations: rather than list angles, you say which shape the step matches. |
+| **Confal score** | 0 to 96, how closely a whole structure's steps match those known shapes. High means conventional geometry; low means unusual, which may be a real finding or a modelling problem. |
+
+The last two come from DNATCO, which analyses published structures and releases
+the conformational assignment. Everything else is in the PDB entry itself.
 
 ## Requirements
 
