@@ -598,10 +598,97 @@ test("the document's residues answer the same question the filter does", async (
     for (const code of ["PSU", "H2U", "5MU"]) {
         let viaFilter = (await search_entries({ nonstandard_residue: code })).total;
         let viaDoc = Number((await query(
-            `SELECT count(*) AS n FROM doc WHERE residues ILIKE $1`, [`% ${code} %`])).rows[0].n);
+            `SELECT count(*) AS n FROM doc WHERE residues ILIKE $1`, [`%${code}%`])).rows[0].n);
 
         assert.equal(viaDoc, viaFilter, `${code}: doc says ${viaDoc}, the filter says ${viaFilter}`);
     }
+});
+
+// --- one search must not match across two fields -------------------------
+// doc keeps every searchable field in one row, so the joins between them must
+// not themselves be searchable. Before 008 they were: "rna hall" found two
+// structures whose title ends in RNA and whose author is named Hall, with no
+// title and no author anywhere containing that phrase. 1,484 of 1,489 entries
+// could produce a match like it.
+
+test("a phrase spanning the title and the authors matches nothing", async () => {
+    let rows = (await query(`
+        SELECT d.id,
+               (SELECT st.title FROM struct st WHERE st.entry_id = d.id) AS title,
+               (SELECT string_agg(DISTINCT ca.name, ' ') FROM citation_author ca
+                 WHERE ca.entry_id = d.id) AS authors
+          FROM doc d
+         WHERE (SELECT st.title FROM struct st WHERE st.entry_id = d.id) IS NOT NULL
+           AND (SELECT count(*) FROM citation_author ca WHERE ca.entry_id = d.id) > 0
+         ORDER BY d.id LIMIT 5`)).rows;
+
+    assert.ok(rows.length > 0, "the seed needs entries with both a title and an author");
+
+    let flatten = (t) => String(t).toLowerCase()
+                                  .replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+    let checked = 0;
+
+    for (const row of rows) {
+        let lastOfTitle = flatten(row.title).split(" ").pop();
+        let firstOfAuthors = flatten(row.authors).split(" ")[0];
+        if (!lastOfTitle || !firstOfAuthors) continue;
+
+        let spanning = `${lastOfTitle} ${firstOfAuthors}`;
+        let found = (await export_entries({ q: spanning })).results.map((e) => e.pdb_id);
+
+        // Another entry may hold the phrase for real; this one cannot, because
+        // the only place it exists is across the join.
+        assert.ok(!found.includes(row.id),
+            `"${spanning}" is in no single field of ${row.id}, only across its title/author join`);
+        checked++;
+    }
+
+    assert.ok(checked > 0, "no spanning phrase could be built, so nothing was proved");
+});
+
+test("the seed has no multi-valued field to span", async () => {
+    // Not a claim about the code. doc joins repeated values with a newline
+    // too, so two authors or two entity descriptions cannot be read as one
+    // run of text. That path cannot be exercised here: every entry in the
+    // 120-entry seed has exactly one description, one author and one
+    // organism. Against the real na3db, "-3') MAGNESIUM" found 29 structures
+    // before 008 and none after.
+    //
+    // If the seed ever gains a repeated value this fails, and that is the
+    // signal to assert the spanning case properly instead of by hand.
+    let multi = await query(`
+        SELECT (SELECT count(*) FROM (SELECT entry_id FROM entity
+                 WHERE pdbx_description IS NOT NULL
+                 GROUP BY entry_id HAVING count(DISTINCT pdbx_description) > 1) a) AS entities,
+               (SELECT count(*) FROM (SELECT entry_id FROM citation_author
+                 GROUP BY entry_id HAVING count(DISTINCT name) > 1) b) AS authors`);
+
+    assert.equal(Number(multi.rows[0].entities), 0,
+        "the seed now has an entry with two descriptions: assert the spanning case");
+    assert.equal(Number(multi.rows[0].authors), 0,
+        "the seed now has an entry with two authors: assert the spanning case");
+});
+
+test("a newline in the search cannot breach the separator", async () => {
+    // The fields are separated by a newline, which no text input can type but
+    // a URL can carry as %0A. It must not be usable to match across the wall.
+    let rows = (await query(`
+        SELECT d.id, (SELECT st.title FROM struct st WHERE st.entry_id = d.id) AS title,
+               (SELECT string_agg(DISTINCT ca.name, ' ') FROM citation_author ca
+                 WHERE ca.entry_id = d.id) AS authors
+          FROM doc d WHERE (SELECT st.title FROM struct st WHERE st.entry_id = d.id) IS NOT NULL
+           AND (SELECT count(*) FROM citation_author ca WHERE ca.entry_id = d.id) > 0
+         ORDER BY d.id LIMIT 1`)).rows;
+
+    let row = rows[0];
+    let lastOfTitle = String(row.title).trim().split(/\s+/).pop();
+    let firstOfAuthors = String(row.authors).trim().split(/\s+/)[0];
+
+    let found = (await export_entries({ q: `${lastOfTitle}\n${firstOfAuthors}` }))
+                    .results.map((e) => e.pdb_id);
+
+    assert.ok(!found.includes(row.id),
+        "a newline in the needle matched across the separator it is supposed to respect");
 });
 
 // --- residues in the search box -----------------------------------------
@@ -637,21 +724,23 @@ test("the seed carries residue codes but no chemical names", async () => {
         "the seed now has chemical names: strengthen the residue test to use them");
 });
 
-test("only non-standard residues are reachable from the box", async () => {
-    // doc.residues is built with mon_nstd_flag = 'n', so a standard base is
-    // not searchable this way and must not quietly match every structure.
+test("only non-standard residues are in the document at all", async () => {
+    // The view is built with mon_nstd_flag = 'n', so a standard base is not
+    // a residue code in there. It can still appear as part of a longer code:
+    // searching DG finds DDG structures, the same loose-matching trade-off
+    // that takes 5M from 21 to 108. That is substring search working, not a
+    // standard base leaking in, and this pins the distinction.
+    let standard = await query(`SELECT count(*) AS n FROM chem_comp
+                                 WHERE mon_nstd_flag = 'n' AND id IN ('DA','DC','DG','A','C','G','U')`);
+
+    assert.equal(Number(standard.rows[0].n), 0,
+                 "a standard base is registered as non-standard; the view would then carry it");
+
     let all = (await search_entries({})).total;
-
-    for (const code of ["DA", "DC", "DG"]) {
-        let viaDoc = Number((await query(
-            `SELECT count(*) AS n FROM doc WHERE residues ILIKE $1`, [`% ${code} %`])).rows[0].n);
-
-        assert.equal(viaDoc, 0, `${code} is a standard residue and should not be in doc.residues`);
-    }
-
     assert.ok((await search_entries({ q: "PSU" })).total < all,
               "a residue search must still narrow the results");
 });
+
 
 // --- how many results a page holds --------------------------------------
 // Any whole number, capped. The number reaches a LIMIT, so what matters is

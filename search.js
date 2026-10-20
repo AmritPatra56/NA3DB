@@ -46,7 +46,10 @@ function query_to_filters(query) {
 // Wraps a value for a "contains" search with the pattern characters escaped,
 // so a % or _ someone types stays literal. Backslash goes first.
 function like_contains(text) {
-    return "%" + String(text).replace(/[\\%_]/g, "\\$&") + "%";
+    // Newlines come out first. The doc view separates its fields with one, so
+    // a needle holding a newline could match across two of them -- reachable
+    // from a URL as ?q=%0A even though no text input can type it.
+    return "%" + String(text).replace(/[\r\n]+/g, " ").replace(/[\\%_]/g, "\\$&") + "%";
 }
 
 // The same value with punctuation dropped, for matching against prose that
@@ -59,6 +62,8 @@ function like_contains(text) {
 function like_normalised(text) {
     let stripped = String(text)
         .toLowerCase()
+        // Drops newlines along with the punctuation, which is what stops a
+        // needle crossing the separator between two fields in the doc view.
         .replace(/[^a-z0-9 ]/g, "")
         .replace(/\s+/g, " ")
         .trim();
