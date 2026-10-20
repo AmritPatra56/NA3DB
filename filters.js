@@ -99,10 +99,19 @@ export const FILTERS = [
         // The prose column is already normalised in the view, so ?~ (the
         // typed value with its punctuation dropped) is what it is matched
         // against, and zdna finds Z-DNA.
+        //
+        // residues holds each non-standard residue's code and its chemical
+        // name, so PSU finds the 90 entries holding pseudouridine and so does
+        // pseudouridine. Matched loosely, not as a whole code: a whole-code
+        // match is a subset of a loose one, so pairing the two would add
+        // nothing, and loose is what makes the chemical names reachable.
+        // Measured: of nineteen ordinary searches only 5M moves much, 21 to
+        // 108, and those really are 5MU and 5MC structures.
         where: `AND EXISTS (SELECT 1 FROM doc d
                             WHERE d.id = e.id
                               AND (   d.id       ILIKE ?
                                    OR d.entities ILIKE ?
+                                   OR d.residues ILIKE ?
                                    OR d.prose    LIKE  ?~))`
     },
 

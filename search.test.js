@@ -375,10 +375,11 @@ test("a % or _ typed in the box stays literal", async () => {
 test("the box takes one typed value and matches it two ways", async () => {
     let built = build_where({ q: "z-dna" });
 
-    // Three branches over the doc view, two parameters: the literal value
-    // for the id and the entity descriptions, the normalised one for prose.
+    // Four branches over the doc view, two parameters: the literal value for
+    // the id, the entity descriptions and the residues, the normalised one
+    // for prose.
     assert.deepEqual(built.values, ["%z-dna%", "%zdna%"]);
-    assert.equal((built.where.match(/\$1/g) || []).length, 2);
+    assert.equal((built.where.match(/\$1/g) || []).length, 3);
     assert.equal((built.where.match(/\$2/g) || []).length, 1);
 });
 
@@ -601,6 +602,55 @@ test("the document's residues answer the same question the filter does", async (
 
         assert.equal(viaDoc, viaFilter, `${code}: doc says ${viaDoc}, the filter says ${viaFilter}`);
     }
+});
+
+// --- residues in the search box -----------------------------------------
+// The box used to answer nothing for PSU, because residues live in
+// entity_poly_seq and searching 3.8 million rows cost 1,708 ms. They are in
+// the doc view now, so the box can reach them.
+
+test("a residue code typed in the box finds those structures", async () => {
+    for (const code of ["PSU", "H2U", "5MU"]) {
+        let box = (await search_entries({ q: code })).total;
+        let filter = (await search_entries({ nonstandard_residue: code })).total;
+
+        assert.ok(box > 0, `the box found nothing for ${code}`);
+        assert.ok(box >= filter,
+                  `the box found ${box} for ${code}, its own filter finds ${filter}`);
+    }
+});
+
+test("the seed carries residue codes but no chemical names", async () => {
+    // Not an assertion about the code: it records why the test below this one
+    // can only check codes. db/seed.sql is generated from entries.json, which
+    // has no chem_comp.name, so every name in na3db_test is null. The real
+    // na3db, loaded from CIF files, has them, and there the box finds 93
+    // structures for "pseudouridine" against 4 before this change.
+    //
+    // If make_seed.mjs ever starts carrying names, this test fails, and that
+    // is the signal to assert the chemical-name path properly rather than
+    // leaving it covered only by hand.
+    let named = await query(`SELECT count(*) AS n FROM chem_comp
+                              WHERE mon_nstd_flag = 'n' AND name IS NOT NULL`);
+
+    assert.equal(Number(named.rows[0].n), 0,
+        "the seed now has chemical names: strengthen the residue test to use them");
+});
+
+test("only non-standard residues are reachable from the box", async () => {
+    // doc.residues is built with mon_nstd_flag = 'n', so a standard base is
+    // not searchable this way and must not quietly match every structure.
+    let all = (await search_entries({})).total;
+
+    for (const code of ["DA", "DC", "DG"]) {
+        let viaDoc = Number((await query(
+            `SELECT count(*) AS n FROM doc WHERE residues ILIKE $1`, [`% ${code} %`])).rows[0].n);
+
+        assert.equal(viaDoc, 0, `${code} is a standard residue and should not be in doc.residues`);
+    }
+
+    assert.ok((await search_entries({ q: "PSU" })).total < all,
+              "a residue search must still narrow the results");
 });
 
 // --- how many results a page holds --------------------------------------

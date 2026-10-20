@@ -549,11 +549,35 @@ it by hand:
 psql -d na3db -c "REFRESH MATERIALIZED VIEW CONCURRENTLY doc"
 ```
 
-**Residues are in the view but not yet in the box.** They are why the view is
-worth having: searching `entity_poly_seq` directly costs **1,708 ms** against
-3.8 million rows, which is what kept them out, and reading `doc.residues`
-costs **1 ms**. Today they still answer only on their own filter, which is
-where the `PSU` example on the landing page points.
+**Residues are in the box.** They are why the view is worth having:
+searching `entity_poly_seq` directly costs **1,708 ms** against 3.8 million
+rows, which is what kept them out of the box for so long. Reading
+`doc.residues` costs **1 ms**, so typing `PSU` now finds the 90 structures
+holding pseudouridine rather than the one that mentioned it by accident.
+
+`doc.residues` holds each non-standard residue's **code and its chemical
+name**, and the box matches it loosely, so `PSU` and `pseudouridine` reach the
+same structures. Loosely and not as a whole code, because a whole-code match
+is a *subset* of a loose one and pairing the two adds nothing. The cost of
+matching loosely, measured across nineteen ordinary searches:
+
+| search | before | after |
+| --- | --- | --- |
+| `PSU` | 1 | 90 |
+| `uridine` | 24 | 155 |
+| `phosphate` | 256 | 503 |
+| `5M` | 21 | 108 |
+
+Only `5M` moves for a reason worth questioning, and those really are `5MU` and
+`5MC` structures. Standard bases are not reachable this way: the view is built
+with `mon_nstd_flag = 'n'`, so `DA` matches nothing in that column.
+
+**The chemical-name half is not covered by the test suite.** `db/seed.sql` is
+generated from `entries.json`, which carries no `chem_comp.name`, so every
+name in `na3db_test` is null and only the codes can be checked there. A test
+asserts that emptiness deliberately, so that if the seed ever gains names it
+fails and says to strengthen the residue test rather than leaving the gap
+silent.
 
 **Punctuation is optional, in prose only.** Typing `zdna` finds `Z-DNA`,
 because three of the five branches match a copy of the text with punctuation
