@@ -17,8 +17,9 @@ Under active development. See [What is not done yet](#what-is-not-done-yet).
 ## What you can ask it
 
 Type one thing in the box and it searches the id, the title, the authors, the
-molecule descriptions and the source organisms at once. These are the examples
-offered on the landing page, with what they find today:
+molecule descriptions, the source organisms and the non-standard residues all
+at once. These are the examples offered on the landing page, with what they
+find today:
 
 | you type | you get |
 | --- | --- |
@@ -306,7 +307,7 @@ or a hosting platform passes real values in.
 npm test
 ```
 
-**223 tests, about two seconds, no test framework installed**: `node --test`
+**237 tests, about two seconds, no test framework installed**: `node --test`
 ships with Node. They check the real SQL rather than a pretend version of it,
 so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 120 seeded entries and is never touched by the loaders. See
@@ -521,11 +522,41 @@ that is not on the allowed list, or carries `where`, `clause` or `select`.
 
 ### The one search box
 
-`q` is a filter like any other, but what it reads is not a table anyone
-writes to. The text a visitor searches is spread over five tables, so the box
-used to be five correlated subqueries, one per field, evaluated for every
-entry. **`doc` gathers them into one row per entry**, and the box is one
-lookup against it:
+Type anything and it looks in six places at once:
+
+| it searches | example |
+| --- | --- |
+| the entry id | `119D` |
+| the title | `ribozyme` |
+| the authors | `Leonard` |
+| the molecule descriptions | `tRNA` |
+| the source organisms | `Escherichia coli` |
+| the non-standard residues, by code or chemical name | `PSU`, `pseudouridine` |
+
+It understands three things about what you type.
+
+**Capitals do not matter**, anywhere, and never have.
+
+**Punctuation is optional in prose.** `zdna` finds `Z-DNA`, because the title,
+the authors and the organisms are matched against a copy with punctuation
+dropped from both sides. The id and the molecule descriptions stay literal,
+because punctuation means something in them: `119D` is a name, and a
+description is often a chemical name like `11,19-DIMETHYL...`, which would
+otherwise flatten to `1119dimethyl` and answer a search for `119D`.
+
+**It is a "contains" search, including inside a word.** `nard` finds five
+structures by the authors Leonard, Pinard, Bernardin and Renard. That is the
+same property that lets `tRNA` find `tRNApro` and `tRNAminiDCG`, which a
+word-based search misses, so it is kept deliberately. Ranking the whole-word
+matches above the fragments is the fix, and is not built yet.
+
+#### How it is built
+
+The text lives in five tables, so the box was once five correlated subqueries
+run for every entry, and residues were not reachable at all: searching
+`entity_poly_seq` costs **1,708 ms** against 3.8 million rows. `doc` gathers
+everything into one row per entry, which took the box from **28 ms to 7 ms**
+with every answer unchanged, and brought residues down to **1 ms**.
 
 | doc column | gathered from |
 | --- | --- |
@@ -537,40 +568,37 @@ lookup against it:
 | `residues` | `entity_poly_seq` joined to `chem_comp`, non-standard only |
 | `prose` | title, authors and organisms, normalised |
 
-**Every field in that row is separated by a newline, and that matters.** Put
-them in one row joined by a space and the joins themselves become searchable:
-`rna hall` found two structures whose title ends in RNA and whose author is
-named Hall, with no title and no author anywhere containing the phrase. 1,484
-of 1,489 entries could produce a match like it. A newline is a wall nothing a
-visitor can search with survives: the normalised needle keeps only
-`[a-z0-9 ]`, and `like_contains` strips newlines so a crafted `?q=%0A` cannot
-breach it either. Repeated values are joined the same way, so two authors or
-two entity descriptions cannot be read as one run of text.
-
-Measured on the real 1,489: **28 ms to 7 ms**, with every answer unchanged.
-
-It is a **materialized view**, not columns on `entry`, so the loader does not
-have to remember to fill anything in, and nothing can be half-written. The
-cost of that choice is that it holds a copy, which can go stale:
-`load_cif.py` rebuilds it at the end of a run, and three tests in
-`search.test.js` fail if it has drifted from the tables underneath. To rebuild
-it by hand:
+It is a **materialized view**, not columns on `entry`, so the loader cannot
+forget to fill one in and no row can be half-written. The price is that it
+holds a copy, which can go stale: `load_cif.py` rebuilds it when a run
+finishes, and three tests fail if it has drifted. By hand:
 
 ```bash
 psql -d na3db -c "REFRESH MATERIALIZED VIEW CONCURRENTLY doc"
 ```
 
-**Residues are in the box.** They are why the view is worth having:
-searching `entity_poly_seq` directly costs **1,708 ms** against 3.8 million
-rows, which is what kept them out of the box for so long. Reading
-`doc.residues` costs **1 ms**, so typing `PSU` now finds the 90 structures
-holding pseudouridine rather than the one that mentioned it by accident.
+#### Three decisions worth knowing
 
-`doc.residues` holds each non-standard residue's **code and its chemical
-name**, and the box matches it loosely, so `PSU` and `pseudouridine` reach the
-same structures. Loosely and not as a whole code, because a whole-code match
-is a *subset* of a loose one and pairing the two adds nothing. The cost of
-matching loosely, measured across nineteen ordinary searches:
+**Every field is separated by a newline.** Join them with a space and the
+joins themselves become searchable: `rna hall` found two structures whose
+title ends in RNA and whose author is named Hall, with the phrase in no
+single field. 1,484 of 1,489 entries could produce a match like it. A newline
+is a wall nothing a search survives, because the normalised needle keeps only
+`[a-z0-9 ]` and `like_contains` strips newlines, so a crafted `?q=%0A` cannot
+breach it either. Repeated values are joined the same way, so two authors are
+never one run of text.
+
+**Spaces survive normalisation; only punctuation goes.** Dropping spaces too
+looks like the same idea and is not: a space stops separating words, so
+`ATP-dependent RNA` becomes `dependentrna` and answers a search for `tRNA`.
+That turned 163 tRNA hits into 209, and all 46 extras were wrong. `A DNA`
+colliding with `A-DNA` is the sharper case, since both are things people
+type. `search.test.js` pins `9IBC` and `1BDN` against exactly that.
+
+**Residues match loosely, code and chemical name alike.** Not as a whole
+code, because a whole-code match is a *subset* of a loose one, so pairing the
+two adds nothing — and loose is what makes the names reachable. Of nineteen
+ordinary searches, seven move:
 
 | search | before | after |
 | --- | --- | --- |
@@ -579,38 +607,22 @@ matching loosely, measured across nineteen ordinary searches:
 | `phosphate` | 256 | 503 |
 | `5M` | 21 | 108 |
 
-Only `5M` moves for a reason worth questioning, and those really are `5MU` and
-`5MC` structures. Standard bases are not reachable this way: the view is built
-with `mon_nstd_flag = 'n'`, so `DA` matches nothing in that column.
+Six are chemistry words finding chemistry. The seventh is `5M`, and those
+really are `5MU` and `5MC` structures. Only non-standard residues are in the
+column at all, so a standard base is not a code in there — though it can
+still appear inside a longer one, which is why `DG` finds the two `DDG`
+structures.
 
-**The chemical-name half is not covered by the test suite.** `db/seed.sql` is
-generated from `entries.json`, which carries no `chem_comp.name`, so every
-name in `na3db_test` is null and only the codes can be checked there. A test
-asserts that emptiness deliberately, so that if the seed ever gains names it
-fails and says to strengthen the residue test rather than leaving the gap
-silent.
-
-**Punctuation is optional, in prose only.** Typing `zdna` finds `Z-DNA`,
-because three of the five branches match a copy of the text with punctuation
-dropped on both sides. Two branches deliberately stay literal:
-
-| branch | matched | why |
-| --- | --- | --- |
-| entry id | literally | `119D` is a name, not a phrase |
-| entity description | literally | these are chemical names. `11,19-DIMETHYL` normalises to `1119dimethyl`, which would then answer a search for `119D` |
-| title, authors, organisms | with punctuation dropped | prose, where a hyphen is a typing choice |
-
-**Spaces survive; only punctuation goes.** Dropping spaces as well looks like
-the same idea and is not: it stops a space separating two words, so
-`ATP-dependent RNA` becomes `dependentrna` and answers a search for `tRNA`.
-Measured on the real data, that turned 163 tRNA hits into 209, and all 46
-extras were wrong. `A DNA` colliding with `A-DNA` is the sharper case, because
-both are things somebody would type. `search.test.js` pins `9IBC` and `1BDN`
-against exactly that.
-
-A search with nothing alphanumeric in it, such as `%`, still finds nothing: the
+A search with nothing alphanumeric in it, such as `%`, finds nothing: the
 stripped value would be empty, and an empty `LIKE` pattern would match every
 row, so it is replaced by one that cannot match.
+
+**Two things the test suite cannot reach.** Every entry in the 120-entry seed
+has one molecule description, one author and one organism, and no
+`chem_comp.name` at all, because `db/seed.sql` is generated from
+`entries.json`. So the chemical-name search and the repeated-value case are
+verified only against the real `na3db`. Two tests assert that flatness
+deliberately, and fail with instructions if the seed ever gains either.
 
 ### One entry comes from seven tables
 
@@ -904,9 +916,18 @@ host needs real storage rather than a default volume.
 - **`public/app.js` is 470 lines doing six jobs**, reading the form, drawing
   the cards or lines, pagination, the layout and panel controls, and history.
   It works, and it is the next file that will want splitting.
-- **Searching cannot reach residues.** `nonstandard_residue` has its own filter,
-  but folding `entity_poly_seq` into the search box's `OR` measured 348-643 ms
-  against 6-45 without it, so the box leaves them alone.
+- **Results are not ranked.** Every match counts the same, so a structure
+  whose *title* says ribozyme sits beside one that merely has an author named
+  Pinard when you search `nard`. A contains-search is right for this data —
+  it is what finds `tRNApro` where a word search would not — but the fix is
+  to score whole-word matches above fragments rather than to stop matching
+  fragments. PostgreSQL's full-text index does the word-aware half, measured
+  at 0 ms, and `pg_trgm` is already installed.
+- **Typos find nothing.** `ribozime` returns none of the 18 ribozyme
+  structures. `pg_trgm` can do it at a word-similarity threshold of 0.5,
+  measured, but the window is narrow: 0.4 returns 226 results for the same
+  query. It belongs behind a no-results fallback rather than in the search
+  itself.
 - **Some entity names have a space missing.** `DNA-directedRNA polymerase`
   appears in 47 rows, so a search for the spaced form misses them. It is in the
   source data rather than the loader, but it is worth a look.
