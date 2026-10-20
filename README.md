@@ -151,11 +151,19 @@ it in `schema_migrations`. Running it twice does nothing. The data is loaded by
 hand because it is data rather than structure, which is also why `db/seed.sql`
 is not a migration.
 
+**Loading data is also what fills the search document.** `doc` is a
+materialized view, so it is created when the schema is and holds whatever the
+tables held at that moment, which on a new database is nothing. Load data
+after that and the filters would work while the search box found nothing, on
+every page, with no error. Both loaders close that themselves: `db/seed.sql`
+ends by rebuilding it, and `load_cif.py` rebuilds it when a run finishes. If
+it is ever stale anyway, `npm test` fails with the command to run.
+
 | file | what it does |
 | --- | --- |
 | `db/migrate.mjs` | Applies any migration that has not run yet. Safe to run twice. |
 | `db/migrations/*.sql` | The schema, one file per change, applied in filename order. |
-| `db/seed.sql` | Committed. 120 entries across 10 tables, for development and tests. |
+| `db/seed.sql` | Committed. 120 entries across 10 tables, for development and tests. Rebuilds `doc` when it finishes. |
 | `db/make_seed.mjs` | Regenerates `db/seed.sql` from `entries.json`. Only needed if `entries.json` changes. |
 
 ### Loading the real data

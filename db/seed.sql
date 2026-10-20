@@ -1566,3 +1566,16 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TUC', 'polyri
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name) VALUES ('1', '9TUC', 'synthetic construct');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '9TUC', 1, 'A');
 COMMIT;
+
+-- The search box reads the doc materialized view, which is a copy built when
+-- the schema is. Data loaded afterwards is invisible to it until it is
+-- rebuilt, which would leave the filters working and the box finding nothing.
+-- Guarded so this file still runs against a schema that predates the view.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relname = 'doc' AND c.relkind = 'm' AND n.nspname = 'public') THEN
+        REFRESH MATERIALIZED VIEW doc;
+    END IF;
+END $$;
+

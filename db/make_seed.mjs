@@ -88,7 +88,23 @@ const comps = [...chem_comps].map(([code, flag]) =>
     `INSERT INTO chem_comp (id, name, mon_nstd_flag)`
   + ` VALUES (${q(code)}, NULL, ${q(flag)}) ON CONFLICT (id) DO NOTHING;`);
 
-const sql = ["BEGIN;", ...comps, ...body, "COMMIT;"].join("\n") + "\n";
+// Rebuilding doc is part of loading data, not part of the schema: the view
+// is created empty when the migrations run and only this fills it.
+const refresh = `
+-- The search box reads the doc materialized view, which is a copy built when
+-- the schema is. Data loaded afterwards is invisible to it until it is
+-- rebuilt, which would leave the filters working and the box finding nothing.
+-- Guarded so this file still runs against a schema that predates the view.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relname = 'doc' AND c.relkind = 'm' AND n.nspname = 'public') THEN
+        REFRESH MATERIALIZED VIEW doc;
+    END IF;
+END $$;
+`;
+
+const sql = ["BEGIN;", ...comps, ...body, "COMMIT;", refresh].join("\n") + "\n";
 
 writeFileSync(new URL("./seed.sql", import.meta.url), sql);
 console.log(`wrote db/seed.sql: ${entries.length} entries, ${chem_comps.size} residue codes`);
