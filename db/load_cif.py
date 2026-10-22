@@ -183,6 +183,10 @@ def _parse_single_values(text: str) -> dict:
         val = m.group(2).strip()
         val = re.sub(r"^'(.*)'$", r"\1", val, flags=re.DOTALL)
         val = re.sub(r'^"(.*)"$', r"\1", val, flags=re.DOTALL)
+        # A CIF value can also be a block between two semicolons on their own
+        # lines. Both ends are required, so a semicolon inside the text stays:
+        # "Structure of RacA-DNA complex; P21 form" is a real title.
+        val = re.sub(r"^;(.*);\s*$", r"\1", val, flags=re.DOTALL)
         val = re.sub(r"\s+", " ", val).strip()
         result[key] = None if val in ("?", ".") else val
     return result
