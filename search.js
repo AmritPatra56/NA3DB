@@ -294,6 +294,82 @@ export async function find_entry(id) {
 }
 
 // The first thing wrong with the query, or null if it is answerable.
+// What an entity is, in the words a reader of a nucleic acid database uses.
+// entity_poly.type when it is a polymer, entity.type otherwise.
+const POLY_KINDS = {
+    "polyribonucleotide":                                "RNA",
+    "polydeoxyribonucleotide":                           "DNA",
+    "polydeoxyribonucleotide/polyribonucleotide hybrid": "DNA/RNA hybrid",
+    "polypeptide(L)":                                    "Protein",
+    "polypeptide(D)":                                    "Protein",
+    "polysaccharide(D)":                                 "Oligosaccharide",
+    "polysaccharide(L)":                                 "Oligosaccharide"
+};
+const ENTITY_KINDS = { "non-polymer": "Ligand", "water": "Water", "branched": "Oligosaccharide" };
+
+// Nucleic acids lead: in 786 entries entity 1 is a protein, and this is a
+// nucleic acid database. Anything unrecognised sorts after the known kinds.
+const KIND_ORDER = ["RNA", "DNA", "DNA/RNA hybrid", "Protein",
+                    "Oligosaccharide", "Ligand", "Water", "Other"];
+
+function entity_kind(entity_type, poly_type) {
+    if (poly_type) return POLY_KINDS[poly_type] || "Other";
+    return ENTITY_KINDS[entity_type] || "Other";
+}
+
+// Entity ids are numbers stored as text, so "10" would sort before "2".
+function by_kind_then_id(a, b) {
+    return KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)
+        || a.id.length - b.id.length
+        || a.id.localeCompare(b.id);
+}
+
+// Every molecule in one structure, with its chains, in one round trip.
+// `q` lets a test run this inside its own transaction; the site uses query.
+// Chain author ids come from pdbx_poly_seq_scheme, so ligands and water have
+// none: the schema has no non-polymer scheme table.
+export async function entry_contents(id, q = query) {
+    let result = await q(
+        `SELECT en.id, en.type, en.pdbx_description AS description,
+                en.pdbx_number_of_molecules AS copies, en.formula_weight,
+                ep.type AS poly_type,
+                regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g') AS sequence,
+                np.comp_id,
+                COALESCE((
+                    SELECT json_agg(json_build_object(
+                               'label', a.id,
+                               'auth', (SELECT min(s.pdb_strand_id)
+                                          FROM pdbx_poly_seq_scheme s
+                                         WHERE s.entry_id = a.entry_id AND s.asym_id = a.id))
+                           ORDER BY length(a.id), a.id)
+                      FROM struct_asym a
+                     WHERE a.entry_id = en.entry_id AND a.entity_id = en.id
+                ), '[]') AS chains
+           FROM entry e
+           JOIN entity en                ON en.entry_id = e.id
+           LEFT JOIN entity_poly ep      ON ep.entry_id = en.entry_id AND ep.entity_id = en.id
+           LEFT JOIN pdbx_entity_nonpoly np ON np.entry_id = en.entry_id AND np.entity_id = en.id
+          WHERE UPPER(e.id) = UPPER($1)`,
+        [as_text(id).trim()]
+    );
+
+    let entities = result.rows.map((row) => ({
+        id:             row.id,
+        kind:           entity_kind(row.type, row.poly_type),
+        type:           row.type,
+        poly_type:      row.poly_type,
+        description:    row.description,
+        copies:         row.copies,
+        formula_weight: row.formula_weight,
+        comp_id:        row.comp_id,
+        sequence:       row.sequence || null,
+        length:         row.sequence ? row.sequence.length : null,
+        chains:         row.chains
+    }));
+
+    return { entities: entities.sort(by_kind_then_id) };
+}
+
 export function query_problem(query) {
     let page = as_text(query.page);
 
