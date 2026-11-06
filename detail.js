@@ -88,6 +88,7 @@ function polymer_row(entity) {
 
     return {
         name:      entity.description,
+        links:     (entity.references || []).map(({ label, code, url }) => ({ text: `${label} ${code}`, url })),
         length:    entity.length ? `${entity.length} ${unit}`.trim() : null,
         chains:    chains.map((c) => ({ name: chain_name(c),
                                         title: c.auth && c.auth !== c.label ? `label id ${c.label}` : null })),
@@ -100,8 +101,18 @@ function polymer_row(entity) {
     };
 }
 
+// A molecule's organism is worth a line only when the molecules disagree:
+// 1B23 is an E. coli tRNA on a T. aquaticus protein. When they agree, the
+// Source organism row above already says it once.
+function organisms_differ(entities) {
+    let sets = new Set(entities.filter((e) => e.type === "polymer" && e.organisms?.length)
+                               .map((e) => [...e.organisms].sort().join("; ").toLowerCase()));
+    return sets.size > 1;
+}
+
 export function molecule_groups(contents) {
     let groups = [];
+    let per_molecule_organism = organisms_differ(contents.entities);
 
     for (const entity of contents.entities) {
         if (entity.kind === "Water") continue;
@@ -113,8 +124,11 @@ export function molecule_groups(contents) {
         }
 
         group.rows.push(entity.type === "polymer"
-            ? polymer_row(entity)
-            : { code: entity.comp_id, name: entity.description, count: entity.chains.length });
+            ? { ...polymer_row(entity),
+                organism: per_molecule_organism && entity.organisms?.length
+                          ? entity.organisms.join("; ") : null }
+            : { code: entity.comp_id, name: entity.description, count: entity.chains.length,
+                url: entity.comp_id ? `https://www.rcsb.org/ligand/${entity.comp_id}` : null });
     }
 
     for (const g of groups) {

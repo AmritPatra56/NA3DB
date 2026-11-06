@@ -550,6 +550,10 @@ input::placeholder {
     cursor: help;
 }
 
+.molecule_table a {
+    color: var(--accent);
+}
+
 .molecule_sub {
     font-size: 12px;
     color: var(--text-dim);

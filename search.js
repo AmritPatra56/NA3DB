@@ -343,7 +343,18 @@ export async function entry_contents(id, q = query) {
                                     ORDER BY length(a.id), a.id)
                       FROM struct_asym a
                      WHERE a.entry_id = en.entry_id AND a.entity_id = en.id
-                ), '[]') AS chains
+                ), '[]') AS chains,
+                COALESCE((
+                    SELECT json_agg(DISTINCT jsonb_build_object(
+                               'db', r.db_name, 'code', r.db_code,
+                               'accession', r.pdbx_db_accession))
+                      FROM struct_ref r
+                     WHERE r.entry_id = en.entry_id AND r.entity_id = en.id
+                ), '[]') AS refs,
+                (SELECT array_agg(DISTINCT trim(g.pdbx_gene_src_scientific_name))
+                   FROM entity_src_gen g
+                  WHERE g.entry_id = en.entry_id AND g.entity_id = en.id
+                    AND trim(g.pdbx_gene_src_scientific_name) <> '') AS organisms
            FROM entry e
            JOIN entity en                ON en.entry_id = e.id
            LEFT JOIN entity_poly ep      ON ep.entry_id = en.entry_id AND ep.entity_id = en.id
@@ -365,10 +376,42 @@ export async function entry_contents(id, q = query) {
         comp_id:        row.comp_id,
         sequence:       row.sequence || null,
         length:         row.sequence ? row.sequence.length : null,
-        chains:         row.chains.map((c) => ({ auth: null, ...c, ...stats.get(c.label) }))
+        chains:         row.chains.map((c) => ({ auth: null, ...c, ...stats.get(c.label) })),
+        organisms:      row.organisms || [],
+        references:     sequence_links(row.refs, row.type, row.poly_type, id)
     }));
 
     return { entities: entities.sort(by_kind_then_id) };
+}
+
+// Where a molecule's sequence comes from, as links. A PDB reference to the
+// entry itself, as for most synthetic DNA and RNA (2,672 nucleic acid
+// entities), says only "this sequence is here" and is left out. A database
+// with no known address (NOR) keeps its name and code without a url.
+const NCBI = "https://www.ncbi.nlm.nih.gov";
+const REFERENCE_URL = {
+    UNP:  (r) => ({ label: "UniProt",  url: `https://www.uniprot.org/uniprotkb/${r.accession}`,
+                    code: r.accession }),
+    GB:   (r, protein) => ({ label: "GenBank", url: `${NCBI}/${protein ? "protein" : "nuccore"}/${r.code}` }),
+    TPG:  (r) => ({ label: "GenBank TPA", url: `${NCBI}/nuccore/${r.code}` }),
+    REF:  (r, protein) => ({ label: "RefSeq", url: `${NCBI}/${protein ? "protein" : "nuccore"}/${r.code}` }),
+    EMBL: (r) => ({ label: "ENA",      url: `https://www.ebi.ac.uk/ena/browser/view/${r.accession}`,
+                    code: r.accession }),
+    PDB:  (r) => ({ label: "PDB",      url: `https://www.rcsb.org/structure/${r.code}` })
+};
+
+function sequence_links(refs, type, poly_type, entry_id) {
+    if (type !== "polymer") return [];
+    let protein = /^polypeptide/i.test(poly_type || "");
+
+    return refs
+        .filter((r) => !(r.db === "PDB" && r.code?.toUpperCase() === as_text(entry_id).trim().toUpperCase()))
+        .map((r) => {
+            let known = REFERENCE_URL[r.db]?.(r, protein);
+            return { db: r.db, code: known?.code ?? r.code, label: known?.label ?? r.db,
+                     url: known?.url ?? null };
+        })
+        .sort((a, b) => a.label.localeCompare(b.label) || a.code.localeCompare(b.code));
 }
 
 // Per polymer chain: how much of the sequence is in the model, which residues

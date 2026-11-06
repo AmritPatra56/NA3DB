@@ -730,14 +730,62 @@ test("a polymer row reads the way 1L9A's does", async () => {
     assert.deepEqual(m.groups[0].rows[0], {
         name: "SRP RNA", length: "5 nt",
         chains: [{ name: "B", title: "label id A" }],
-        modelled: "3 / 5", missing: "A114, G115", numbering: "112–116"
+        modelled: "3 / 5", missing: "A114, G115", numbering: "112–116",
+        links: [], organism: null
     });
     assert.equal(m.groups[1].rows[0].length, "2 aa");
 });
 
 test("a ligand row gives its code and how many copies", async () => {
     let m = await with_molecules(async (q) => molecule_groups(await entry_contents("ZZ02", q)));
-    assert.deepEqual(m.groups[2].rows, [{ code: "MG", name: "MAGNESIUM ION", count: 2 }]);
+    assert.deepEqual(m.groups[2].rows, [{ code: "MG", name: "MAGNESIUM ION", count: 2,
+                                               url: "https://www.rcsb.org/ligand/MG" }]);
+});
+
+// --- links and organism per molecule (micro-goal 2.1b) ------------------
+
+async function with_refs(refs, organisms, work) {
+    return with_molecules(async (q) => {
+        for (let [i, [entity, db, code, acc]] of refs.entries())
+            await q(`INSERT INTO struct_ref (id, entry_id, entity_id, db_name, db_code, pdbx_db_accession)
+                     VALUES ($1, 'ZZ02', $2, $3, $4, $5)`, [String(i + 1), entity, db, code, acc]);
+        for (let [entity, name] of organisms)
+            await q(`INSERT INTO entity_src_gen (entry_id, entity_id, pdbx_gene_src_scientific_name)
+                     VALUES ('ZZ02', $1, $2)`, [entity, name]);
+        return molecule_groups(await entry_contents("ZZ02", q));
+    });
+}
+
+test("each database links to its own site, UniProt by accession", async () => {
+    let m = await with_refs([["1", "GB", "X04248", "X04248"], ["2", "UNP", "SRP19_METJA", "Q58440"]],
+                            [], async (m) => m);
+    assert.deepEqual(m.groups[0].rows[0].links,
+                     [{ text: "GenBank X04248", url: "https://www.ncbi.nlm.nih.gov/nuccore/X04248" }]);
+    assert.deepEqual(m.groups[1].rows[0].links,
+                     [{ text: "UniProt Q58440", url: "https://www.uniprot.org/uniprotkb/Q58440" }]);
+});
+
+test("a molecule's own PDB entry is not offered as a link", async () => {
+    let m = await with_refs([["1", "PDB", "ZZ02", "ZZ02"], ["1", "PDB", "4U53", "4U53"]],
+                            [], async (m) => m);
+    assert.deepEqual(m.groups[0].rows[0].links.map((l) => l.text), ["PDB 4U53"]);
+});
+
+test("every reference is listed, and an unknown database is plain text", async () => {
+    let m = await with_refs([["1", "TPG", "BK006945", "BK006945.2"], ["1", "GB", "U53879", "U53879.1"],
+                             ["2", "NOR", "NOR00669", "NOR00669"]], [], async (m) => m);
+    assert.equal(m.groups[0].rows[0].links.length, 2);
+    assert.equal(m.groups[1].rows[0].links[0].url, null);
+});
+
+test("organism shows per molecule only when the molecules disagree", async () => {
+    let differ = await with_refs([], [["1", "Escherichia coli"], ["2", "Thermus aquaticus"]],
+                                 async (m) => m);
+    assert.equal(differ.groups[0].rows[0].organism, "Escherichia coli");
+    assert.equal(differ.groups[1].rows[0].organism, "Thermus aquaticus");
+    let same = await with_refs([], [["1", "Escherichia coli"], ["2", "Escherichia coli"]],
+                               async (m) => m);
+    assert.equal(same.groups[0].rows[0].organism, null);
 });
 
 test("a long gap reads as a range, and many gaps are cut short", () => {
