@@ -79,7 +79,7 @@ function chain_name(chain) {
 
 // One polymer as a table row. Copies of one entity usually share their
 // numbering; when they do not, each chain says its own.
-function polymer_row(entity) {
+function polymer_row(entity, residues) {
     let unit = UNIT[entity.kind] || "";
     let chains = entity.chains;
     let modelled = (c) => `${c.modelled} / ${c.total}`;
@@ -90,6 +90,7 @@ function polymer_row(entity) {
     let gaps = chains.filter((c) => c.missing && c.missing.length);
 
     return {
+        entity_id: entity.id,
         name:      entity.description,
         links:     (entity.references || []).map(({ label, code, url }) => ({ text: `${label} ${code}`, url })),
         length:    entity.length ? `${entity.length} ${unit}`.trim() : null,
@@ -100,8 +101,62 @@ function polymer_row(entity) {
                  : gaps.length === chains.length && same((c) => missing_text(c.missing))
                  ? missing_text(gaps[0].missing)
                  : gaps.map((c) => `${chain_name(c)}: ${missing_text(c.missing)}`).join("; "),
-        numbering: chains.length && chains[0].first ? per_chain(numbering) : null
+        numbering: chains.length && chains[0].first ? per_chain(numbering) : null,
+        sequence:  sequence_lines(entity.sequence, residues)
     };
+}
+
+// The sequence in lines of SEQUENCE_LINE letters, blocks of 10, as runs of
+// plain letters and marked ones: a modified nucleotide (shown as its parent's
+// letter, the code on hover) or a position no chain has in the model.
+// residues come from entry_residues, in the same order as the letters.
+export const SEQUENCE_LINE = 60;
+
+export function sequence_lines(sequence, residues = []) {
+    if (!sequence) return null;
+    let at = (r) => r?.auth ? `${r.code}${r.auth}` : r?.code;
+    let lines = [];
+    for (let start = 0; start < sequence.length; start += SEQUENCE_LINE) {
+        // A stretch of unmodelled positions is one span, block spaces and
+        // all: 9MU2 has 88,856 of them. A modified residue is one span each.
+        let runs = [];
+        let open = null;          // the unmodelled run being extended, with its first residue
+        for (let i = start; i < Math.min(start + SEQUENCE_LINE, sequence.length); i++) {
+            let r = residues[i];
+            let mark = r?.modified ? "modified" : r && !r.seen ? "unmodelled" : null;
+            let space = i > start && i % 10 === 0 ? " " : "";
+            if (mark === "unmodelled" && open) {
+                open.run.text += space + sequence[i];
+                open.last = r;
+                continue;
+            }
+            if (open) { close_run(open); open = null; }
+            let last = runs.at(-1);
+            if (space) {
+                if (last && !last.mark) last.text += space;
+                else runs.push(last = { text: space, mark: null, title: null });
+            }
+            if (mark === "modified") {
+                runs.push({ text: sequence[i], mark, title: `${at(r)}: ${r.name ?? r.code}${r.seen ? "" : ", not modelled"}` });
+            } else if (mark === "unmodelled") {
+                open = { run: { text: sequence[i], mark, title: null }, first: r, last: r };
+                runs.push(open.run);
+            } else if (last && !last.mark) {
+                last.text += sequence[i];
+            } else {
+                runs.push({ text: sequence[i], mark: null, title: null });
+            }
+        }
+        if (open) close_run(open);
+        lines.push({ start: start + 1, runs });
+    }
+
+    function close_run({ run, first, last }) {
+        run.title = `${first === last ? at(first) : `${at(first)}–${at(last)}`}: not modelled`;
+    }
+
+    let marks = new Set(lines.flatMap((l) => l.runs.map((r) => r.mark)));
+    return { lines, length: sequence.length, modified: marks.has("modified"), unmodelled: marks.has("unmodelled") };
 }
 
 // --- the Source section of the structure page --------------------------
@@ -191,7 +246,7 @@ export function source_section(entities) {
              notes: rows.some((r) => r.segments.some((s) => s.notes)) };
 }
 
-export function molecule_groups(contents) {
+export function molecule_groups(contents, residues = new Map()) {
     let groups = [];
 
     for (const entity of contents.entities) {
@@ -204,7 +259,7 @@ export function molecule_groups(contents) {
         }
 
         group.rows.push(entity.type === "polymer"
-            ? polymer_row(entity)
+            ? polymer_row(entity, residues.get(entity.id))
             : { code: entity.comp_id, name: entity.description, count: entity.chains.length,
                 url: entity.comp_id ? `https://www.rcsb.org/ligand/${entity.comp_id}` : null });
     }
@@ -306,4 +361,24 @@ export function base_pair_section(pairs) {
             pair: `${p.res_1} – ${p.res_2}`, family: p.family, name: family_name(p.family)
         }))
     };
+}
+
+// --- FASTA ---------------------------------------------------------------
+// One polymer in the header layout RCSB uses, so files from both sites look
+// alike: >1OB5_2|Chains B, D, F|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932).
+// Lines of 80. A chimera's organisms are joined; none is left out.
+export const FASTA_LINE = 80;
+
+export function fasta_of(entry_id, entity) {
+    if (!entity?.sequence) return null;
+    let chains = entity.chains.map(chain_name);
+    let organisms = (entity.source?.segments ?? [])
+        .filter((s) => s.organism)
+        .map((s) => `${species_case(s.organism)}${s.taxid ? ` (${s.taxid})` : ""}`);
+    let header = [`${entry_id.toUpperCase()}_${entity.id}`,
+                  `${chains.length === 1 ? "Chain" : "Chains"} ${chains.join(", ")}`,
+                  entity.description ?? "",
+                  [...new Set(organisms)].join(", ")].filter(Boolean).join("|");
+    let lines = entity.sequence.match(new RegExp(`.{1,${FASTA_LINE}}`, "g"));
+    return `>${header}\n${lines.join("\n")}\n`;
 }

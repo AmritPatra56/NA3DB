@@ -431,6 +431,45 @@ export async function entry_contents(id, q = query) {
     return { entities: entities.sort(by_kind_then_id), modified };
 }
 
+// Every residue of every polymer, for the sequence shown on the structure
+// page: the code (2MG, not G), whether it is a modified nucleotide, the
+// author number of the first chain, and whether any chain has it in the
+// model. Kept out of entry_contents so the API is not 89,527 rows longer
+// for 9MU2. A Map from entity id to residues in sequence order.
+export async function entry_residues(id, q = query) {
+    let result = await q(
+        `WITH e AS (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1)),
+         s AS (
+             SELECT s.entity_id, s.seq_id, s.asym_id,
+                    min(s.pdb_seq_num::text || COALESCE(NULLIF(s.pdb_ins_code, ''), '')) AS num,
+                    bool_or(s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', '')) AS seen
+               FROM pdbx_poly_seq_scheme s WHERE s.entry_id = (SELECT id FROM e)
+              GROUP BY s.entity_id, s.seq_id, s.asym_id),
+         p AS (
+             SELECT entity_id, seq_id, bool_or(seen) AS seen,
+                    (array_agg(num ORDER BY length(asym_id), asym_id))[1] AS num
+               FROM s GROUP BY entity_id, seq_id)
+         SELECT q.entity_id, q.num AS pos, min(q.mon_id) AS code, p.num AS auth,
+                COALESCE(p.seen, true) AS seen,
+                bool_or(c.mon_nstd_flag = 'n' AND ep.type ILIKE '%nucleotide%') AS modified,
+                min(c.name) AS name
+           FROM entity_poly_seq q
+           JOIN entity_poly ep ON ep.entry_id = q.entry_id AND ep.entity_id = q.entity_id
+           LEFT JOIN chem_comp c ON c.id = q.mon_id
+           LEFT JOIN p ON p.entity_id = q.entity_id AND p.seq_id = q.num
+          WHERE q.entry_id = (SELECT id FROM e)
+          GROUP BY q.entity_id, q.num, p.num, p.seen
+          ORDER BY q.entity_id, q.num`,
+        [as_text(id).trim()]
+    );
+    let residues = new Map();
+    for (const r of result.rows) {
+        if (!residues.has(r.entity_id)) residues.set(r.entity_id, []);
+        residues.get(r.entity_id).push(r);
+    }
+    return residues;
+}
+
 // Every annotated base pair of one entry, in model 1 (an NMR entry repeats
 // each pair per model). kind is judged on the parent bases, so 1OB5's
 // G30-5MC40 (cWW_G-5MC) is Watson-Crick: 'wc' is cWW G-C or A-U/T, 'gu' is

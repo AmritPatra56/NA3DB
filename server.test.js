@@ -727,3 +727,8 @@ test("the report reached from a structure covers only that structure", async () 
     assert.equal(body.total, 1);
     assert.equal(body.results[0].pdb_id, "4TNA");
 });
+
+test("a FASTA link for a molecule without a sequence is a 404, not an empty file", async () => {
+    assert.equal((await fetch(base + "/structure/1B23/fasta/99")).status, 404);
+    assert.equal((await fetch(base + "/structure/NOPE/fasta/1")).status, 404);
+});

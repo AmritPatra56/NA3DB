@@ -54,6 +54,24 @@
                                             <td><%= r.numbering ?? "—" %></td>
                                             <td><% if (!r.links.length) { %>—<% } %><% for (const l of r.links) { %><div><% if (l.url) { %><a target="_blank" rel="noopener" href="<%= l.url %>"><%= l.text %></a><% } else { %><%= l.text %><% } %></div><% } %></td>
                                         </tr>
+                                        <% if (r.sequence) { %>
+                                            <tr class="sequence_row"><td colspan="5">
+                                                <details class="sequence">
+                                                    <summary>Show sequence</summary>
+                                                    <div class="sequence_body">
+                                                        <% for (const line of r.sequence.lines) { %><div><span class="sequence_num"><%= line.start %></span><span class="sequence_text"><% for (const run of line.runs) { %><% if (run.mark) { %><span class="sequence_<%= run.mark %>" title="<%= run.title %>"><%= run.text %></span><% } else { %><%= run.text %><% } %><% } %></span></div><% } %>
+                                                    </div>
+                                                    <div class="sequence_foot">
+                                                        <% if (r.sequence.modified) { %><span><span class="sequence_modified">G</span> modified, shown as its parent; hover for the code</span><% } %>
+                                                        <% if (r.sequence.unmodelled) { %><span><span class="sequence_unmodelled">C</span> not modelled in any chain</span><% } %>
+                                                        <span class="sequence_actions">
+                                                            <button type="button" class="sequence_copy" title="Copy sequence" aria-label="Copy sequence"><svg class="icon_copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><svg class="icon_done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></button>
+                                                            <a class="sequence_fasta" href="/structure/<%= entry.pdb_id %>/fasta/<%= r.entity_id %>" download title="Download as FASTA"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>FASTA</a>
+                                                        </span>
+                                                    </div>
+                                                </details>
+                                            </td></tr>
+                                        <% } %>
                                     <% } %>
                                 <% } else { %>
                                     <colgroup><col style="width:12%"><col style="width:70%"><col style="width:18%"></colgroup>
@@ -160,5 +178,28 @@
             </div>
         </div>
     </div>
+    <script>
+        // Copies the letters only: no line numbers, no block spaces.
+        document.addEventListener("click", async (event) => {
+            let button = event.target.closest(".sequence_copy");
+            if (!button) return;
+            let text = [...button.closest(".sequence").querySelectorAll(".sequence_text")]
+                .map((t) => t.textContent).join("").replace(/\s/g, "");
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch {
+                // No clipboard permission (an embedded or plain-http page):
+                // copy through a hidden text box instead.
+                let box = Object.assign(document.createElement("textarea"), { value: text });
+                document.body.append(box);
+                box.select();
+                document.execCommand("copy");
+                box.remove();
+            }
+            button.classList.add("copied");
+            button.title = "Copied";
+            setTimeout(() => { button.classList.remove("copied"); button.title = "Copy sequence"; }, 1500);
+        });
+    </script>
 </body>
 </html>

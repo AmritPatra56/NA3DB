@@ -6,10 +6,10 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
-         missing_runs, entry_base_pairs } from "./search.js";
+         missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
-         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN } from "./detail.js";
+         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of } from "./detail.js";
 
 after(() => close());
 
@@ -802,10 +802,12 @@ test("the Molecules table lists nucleic acids first and leaves out water", async
 test("a polymer row reads the way 1L9A's does", async () => {
     let m = await with_molecules(async (q) => molecule_groups(await entry_contents("ZZ02", q)));
     assert.deepEqual(m.groups[0].rows[0], {
-        name: "SRP RNA", length: "5 nt",
+        entity_id: "1", name: "SRP RNA", length: "5 nt",
         chains: [{ name: "B", title: "label id A" }],
         modelled: "3 / 5", missing: "A114, G115", numbering: "112–116",
-        links: []
+        links: [],
+        sequence: { lines: [{ start: 1, runs: [{ text: "GCAGU", mark: null, title: null }] }],
+                    length: 5, modified: false, unmodelled: false }
     });
     assert.equal(m.groups[1].rows[0].length, "2 aa");
 });
@@ -1142,4 +1144,67 @@ test("many self-paired chains are counted, not named", () => {
     let chains = Array.from({ length: PAIR_LINKS_SHOWN + 1 }, (_, i) => `C${i}`);
     let s = base_pair_section(chains.map((c) => pair(c, c, "wc")));
     assert.equal(s.sentence, `${chains.length} chains each pair only with themselves, 1 pair each.`);
+});
+
+
+// --- sequences (2.3) -----------------------------------------------------
+
+// ZZ02's RNA with its fifth residue a pseudouridine, and its protein.
+const with_sequence = (work) => with_molecules(async (q) => {
+    await q(`INSERT INTO chem_comp (id, mon_nstd_flag, name) VALUES ('PSU', 'n', 'PSEUDOURIDINE')
+             ON CONFLICT (id) DO UPDATE SET mon_nstd_flag = 'n', name = EXCLUDED.name`);
+    await q(`INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES
+             ('1', 'ZZ02', 1, 'G'), ('1', 'ZZ02', 2, 'C'), ('1', 'ZZ02', 3, 'A'),
+             ('1', 'ZZ02', 4, 'G'), ('1', 'ZZ02', 5, 'PSU'),
+             ('2', 'ZZ02', 1, 'MET'), ('2', 'ZZ02', 2, 'LYS')`);
+    return work(q);
+});
+
+const sequence_of = (m, kind) => m.groups.find((g) => g.kind === kind).rows[0].sequence;
+
+test("a sequence marks its modified nucleotides and the positions no chain models", async () => {
+    let m = await with_sequence(async (q) =>
+        molecule_groups(await entry_contents("ZZ02", q), await entry_residues("ZZ02", q)));
+    let rna = sequence_of(m, "RNA");
+    assert.deepEqual(rna.lines[0].runs, [
+        { text: "GC", mark: null, title: null },
+        { text: "AG", mark: "unmodelled", title: "A114–G115: not modelled" },
+        { text: "U", mark: "modified", title: "PSU116: PSEUDOURIDINE" }]);
+    assert.equal(rna.modified && rna.unmodelled, true);
+});
+
+test("a protein's sequence has no modified marks", async () => {
+    let m = await with_sequence(async (q) =>
+        molecule_groups(await entry_contents("ZZ02", q), await entry_residues("ZZ02", q)));
+    assert.deepEqual(sequence_of(m, "Protein").lines[0].runs, [{ text: "MK", mark: null, title: null }]);
+});
+
+test("a long sequence breaks into lines of 60 in blocks of 10, letters unchanged", () => {
+    let seq = "ACGU".repeat(40);
+    let s = sequence_lines(seq);
+    assert.deepEqual(s.lines.map((l) => l.start), [1, 61, 121]);
+    assert.equal(s.lines[0].runs[0].text, "ACGUACGUAC GUACGUACGU ACGUACGUAC GUACGUACGU ACGUACGUAC GUACGUACGU");
+    assert.equal(s.lines.map((l) => l.runs.map((r) => r.text).join("")).join("").replace(/\s/g, ""), seq);
+    assert.equal(SEQUENCE_LINE, 60);
+});
+
+test("a stretch of unmodelled positions is one span across block spaces", () => {
+    let residues = Array.from({ length: 25 }, (_, i) => ({ code: "A", auth: String(i + 1), seen: i < 8 || i > 21 }));
+    let runs = sequence_lines("A".repeat(25), residues).lines[0].runs;
+    assert.deepEqual(runs.map((r) => [r.text, r.mark, r.title]), [
+        ["AAAAAAAA", null, null],
+        ["AA AAAAAAAAAA AA", "unmodelled", "A9–A22: not modelled"],
+        ["AAA", null, null]]);
+});
+
+test("a FASTA file has an RCSB-style header and lines of 80", () => {
+    let entity = { id: "2", description: "TRANSFER-RNA, PHE", sequence: "ACGU".repeat(25),
+                   chains: [{ label: "B", auth: "B" }, { label: "D", auth: "D" }],
+                   source: { segments: [{ organism: "SACCHAROMYCES CEREVISIAE", taxid: 4932 }] } };
+    let lines = fasta_of("1ob5", entity).split("\n");
+    assert.equal(lines[0], ">1OB5_2|Chains B, D|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932)");
+    assert.deepEqual(lines.slice(1).map((l) => l.length), [80, 20, 0]);
+    assert.equal(fasta_of("1OB5", { ...entity, chains: [{ label: "A" }], source: null }).split("\n")[0],
+                 ">1OB5_2|Chain A|TRANSFER-RNA, PHE");
+    assert.equal(fasta_of("1OB5", { ...entity, sequence: null }), null);
 });

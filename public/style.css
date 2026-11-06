@@ -1613,3 +1613,81 @@ input::placeholder {
 .pair_list summary { cursor: pointer; color: var(--accent); }
 .pair_list .molecule_table { width: auto; min-width: 380px; }
 .pair_list .molecule_table td, .pair_list .molecule_table th { padding-right: 32px; }
+
+/* Sequence under a molecule row: lines of 60, blocks of 10. */
+.molecule_table tr:has(+ .sequence_row) td { border-bottom: none; }
+.sequence_row td { padding-top: 0; }
+.sequence summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.sequence_body {
+    margin: 6px 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.sequence_body > div { white-space: pre; }
+.sequence_num {
+    display: inline-block;
+    width: 5ch;
+    margin-right: 1.5ch;
+    text-align: right;
+    color: var(--text-dim);
+    user-select: none;
+}
+.sequence_modified {
+    background: #cecbf6;
+    color: #26215c;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 2px;
+    cursor: help;
+}
+.sequence_unmodelled {
+    color: var(--text-dim);
+    text-decoration: underline dotted;
+    cursor: help;
+}
+.sequence_foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+.sequence_foot .sequence_modified, .sequence_foot .sequence_unmodelled {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    padding: 0 2px;
+}
+.sequence_actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.sequence_copy, .sequence_fasta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    color: var(--accent);
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+.sequence_copy:hover, .sequence_fasta:hover { border-color: var(--border-dark); }
+.sequence_actions svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.sequence_copy .icon_done, .sequence_copy.copied .icon_copy { display: none; }
+.sequence_copy.copied .icon_done { display: inline; color: var(--focus); }

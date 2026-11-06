@@ -1,11 +1,12 @@
 import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
-         count_entries, entry_citations, entry_contents, entry_base_pairs } from "./search.js";
+         count_entries, entry_citations, entry_contents, entry_base_pairs,
+         entry_residues } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
-import { detail_rows, molecule_groups, base_pair_section } from "./detail.js";
+import { detail_rows, molecule_groups, base_pair_section, fasta_of } from "./detail.js";
 
 const app = express();
 
@@ -162,10 +163,28 @@ app.get("/structure/:id", async (req, res) => {
         entry,
         rows: detail_rows(entry),
         citations: await entry_citations(entry.pdb_id),
-        molecules: molecule_groups(await entry_contents(entry.pdb_id)),
+        molecules: molecule_groups(await entry_contents(entry.pdb_id), await entry_residues(entry.pdb_id)),
         base_pairs: base_pair_section(await entry_base_pairs(entry.pdb_id)),
         rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
     });
+});
+
+// One molecule's sequence as a FASTA file, from the link under its sequence.
+app.get("/structure/:id/fasta/:entity", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+    let entity = entry && (await entry_contents(entry.pdb_id)).entities
+        .find((e) => e.id === req.params.entity);
+    let fasta = entity && fasta_of(entry.pdb_id, entity);
+
+    if (!fasta) {
+        res.status(404).type("text").send(`No sequence for ${req.params.id} molecule ${req.params.entity}\n`);
+        return;
+    }
+    // FASTA has no registered media type; plain text is what tools expect.
+    // attachment() guesses one from the extension, so the type is set after it.
+    res.attachment(`${entry.pdb_id}_${entity.id}.fasta`)
+       .set("Content-Type", "text/plain; charset=utf-8")
+       .send(fasta);
 });
 
 // One page of entries, narrowed by whatever filters were passed.
