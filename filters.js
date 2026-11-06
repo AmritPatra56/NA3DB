@@ -550,7 +550,7 @@ export const COLUMNS = [
         // purified from cells on a Thermus protein. Names that differ only in
         // case are one organism, spelt the way that is not all capitals.
         key: "source_organism", label: "Source organism", group: "Structure Components",
-        scope: "entry", show: ["page", "card"], empty: "Not recorded",
+        scope: "entry", show: ["page", "card"], empty: "Not recorded", species: true,
         select: `COALESCE((
                      SELECT string_agg(o.name, '; ' ORDER BY o.first)
                      FROM (SELECT (array_agg(trim(s.organism)
@@ -584,7 +584,7 @@ export const COLUMNS = [
 
     {
         key: "expression_host", label: "Expression host", group: "Structure Components",
-        scope: "entry", show: [],
+        scope: "entry", show: [], species: true,
         select: `(SELECT string_agg(DISTINCT trim(g.pdbx_host_org_scientific_name), '; ')
                   FROM entity_src_gen g
                   WHERE g.entry_id = e.id AND trim(g.pdbx_host_org_scientific_name) <> '')`

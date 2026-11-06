@@ -915,6 +915,25 @@ test("the stored residue list agrees with the residues", async () => {
         "doc.residue_codes is stale, run REFRESH MATERIALIZED VIEW doc");
 });
 
+test("the search document's organisms agree with all three source tables", async () => {
+    // Recomputed here rather than shared with migration 013, so a fourth
+    // source kind added to one side and not the other shows up as drift.
+    let r = await query(`
+        WITH s AS (
+            SELECT entry_id, pdbx_gene_src_scientific_name AS organism, 'gen' AS kind FROM entity_src_gen
+            UNION ALL SELECT entry_id, pdbx_organism_scientific, 'nat' FROM entity_src_nat
+            UNION ALL SELECT entry_id, organism_scientific, 'syn' FROM pdbx_entity_src_syn)
+        SELECT (SELECT count(DISTINCT kind) FROM s) AS kinds,
+               (SELECT count(*) FROM doc d
+                 WHERE d.organisms IS DISTINCT FROM (
+                       SELECT string_agg(DISTINCT s.organism, E'\n') FROM s WHERE s.entry_id = d.id)) AS wrong
+    `);
+
+    assert.equal(Number(r.rows[0].kinds), 3, "the seed should hold every source kind");
+    assert.equal(Number(r.rows[0].wrong), 0,
+        "doc.organisms is stale, run REFRESH MATERIALIZED VIEW doc");
+});
+
 // --- derived columns must not drift -------------------------------------
 // has_nonstandard_residue is stored, not computed, which is only safe while it
 // agrees with the rows behind it. A loader that forgets it would be silent.

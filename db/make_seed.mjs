@@ -29,6 +29,12 @@ const POLYMER_TYPES = {
     "Other":                   ["other"]
 };
 
+// NCBI taxonomy IDs for the organisms entries.json names; the rest stay NULL.
+const TAXA = {
+    "Saccharomyces cerevisiae": 4932, "Escherichia coli": 562, "Homo sapiens": 9606,
+    "synthetic construct": 32630, "Oryctolagus cuniculus": 9986, "Mycobacterium tuberculosis": 1773
+};
+
 let body = [];
 let chem_comps = new Map();          // code → 'y' or 'n', collected as we go
 
@@ -62,9 +68,24 @@ for (const e of entries) {
                 + ` VALUES (${ent}, ${id}, ${q(type)});`);
     });
 
-    if (e.source_organism) {
-        body.push(`INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name)`
-                + ` VALUES ('1', ${id}, ${q(e.source_organism)});`);
+    // Sources. entries.json has one organism name and no source kind, and only
+    // 2 of its 120 IDs are in the real database, so the kind is made up by a
+    // fixed rule to give the tests all three. This is fixture data, not PDB data:
+    //   RNA with an organism      → natural (purified), entity 1
+    //   RNA without one           → synthetic construct, 32630, entity 1
+    //   Protein/RNA               → entity 1 (protein) expressed in E. coli 562;
+    //                               the RNA entity is left with no source
+    const taxid = TAXA[e.source_organism] ?? "NULL";
+    if (e.polymer_type === "RNA" && e.source_organism) {
+        body.push(`INSERT INTO entity_src_nat (entity_id, entry_id, pdbx_organism_scientific, pdbx_ncbi_taxonomy_id)`
+                + ` VALUES ('1', ${id}, ${q(e.source_organism)}, ${taxid});`);
+    } else if (e.polymer_type === "RNA") {
+        body.push(`INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id)`
+                + ` VALUES ('1', ${id}, 'synthetic construct', 32630);`);
+    } else if (e.source_organism) {
+        body.push(`INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name,`
+                + ` pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id)`
+                + ` VALUES ('1', ${id}, ${q(e.source_organism)}, ${taxid}, 'Escherichia coli', 562);`);
     }
 
     // Residues. Every entry gets one ordinary residue. An entry that lists
@@ -112,7 +133,16 @@ BEGIN
 END $$;
 `;
 
-const sql = ["BEGIN;", ...comps, ...body, "COMMIT;", refresh].join("\n") + "\n";
+// The monomer flag is stored on entry and derived from the residues (see
+// migration 010). Migrations compute it once, so a seed loaded after them
+// must compute it too, or every entry reads as standard.
+const flag = `UPDATE entry e SET has_nonstandard_residue = EXISTS (
+    SELECT 1 FROM entity_poly_seq eps
+    JOIN entity_poly ep ON ep.entry_id = eps.entry_id AND ep.entity_id = eps.entity_id
+    JOIN chem_comp cc ON cc.id = eps.mon_id
+    WHERE eps.entry_id = e.id AND ep.type ILIKE '%nucleotide%' AND cc.mon_nstd_flag = 'n');`;
+
+const sql = ["BEGIN;", ...comps, ...body, flag, "COMMIT;", refresh].join("\n") + "\n";
 
 writeFileSync(new URL("./seed.sql", import.meta.url), sql);
 console.log(`wrote db/seed.sql: ${entries.length} entries, ${chem_comps.size} residue codes`);

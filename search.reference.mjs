@@ -38,12 +38,18 @@ const OLD_POLYMER_TYPES = {
 };
 const expand_polymer_types = (values) => values.flatMap((v) => OLD_POLYMER_TYPES[v] || [v]);
 
+// The seed gives an RNA entry with no organism a synthetic-construct source
+// (the fixture rule in db/make_seed.mjs), so that is what the SQL searches.
+function seeded_organism(e) {
+    return e.source_organism || (e.polymer_type === "RNA" ? "synthetic construct" : null);
+}
+
 function matches(entry, f) {
     if (!text_matches(entry.pdb_id, f.entry_id)) return false;
     if (!text_matches(entry.author, f.author_name)) return false;
     if (!text_matches(entry.assigned_ntc, f.assigned_ntc)) return false;
     if (!text_matches(entry.entity_name, f.entity_name)) return false;
-    if (!text_matches(entry.source_organism, f.source_organism)) return false;
+    if (!text_matches(seeded_organism(entry), f.source_organism)) return false;
     if (!text_matches(entry.nonstandard_residue, f.nonstandard_residue)) return false;
 
     if (!pill_matches(entry.method, f.experimental_method)) return false;

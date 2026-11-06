@@ -15,6 +15,7 @@ function display(value, column) {
 
     if (column.decimals !== undefined) text = Number(value).toFixed(column.decimals);
     else if (column.thousands)         text = Number(value).toLocaleString("en-GB");
+    else if (column.species)           text = String(value).split("; ").map(species_case).join("; ");
     else                               text = String(value);
 
     return column.unit ? `${text} ${column.unit}` : text;

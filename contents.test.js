@@ -559,6 +559,14 @@ test("no organism is blank in the data and 'Not recorded' on the page", async ()
     assert.equal(row.value, "Not recorded");
 });
 
+test("a capitals-only organism reads in species case on the card, as stored in the data", async () => {
+    let v = await organism_of([["1", "SACCHAROMYCES CEREVISIAE"], ["2", "HEPATITIS C VIRUS"]]);
+    assert.equal(v, "SACCHAROMYCES CEREVISIAE; HEPATITIS C VIRUS");
+    let row = detail_rows({ source_organism: v }, "card")
+        .find((r) => r.label === "Source organism");
+    assert.equal(row.value, "Saccharomyces cerevisiae; HEPATITIS C VIRUS");
+});
+
 // --- organism, taxon, how obtained and host as search filters (L7) --------
 
 // ZZ02: a natural yeast RNA and an E. coli-made Thermus protein.
