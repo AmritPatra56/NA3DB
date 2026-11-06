@@ -146,7 +146,8 @@ ALL_TABLES = [
     # T1
     "entry", "pdbx_database_status", "struct", "citation", "citation_author",
     # T2
-    "entity", "entity_poly", "entity_poly_seq", "entity_src_gen", "pdbx_entity_nonpoly",
+    "entity", "entity_poly", "entity_poly_seq", "entity_src_gen", "entity_src_nat",
+    "pdbx_entity_src_syn", "pdbx_entity_nonpoly",
     # T3
     "struct_asym", "pdbx_poly_seq_scheme", "struct_ref", "struct_ref_seq",
     # T4
@@ -434,16 +435,53 @@ def load_entity_poly_seq(cur, eid, text):
         [(r.get("entity_id"), eid, _int(r.get("num")),
           r.get("mon_id"), r.get("hetero")) for r in rp])
 
+def _taxid(v):
+    t = _int(v)
+    return t if t and t > 0 else None
+
+def _src_id(r):
+    return _int(r.get("pdbx_src_id")) or 1
+
 def load_entity_src_gen(cur, eid, text):
     rp = _parse_loop(text, "entity_src_gen")
     if not rp: return 0
     return _many(cur, """INSERT INTO entity_src_gen
-        (entity_id,entry_id,gene_src_common_name,
-         pdbx_gene_src_scientific_name,pdbx_gene_src_ncbi_taxonomy_id)
-        VALUES (%s,%s,%s,%s,%s)""",
-        [(r.get("entity_id"), eid, r.get("gene_src_common_name"),
+        (entity_id,entry_id,pdbx_src_id,gene_src_common_name,
+         pdbx_gene_src_scientific_name,pdbx_gene_src_ncbi_taxonomy_id,
+         pdbx_gene_src_gene,gene_src_strain,
+         pdbx_host_org_scientific_name,pdbx_host_org_ncbi_taxonomy_id,
+         pdbx_beg_seq_num,pdbx_end_seq_num)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        [(r.get("entity_id"), eid, _src_id(r), r.get("gene_src_common_name"),
           r.get("pdbx_gene_src_scientific_name"),
-          _int(r.get("pdbx_gene_src_ncbi_taxonomy_id"))) for r in rp])
+          _taxid(r.get("pdbx_gene_src_ncbi_taxonomy_id")),
+          r.get("pdbx_gene_src_gene"), r.get("gene_src_strain"),
+          r.get("pdbx_host_org_scientific_name"),
+          _taxid(r.get("pdbx_host_org_ncbi_taxonomy_id")),
+          _int(r.get("pdbx_beg_seq_num")), _int(r.get("pdbx_end_seq_num"))) for r in rp])
+
+def load_entity_src_nat(cur, eid, text):
+    rp = _parse_loop(text, "entity_src_nat")
+    if not rp: return 0
+    return _many(cur, """INSERT INTO entity_src_nat
+        (entity_id,entry_id,pdbx_src_id,pdbx_organism_scientific,pdbx_ncbi_taxonomy_id,
+         common_name,strain,pdbx_cell_line,details,pdbx_beg_seq_num,pdbx_end_seq_num)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        [(r.get("entity_id"), eid, _src_id(r), r.get("pdbx_organism_scientific"),
+          _taxid(r.get("pdbx_ncbi_taxonomy_id")), r.get("common_name"), r.get("strain"),
+          r.get("pdbx_cell_line"), r.get("details"),
+          _int(r.get("pdbx_beg_seq_num")), _int(r.get("pdbx_end_seq_num"))) for r in rp])
+
+def load_pdbx_entity_src_syn(cur, eid, text):
+    rp = _parse_loop(text, "pdbx_entity_src_syn")
+    if not rp: return 0
+    return _many(cur, """INSERT INTO pdbx_entity_src_syn
+        (entity_id,entry_id,pdbx_src_id,organism_scientific,ncbi_taxonomy_id,
+         organism_common_name,details,pdbx_beg_seq_num,pdbx_end_seq_num)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        [(r.get("entity_id"), eid, _src_id(r), r.get("organism_scientific"),
+          _taxid(r.get("ncbi_taxonomy_id")), r.get("organism_common_name"), r.get("details"),
+          _int(r.get("pdbx_beg_seq_num")), _int(r.get("pdbx_end_seq_num"))) for r in rp])
 
 def load_pdbx_entity_nonpoly(cur, eid, text):
     rp = _parse_loop(text, "pdbx_entity_nonpoly")
@@ -1009,7 +1047,8 @@ def process_cif(cur, conn, filepath: str) -> dict:
     S["entity"] = run_table(cur, "entity", load_entity, cur, eid, text, sv)
     if _count(cur, "entity", eid) == 0:
         log.warning("    entity absent — skipping T2/T3/T4 dependents")
-        for t in ["entity_poly","entity_poly_seq","entity_src_gen","pdbx_entity_nonpoly",
+        for t in ["entity_poly","entity_poly_seq","entity_src_gen","entity_src_nat",
+                  "pdbx_entity_src_syn","pdbx_entity_nonpoly",
                   "struct_asym","pdbx_poly_seq_scheme","struct_ref","struct_ref_seq","atom_site"]:
             S[t] = 0
         S["atom_sites"]         = run_table(cur, "atom_sites",         load_atom_sites,         cur, eid, sv)
@@ -1020,6 +1059,8 @@ def process_cif(cur, conn, filepath: str) -> dict:
     S["entity_poly"]         = run_table(cur, "entity_poly",         load_entity_poly,         cur, eid, text, sv)
     S["entity_poly_seq"]     = run_table(cur, "entity_poly_seq",     load_entity_poly_seq,     cur, eid, text)
     S["entity_src_gen"]      = run_table(cur, "entity_src_gen",      load_entity_src_gen,      cur, eid, text)
+    S["entity_src_nat"]      = run_table(cur, "entity_src_nat",      load_entity_src_nat,      cur, eid, text)
+    S["pdbx_entity_src_syn"] = run_table(cur, "pdbx_entity_src_syn", load_pdbx_entity_src_syn, cur, eid, text)
     S["pdbx_entity_nonpoly"] = run_table(cur, "pdbx_entity_nonpoly", load_pdbx_entity_nonpoly, cur, eid, text)
 
     # T3

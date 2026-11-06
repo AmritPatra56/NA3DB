@@ -78,5 +78,48 @@ class RealFiles(unittest.TestCase):
         self.assertGreater(len(lc._parse_loop(text, "entity")), 1)
 
 
+class Rows:
+    """Cursor stand-in that keeps what a loader would insert, keyed by column name."""
+    def executemany(self, sql, rows):
+        cols = sql[sql.index("(") + 1:sql.index(")")]
+        self.rows = [dict(zip([c.strip() for c in cols.split(",")], r)) for r in rows]
+
+
+def load(fn, entry):
+    cur = Rows()
+    fn(cur, entry, cif(entry))
+    return cur.rows
+
+
+class Sources(unittest.TestCase):
+    def test_taxid_trims_and_drops_non_positive(self):
+        self.assertEqual([lc._taxid(v) for v in ["\t759272", "32630 ", "0", "-5", "?", None]],
+                         [759272, 32630, None, None, None, None])
+
+    def test_1ob5_natural_trna(self):
+        self.assertEqual([(r["entity_id"], r["pdbx_src_id"], r["pdbx_organism_scientific"],
+                           r["pdbx_ncbi_taxonomy_id"]) for r in load(lc.load_entity_src_nat, "1OB5")],
+                         [("2", 1, "SACCHAROMYCES CEREVISIAE", 4932)])
+
+    def test_5swm_synthetic_construct(self):
+        self.assertEqual({(r["organism_scientific"], r["ncbi_taxonomy_id"])
+                          for r in load(lc.load_pdbx_entity_src_syn, "5SWM")},
+                         {("synthetic construct", 32630)})
+
+    def test_9l5r_tab_in_taxid(self):
+        self.assertEqual({r["pdbx_ncbi_taxonomy_id"] for r in load(lc.load_entity_src_nat, "9L5R")},
+                         {759272})
+
+    def test_3wfr_chimera_segments_and_host(self):
+        rows = [r for r in load(lc.load_entity_src_gen, "3WFR") if r["entity_id"] == "3"]
+        self.assertEqual([(r["pdbx_src_id"], r["pdbx_gene_src_scientific_name"],
+                           r["pdbx_beg_seq_num"], r["pdbx_end_seq_num"]) for r in rows],
+                         [(1, "synthetic construct", 1, 15),
+                          (2, "Aquifex aeolicus (strain VF5)", 16, 453),
+                          (3, "synthetic construct", 454, 512)])
+        self.assertEqual({(r["pdbx_host_org_scientific_name"], r["pdbx_host_org_ncbi_taxonomy_id"])
+                          for r in rows}, {("Escherichia coli", 562)})
+
+
 if __name__ == "__main__":
     unittest.main()
