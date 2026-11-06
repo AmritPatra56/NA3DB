@@ -31,7 +31,19 @@
                                 <summary><%= g.title %> (<%= g.rows.length %>)</summary>
                                 <div class="molecule_scroll">
                                 <table class="molecule_table">
-                                <% if (g.polymer) { %>
+                                <% const pos = (p) => p.seen ? p.num : `<span class="unmodelled" title="not modelled">${p.num}</span>`; %>
+                                <% if (g.modified) { %>
+                                    <colgroup><col style="width:12%"><col style="width:46%"><col style="width:10%"><col style="width:32%"></colgroup>
+                                    <tr><th>Code</th><th>Name</th><th>Chain</th><th>Positions</th></tr>
+                                    <% for (const r of g.rows) { %>
+                                        <tr>
+                                            <td><a target="_blank" rel="noopener" href="<%= r.url %>"><%= r.code %></a></td>
+                                            <td><%= r.name ?? "—" %></td>
+                                            <td><span<% if (r.chain.title) { %> title="<%= r.chain.title %>"<% } %>><%= r.chain.name %></span></td>
+                                            <td><%- r.shown.map(pos).join(", ") %><% if (r.rest.length) { %><details class="more_positions"><summary>+ <%= r.rest.length %> more</summary><%- r.rest.map(pos).join(", ") %></details><% } %></td>
+                                        </tr>
+                                    <% } %>
+                                <% } else if (g.polymer) { %>
                                     <colgroup><col style="width:36%"><col style="width:10%"><col style="width:20%"><col style="width:14%"><col style="width:20%"></colgroup>
                                     <tr><th>Molecule</th><th>Chain</th><th>Modelled</th><th>Numbering</th><th>Link</th></tr>
                                     <% for (const r of g.rows) { %>

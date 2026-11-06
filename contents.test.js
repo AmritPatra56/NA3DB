@@ -8,7 +8,7 @@ import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
          missing_runs } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS } from "./filters.js";
-import { detail_rows, molecule_groups, FOLD_PROTEINS } from "./detail.js";
+import { detail_rows, molecule_groups, FOLD_PROTEINS, POSITIONS_SHOWN } from "./detail.js";
 
 after(() => close());
 
@@ -806,4 +806,53 @@ test("the protein group folds only when it is large", () => {
         kind: "Protein", type: "polymer", description: `p${i}`, length: 10, chains: [] })) });
     assert.equal(molecule_groups(proteins(FOLD_PROTEINS)).groups[0].folded, false);
     assert.equal(molecule_groups(proteins(FOLD_PROTEINS + 1)).groups[0].folded, true);
+});
+
+// --- modified nucleotides and where they sit (micro-goal 2.1c) ----------
+// ZZ02's RNA (author chain B) gets ZZM at 112, 113 and 116, and ZZN at 114,
+// which was not modelled. The protein gets ZZP, which must not be listed.
+
+async function with_modified(work) {
+    return with_molecules(async (q) => {
+        await q(`INSERT INTO chem_comp (id, name, mon_nstd_flag) VALUES
+                 ('ZZM', 'TEST MODIFIED U', 'n'), ('ZZN', 'TEST MODIFIED A', 'n'),
+                 ('ZZP', 'TEST MODIFIED MET', 'n')`);
+        await q(`UPDATE pdbx_poly_seq_scheme SET mon_id = 'ZZM'
+                  WHERE entry_id = 'ZZ02' AND asym_id = 'A' AND seq_id IN (1, 2)`);
+        await q(`UPDATE pdbx_poly_seq_scheme SET mon_id = 'ZZM'
+                  WHERE entry_id = 'ZZ02' AND asym_id = 'A' AND seq_id = 5 AND mon_id = 'U'`);
+        await q(`UPDATE pdbx_poly_seq_scheme SET mon_id = 'ZZN'
+                  WHERE entry_id = 'ZZ02' AND asym_id = 'A' AND seq_id = 3`);
+        await q(`UPDATE pdbx_poly_seq_scheme SET mon_id = 'ZZP'
+                  WHERE entry_id = 'ZZ02' AND asym_id = 'B' AND seq_id = 1`);
+        return work(q);
+    });
+}
+
+test("modified nucleotides are listed per code and chain, in author numbering", async () => {
+    let c = await with_modified((q) => entry_contents("ZZ02", q));
+    assert.deepEqual(c.modified.map((m) => [m.code, m.auth, m.positions.map((p) => p.num)]),
+                     [["ZZM", "B", ["112", "113", "116"]], ["ZZN", "B", ["114"]]]);
+});
+
+test("a modification with no coordinates is marked as not modelled", async () => {
+    let c = await with_modified((q) => entry_contents("ZZ02", q));
+    assert.deepEqual(c.modified.find((m) => m.code === "ZZN").positions, [{ num: "114", seen: false }]);
+    assert.ok(c.modified.find((m) => m.code === "ZZM").positions.every((p) => p.seen));
+});
+
+test("the modified group sits after the nucleic acids, and only when there is one", async () => {
+    let m = await with_modified(async (q) => molecule_groups(await entry_contents("ZZ02", q)));
+    assert.deepEqual(m.groups.map((g) => g.title), ["RNA", "Modified nucleotides", "Protein", "Ligands"]);
+    let row = m.groups[1].rows[0];
+    assert.equal(row.url, "https://www.rcsb.org/ligand/ZZM");
+    assert.deepEqual(row.chain, { name: "B", title: "label id A" });
+});
+
+test("a long list of positions shows the first few and keeps the rest", () => {
+    let positions = Array.from({ length: 12 }, (_, i) => ({ num: String(i + 1), seen: true }));
+    let m = molecule_groups({ entities: [], modified: [{ code: "PSU", name: "p", label: "A", auth: "A", positions }] });
+    let row = m.groups[0].rows[0];
+    assert.equal(row.shown.length, POSITIONS_SHOWN);
+    assert.equal(row.rest.length, 12 - POSITIONS_SHOWN);
 });

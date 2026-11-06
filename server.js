@@ -219,8 +219,9 @@ app.get("/api/entries/:id", async (req, res) => {
 
     // The raw fields and the display rows, never one instead of the other:
     // entry.resolution stays 2.2, rows has it as "2.20 Å".
+    let contents = await entry_contents(entry.pdb_id);
     res.json({ ...entry, rows: detail_rows(entry),
-               entities: (await entry_contents(entry.pdb_id)).entities,
+               entities: contents.entities, modified_nucleotides: contents.modified,
                citations: await entry_citations(entry.pdb_id) });
 });
 

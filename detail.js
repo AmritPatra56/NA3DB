@@ -50,6 +50,8 @@ export function detail_rows(entry, view = "page", also = []) {
 // FOLD_PROTEINS starts closed, so a ribosome's RNA is not buried under it.
 
 export const FOLD_PROTEINS = 10;
+// 8G61 has 224 modified positions; a row shows this many, the rest on a click.
+export const POSITIONS_SHOWN = 5;
 const MISSING_RUNS_SHOWN = 4;
 const UNIT = { "RNA": "nt", "DNA": "nt", "DNA/RNA hybrid": "nt", "Protein": "aa" };
 
@@ -133,6 +135,7 @@ export function molecule_groups(contents) {
 
     for (const g of groups) {
         g.polymer = g.rows[0].code === undefined;
+        g.modified = false;
         g.folded = g.kind === "Protein" && g.rows.length > FOLD_PROTEINS;
         g.title = g.kind === "Ligand" ? "Ligands" : g.kind;
     }
@@ -141,5 +144,25 @@ export function molecule_groups(contents) {
         `${g.rows.length} ${g.kind === "Ligand" ? (g.rows.length === 1 ? "ligand" : "ligands")
                                                 : g.kind.toLowerCase().replace("dna", "DNA").replace("rna", "RNA")}`);
 
+    if (contents.modified?.length) {
+        let after = groups.findLastIndex((g) => NUCLEIC_KINDS.has(g.kind)) + 1;
+        groups.splice(after, 0, { kind: "Modified", title: "Modified nucleotides",
+                                  polymer: false, modified: true, folded: false,
+                                  rows: contents.modified.map(modified_row) });
+    }
+
     return { groups, summary: summary.join(" · ") };
+}
+
+const NUCLEIC_KINDS = new Set(["RNA", "DNA", "DNA/RNA hybrid"]);
+
+function modified_row(m) {
+    let positions = m.positions.map((p) => ({ num: p.num, seen: p.seen }));
+    return {
+        code: m.code, name: m.name,
+        url: `https://www.rcsb.org/ligand/${m.code}`,
+        chain: { name: m.auth ?? m.label, title: m.auth && m.auth !== m.label ? `label id ${m.label}` : null },
+        shown: positions.slice(0, POSITIONS_SHOWN),
+        rest: positions.slice(POSITIONS_SHOWN)
+    };
 }

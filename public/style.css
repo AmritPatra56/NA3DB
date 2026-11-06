@@ -554,6 +554,16 @@ input::placeholder {
     color: var(--accent);
 }
 
+.molecule_table .unmodelled {
+    color: var(--text-dim);
+    text-decoration: underline dotted;
+}
+
+.more_positions summary {
+    cursor: pointer;
+    color: var(--accent);
+}
+
 .molecule_sub {
     font-size: 12px;
     color: var(--text-dim);

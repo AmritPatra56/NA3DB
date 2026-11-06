@@ -363,7 +363,7 @@ export async function entry_contents(id, q = query) {
         [as_text(id).trim()]
     );
 
-    let stats = await chain_stats(id, q);
+    let [stats, modified] = await Promise.all([chain_stats(id, q), modified_nucleotides(id, q)]);
 
     let entities = result.rows.map((row) => ({
         id:             row.id,
@@ -381,7 +381,33 @@ export async function entry_contents(id, q = query) {
         references:     sequence_links(row.refs, row.type, row.poly_type, id)
     }));
 
-    return { entities: entities.sort(by_kind_then_id) };
+    return { entities: entities.sort(by_kind_then_id), modified };
+}
+
+// Where each modified nucleotide sits, one row per code and chain, in the
+// author numbering the Numbering column uses. Nucleic-acid chains only, the
+// same rule as the residue filter, so a protein's MSE is not listed.
+async function modified_nucleotides(id, q) {
+    let result = await q(
+        `WITH m AS (
+             SELECT s.asym_id, s.seq_id, s.mon_id,
+                    min(s.pdb_strand_id) AS auth,
+                    min(s.pdb_seq_num::text || COALESCE(NULLIF(s.pdb_ins_code, ''), '')) AS num,
+                    bool_or(s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', '')) AS seen
+               FROM pdbx_poly_seq_scheme s
+               JOIN entity_poly p ON p.entry_id = s.entry_id AND p.entity_id = s.entity_id
+                                 AND p.type ILIKE '%nucleotide%'
+               JOIN chem_comp c   ON c.id = s.mon_id AND c.mon_nstd_flag = 'n'
+              WHERE s.entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))
+              GROUP BY s.asym_id, s.seq_id, s.mon_id)
+         SELECT m.mon_id AS code, c.name, m.asym_id AS label, min(m.auth) AS auth,
+                json_agg(json_build_object('num', m.num, 'seen', m.seen) ORDER BY m.seq_id) AS positions
+           FROM m JOIN chem_comp c ON c.id = m.mon_id
+          GROUP BY m.mon_id, c.name, m.asym_id
+          ORDER BY length(m.asym_id), m.asym_id, min(m.seq_id)`,
+        [as_text(id).trim()]
+    );
+    return result.rows;
 }
 
 // Where a molecule's sequence comes from, as links. A PDB reference to the
