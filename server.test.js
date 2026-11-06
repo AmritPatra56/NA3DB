@@ -272,6 +272,35 @@ test("an old bookmark on / is redirected to /search", async () => {
     }
 });
 
+// Polymer types before DNA and RNA were split. The page's script only selects
+// pills it knows, so an old value reaching it would be dropped and the search
+// would silently widen to every entry. The server rewrites it first.
+test("an old polymer type on /search is redirected to the new values", async () => {
+    const cases = [
+        ["polymer_type=Nucleic%20acid",
+         "polymer_type=DNA%2CRNA%2CDNA%2FRNA"],
+        ["polymer_type=Protein%2FNA&page=3",
+         "polymer_type=Protein%2FDNA%2CProtein%2FRNA%2CProtein%2FDNA%2FRNA&page=3"],
+        ["q=tRNA&polymer_type=Nucleic%20acid%2CProtein&sort=confal_desc",
+         "q=tRNA&polymer_type=DNA%2CRNA%2CDNA%2FRNA%2CProtein&sort=confal_desc"],
+        ["polymer_type=RNA%2CNucleic%20acid",
+         "polymer_type=RNA%2CDNA%2CDNA%2FRNA"]
+    ];
+    for (const [old_query, new_query] of cases) {
+        let res = await fetch(base + "/search?" + old_query, { redirect: "manual" });
+
+        assert.equal(res.status, 301, `/search?${old_query} should be redirected`);
+        assert.equal(res.headers.get("location"), "/search?" + new_query);
+    }
+});
+
+test("a current polymer type on /search is not redirected", async () => {
+    for (const query of ["polymer_type=DNA", "polymer_type=Protein%2FRNA", "q=tRNA", ""]) {
+        let res = await fetch(base + "/search?" + query, { redirect: "manual" });
+        assert.equal(res.status, 200, `/search?${query} should be served as it is`);
+    }
+});
+
 test("/search is the page that was on / before", async () => {
     let res  = await fetch(base + "/search");
     let html = await res.text();

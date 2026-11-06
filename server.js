@@ -3,7 +3,8 @@ import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
-import { public_registry, columns_answering, match_mode } from "./filters.js";
+import { public_registry, columns_answering, match_mode,
+         POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows } from "./detail.js";
 
 const app = express();
@@ -69,7 +70,28 @@ app.get("/", (req, res) => {
 // The panel starts closed for a plain search from the box, and open for
 // anything else, so arriving from the landing page shows results rather than
 // a wall of filters. ?panel= overrides it, which is what the toggle writes.
+// A polymer type spelt the way links were before DNA and RNA were split, put
+// into its current values. null when there is nothing to rewrite.
+function current_polymer_types(original_url) {
+    let params = new URLSearchParams(original_url.split("?")[1] || "");
+    let values = params.getAll("polymer_type").flatMap((v) => v.split(","));
+
+    if (!values.some((v) => POLYMER_TYPE_ALIASES[v])) return null;
+
+    let current = [...new Set(values.flatMap((v) => POLYMER_TYPE_ALIASES[v] || [v]))];
+    params.set("polymer_type", current.join(","));
+    return params.toString().replaceAll("+", "%20");
+}
+
 app.get("/search", (req, res) => {
+    // The page's script selects only the pills it knows, so an old value would
+    // be dropped and the search silently widened to every entry.
+    let rewritten = current_polymer_types(req.originalUrl);
+    if (rewritten !== null) {
+        res.redirect(301, "/search?" + rewritten);
+        return;
+    }
+
     res.render("search", {
         page: "search",
         panel_open: panel_open(req.query),
