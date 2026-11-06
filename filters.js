@@ -115,6 +115,29 @@ export function example_url(example) {
 const normalised = (column) =>
     `regexp_replace(lower(${column}), '[^a-z0-9 ]', '', 'g')`;
 
+// Every source organism of an entry, whichever way each molecule was made
+// (db/migrations/012): name, taxon ID and entity, one row each.
+const SOURCES_SQL = `(SELECT g.entry_id, g.entity_id, g.pdbx_gene_src_scientific_name AS organism,
+                             g.pdbx_gene_src_ncbi_taxonomy_id AS taxid
+                        FROM entity_src_gen g
+                      UNION ALL
+                      SELECT n.entry_id, n.entity_id, n.pdbx_organism_scientific, n.pdbx_ncbi_taxonomy_id
+                        FROM entity_src_nat n
+                      UNION ALL
+                      SELECT y.entry_id, y.entity_id, y.organism_scientific, y.ncbi_taxonomy_id
+                        FROM pdbx_entity_src_syn y)`;
+
+// The source tables by the word the Source section uses for them.
+const SOURCE_TABLES = { Natural: "entity_src_nat", Expressed: "entity_src_gen",
+                        Synthetic: "pdbx_entity_src_syn" };
+const has_source = (table) => `EXISTS (SELECT 1 FROM ${table} t WHERE t.entry_id = e.id)`;
+// A polymer with none of the three: 401 of 15,891, in 261 entries.
+const UNSOURCED_SQL = `EXISTS (SELECT 1 FROM entity en
+                               WHERE en.entry_id = e.id AND en.type = 'polymer'
+                                 AND NOT EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
+                                                 WHERE s.entry_id = en.entry_id
+                                                   AND s.entity_id = en.id))`;
+
 export const FILTERS = [
     // One box for whatever the visitor already knows: an id, a molecule, a
     // form, an organism, a person. Five ? marks and one value, because add()
@@ -232,12 +255,44 @@ export const FILTERS = [
                               AND ent.pdbx_description ILIKE ?)`
     },
 
+    // The organism a molecule comes from, never the host it was made in:
+    // Escherichia coli is a source in 189 entries and a host in 816.
     {
         key: "source_organism", label: "Source organism",
         group: "Structure Components", kind: "text",
+        where: `AND EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
+                            WHERE s.entry_id = e.id AND s.organism ILIKE ?)`
+    },
+
+    // Exact: 562 is Escherichia coli and not its strains, so 1OB5's host
+    // BL21(DE3), 469008, is not found by it. Nothing local knows the tree.
+    {
+        key: "taxonomy_id", label: "Taxonomy ID",
+        group: "Structure Components", kind: "number", answered_by: "source_taxonomy",
+        placeholder: "e.g. 4932",
+        where: `AND EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
+                            WHERE s.entry_id = e.id AND s.taxid = ?)`
+    },
+
+    // How the molecules were obtained. Any pill an entry has matches; an
+    // entry with a natural tRNA and an expressed protein answers both.
+    {
+        key: "source_kind", label: "Obtained", answered_by: "source_kind",
+        group: "Structure Components", kind: "pills", any: true,
+        options: ["Natural", "Expressed", "Synthetic", "Not recorded"].map(option),
+        clause: (v) => {
+            let tests = v.filter((k) => k in SOURCE_TABLES || k === "Not recorded")
+                         .map((k) => (k === "Not recorded" ? UNSOURCED_SQL : has_source(SOURCE_TABLES[k])));
+            return tests.length ? `AND (${tests.join(" OR ")})` : null;
+        }
+    },
+
+    {
+        key: "expression_host", label: "Expression host", answered_by: "expression_host",
+        group: "Structure Components", kind: "text",
         where: `AND EXISTS (SELECT 1 FROM entity_src_gen g
                             WHERE g.entry_id = e.id
-                              AND g.pdbx_gene_src_scientific_name ILIKE ?)`
+                              AND g.pdbx_host_org_scientific_name ILIKE ?)`
     },
 
     // Matches the residue code as well as its name, because a code is what
@@ -288,7 +343,7 @@ export const FILTERS = [
 const of_kind = (...kinds) =>
     FILTERS.filter((f) => kinds.includes(f.kind)).map((f) => f.key);
 
-export const TEXT_FILTERS = of_kind("text", "range");
+export const TEXT_FILTERS = of_kind("text", "range", "number");
 export const PILL_FILTERS = of_kind("pills");
 
 
@@ -488,26 +543,51 @@ export const COLUMNS = [
         show: ["card"]
     },
 
-    // Also a scalar subquery, and not hypothetical: 18 entries have several
-    // entity_src_gen rows for entity 1, which joined turned 1,489 into 1,512.
+    // A scalar subquery, and not hypothetical: 18 entries have several source
+    // rows for entity 1, which joined turned 1,489 into 1,512.
     {
-        // Every entity's organism, not entity 1's: 74 entries keep theirs on a
-        // later entity, and 1B23 has two. Names that differ only in case are
-        // one organism, spelt the way that is not all capitals.
+        // Every entity's organism, however it was made: 1OB5 is a yeast tRNA
+        // purified from cells on a Thermus protein. Names that differ only in
+        // case are one organism, spelt the way that is not all capitals.
         key: "source_organism", label: "Source organism", group: "Structure Components",
         scope: "entry", show: ["page", "card"], empty: "Not recorded",
         select: `COALESCE((
                      SELECT string_agg(o.name, '; ' ORDER BY o.first)
-                     FROM (SELECT (array_agg(trim(g.pdbx_gene_src_scientific_name)
-                                             ORDER BY g.pdbx_gene_src_scientific_name
-                                                    = upper(g.pdbx_gene_src_scientific_name),
-                                                      lpad(g.entity_id, 10, '0')))[1] AS name,
-                                  min(lpad(g.entity_id, 10, '0')) AS first
-                             FROM entity_src_gen g
-                            WHERE g.entry_id = e.id
-                              AND trim(g.pdbx_gene_src_scientific_name) <> ''
-                            GROUP BY lower(trim(g.pdbx_gene_src_scientific_name))) o
+                     FROM (SELECT (array_agg(trim(s.organism)
+                                             ORDER BY s.organism = upper(s.organism),
+                                                      lpad(s.entity_id, 10, '0')))[1] AS name,
+                                  min(lpad(s.entity_id, 10, '0')) AS first
+                             FROM ${SOURCES_SQL} s
+                            WHERE s.entry_id = e.id
+                              AND trim(s.organism) <> ''
+                            GROUP BY lower(trim(s.organism))) o
                  ), '')`
+    },
+
+    // Shown on a card only when its filter was used, to say why it matched.
+    {
+        key: "source_taxonomy", label: "Taxonomy ID", group: "Structure Components",
+        scope: "entry", show: [],
+        select: `(SELECT string_agg(DISTINCT s.taxid::text, ', ')
+                  FROM ${SOURCES_SQL} s WHERE s.entry_id = e.id)`
+    },
+
+    {
+        key: "source_kind", label: "Obtained", group: "Structure Components",
+        scope: "entry", show: [],
+        select: `concat_ws(', ',
+                     CASE WHEN ${has_source("entity_src_nat")} THEN 'Natural' END,
+                     CASE WHEN ${has_source("entity_src_gen")} THEN 'Expressed' END,
+                     CASE WHEN ${has_source("pdbx_entity_src_syn")} THEN 'Synthetic' END,
+                     CASE WHEN ${UNSOURCED_SQL} THEN 'Not recorded' END)`
+    },
+
+    {
+        key: "expression_host", label: "Expression host", group: "Structure Components",
+        scope: "entry", show: [],
+        select: `(SELECT string_agg(DISTINCT trim(g.pdbx_host_org_scientific_name), '; ')
+                  FROM entity_src_gen g
+                  WHERE g.entry_id = e.id AND trim(g.pdbx_host_org_scientific_name) <> '')`
     },
 
     // Stored in doc by migration 011: worked out here it cost 1.6 s an export.

@@ -71,6 +71,13 @@
                             <input type="text" id="<%= f.key %>" name="<%= f.key %>">
                         </div>
 
+                        <% } else if (f.kind === "number") { %>
+                        <div class="field">
+                            <label for="<%= f.key %>"><%= f.label %></label>
+                            <input type="text" inputmode="numeric" id="<%= f.key %>" name="<%= f.key %>"
+                                   placeholder="<%= f.placeholder %>">
+                        </div>
+
                         <% } else if (f.kind === "range") { %>
                         <% const hi = mine.find((x) => x.key === f.pair_with); %>
                         <% drawn.add(hi.key); %>

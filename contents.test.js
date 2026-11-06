@@ -7,7 +7,7 @@ import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
          missing_runs } from "./search.js";
-import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS } from "./filters.js";
+import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
          SOURCE_LISTED } from "./detail.js";
 
@@ -559,6 +559,71 @@ test("no organism is blank in the data and 'Not recorded' on the page", async ()
     assert.equal(row.value, "Not recorded");
 });
 
+// --- organism, taxon, how obtained and host as search filters (L7) --------
+
+// ZZ02: a natural yeast RNA and an E. coli-made Thermus protein.
+const YEAST_AND_THERMUS = [["nat", "1", 1, "Saccharomyces cerevisiae", 4932],
+                           ["gen", "2", 1, "Thermus aquaticus", 271, "Escherichia coli", 562]];
+const finds = (params, rows = YEAST_AND_THERMUS) =>
+    with_sources(rows, async (q) => (await matches(params, q)).includes("ZZ02"));
+
+test("the organism filter finds natural and synthetic sources, not only expressed", async () => {
+    assert.equal(await finds({ source_organism: "cerevisiae" }), true);
+    assert.equal(await finds({ source_organism: "Homo" }, [["syn", "1", 1, "Homo sapiens", 9606]]), true);
+    assert.equal(await finds({ source_organism: "aquaticus" }), true);
+});
+
+test("the expression host is its own filter and does not answer the organism one", async () => {
+    assert.equal(await finds({ source_organism: "Escherichia" }), false);
+    assert.equal(await finds({ expression_host: "Escherichia" }), true);
+    assert.equal(await finds({ expression_host: "Saccharomyces" }), false);
+});
+
+test("the taxonomy ID is matched exactly, and junk matches nothing", async () => {
+    assert.equal(await finds({ taxonomy_id: "4932" }), true);
+    assert.equal(await finds({ taxonomy_id: "493" }), false);
+    assert.equal(await finds({ taxonomy_id: "562" }), false);
+    assert.equal(await finds({ taxonomy_id: "abc" }), false);
+    assert.equal(await finds({ taxonomy_id: "99999999999" }), false);
+});
+
+test("Obtained matches any kind the entry has", async () => {
+    assert.equal(await finds({ source_kind: ["Natural"] }), true);
+    assert.equal(await finds({ source_kind: ["Expressed"] }), true);
+    assert.equal(await finds({ source_kind: ["Synthetic"] }), false);
+    assert.equal(await finds({ source_kind: ["Synthetic", "Natural"] }), true);
+});
+
+test("Obtained 'Not recorded' finds an entry with a polymer that has no source", async () => {
+    assert.equal(await finds({ source_kind: ["Not recorded"] }, [["nat", "1", 1, "Homo sapiens", 9606]]), true);
+    assert.equal(await finds({ source_kind: ["Not recorded"] }), false);
+});
+
+test("the search box finds an organism held only as a natural source", async () => {
+    let found = await with_sources([["nat", "1", 1, "Saccharomyces cerevisiae", 4932]], async (q) => {
+        await q("REFRESH MATERIALIZED VIEW doc");
+        return (await matches({ q: "cerevisiae" }, q)).includes("ZZ02");
+    });
+    assert.equal(found, true);
+});
+
+test("the Source organism row lists every kind, and the card columns say why a filter matched", async () => {
+    let v = await with_sources(YEAST_AND_THERMUS, async (q) => ({
+        organism: await column_of("source_organism", "ZZ02", q),
+        kind:     await column_of("source_kind", "ZZ02", q),
+        host:     await column_of("expression_host", "ZZ02", q),
+        taxa:     await column_of("source_taxonomy", "ZZ02", q)
+    }));
+    assert.deepEqual(v, { organism: "Saccharomyces cerevisiae; Thermus aquaticus",
+                          kind: "Natural, Expressed", host: "Escherichia coli", taxa: "271, 4932" });
+});
+
+test("each new filter puts its own row on the card", () => {
+    assert.deepEqual(columns_answering({ taxonomy_id: "4932", source_kind: ["Natural"],
+                                         expression_host: "coli" }).sort(),
+                     ["expression_host", "source_kind", "source_taxonomy"]);
+});
+
 // --- resolution from refine, as the PDB reports it (micro-goal 1.10) ----
 
 async function with_resolution(refine, reflns, work) {
@@ -782,7 +847,7 @@ test("every reference is listed, and an unknown database is plain text", async (
 // --- where each polymer came from (L6) ----------------------------------
 
 // rows: [table, entity, src_id, organism, taxid, host, host_taxid, beg, end]
-async function with_sources(rows) {
+async function with_sources(rows, work = async (q) => molecule_groups(await entry_contents("ZZ02", q))) {
     return with_molecules(async (q) => {
         for (let [table, entity, src, org, taxid, host, host_taxid, beg, end] of rows) {
             if (table === "gen")
@@ -801,7 +866,7 @@ async function with_sources(rows) {
                              organism_scientific, ncbi_taxonomy_id)
                          VALUES ('ZZ02', $1, $2, $3, $4)`, [entity, src, org, taxid]);
         }
-        return molecule_groups(await entry_contents("ZZ02", q));
+        return work(q);
     });
 }
 

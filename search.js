@@ -85,6 +85,9 @@ const KINDS = {
     text:  { active: (v) => v !== "",     param: (v) => like_contains(v),
              normalised: (v) => like_normalised(v) },
     range: { active: (v) => v !== "",     param: (v) => Number(v) },
+    // A whole number that fits an integer column; anything else matches
+    // nothing rather than reaching PostgreSQL as NaN or 1e99.
+    number: { active: (v) => v !== "",    param: (v) => (/^\s*\d{1,9}\s*$/.test(v) ? Number(v) : -1) },
     pills: { active: (v) => v.length > 0, param: (v) => v }
 };
 
