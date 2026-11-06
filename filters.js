@@ -563,6 +563,19 @@ export const COLUMNS = [
                                          WHERE s.entry_id = e.id) r)::int`
     },
 
+    // Residues counts protein too, which hides the nucleic acid: 2VON has 400
+    // residues and 14 nucleotides. Same rules, DNA, RNA and hybrid chains only.
+    {
+        key: "nucleotide_count", label: "Nucleotides", group: "Contents",
+        scope: "detail",
+        select: `(SELECT count(*) FROM (SELECT DISTINCT s.asym_id, s.seq_id
+                                          FROM pdbx_poly_seq_scheme s
+                                          JOIN entity_poly ep ON ep.entry_id = s.entry_id
+                                                             AND ep.entity_id = s.entity_id
+                                         WHERE s.entry_id = e.id
+                                           AND ep.type ILIKE '%nucleotide%') r)::int`
+    },
+
     {
         key: "atom_count", label: "Atoms", group: "Contents",
         scope: "detail", thousands: true,

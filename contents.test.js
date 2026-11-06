@@ -388,6 +388,49 @@ test("Residues does not read entity_poly_seq, which counts each entity once", as
     assert.equal(n, 6);
 });
 
+// --- nucleotide count (micro-goal 1.6b) ---------------------------------
+// Residues includes protein, which hides the nucleic acid: 2VON has 400
+// residues and 14 nucleotides.
+
+test("Nucleotides counts DNA, RNA and hybrid residues, not protein", async () => {
+    // ZZ01: protein A has 2 residues; RNA B and C, DNA D and hybrid E one each.
+    assert.equal(await with_fixture((q) => column_of("nucleotide_count", "ZZ01", q)), 4);
+});
+
+test("Nucleotides counts both copies of a repeated nucleic acid chain", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id, mon_id)
+                 VALUES ('B', 'ZZ01', '2', 2, 'C'), ('C', 'ZZ01', '2', 2, 'C')`);
+        return column_of("nucleotide_count", "ZZ01", q);
+    });
+    assert.equal(n, 6);
+});
+
+test("Nucleotides counts a position with two alternative residues once", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id,
+                                                   mon_id, hetero)
+                 VALUES ('D', 'ZZ01', '3', 1, 'DG', 'y')`);
+        return column_of("nucleotide_count", "ZZ01", q);
+    });
+    assert.equal(n, 4);
+});
+
+test("Nucleotides is 0 for a protein-only entry, and never more than Residues", async () => {
+    let [nt, res] = await with_fixture(async (q) => {
+        await q(`UPDATE entity_poly SET type = 'polypeptide(L)' WHERE entry_id = 'ZZ01'`);
+        return [await column_of("nucleotide_count", "ZZ01", q),
+                await column_of("residue_count", "ZZ01", q)];
+    });
+    assert.equal(nt, 0);
+    assert.ok(nt <= res);
+});
+
+test("the structure page shows Nucleotides right after Residues", () => {
+    let keys = COLUMNS.map((c) => c.key);
+    assert.equal(keys.indexOf("nucleotide_count"), keys.indexOf("residue_count") + 1);
+});
+
 test("works on the plain test data without a fixture", async () => {
     let c = await entry_contents("4TNA");
     assert.ok(c.entities.length >= 1);
