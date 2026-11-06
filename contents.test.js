@@ -6,7 +6,7 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
 import { entry_contents, find_entry, search_entries, build_where } from "./search.js";
-import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT } from "./filters.js";
+import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS } from "./filters.js";
 import { detail_rows } from "./detail.js";
 
 after(() => close());
@@ -552,4 +552,46 @@ test("no organism is blank in the data and 'Not recorded' on the page", async ()
     let row = detail_rows({ source_organism: v }, "card")
         .find((r) => r.label === "Source organism");
     assert.equal(row.value, "Not recorded");
+});
+
+// --- resolution from refine, as the PDB reports it (micro-goal 1.10) ----
+
+async function with_resolution(refine, reflns, work) {
+    return with_fixture(async (q) => {
+        if (refine !== null) await q(`INSERT INTO refine (entry_id, pdbx_refine_id, ls_d_res_high)
+                                      VALUES ('ZZ01', 'X-RAY DIFFRACTION', $1)`, [refine]);
+        if (reflns !== null) await q(`INSERT INTO reflns (entry_id, d_resolution_high)
+                                      VALUES ('ZZ01', $1)`, [reflns]);
+        return work(q);
+    });
+}
+
+// The column reads tables ENTRY_JOINS brings in; the sort carries the same.
+async function resolution_of(q) {
+    let join = SORTS.find((s) => s.key === "resolution_asc").join;
+    let select = COLUMNS.find((c) => c.key === "resolution").select;
+    return (await q(`SELECT ${select} AS v FROM entry e ${join} WHERE e.id = 'ZZ01'`)).rows[0].v;
+}
+
+test("Resolution is refine's when both tables record one", async () => {
+    let v = await with_resolution(3.75, 2.91, resolution_of);
+    assert.equal(v, 3.75);
+});
+
+test("Resolution comes from refine when reflns has none, as in EM entries", async () => {
+    let v = await with_resolution(3.2, null, resolution_of);
+    assert.equal(Number(v.toFixed(2)), 3.2);
+});
+
+test("Resolution falls back to reflns when refine has none", async () => {
+    let v = await with_resolution(null, 2.5, resolution_of);
+    assert.equal(v, 2.5);
+});
+
+test("the resolution sort orders by the same value the card shows", async () => {
+    let sort = SORTS.find((s) => s.key === "resolution_asc");
+    let first = await with_resolution(0.1, 9.9, async (q) =>
+        (await q(`SELECT e.id FROM entry e ${sort.join}
+                  ORDER BY ${sort.sql}, e.id LIMIT 1`)).rows[0].id);
+    assert.equal(first, "ZZ01");
 });

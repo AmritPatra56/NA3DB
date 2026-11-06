@@ -277,6 +277,7 @@ const ENTRY_JOINS = `
     LEFT JOIN struct s                ON s.entry_id   = e.id
     LEFT JOIN exptl ex                ON ex.entry_id  = e.id
     LEFT JOIN reflns rf               ON rf.entry_id  = e.id
+    LEFT JOIN refine rfn              ON rfn.entry_id = e.id
     LEFT JOIN pdbx_database_status ds ON ds.entry_id  = e.id
 
     LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id

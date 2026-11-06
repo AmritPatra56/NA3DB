@@ -300,6 +300,13 @@ export const PILL_FILTERS = of_kind("pills");
 //
 // NULLS LAST in both directions, because a missing value is not a small one:
 // 629 structures have no resolution, and they belong at the end either way.
+// The resolution the PDB reports: the one the model was refined to, and the
+// data's limit only when no refinement records one. 56 EM entries have it in
+// refine alone. Both tables hold at most one row per entry.
+export const RESOLUTION_SQL = "COALESCE(rfn.ls_d_res_high, rf.d_resolution_high)";
+const RESOLUTION_JOIN = `LEFT JOIN reflns rf  ON rf.entry_id  = e.id
+                         LEFT JOIN refine rfn ON rfn.entry_id = e.id`;
+
 export const SORTS = [
     {
         key: "deposition_desc", label: "Deposition date, newest first",
@@ -313,13 +320,13 @@ export const SORTS = [
     },
     {
         key: "resolution_asc", label: "Resolution, best first",
-        join: "LEFT JOIN reflns rf ON rf.entry_id = e.id",
-        sql: "rf.d_resolution_high ASC NULLS LAST"
+        join: RESOLUTION_JOIN,
+        sql: `${RESOLUTION_SQL} ASC NULLS LAST`
     },
     {
         key: "resolution_desc", label: "Resolution, worst first",
-        join: "LEFT JOIN reflns rf ON rf.entry_id = e.id",
-        sql: "rf.d_resolution_high DESC NULLS LAST"
+        join: RESOLUTION_JOIN,
+        sql: `${RESOLUTION_SQL} DESC NULLS LAST`
     },
     {
         key: "confal_desc", label: "Confal score, highest first",
@@ -429,7 +436,7 @@ export const COLUMNS = [
     // precisely the resolution is known.
     {
         key: "resolution", label: "Resolution", group: "Demographics",
-        scope: "entry", select: `rf.d_resolution_high`,
+        scope: "entry", select: RESOLUTION_SQL,
         decimals: 2, unit: "Å", show: ["page", "card"]
     },
 
