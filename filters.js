@@ -485,7 +485,7 @@ export const COLUMNS = [
     {
         key: "entity_name", label: "Entity name", group: "Structure Components",
         scope: "entry", select: ENTITY_NAME_SQL,
-        show: ["page", "card"]
+        show: ["card"]
     },
 
     // Also a scalar subquery, and not hypothetical: 18 entries have several
@@ -557,7 +557,7 @@ export const COLUMNS = [
 
     {
         key: "polymer_composition", label: "Composition", group: "Contents",
-        scope: "detail",
+        scope: "detail", show: [],
         select: `(SELECT string_agg(DISTINCT ep.type, ', ' ORDER BY ep.type)
                   FROM entity_poly ep WHERE ep.entry_id = e.id)`
     },

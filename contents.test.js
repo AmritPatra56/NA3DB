@@ -5,9 +5,10 @@
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
-import { entry_contents, entry_citations, find_entry, search_entries, build_where } from "./search.js";
+import { entry_contents, entry_citations, find_entry, search_entries, build_where,
+         missing_runs } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS } from "./filters.js";
-import { detail_rows } from "./detail.js";
+import { detail_rows, molecule_groups, FOLD_PROTEINS } from "./detail.js";
 
 after(() => close());
 
@@ -115,7 +116,8 @@ test("each entity lists its chains, with label and author ids", async () => {
     let rna = c.entities.find((e) => e.id === "2");
     let mg  = c.entities.find((e) => e.id === "4");
 
-    assert.deepEqual(rna.chains, [{ label: "B", auth: "R" }, { label: "C", auth: "S" }]);
+    assert.deepEqual(rna.chains.map(({ label, auth }) => ({ label, auth })),
+                     [{ label: "B", auth: "R" }, { label: "C", auth: "S" }]);
     assert.deepEqual(mg.chains.map((ch) => ch.label), ["F", "G", "H"]);
     assert.equal(mg.chains[0].auth, null, "no poly_seq_scheme row for a ligand");
 });
@@ -665,4 +667,95 @@ test("the box and the residue filter agree on a protein modification", async () 
     });
     assert.equal(box.includes("ZZ01"), filter.includes("ZZ01"));
     assert.ok(!box.includes("ZZ01"));
+});
+
+// --- the Molecules table (micro-goal 2.1a) ------------------------------
+// ZZ02 is 1L9A in miniature: an RNA numbered from 112 with two residues
+// missing, a protein, magnesium and water. Author chains swapped, as there.
+
+async function with_molecules(work) {
+    return with_fixture(async (q) => {
+        await q(`INSERT INTO entry (id) VALUES ('ZZ02')`);
+        await q(`INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES
+                 ('1', 'ZZ02', 'polymer', 'SRP RNA'), ('2', 'ZZ02', 'polymer', 'SRP19'),
+                 ('3', 'ZZ02', 'non-polymer', 'MAGNESIUM ION'), ('4', 'ZZ02', 'water', 'water')`);
+        await q(`INSERT INTO entity_poly (entity_id, entry_id, type, pdbx_seq_one_letter_code_can) VALUES
+                 ('1', 'ZZ02', 'polyribonucleotide', 'GCAGU'), ('2', 'ZZ02', 'polypeptide(L)', 'MK')`);
+        await q(`INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id)
+                 VALUES ('3', 'ZZ02', 'MAGNESIUM ION', 'MG')`);
+        await q(`INSERT INTO struct_asym (id, entry_id, entity_id) VALUES
+                 ('A', 'ZZ02', '1'), ('B', 'ZZ02', '2'), ('C', 'ZZ02', '3'), ('D', 'ZZ02', '3'),
+                 ('E', 'ZZ02', '4')`);
+        // seq 3 and 4 were in the sequence but not seen: no auth_mon_id.
+        // seq 5 has two alternative residues and counts once.
+        await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id, mon_id,
+                                                   pdb_seq_num, auth_mon_id, pdb_strand_id) VALUES
+                 ('A', 'ZZ02', '1', 1, 'G', 112, 'G',  'B'),
+                 ('A', 'ZZ02', '1', 2, 'C', 113, 'C',  'B'),
+                 ('A', 'ZZ02', '1', 3, 'A', 114, NULL, 'B'),
+                 ('A', 'ZZ02', '1', 4, 'G', 115, NULL, 'B'),
+                 ('A', 'ZZ02', '1', 5, 'U', 116, 'U',  'B'),
+                 ('A', 'ZZ02', '1', 5, 'C', 116, 'C',  'B'),
+                 ('B', 'ZZ02', '2', 1, 'MET', 1, 'MET', 'A'),
+                 ('B', 'ZZ02', '2', 2, 'LYS', 2, 'LYS', 'A')`);
+        return work(q);
+    });
+}
+
+test("each chain says how much of it is modelled and where", async () => {
+    let c = await with_molecules((q) => entry_contents("ZZ02", q));
+    let rna = c.entities.find((e) => e.id === "1").chains[0];
+    assert.equal(rna.auth, "B");
+    assert.equal(rna.total, 5);
+    assert.equal(rna.modelled, 3);
+    assert.equal(rna.first, "112");
+    assert.equal(rna.last, "116");
+    assert.deepEqual(rna.missing, [{ from: "114", from_mon: "A", to: "115", to_mon: "G", count: 2 }]);
+});
+
+test("missing residues group into runs of consecutive positions", () => {
+    let runs = missing_runs([{ seq: 1, num: "1", mon: "U" }, { seq: 5, num: "5", mon: "A" },
+                             { seq: 6, num: "6", mon: "G" }, { seq: 7, num: "7", mon: "C" }]);
+    assert.deepEqual(runs.map((r) => [r.from, r.to, r.count]), [["1", "1", 1], ["5", "7", 3]]);
+});
+
+test("the Molecules table lists nucleic acids first and leaves out water", async () => {
+    let m = await with_molecules(async (q) => molecule_groups(await entry_contents("ZZ02", q)));
+    assert.deepEqual(m.groups.map((g) => g.title), ["RNA", "Protein", "Ligands"]);
+    assert.equal(m.summary, "1 RNA · 1 protein · 1 ligand");
+});
+
+test("a polymer row reads the way 1L9A's does", async () => {
+    let m = await with_molecules(async (q) => molecule_groups(await entry_contents("ZZ02", q)));
+    assert.deepEqual(m.groups[0].rows[0], {
+        name: "SRP RNA", length: "5 nt",
+        chains: [{ name: "B", title: "label id A" }],
+        modelled: "3 / 5", missing: "A114, G115", numbering: "112–116"
+    });
+    assert.equal(m.groups[1].rows[0].length, "2 aa");
+});
+
+test("a ligand row gives its code and how many copies", async () => {
+    let m = await with_molecules(async (q) => molecule_groups(await entry_contents("ZZ02", q)));
+    assert.deepEqual(m.groups[2].rows, [{ code: "MG", name: "MAGNESIUM ION", count: 2 }]);
+});
+
+test("a long gap reads as a range, and many gaps are cut short", () => {
+    let entity = (missing) => ({ entities: [{ kind: "RNA", type: "polymer", description: "r",
+        length: 50, chains: [{ label: "A", auth: "A", total: 50, modelled: 40,
+                               first: "1", last: "50", missing }] }] });
+    let gap = (from, to) => ({ from: String(from), from_mon: "A", to: String(to), to_mon: "U",
+                               count: to - from + 1 });
+    let row = (missing) => molecule_groups(entity(missing)).groups[0].rows[0];
+
+    assert.equal(row([gap(10, 20)]).missing, "10–20 (11)");
+    assert.equal(row([1, 3, 5, 7, 9, 11].map((n) => gap(n, n))).missing,
+                 "A1, A3, A5, A7, + 2 more gaps");
+});
+
+test("the protein group folds only when it is large", () => {
+    let proteins = (n) => ({ entities: Array.from({ length: n }, (_, i) => ({
+        kind: "Protein", type: "polymer", description: `p${i}`, length: 10, chains: [] })) });
+    assert.equal(molecule_groups(proteins(FOLD_PROTEINS)).groups[0].folded, false);
+    assert.equal(molecule_groups(proteins(FOLD_PROTEINS + 1)).groups[0].folded, true);
 });

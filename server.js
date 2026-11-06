@@ -1,11 +1,11 @@
 import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
-         count_entries, entry_citations } from "./search.js";
+         count_entries, entry_citations, entry_contents } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
-import { detail_rows } from "./detail.js";
+import { detail_rows, molecule_groups } from "./detail.js";
 
 const app = express();
 
@@ -162,6 +162,7 @@ app.get("/structure/:id", async (req, res) => {
         entry,
         rows: detail_rows(entry),
         citations: await entry_citations(entry.pdb_id),
+        molecules: molecule_groups(await entry_contents(entry.pdb_id)),
         rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
     });
 });
@@ -219,6 +220,7 @@ app.get("/api/entries/:id", async (req, res) => {
     // The raw fields and the display rows, never one instead of the other:
     // entry.resolution stays 2.2, rows has it as "2.20 Å".
     res.json({ ...entry, rows: detail_rows(entry),
+               entities: (await entry_contents(entry.pdb_id)).entities,
                citations: await entry_citations(entry.pdb_id) });
 });
 

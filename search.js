@@ -339,12 +339,8 @@ export async function entry_contents(id, q = query) {
                 regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g') AS sequence,
                 np.comp_id,
                 COALESCE((
-                    SELECT json_agg(json_build_object(
-                               'label', a.id,
-                               'auth', (SELECT min(s.pdb_strand_id)
-                                          FROM pdbx_poly_seq_scheme s
-                                         WHERE s.entry_id = a.entry_id AND s.asym_id = a.id))
-                           ORDER BY length(a.id), a.id)
+                    SELECT json_agg(json_build_object('label', a.id)
+                                    ORDER BY length(a.id), a.id)
                       FROM struct_asym a
                      WHERE a.entry_id = en.entry_id AND a.entity_id = en.id
                 ), '[]') AS chains
@@ -355,6 +351,8 @@ export async function entry_contents(id, q = query) {
           WHERE UPPER(e.id) = UPPER($1)`,
         [as_text(id).trim()]
     );
+
+    let stats = await chain_stats(id, q);
 
     let entities = result.rows.map((row) => ({
         id:             row.id,
@@ -367,10 +365,61 @@ export async function entry_contents(id, q = query) {
         comp_id:        row.comp_id,
         sequence:       row.sequence || null,
         length:         row.sequence ? row.sequence.length : null,
-        chains:         row.chains
+        chains:         row.chains.map((c) => ({ auth: null, ...c, ...stats.get(c.label) }))
     }));
 
     return { entities: entities.sort(by_kind_then_id) };
+}
+
+// Per polymer chain: how much of the sequence is in the model, which residues
+// are missing, and the author numbering a paper uses. A residue with no
+// auth_mon_id was in the sequence but not seen in the density. Alternative
+// residues at one position count once.
+async function chain_stats(id, q) {
+    let result = await q(
+        `WITH r AS (
+             SELECT s.asym_id, s.seq_id,
+                    min(s.pdb_strand_id) AS auth,
+                    min(s.pdb_seq_num::text || COALESCE(NULLIF(s.pdb_ins_code, ''), '')) AS num,
+                    min(s.mon_id) AS mon,
+                    bool_or(s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', '')) AS seen
+               FROM pdbx_poly_seq_scheme s
+              WHERE s.entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))
+              GROUP BY s.asym_id, s.seq_id)
+         SELECT asym_id,
+                min(auth) AS auth,
+                count(*)::int AS total,
+                (count(*) FILTER (WHERE seen))::int AS modelled,
+                (array_agg(num ORDER BY seq_id))[1] AS first,
+                (array_agg(num ORDER BY seq_id DESC))[1] AS last,
+                COALESCE(json_agg(json_build_object('seq', seq_id, 'num', num, 'mon', mon)
+                                  ORDER BY seq_id) FILTER (WHERE NOT seen), '[]') AS missing
+           FROM r GROUP BY asym_id`,
+        [as_text(id).trim()]
+    );
+
+    return new Map(result.rows.map((r) => [r.asym_id, {
+        auth: r.auth, total: r.total, modelled: r.modelled, first: r.first, last: r.last,
+        missing: missing_runs(r.missing)
+    }]));
+}
+
+// Missing residues as runs of consecutive positions: 1L9A's two gaps are one
+// run, "A173-G174", not two entries.
+export function missing_runs(missing) {
+    let runs = [];
+
+    for (const m of missing) {
+        let run = runs.at(-1);
+        if (run && m.seq === run.to_seq + 1) {
+            Object.assign(run, { to: m.num, to_mon: m.mon, to_seq: m.seq, count: run.count + 1 });
+        } else {
+            runs.push({ from: m.num, from_mon: m.mon, to: m.num, to_mon: m.mon,
+                        from_seq: m.seq, to_seq: m.seq, count: 1 });
+        }
+    }
+
+    return runs.map(({ from_seq, to_seq, ...run }) => run);
 }
 
 // Every citation of one structure, the primary first, then the related ones

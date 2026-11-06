@@ -23,6 +23,38 @@
                         </div>
                     <% } %>
 
+                    <% if (molecules.groups.length) { %>
+                        <h2 class="citations_heading">Molecules</h2>
+                        <div class="molecules_summary"><%= molecules.summary %></div>
+                        <% for (const g of molecules.groups) { %>
+                            <details class="molecule_group" <%= g.folded ? "" : "open" %>>
+                                <summary><%= g.title %> (<%= g.rows.length %>)</summary>
+                                <div class="molecule_scroll">
+                                <table class="molecule_table">
+                                <% if (g.polymer) { %>
+                                    <colgroup><col style="width:46%"><col style="width:12%"><col style="width:24%"><col style="width:18%"></colgroup>
+                                    <tr><th>Molecule</th><th>Chain</th><th>Modelled</th><th>Numbering</th></tr>
+                                    <% for (const r of g.rows) { %>
+                                        <tr>
+                                            <td><%= r.name %><% if (r.length) { %><div class="molecule_sub"><%= r.length %></div><% } %></td>
+                                            <td><% r.chains.forEach((c, i) => { %><%= i ? ", " : "" %><span<% if (c.title) { %> title="<%= c.title %>"<% } %>><%= c.name %></span><% }) %></td>
+                                            <td><%= r.modelled ?? "—" %><% if (r.missing) { %><div class="molecule_sub">missing <%= r.missing %></div><% } %></td>
+                                            <td><%= r.numbering ?? "—" %></td>
+                                        </tr>
+                                    <% } %>
+                                <% } else { %>
+                                    <colgroup><col style="width:12%"><col style="width:70%"><col style="width:18%"></colgroup>
+                                    <tr><th>Code</th><th>Name</th><th>Count</th></tr>
+                                    <% for (const r of g.rows) { %>
+                                        <tr><td><%= r.code ?? "—" %></td><td><%= r.name %></td><td><%= r.count %></td></tr>
+                                    <% } %>
+                                <% } %>
+                                </table>
+                                </div>
+                            </details>
+                        <% } %>
+                    <% } %>
+
                     <% if (citations.length) { %>
                         <h2 class="citations_heading">Citations</h2>
                         <% for (const c of citations) { %>

@@ -564,7 +564,15 @@ test("the card and the structure page agree on every shared row", async () => {
 
     let page = new Map(one.rows.map((r) => [r.label, r.value]));
 
+    // The page lists every molecule in its Molecules table instead of this
+    // row, which the card keeps because it has no room for the table.
+    let shown_as_table = ["Entity name"];
+
     for (const row of body.results[0].card) {
+        if (shown_as_table.includes(row.label)) {
+            assert.ok(one.entities.length > 0, `${row.label}: the page has no molecules`);
+            continue;
+        }
         assert.ok(page.has(row.label), `the page is missing ${row.label}`);
         assert.equal(page.get(row.label), row.value,
                      `${row.label} differs between the card and the page`);
