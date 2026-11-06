@@ -126,6 +126,9 @@ export function build_where(query_params) {
         let rule = KINDS[filter.kind];
         if (!rule.active(value)) continue;
 
+        // Old spellings a bookmark may still carry, turned into current ones.
+        if (filter.expand) value = filter.expand(value);
+
         add(filter.where, rule.param(value),
             rule.normalised && rule.normalised(value));
     }

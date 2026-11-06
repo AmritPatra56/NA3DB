@@ -30,6 +30,14 @@ function pill_matches(value, selected) {
     return selected.includes(value);
 }
 
+// The pre-split values old links carry. A copy, not an import from
+// filters.js, for the same reason the parsing is: one bug, two places.
+const OLD_POLYMER_TYPES = {
+    "Nucleic acid": ["DNA", "RNA", "DNA/RNA"],
+    "Protein/NA":   ["Protein/DNA", "Protein/RNA", "Protein/DNA/RNA"]
+};
+const expand_polymer_types = (values) => values.flatMap((v) => OLD_POLYMER_TYPES[v] || [v]);
+
 function matches(entry, f) {
     if (!text_matches(entry.pdb_id, f.entry_id)) return false;
     if (!text_matches(entry.author, f.author_name)) return false;
@@ -39,7 +47,7 @@ function matches(entry, f) {
     if (!text_matches(entry.nonstandard_residue, f.nonstandard_residue)) return false;
 
     if (!pill_matches(entry.method, f.experimental_method)) return false;
-    if (!pill_matches(entry.polymer_type, f.polymer_type)) return false;
+    if (!pill_matches(entry.polymer_type, expand_polymer_types(f.polymer_type))) return false;
     if (!pill_matches(entry.monomer_flag, f.monomer_flag)) return false;
 
     if (f.confal_min !== "" || f.confal_max !== "") {

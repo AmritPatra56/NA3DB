@@ -69,10 +69,10 @@ for (const [field, value, read] of text_cases) {
 
 
 test("a pill filter keeps only the chosen values", async () => {
-    let found = (await export_entries({ polymer_type: "Nucleic acid" })).results;
+    let found = (await export_entries({ polymer_type: "RNA" })).results;
 
     assert.ok(found.length > 0);
-    for (const entry of found) assert.equal(entry.polymer_type, "Nucleic acid");
+    for (const entry of found) assert.equal(entry.polymer_type, "RNA");
 });
 
 // experimental_method, not polymer_type: every entry is one of two polymer
@@ -99,12 +99,12 @@ test("two pills mean either one, and nothing else", async () => {
 test("two different filters must both hold", async () => {
     let found = (await export_entries({
         entry_id: "tna",
-        polymer_type: "Nucleic acid"
+        polymer_type: "RNA"
     })).results;
 
     for (const entry of found) {
         assert.ok(entry.pdb_id.toLowerCase().includes("tna"));
-        assert.equal(entry.polymer_type, "Nucleic acid");
+        assert.equal(entry.polymer_type, "RNA");
     }
 });
 
@@ -299,6 +299,10 @@ test("a value never reaches the SQL text", () => {
 // Pills and the score range. Same rule: every number is what the JavaScript
 // version returns for the same filter.
 const pill_answers = [
+    [{ polymer_type: "RNA" },                                     60],
+    [{ polymer_type: "Protein/RNA" },                             60],
+    [{ polymer_type: "RNA,Protein/RNA" },                        120],
+    [{ polymer_type: "DNA" },                                      0],
     [{ polymer_type: "Nucleic acid" },                            60],
     [{ polymer_type: "Protein/NA" },                              60],
     [{ polymer_type: "Nucleic acid,Protein/NA" },                120],
@@ -523,7 +527,7 @@ test("every filter is negatable, not only the box", async () => {
     for (const filters of [{ entry_id: "tna" },
                            { source_organism: "sacch" },
                            { experimental_method: "X-RAY DIFFRACTION" },
-                           { polymer_type: "Nucleic acid" },
+                           { polymer_type: "RNA" },
                            { monomer_flag: "Standard" },
                            { confal_min: "80" }]) {
         let yes = (await search_entries(filters)).total;

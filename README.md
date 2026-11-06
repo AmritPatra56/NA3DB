@@ -69,7 +69,7 @@ result:
 | **PDB id** | The four-character name a structure was published under, like `4TNA`. It is the permanent, citable handle for that structure. |
 | **Resolution** | How much detail the measurement resolved, in ångström. **Lower is better**: 1.5 Å separates individual atoms, 3.5 Å shows little more than the overall shape. Blank for methods that do not produce one. |
 | **Experimental method** | How the shape was measured. X-ray diffraction is the most common here; NMR and electron microscopy are the others you will meet often. |
-| **Polymer type** | What the entry is made of: DNA, RNA, a hybrid of the two, or a nucleic acid together with a protein. Worked out from the chains it contains rather than stored as a field. |
+| **Polymer type** | What the entry is made of: `DNA`, `RNA`, `DNA/RNA` (both, or a hybrid strand), or one of those with a protein, such as `Protein/DNA`. Worked out from the chains it contains rather than stored as a field. Links made before DNA and RNA were split still work: `Nucleic acid` means all three nucleic acid types, and `Protein/NA` all three protein mixes. |
 | **Non-standard residue** | A building block that is not one of the four usual bases, nearly always a chemical modification of one. `PSU` is pseudouridine, the most common. |
 | **NtC class** | A name for the shape of one step between two neighbouring residues, one of 97, such as `AA00`. It is a vocabulary of known conformations: rather than list angles, you say which shape the step matches. |
 | **Confal score** | 0 to 96, how closely a whole structure's steps match those known shapes. High means conventional geometry; low means unusual, which may be a real finding or a modelling problem. |
@@ -274,7 +274,7 @@ to the 120 seeded entries:
 ```js
 [{}, 120]
 [{ entry_id: "tna" }, 2]
-[{ polymer_type: "Nucleic acid" }, 60]
+[{ polymer_type: "RNA" }, 60]
 ```
 
 They are a yardstick, not arbitrary values. `na3db` now holds 1,489 real
@@ -654,9 +654,10 @@ The flat shape the browser receives is assembled by the database:
 
 The last five are not columns anywhere. `polymer_type` in particular has to be
 worked out from what the entry contains, and the order of the tests matters: a
-structure with both a protein chain and a nucleic acid is `Protein/NA`, and
-must be checked for that **before** it is checked for being a nucleic acid,
-or every hybrid is mislabelled.
+structure with both a protein chain and a nucleic acid is `Protein/DNA`,
+`Protein/RNA` or `Protein/DNA/RNA`, and must be checked for that **before** it
+is checked for being a nucleic acid, or every complex is mislabelled. A hybrid
+strand counts as both DNA and RNA.
 
 Values never reach the SQL as text. Every filter goes in as a numbered
 parameter, so a visitor typing `' OR '1'='1` ends up as a harmless string:
@@ -794,7 +795,7 @@ Examples:
 
 ```
 /api/entries?entry_id=tna
-/api/entries?polymer_type=Nucleic%20acid&page=2
+/api/entries?polymer_type=RNA&page=2
 /api/entries/4TNA
 /api/export?source_organism=sacch
 ```

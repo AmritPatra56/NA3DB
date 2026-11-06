@@ -6,7 +6,7 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
 import { entry_contents, find_entry, search_entries, build_where } from "./search.js";
-import { COLUMNS, ENTITY_NAME_LIMIT } from "./filters.js";
+import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT } from "./filters.js";
 
 after(() => close());
 
@@ -228,6 +228,88 @@ test("the search box's document gathers every entity, not entity 1", async () =>
     let r = await query(`SELECT pg_get_viewdef('doc'::regclass) AS def`);
     assert.doesNotMatch(r.rows[0].def, /\.id\s*=\s*'1'/);
     assert.match(r.rows[0].def, /string_agg\(DISTINCT en\.pdbx_description/);
+});
+
+// --- polymer type: DNA, RNA or both (micro-goal 1.3) --------------------
+
+// An entry ZZ03 holding one polymer entity per type given, then `work`.
+async function with_types(types, work) {
+    return with_fixture(async (q) => {
+        await q(`INSERT INTO entry (id) VALUES ('ZZ03')`);
+        for (const [i, type] of types.entries()) {
+            await q(`INSERT INTO entity (id, entry_id, type) VALUES ($1, 'ZZ03', 'polymer')`,
+                    [String(i + 1)]);
+            await q(`INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ($1, 'ZZ03', $2)`,
+                    [String(i + 1), type]);
+        }
+        return work(q);
+    });
+}
+
+async function polymer_type_of(types) {
+    let select = COLUMNS.find((c) => c.key === "polymer_type").select;
+    return with_types(types, async (q) =>
+        (await q(`SELECT ${select} AS v FROM entry e WHERE e.id = 'ZZ03'`)).rows[0].v);
+}
+
+const RNA = "polyribonucleotide";
+const DNA = "polydeoxyribonucleotide";
+const HYBRID = "polydeoxyribonucleotide/polyribonucleotide hybrid";
+const PROTEIN = "polypeptide(L)";
+
+const type_cases = [
+    [[RNA],                    "RNA"],
+    [[DNA],                    "DNA"],
+    [[DNA, DNA],               "DNA"],
+    [[DNA, RNA],               "DNA/RNA"],
+    [[HYBRID],                 "DNA/RNA"],
+    [[PROTEIN, RNA],           "Protein/RNA"],
+    [[PROTEIN, DNA],           "Protein/DNA"],
+    [[PROTEIN, DNA, RNA],      "Protein/DNA/RNA"],
+    [[PROTEIN, HYBRID],        "Protein/DNA/RNA"],
+    [["polypeptide(D)", DNA],  "Protein/DNA"],
+    [[PROTEIN],                "Protein"],
+    [["polysaccharide(D)"],    "Oligosaccharide"],
+    [[PROTEIN, "polysaccharide(D)"], "Protein/Oligosaccharide"],
+    [["other"],                "Other"]
+];
+
+for (const [types, expected] of type_cases) {
+    test(`polymer type of [${types.join(", ")}] is ${expected}`, async () => {
+        assert.equal(await polymer_type_of(types), expected);
+    });
+}
+
+test("the polymer type filter offers every value the column can produce", () => {
+    let offered = FILTERS.find((f) => f.key === "polymer_type").options.map((o) => o.value);
+    for (const [, expected] of type_cases) assert.ok(offered.includes(expected), expected);
+});
+
+test("the polymer type filter finds a DNA entry and not an RNA one", async () => {
+    let [dna, rna] = await with_types([DNA], async (q) =>
+        [await matches({ polymer_type: "DNA" }, q), await matches({ polymer_type: "RNA" }, q)]);
+    assert.ok(dna.includes("ZZ03"));
+    assert.ok(!rna.includes("ZZ03"));
+});
+
+// Bookmarks made before the split carry the old values.
+test("an old 'Nucleic acid' link still finds DNA, RNA and DNA/RNA entries", async () => {
+    for (const types of [[DNA], [RNA], [HYBRID]]) {
+        let found = await with_types(types, (q) => matches({ polymer_type: "Nucleic acid" }, q));
+        assert.ok(found.includes("ZZ03"), types.join());
+    }
+});
+
+test("an old 'Protein/NA' link still finds every protein-nucleic acid mix", async () => {
+    for (const types of [[PROTEIN, DNA], [PROTEIN, RNA], [PROTEIN, DNA, RNA]]) {
+        let found = await with_types(types, (q) => matches({ polymer_type: "Protein/NA" }, q));
+        assert.ok(found.includes("ZZ03"), types.join());
+    }
+});
+
+test("an old link does not widen into the protein-only entries", async () => {
+    let found = await with_types([PROTEIN], (q) => matches({ polymer_type: "Protein/NA" }, q));
+    assert.ok(!found.includes("ZZ03"));
 });
 
 test("works on the plain test data without a fixture", async () => {

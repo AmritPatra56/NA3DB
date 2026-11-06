@@ -3,23 +3,39 @@
 // fields from public_registry() via GET /api/fields.
 
 // Asked in the SELECT and in the WHERE, so a result cannot contradict its page.
-const HAS_PROTEIN = `EXISTS (SELECT 1 FROM entity_poly ep
-                             WHERE ep.entry_id = e.id AND ep.type ILIKE '%polypeptide%')`;
-const HAS_NA      = `EXISTS (SELECT 1 FROM entity_poly ep
-                             WHERE ep.entry_id = e.id AND ep.type ILIKE '%nucleotide%')`;
-const HAS_SACC    = `EXISTS (SELECT 1 FROM entity_poly ep
-                             WHERE ep.entry_id = e.id AND ep.type ILIKE '%saccharide%')`;
+// One pass over the entry's entity_poly rows sets all four flags. Separate
+// EXISTS per flag cost 205 ms a search against 13 for the old two-way split.
+// A hybrid strand is both DNA and RNA, so it sets both.
+//
+// Protein with a nucleic acid is tested first: such an entry also has the
+// nucleic acid alone and would otherwise stop there.
+export const POLYMER_TYPE_SQL = `(
+    SELECT CASE
+               WHEN f.protein AND na.part IS NOT NULL THEN 'Protein/' || na.part
+               WHEN f.protein AND f.sacc              THEN 'Protein/Oligosaccharide'
+               WHEN na.part IS NOT NULL               THEN na.part
+               WHEN f.sacc                            THEN 'Oligosaccharide'
+               WHEN f.protein                         THEN 'Protein'
+               ELSE 'Other'
+           END
+      FROM (SELECT COALESCE(bool_or(ep.type ILIKE '%polypeptide%'), false) AS protein,
+                   COALESCE(bool_or(ep.type ILIKE '%saccharide%'),  false) AS sacc,
+                   COALESCE(bool_or(ep.type = 'polydeoxyribonucleotide'
+                                 OR ep.type ILIKE '%hybrid%'), false)      AS dna,
+                   COALESCE(bool_or(ep.type = 'polyribonucleotide'
+                                 OR ep.type ILIKE '%hybrid%'), false)      AS rna
+              FROM entity_poly ep WHERE ep.entry_id = e.id) f
+      CROSS JOIN LATERAL (SELECT CASE WHEN f.dna AND f.rna THEN 'DNA/RNA'
+                                      WHEN f.dna           THEN 'DNA'
+                                      WHEN f.rna           THEN 'RNA' END AS part) na
+)`;
 
-// Protein/NA first: such an entry also has a nucleic acid and would otherwise
-// stop at 'Nucleic acid'.
-export const POLYMER_TYPE_SQL = `CASE
-        WHEN ${HAS_PROTEIN} AND ${HAS_NA}   THEN 'Protein/NA'
-        WHEN ${HAS_PROTEIN} AND ${HAS_SACC} THEN 'Protein/Oligosaccharide'
-        WHEN ${HAS_NA}                      THEN 'Nucleic acid'
-        WHEN ${HAS_SACC}                    THEN 'Oligosaccharide'
-        WHEN ${HAS_PROTEIN}                 THEN 'Protein'
-        ELSE 'Other'
-    END`;
+// The values links used before DNA and RNA were told apart. A bookmark must
+// keep finding what it found, so each old value stands for its new ones.
+export const POLYMER_TYPE_ALIASES = {
+    "Nucleic acid": ["DNA", "RNA", "DNA/RNA"],
+    "Protein/NA":   ["Protein/DNA", "Protein/RNA", "Protein/DNA/RNA"]
+};
 
 // How many entity names a result shows before "+ N more".
 export const ENTITY_NAME_LIMIT = 5;
@@ -241,8 +257,10 @@ export const FILTERS = [
     {
         key: "polymer_type", label: "Polymer type",
         group: "Structure Components", kind: "pills", any: true,
-        options: ["Nucleic acid", "Oligosaccharide", "Protein", "Protein/NA",
-                  "Protein/Oligosaccharide", "Other"].map(option),
+        options: ["DNA", "RNA", "DNA/RNA",
+                  "Protein/DNA", "Protein/RNA", "Protein/DNA/RNA",
+                  "Protein", "Oligosaccharide", "Protein/Oligosaccharide", "Other"].map(option),
+        expand: (values) => values.flatMap((v) => POLYMER_TYPE_ALIASES[v] || [v]),
         where: `AND (${POLYMER_TYPE_SQL}) = ANY(?)`
     },
 

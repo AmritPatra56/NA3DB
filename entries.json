@@ -11,7 +11,7 @@
     "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YG",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -26,7 +26,7 @@
     "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YG",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -41,7 +41,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -56,7 +56,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -71,7 +71,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -86,7 +86,7 @@
     "nonstandard_residue": "CBR",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -101,7 +101,7 @@
     "nonstandard_residue": "CBR",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -116,7 +116,7 @@
     "nonstandard_residue": "C38",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -131,7 +131,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -146,7 +146,7 @@
     "nonstandard_residue": "CBR",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -161,7 +161,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -176,7 +176,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -191,7 +191,7 @@
     "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YG",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -206,7 +206,7 @@
     "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YG",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -221,7 +221,7 @@
     "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YG",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -236,7 +236,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -251,7 +251,7 @@
     "nonstandard_residue": "CBR",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -266,7 +266,7 @@
     "nonstandard_residue": "CBR",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -281,7 +281,7 @@
     "nonstandard_residue": "1MG, 5MC, 5MU, H2U, PSU",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -296,7 +296,7 @@
     "nonstandard_residue": "1MG, 5MC, 5MU, H2U, PSU",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -311,7 +311,7 @@
     "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YG",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -326,7 +326,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -341,7 +341,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -356,7 +356,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -371,7 +371,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -386,7 +386,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -401,7 +401,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -416,7 +416,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -431,7 +431,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -446,7 +446,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -461,7 +461,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -476,7 +476,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -491,7 +491,7 @@
     "nonstandard_residue": "6MA",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -506,7 +506,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -521,7 +521,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -536,7 +536,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -551,7 +551,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -566,7 +566,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -581,7 +581,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -596,7 +596,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -611,7 +611,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -626,7 +626,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -641,7 +641,7 @@
     "nonstandard_residue": "AS",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -656,7 +656,7 @@
     "nonstandard_residue": "UFP",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -671,7 +671,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -686,7 +686,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -701,7 +701,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -716,7 +716,7 @@
     "nonstandard_residue": "5CM",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -731,7 +731,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -746,7 +746,7 @@
     "nonstandard_residue": "5CM",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -760,7 +760,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -774,7 +774,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -788,7 +788,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -803,7 +803,7 @@
     "nonstandard_residue": "5CM, AS",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -818,7 +818,7 @@
     "nonstandard_residue": "5CM, AS",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -833,7 +833,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -848,7 +848,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -863,7 +863,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -878,7 +878,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -893,7 +893,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Nucleic acid",
+    "polymer_type": "RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -908,7 +908,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -923,7 +923,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -938,7 +938,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -953,7 +953,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -968,7 +968,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -983,7 +983,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -998,7 +998,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1013,7 +1013,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1028,7 +1028,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1043,7 +1043,7 @@
     "nonstandard_residue": "PST",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1058,7 +1058,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1073,7 +1073,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1088,7 +1088,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1103,7 +1103,7 @@
     "nonstandard_residue": "DDG, OMC",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1118,7 +1118,7 @@
     "nonstandard_residue": "OMC",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1133,7 +1133,7 @@
     "nonstandard_residue": "DDG, OMC",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1148,7 +1148,7 @@
     "nonstandard_residue": "OMC",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1163,7 +1163,7 @@
     "nonstandard_residue": "OMC",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1178,7 +1178,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1193,7 +1193,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1208,7 +1208,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1223,7 +1223,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1238,7 +1238,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1253,7 +1253,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1268,7 +1268,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1283,7 +1283,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1298,7 +1298,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1313,7 +1313,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1328,7 +1328,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1343,7 +1343,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1358,7 +1358,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1373,7 +1373,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1388,7 +1388,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1403,7 +1403,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1418,7 +1418,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1433,7 +1433,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1448,7 +1448,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1463,7 +1463,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1478,7 +1478,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1493,7 +1493,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1508,7 +1508,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1523,7 +1523,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1538,7 +1538,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1553,7 +1553,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1568,7 +1568,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1583,7 +1583,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1598,7 +1598,7 @@
     "nonstandard_residue": "2MG, 4OC, 5MC, G7M, MA6, PSU, UR3",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1613,7 +1613,7 @@
     "nonstandard_residue": "2MG, 4OC, 5MC, G7M, MA6, PSU, UR3",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1628,7 +1628,7 @@
     "nonstandard_residue": "1MG, 2MA, 2MG, 5MC, 5MU, 6MZ, 7MG, OMC, OMG, OMU",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1643,7 +1643,7 @@
     "nonstandard_residue": "1MG, 2MA, 2MG, 5MC, 5MU, 6MZ, 7MG, OMC, OMG, OMU",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1658,7 +1658,7 @@
     "nonstandard_residue": "1MG, 2MA, 2MG, 5MC, 5MU, 6MZ, 7MG, OMC, OMG, OMU",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1673,7 +1673,7 @@
     "nonstandard_residue": "1MG, 2MA, 2MG, 5MC, 5MU, 6MZ, 7MG, OMC, OMG, OMU",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Non-Standard"
   },
   {
@@ -1688,7 +1688,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1703,7 +1703,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1718,7 +1718,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1733,7 +1733,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1748,7 +1748,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1763,7 +1763,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1778,7 +1778,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   },
   {
@@ -1793,7 +1793,7 @@
     "nonstandard_residue": "",
     "assigned_ntc": null,
     "confal_score": null,
-    "polymer_type": "Protein/NA",
+    "polymer_type": "Protein/RNA",
     "monomer_flag": "Standard"
   }
 ]

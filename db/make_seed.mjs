@@ -15,10 +15,14 @@ function q(value) {
 }
 
 // One flat polymer_type becomes one or more entity_poly.type values.
-// "Protein/NA" is TWO polymers in one structure, so it becomes two entities.
+// "Protein/RNA" is TWO polymers in one structure, so it becomes two entities.
 const POLYMER_TYPES = {
-    "Nucleic acid":            ["polyribonucleotide"],
-    "Protein/NA":              ["polypeptide(L)", "polyribonucleotide"],
+    "RNA":                     ["polyribonucleotide"],
+    "DNA":                     ["polydeoxyribonucleotide"],
+    "DNA/RNA":                 ["polydeoxyribonucleotide", "polyribonucleotide"],
+    "Protein/RNA":             ["polypeptide(L)", "polyribonucleotide"],
+    "Protein/DNA":             ["polypeptide(L)", "polydeoxyribonucleotide"],
+    "Protein/DNA/RNA":         ["polypeptide(L)", "polydeoxyribonucleotide", "polyribonucleotide"],
     "Protein":                 ["polypeptide(L)"],
     "Oligosaccharide":         ["polysaccharide(D)"],
     "Protein/Oligosaccharide": ["polypeptide(L)", "polysaccharide(D)"],
