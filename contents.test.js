@@ -351,6 +351,43 @@ test("Chains agrees with the chains entry_contents lists for polymers", async ()
     assert.equal(n, polymer_chains);
 });
 
+// --- residue count (micro-goal 1.6) -------------------------------------
+// entity_poly_seq is one row per residue per ENTITY, so two copies of a chain
+// counted once. pdbx_poly_seq_scheme is one row per residue per CHAIN.
+
+test("Residues counts every residue of every chain", async () => {
+    // ZZ01: chain A has 2 residues; B, C, D and E one each.
+    assert.equal(await with_fixture((q) => column_of("residue_count", "ZZ01", q)), 6);
+});
+
+test("Residues counts both copies of a repeated chain", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id, mon_id)
+                 VALUES ('B', 'ZZ01', '2', 2, 'C'), ('C', 'ZZ01', '2', 2, 'C')`);
+        return column_of("residue_count", "ZZ01", q);
+    });
+    assert.equal(n, 8);
+});
+
+test("Residues counts a position with two alternative residues once", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id,
+                                                   mon_id, hetero)
+                 VALUES ('A', 'ZZ01', '1', 2, 'ARG', 'y')`);
+        return column_of("residue_count", "ZZ01", q);
+    });
+    assert.equal(n, 6);
+});
+
+test("Residues does not read entity_poly_seq, which counts each entity once", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id)
+                 VALUES ('2', 'ZZ01', 1, 'G'), ('2', 'ZZ01', 2, 'C')`);
+        return column_of("residue_count", "ZZ01", q);
+    });
+    assert.equal(n, 6);
+});
+
 test("works on the plain test data without a fixture", async () => {
     let c = await entry_contents("4TNA");
     assert.ok(c.entities.length >= 1);

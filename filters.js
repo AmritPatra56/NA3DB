@@ -551,12 +551,16 @@ export const COLUMNS = [
                    WHERE a.entry_id = e.id AND en.type = 'polymer')::int`
     },
 
-    // The subquery's own alias s shadows the outer struct s. Legal, and it is
-    // what the working query says.
+    // Per chain, from pdbx_poly_seq_scheme: entity_poly_seq has one row per
+    // residue per entity, so 2VON's two copies of each chain read 200 for 400.
+    // Distinct positions, because a microheterogeneous one has a row per
+    // alternative residue. The alias s shadows the outer struct s; legal.
     {
         key: "residue_count", label: "Residues", group: "Contents",
         scope: "detail",
-        select: `(SELECT count(*) FROM entity_poly_seq s WHERE s.entry_id = e.id)::int`
+        select: `(SELECT count(*) FROM (SELECT DISTINCT s.asym_id, s.seq_id
+                                          FROM pdbx_poly_seq_scheme s
+                                         WHERE s.entry_id = e.id) r)::int`
     },
 
     {
