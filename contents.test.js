@@ -8,7 +8,8 @@ import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
          missing_runs } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS } from "./filters.js";
-import { detail_rows, molecule_groups, FOLD_PROTEINS, POSITIONS_SHOWN } from "./detail.js";
+import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
+         SOURCE_LISTED } from "./detail.js";
 
 after(() => close());
 
@@ -731,7 +732,7 @@ test("a polymer row reads the way 1L9A's does", async () => {
         name: "SRP RNA", length: "5 nt",
         chains: [{ name: "B", title: "label id A" }],
         modelled: "3 / 5", missing: "A114, G115", numbering: "112–116",
-        links: [], organism: null
+        links: []
     });
     assert.equal(m.groups[1].rows[0].length, "2 aa");
 });
@@ -778,14 +779,129 @@ test("every reference is listed, and an unknown database is plain text", async (
     assert.equal(m.groups[1].rows[0].links[0].url, null);
 });
 
-test("organism shows per molecule only when the molecules disagree", async () => {
-    let differ = await with_refs([], [["1", "Escherichia coli"], ["2", "Thermus aquaticus"]],
-                                 async (m) => m);
-    assert.equal(differ.groups[0].rows[0].organism, "Escherichia coli");
-    assert.equal(differ.groups[1].rows[0].organism, "Thermus aquaticus");
-    let same = await with_refs([], [["1", "Escherichia coli"], ["2", "Escherichia coli"]],
-                               async (m) => m);
-    assert.equal(same.groups[0].rows[0].organism, null);
+// --- where each polymer came from (L6) ----------------------------------
+
+// rows: [table, entity, src_id, organism, taxid, host, host_taxid, beg, end]
+async function with_sources(rows) {
+    return with_molecules(async (q) => {
+        for (let [table, entity, src, org, taxid, host, host_taxid, beg, end] of rows) {
+            if (table === "gen")
+                await q(`INSERT INTO entity_src_gen (entry_id, entity_id, pdbx_src_id,
+                             pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id,
+                             pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id,
+                             pdbx_beg_seq_num, pdbx_end_seq_num)
+                         VALUES ('ZZ02', $1, $2, $3, $4, $5, $6, $7, $8)`,
+                        [entity, src, org, taxid, host ?? null, host_taxid ?? null, beg ?? null, end ?? null]);
+            else if (table === "nat")
+                await q(`INSERT INTO entity_src_nat (entry_id, entity_id, pdbx_src_id,
+                             pdbx_organism_scientific, pdbx_ncbi_taxonomy_id)
+                         VALUES ('ZZ02', $1, $2, $3, $4)`, [entity, src, org, taxid]);
+            else
+                await q(`INSERT INTO pdbx_entity_src_syn (entry_id, entity_id, pdbx_src_id,
+                             organism_scientific, ncbi_taxonomy_id)
+                         VALUES ('ZZ02', $1, $2, $3, $4)`, [entity, src, org, taxid]);
+        }
+        return molecule_groups(await entry_contents("ZZ02", q));
+    });
+}
+
+// One row of the Source table as text: kind | organisms | host | notes.
+const text = (o) => (o ? o.name + (o.common ? ` (${o.common})` : "") : "—");
+const flat = (r) => [r.kind,
+    r.segments.map((g) => [g.range, text(g.organism), g.taxon?.id].filter(Boolean).join(" ")).join("; "),
+    r.host ? `${text(r.host.organism)} ${r.host.taxon?.id ?? ""}`.trim() : "—",
+    r.segments.map((g) => g.notes ?? "").join(";")].join(" | ");
+
+test("a natural tRNA and an expressed protein are two rows with their own columns (1OB5)", async () => {
+    let m = await with_sources([["nat", "1", 1, "SACCHAROMYCES CEREVISIAE", 4932],
+                                ["gen", "2", 1, "Thermus aquaticus", 271, "Escherichia coli", 562]]);
+    assert.deepEqual(m.sources.rows.map(flat), [
+        "Natural | Saccharomyces cerevisiae 4932 | — | ",
+        "Expressed | Thermus aquaticus 271 | Escherichia coli 562 | "]);
+    assert.deepEqual(m.sources.rows[0].molecules, [{ name: "SRP RNA", chains: ["B"] }]);
+    assert.equal(m.sources.notes, false);
+});
+
+test("the legend says what each word means", async () => {
+    let m = await with_sources([]);
+    assert.deepEqual(m.sources.legend.map((l) => l.kind), ["Natural", "Expressed", "Synthetic"]);
+});
+
+test("organisms are italic and taxon IDs link to NCBI Taxonomy", async () => {
+    let m = await with_sources([["nat", "1", 1, "Saccharomyces cerevisiae", 4932]]);
+    let seg = m.sources.rows[0].segments[0];
+    assert.equal(seg.organism.italic, true);
+    assert.equal(seg.taxon.url, "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=4932");
+});
+
+test("a host that is the source organism itself is not repeated", async () => {
+    let m = await with_sources([["gen", "2", 1, "Bacillus halodurans", 86665, "Bacillus halodurans", 86665]]);
+    assert.equal(flat(m.sources.rows[1]), "Expressed | Bacillus halodurans 86665 | — | ");
+});
+
+test("molecules with the same source share a row", async () => {
+    let m = await with_sources([["syn", "1", 1, "synthetic construct", 32630],
+                                ["syn", "2", 1, "synthetic construct", 32630]]);
+    assert.equal(m.sources.rows.length, 1);
+    assert.deepEqual(m.sources.rows[0].molecules.map((x) => x.name), ["SRP RNA", "SRP19"]);
+    assert.equal(m.sources.rows[0].listed, true);
+    assert.equal(flat(m.sources.rows[0]), "Synthetic | synthetic construct 32630 | — | ");
+});
+
+test("a synthetic molecule names the organism its sequence comes from", async () => {
+    let m = await with_sources([["syn", "1", 1, "HOMO SAPIENS", 9606], ["syn", "2", 1, null, null]]);
+    assert.deepEqual(m.sources.rows.map(flat), ["Synthetic | Homo sapiens 9606 | — | ",
+                                                "Synthetic | — | — | "]);
+});
+
+test("a chimera is one row per segment, with the range and one host (3WFR)", async () => {
+    let m = await with_sources([
+        ["gen", "2", 1, "synthetic construct", 32630, "Escherichia coli", 562, 1, 15],
+        ["gen", "2", 2, "Aquifex aeolicus (strain VF5)", 224324, "Escherichia coli", 562, 16, 453]]);
+    assert.equal(flat(m.sources.rows[1]),
+        "Expressed | 1–15 synthetic construct 32630; 16–453 Aquifex aeolicus (strain VF5) 224324 | Escherichia coli 562 | ;");
+});
+
+test("a polymer without a source row is 'Not recorded', and ligands are not listed", async () => {
+    let m = await with_sources([]);
+    assert.equal(m.sources.rows.length, 1);
+    assert.equal(flat(m.sources.rows[0]), "Not recorded | — | — | ");
+    assert.equal(m.sources.rows[0].molecules.length, 2);
+});
+
+test("notes come from the file, without repeating the organism or tagging a linker", () => {
+    let entity = (segments) => ({ type: "polymer", description: "p", chains: [{ label: "A" }],
+                                  source: { kind: "Expressed", segments, host: null } });
+    let s = source_section([entity([
+        { organism: "synthetic construct", taxid: 32630, strain: "VF5", gene: "pcnB2" },
+        { organism: "Aquifex aeolicus (strain VF5)", taxid: 224324, strain: "VF5", gene: "pcnB2" },
+        { organism: "Trypanosoma brucei", taxid: 5702, strain: "Lister strain 427", details: "procyclic" }])]);
+    assert.deepEqual(s.rows[0].segments.map((g) => g.notes),
+                     [null, "gene pcnB2", "Lister strain 427; procyclic"]);
+    assert.equal(s.notes, true);
+});
+
+test("past SOURCE_LISTED molecules a row folds behind a count", () => {
+    let polymers = Array.from({ length: SOURCE_LISTED + 1 }, (_, i) => ({
+        type: "polymer", description: `uS${i}`, chains: [{ label: String(i) }, { label: `${i}x` }],
+        source: { kind: "Natural", segments: [{ organism: "Thermus thermophilus", taxid: 274 }], host: null } }));
+    let row = source_section(polymers).rows[0];
+    assert.equal(row.listed, false);
+    assert.equal(row.chain_count, 2 * (SOURCE_LISTED + 1));
+});
+
+test("the Molecules table no longer carries a source line", async () => {
+    let m = await with_sources([["nat", "1", 1, "Saccharomyces cerevisiae", 4932]]);
+    assert.equal(m.groups[0].rows[0].source, undefined);
+});
+
+test("capitals become species case, but a strain keeps its own", () => {
+    assert.equal(species_case("SACCHAROMYCES CEREVISIAE (STRAIN ATCC 204508 / S288C)"),
+                 "Saccharomyces cerevisiae (STRAIN ATCC 204508 / S288C)");
+    assert.equal(species_case("Escherichia coli K-12"), "Escherichia coli K-12");
+    assert.equal(species_case("HIV-1"), "HIV-1");
+    assert.equal(species_case("THERMUS THERMOPHILUS HB8"), "Thermus thermophilus HB8");
+    assert.equal(species_case("HEPATITIS C VIRUS"), "HEPATITIS C VIRUS");
 });
 
 test("a long gap reads as a range, and many gaps are cut short", () => {

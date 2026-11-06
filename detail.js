@@ -103,18 +103,95 @@ function polymer_row(entity) {
     };
 }
 
-// A molecule's organism is worth a line only when the molecules disagree:
-// 1B23 is an E. coli tRNA on a T. aquaticus protein. When they agree, the
-// Source organism row above already says it once.
-function organisms_differ(entities) {
-    let sets = new Set(entities.filter((e) => e.type === "polymer" && e.organisms?.length)
-                               .map((e) => [...e.organisms].sort().join("; ").toLowerCase()));
-    return sets.size > 1;
+// --- the Source section of the structure page --------------------------
+// Where each polymer came from, in its own table so that how it was obtained,
+// the organism and the expression host are three columns and not one line to
+// untangle. Polymers with the same source share a row: 6SGB has 103 molecules
+// purified from one organism.
+
+const SYNTHETIC_CONSTRUCT = 32630;
+// Up to this many molecules are named in their row; more fold behind a count.
+export const SOURCE_LISTED = 3;
+const taxon_url = (id) => `https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${id}`;
+
+export const SOURCE_LEGEND = [
+    { kind: "Natural",   text: "purified from the organism" },
+    { kind: "Expressed", text: "gene cloned and produced in a host" },
+    { kind: "Synthetic", text: "made chemically; the organism is where the sequence comes from" }
+];
+
+// 408 natural rows are in capitals; "SACCHAROMYCES CEREVISIAE (STRAIN S288C)"
+// reads "Saccharomyces cerevisiae (STRAIN S288C)": a strain's capitals may be
+// its own, so only the first two words are recased.
+export function species_case(name) {
+    if (!name || name !== name.toUpperCase() || !/[A-Z]/.test(name)) return name;
+    let words = name.split(" ");
+    // Genus and species, then nothing or a strain. Anything else is left in
+    // capitals: "HEPATITIS C VIRUS" cannot be recased without knowing virology.
+    let plain = (w) => /^[A-Z]{2,}$/.test(w ?? "");
+    if (!plain(words[0]) || !plain(words[1]) || plain(words[2])) return name;
+    words[0] = words[0][0] + words[0].slice(1).toLowerCase();
+    words[1] = words[1].toLowerCase();
+    return words.join(" ");
+}
+
+function is_construct(seg) {
+    return seg.taxid === SYNTHETIC_CONSTRUCT || /^synthetic construct$/i.test(seg.organism ?? "");
+}
+
+function organism_cell(o) {
+    if (!o.organism) return null;
+    if (is_construct(o)) return { name: "synthetic construct", italic: false, common: null };
+    return { name: species_case(o.organism), italic: true,
+             common: o.common_name ? o.common_name.toLowerCase() : null };
+}
+
+const taxon = (id) => (id ? { id, url: taxon_url(id) } : null);
+
+// 3WFR files the gene and strain of its Aquifex segment on the synthetic
+// linkers too, and names the strain inside the organism; neither is repeated.
+function notes_of(seg) {
+    let construct = is_construct(seg);
+    let strain = !construct && seg.strain
+              && !(seg.organism ?? "").toLowerCase().includes(seg.strain.toLowerCase())
+               ? (/strain/i.test(seg.strain) ? seg.strain : `strain ${seg.strain}`) : null;
+    let notes = [strain, !construct && seg.gene && `gene ${seg.gene}`,
+                 seg.cell_line && `cell line ${seg.cell_line}`, seg.details].filter(Boolean);
+    return notes.length ? notes.join("; ") : null;
+}
+
+function source_row(source, molecules) {
+    let segments = (source?.segments ?? [{}]).map((seg) => ({
+        range: seg.from != null && seg.to != null ? `${seg.from}–${seg.to}` : null,
+        organism: organism_cell(seg), taxon: taxon(seg.taxid), notes: notes_of(seg)
+    }));
+    let host = source?.host;
+    return {
+        kind: source?.kind ?? "Not recorded",
+        molecules,
+        listed: molecules.length <= SOURCE_LISTED,
+        chain_count: molecules.reduce((n, m) => n + m.chains.length, 0),
+        segments,
+        host: host ? { organism: organism_cell(host), taxon: taxon(host.taxid) } : null
+    };
+}
+
+export function source_section(entities) {
+    let groups = new Map();
+    for (const e of entities.filter((e) => e.type === "polymer")) {
+        let key = JSON.stringify(e.source ?? null);
+        if (!groups.has(key)) groups.set(key, { source: e.source ?? null, molecules: [] });
+        groups.get(key).molecules.push({ name: e.description, chains: e.chains.map(chain_name) });
+    }
+    if (!groups.size) return null;
+
+    let rows = [...groups.values()].map((g) => source_row(g.source, g.molecules));
+    return { legend: SOURCE_LEGEND, rows,
+             notes: rows.some((r) => r.segments.some((s) => s.notes)) };
 }
 
 export function molecule_groups(contents) {
     let groups = [];
-    let per_molecule_organism = organisms_differ(contents.entities);
 
     for (const entity of contents.entities) {
         if (entity.kind === "Water") continue;
@@ -126,9 +203,7 @@ export function molecule_groups(contents) {
         }
 
         group.rows.push(entity.type === "polymer"
-            ? { ...polymer_row(entity),
-                organism: per_molecule_organism && entity.organisms?.length
-                          ? entity.organisms.join("; ") : null }
+            ? polymer_row(entity)
             : { code: entity.comp_id, name: entity.description, count: entity.chains.length,
                 url: entity.comp_id ? `https://www.rcsb.org/ligand/${entity.comp_id}` : null });
     }
@@ -151,7 +226,7 @@ export function molecule_groups(contents) {
                                   rows: contents.modified.map(modified_row) });
     }
 
-    return { groups, summary: summary.join(" · ") };
+    return { groups, summary: summary.join(" · "), sources: source_section(contents.entities) };
 }
 
 const NUCLEIC_KINDS = new Set(["RNA", "DNA", "DNA/RNA hybrid"]);

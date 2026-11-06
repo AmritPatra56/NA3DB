@@ -48,7 +48,7 @@
                                     <tr><th>Molecule</th><th>Chain</th><th>Modelled</th><th>Numbering</th><th>Link</th></tr>
                                     <% for (const r of g.rows) { %>
                                         <tr>
-                                            <td><%= r.name %><% if (r.organism) { %><div class="molecule_sub"><i><%= r.organism %></i></div><% } %><% if (r.length) { %><div class="molecule_sub"><%= r.length %></div><% } %></td>
+                                            <td><%= r.name %><% if (r.length) { %><div class="molecule_sub"><%= r.length %></div><% } %></td>
                                             <td><% r.chains.forEach((c, i) => { %><%= i ? ", " : "" %><span<% if (c.title) { %> title="<%= c.title %>"<% } %>><%= c.name %></span><% }) %></td>
                                             <td><%= r.modelled ?? "—" %><% if (r.missing) { %><div class="molecule_sub">missing <%= r.missing %></div><% } %></td>
                                             <td><%= r.numbering ?? "—" %></td>
@@ -66,6 +66,38 @@
                                 </div>
                             </details>
                         <% } %>
+                    <% } %>
+
+                    <% if (molecules.sources) { const src = molecules.sources; %>
+                        <% const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); %>
+                        <% const org = (o) => !o ? "—" : (o.italic ? `<i>${esc(o.name)}</i>` : esc(o.name)) + (o.common ? ` <span class="molecule_sub">(${esc(o.common)})</span>` : ""); %>
+                        <% const tax = (t) => t ? `<a target="_blank" rel="noopener" title="NCBI Taxonomy" href="${t.url}">${t.id}</a>` : "—"; %>
+                        <h2 class="citations_heading">Source</h2>
+                        <div class="source_legend"><% src.legend.forEach((l, i) => { %><%= i ? " · " : "" %><b><%= l.kind %></b> = <%= l.text %><% }) %></div>
+                        <div class="molecule_scroll">
+                        <table class="molecule_table source_table">
+                            <% if (src.notes) { %><colgroup><col style="width:20%"><col style="width:9%"><col style="width:10%"><col style="width:23%"><col style="width:8%"><col style="width:16%"><col style="width:14%"></colgroup>
+                            <% } else { %><colgroup><col style="width:24%"><col style="width:10%"><col style="width:11%"><col style="width:27%"><col style="width:9%"><col style="width:19%"></colgroup><% } %>
+                            <tr><th>Molecule</th><th>Chains</th><th>Obtained</th><th>Organism</th><th>Taxon</th><th>Produced in</th><% if (src.notes) { %><th>Notes</th><% } %></tr>
+                            <% for (const r of src.rows) { const n = r.segments.length; %>
+                                <% r.segments.forEach((seg, i) => { %>
+                                    <tr<% if (i < n - 1) { %> class="segment_continues"<% } %>>
+                                        <% if (i === 0) { %>
+                                            <td rowspan="<%= n %>"><% if (r.listed) { %><% for (const m of r.molecules) { %><div><%= m.name %></div><% } %><% } else { %><details class="more_positions"><summary><%= r.molecules.length %> molecules</summary><% for (const m of r.molecules) { %><div><%= m.name %> <span class="molecule_sub"><%= m.chains.join(", ") %></span></div><% } %></details><% } %></td>
+                                            <td rowspan="<%= n %>"><% if (r.listed) { %><% for (const m of r.molecules) { %><div><%= m.chains.join(", ") %></div><% } %><% } else { %><%= r.chain_count %> chains<% } %></td>
+                                            <td rowspan="<%= n %>"><span class="source_kind source_<%= r.kind.toLowerCase().replace(" ", "_") %>"><%= r.kind %></span></td>
+                                        <% } %>
+                                        <td><% if (seg.range) { %><b><%= seg.range %></b> <% } %><%- org(seg.organism) %></td>
+                                        <td><%- tax(seg.taxon) %></td>
+                                        <% if (i === 0) { %>
+                                            <td rowspan="<%= n %>"><%- r.host ? `${org(r.host.organism)}${r.host.taxon ? ` (${tax(r.host.taxon)})` : ""}` : "—" %></td>
+                                        <% } %>
+                                        <% if (src.notes) { %><td class="molecule_sub"><%= seg.notes ?? "" %></td><% } %>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </table>
+                        </div>
                     <% } %>
 
                     <% if (citations.length) { %>

@@ -331,6 +331,26 @@ function by_kind_then_id(a, b) {
 // `q` lets a test run this inside its own transaction; the site uses query.
 // Chain author ids come from pdbx_poly_seq_scheme, so ligands and water have
 // none: the schema has no non-polymer scheme table.
+const blank = (v) => (v && v.trim()) || null;
+
+// How a molecule was made, from its source rows: one segment for most, one per
+// stretch of sequence for a chimera (3WFR molecule 3: 1-15, 16-453, 454-512).
+// The host is kept only when it is not the source organism itself.
+export function source_of(rows) {
+    if (!rows.length) return null;
+    let segments = rows.map((r) => ({ organism: blank(r.organism), taxid: r.taxid ?? null,
+                                      from: r.beg ?? null, to: r.fin ?? null,
+                                      common_name: blank(r.common), strain: blank(r.strain),
+                                      gene: blank(r.gene), cell_line: blank(r.cell_line),
+                                      details: blank(r.details) }));
+    let host = rows.find((r) => blank(r.host) || r.host_taxid);
+    let hosted = host && !segments.every((s) => s.taxid && s.taxid === host.host_taxid)
+               ? { organism: blank(host.host), taxid: host.host_taxid ?? null } : null;
+    return { kind: rows[0].kind, segments: segments.length > 1 ? segments
+                                         : [{ ...segments[0], from: null, to: null }],
+             host: hosted };
+}
+
 export async function entry_contents(id, q = query) {
     let result = await q(
         `SELECT en.id, en.type, en.pdbx_description AS description,
@@ -351,10 +371,34 @@ export async function entry_contents(id, q = query) {
                       FROM struct_ref r
                      WHERE r.entry_id = en.entry_id AND r.entity_id = en.id
                 ), '[]') AS refs,
-                (SELECT array_agg(DISTINCT trim(g.pdbx_gene_src_scientific_name))
-                   FROM entity_src_gen g
-                  WHERE g.entry_id = en.entry_id AND g.entity_id = en.id
-                    AND trim(g.pdbx_gene_src_scientific_name) <> '') AS organisms
+                -- The three ways a molecule is made; one entity uses only one.
+                COALESCE((
+                    SELECT json_agg(s ORDER BY s.src) FROM (
+                        SELECT 'Expressed' AS kind, g.pdbx_src_id AS src,
+                               g.pdbx_gene_src_scientific_name AS organism,
+                               g.pdbx_gene_src_ncbi_taxonomy_id AS taxid,
+                               g.pdbx_host_org_scientific_name AS host,
+                               g.pdbx_host_org_ncbi_taxonomy_id AS host_taxid,
+                               g.pdbx_beg_seq_num AS beg, g.pdbx_end_seq_num AS fin,
+                               g.gene_src_common_name AS common, g.gene_src_strain AS strain,
+                               g.pdbx_gene_src_gene AS gene, NULL AS cell_line, NULL AS details
+                          FROM entity_src_gen g
+                         WHERE g.entry_id = en.entry_id AND g.entity_id = en.id
+                        UNION ALL
+                        SELECT 'Natural', n.pdbx_src_id, n.pdbx_organism_scientific,
+                               n.pdbx_ncbi_taxonomy_id, NULL, NULL,
+                               n.pdbx_beg_seq_num, n.pdbx_end_seq_num,
+                               n.common_name, n.strain, NULL, n.pdbx_cell_line, n.details
+                          FROM entity_src_nat n
+                         WHERE n.entry_id = en.entry_id AND n.entity_id = en.id
+                        UNION ALL
+                        SELECT 'Synthetic', y.pdbx_src_id, y.organism_scientific,
+                               y.ncbi_taxonomy_id, NULL, NULL,
+                               y.pdbx_beg_seq_num, y.pdbx_end_seq_num,
+                               y.organism_common_name, NULL, NULL, NULL, y.details
+                          FROM pdbx_entity_src_syn y
+                         WHERE y.entry_id = en.entry_id AND y.entity_id = en.id) s
+                ), '[]') AS sources
            FROM entry e
            JOIN entity en                ON en.entry_id = e.id
            LEFT JOIN entity_poly ep      ON ep.entry_id = en.entry_id AND ep.entity_id = en.id
@@ -377,7 +421,7 @@ export async function entry_contents(id, q = query) {
         sequence:       row.sequence || null,
         length:         row.sequence ? row.sequence.length : null,
         chains:         row.chains.map((c) => ({ auth: null, ...c, ...stats.get(c.label) })),
-        organisms:      row.organisms || [],
+        source:         source_of(row.sources),
         references:     sequence_links(row.refs, row.type, row.poly_type, id)
     }));
 
