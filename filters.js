@@ -21,6 +21,34 @@ export const POLYMER_TYPE_SQL = `CASE
         ELSE 'Other'
     END`;
 
+// How many entity names a result shows before "+ N more".
+export const ENTITY_NAME_LIMIT = 5;
+
+// One row per distinct polymer description, ranked RNA, DNA, hybrid, then the
+// rest, and within a rank by entity id as a number (ids are text: "10" < "2").
+const ENTITY_NAME_SQL = `(
+    WITH names AS (
+        SELECT en.pdbx_description AS name,
+               min(CASE ep.type WHEN 'polyribonucleotide'      THEN 1
+                                WHEN 'polydeoxyribonucleotide' THEN 2
+                                WHEN 'polydeoxyribonucleotide/polyribonucleotide hybrid' THEN 3
+                                ELSE 4 END)            AS rank,
+               min(lpad(en.id, 10, '0'))               AS first_id
+          FROM entity en
+          JOIN entity_poly ep ON ep.entry_id = en.entry_id AND ep.entity_id = en.id
+         WHERE en.entry_id = e.id AND en.pdbx_description IS NOT NULL
+         GROUP BY en.pdbx_description
+    ), ranked AS (
+        SELECT name, row_number() OVER (ORDER BY rank, first_id) AS n, count(*) OVER () AS total
+          FROM names
+    )
+    SELECT string_agg(name, '; ' ORDER BY n)
+           || CASE WHEN max(total) > ${ENTITY_NAME_LIMIT}
+                   THEN '; + ' || (max(total) - ${ENTITY_NAME_LIMIT}) || ' more' ELSE '' END
+      FROM ranked
+     WHERE n <= ${ENTITY_NAME_LIMIT}
+)`;
+
 // A pill option is {value, label}; a bare string means the two are the same.
 const option = (o) => (typeof o === "string" ? { value: o, label: o } : o);
 
@@ -422,9 +450,12 @@ export const COLUMNS = [
         show: ["page", "card"]
     },
 
+    // Every polymer, nucleic acids first: 1,406 entries have more than one,
+    // and in 786 entity 1 is a protein. Capped so a ribosome's 100 names do
+    // not fill the card; the molecule table lists them all.
     {
         key: "entity_name", label: "Entity name", group: "Structure Components",
-        scope: "entry", select: `ent.pdbx_description`,
+        scope: "entry", select: ENTITY_NAME_SQL,
         show: ["page", "card"]
     },
 

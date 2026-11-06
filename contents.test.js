@@ -5,7 +5,8 @@
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { transaction, close } from "./db.js";
-import { entry_contents } from "./search.js";
+import { entry_contents, find_entry, search_entries } from "./search.js";
+import { COLUMNS, ENTITY_NAME_LIMIT } from "./filters.js";
 
 after(() => close());
 
@@ -129,6 +130,56 @@ test("an entry with no entities gives an empty list, not undefined", async () =>
         return entry_contents("ZZ02", q);
     });
     assert.deepEqual(c.entities, []);
+});
+
+// --- entity_name on the card and the page (micro-goal 1.1) --------------
+
+// The column's own SQL, run inside the fixture's transaction.
+async function entity_name_of(id, q) {
+    let select = COLUMNS.find((c) => c.key === "entity_name").select;
+    let r = await q(`SELECT ${select} AS v FROM entry e WHERE e.id = $1`, [id]);
+    return r.rows[0].v;
+}
+
+test("entity_name names every polymer, nucleic acids first", async () => {
+    let v = await with_fixture((q) => entity_name_of("ZZ01", q));
+    assert.equal(v, "tRNA-Phe; DNA template; DNA/RNA primer; Lupus La protein");
+});
+
+test("entity_name leaves out ligands and water", async () => {
+    let v = await with_fixture((q) => entity_name_of("ZZ01", q));
+    assert.ok(!v.includes("MAGNESIUM") && !v.includes("water"));
+});
+
+test("entity_name names a repeated description once", async () => {
+    let v = await with_fixture(async (q) => {
+        await q(`UPDATE entity SET pdbx_description = 'tRNA-Phe'
+                 WHERE entry_id = 'ZZ01' AND id = '3'`);
+        return entity_name_of("ZZ01", q);
+    });
+    assert.equal(v, "tRNA-Phe; DNA/RNA primer; Lupus La protein");
+});
+
+test("entity_name stops at the limit and says how many it left out", async () => {
+    let v = await with_fixture(async (q) => {
+        for (let i = 20; i < 26; i++) {
+            await q(`INSERT INTO entity (id, entry_id, type, pdbx_description)
+                     VALUES ($1, 'ZZ01', 'polymer', $2)`, [String(i), `Protein ${i}`]);
+            await q(`INSERT INTO entity_poly (entity_id, entry_id, type)
+                     VALUES ($1, 'ZZ01', 'polypeptide(L)')`, [String(i)]);
+        }
+        return entity_name_of("ZZ01", q);
+    });
+    let names = v.split("; ");
+    assert.equal(names.length, ENTITY_NAME_LIMIT + 1);
+    assert.equal(names[0], "tRNA-Phe");
+    assert.equal(names.at(-1), `+ ${10 - ENTITY_NAME_LIMIT} more`);
+});
+
+test("find_entry and search still return entity_name", async () => {
+    assert.equal((await find_entry("4TNA")).entity_name, "TRNAPHE");
+    let page = await search_entries({ entry_id: "4TNA" });
+    assert.equal(page.results[0].entity_name, "TRNAPHE");
 });
 
 test("works on the plain test data without a fixture", async () => {

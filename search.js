@@ -275,7 +275,6 @@ const ENTRY_JOINS = `
     LEFT JOIN exptl ex                ON ex.entry_id  = e.id
     LEFT JOIN reflns rf               ON rf.entry_id  = e.id
     LEFT JOIN pdbx_database_status ds ON ds.entry_id  = e.id
-    LEFT JOIN entity ent              ON ent.entry_id = e.id AND ent.id = '1'
 
     LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id
 `;
