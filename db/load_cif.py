@@ -257,7 +257,37 @@ def _parse_loop(text: str, category: str) -> list:
                 break
             rows.append({c.lower(): (None if v in ("?", ".") else v)
                          for c, v in zip(cols, chunk)})
-    return rows
+    return rows or _single_row(text, category)
+
+
+# A category with one row is written without loop_, one "_category.field value"
+# per line. The loop parser above saw none of these, so 602 entries lost their
+# organism and 298 their ligands. Values are read with the same tokeniser and
+# whitespace is collapsed as _parse_single_values does, so a value reads the
+# same whichever way the file writes it.
+def _single_row(text: str, category: str) -> list:
+    cat_esc = re.escape(category)
+    start = re.search(r"^_" + cat_esc + r"\.", text, re.MULTILINE | re.IGNORECASE)
+    if not start:
+        return []
+    # The category ends at the first line that is not one of its own items:
+    # a comment, loop_, a new data block or another category's item.
+    end = re.compile(r"^(?:#|loop_|data_|_(?!" + cat_esc + r"\.))", re.MULTILINE | re.IGNORECASE)
+    end_m = end.search(text, start.end())
+    tokens = _tokenise(text[start.start(): end_m.start() if end_m else len(text)])
+
+    prefix = f"_{category}.".lower()
+    row, key = {}, None
+    for tok in tokens:
+        if key is None and tok.lower().startswith(prefix):
+            key = tok[len(prefix):].lower()
+            continue
+        if key is None:
+            return []           # a value with no item before it: not a key-value block
+        val = re.sub(r"\s+", " ", tok).strip()
+        row[key] = None if val in ("?", ".") else val
+        key = None
+    return [row] if row else []
 
 
 def _get_mat(sv, prefix, row, col):
@@ -349,27 +379,17 @@ def load_citation(cur, eid, text, sv):
        year,journal_id_ASTM,country,journal_id_ISSN,journal_id_CSD,
        book_publisher,pdbx_database_id_PubMed,pdbx_database_id_DOI)
       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING"""
-    rp = _parse_loop(text, "citation")
-    if rp:
-        rows = [(r.get("id") or "primary", eid,
-                 r.get("title"), r.get("journal_abbrev"), r.get("journal_volume"),
-                 r.get("page_first"), r.get("page_last"), _int(r.get("year")),
-                 r.get("journal_id_astm"), r.get("country"),
-                 r.get("journal_id_issn"), r.get("journal_id_csd"),
-                 r.get("book_publisher"),
-                 _int(r.get("pdbx_database_id_pubmed")),
-                 r.get("pdbx_database_id_doi")) for r in rp]
-        return _many(cur, sql, rows)
-    else:
-        g = lambda k: sv.get(f"_citation.{k}")
-        cur.execute(sql, (g("id") or "primary", eid,
-                    g("title"), g("journal_abbrev"), g("journal_volume"),
-                    g("page_first"), g("page_last"), _int(g("year")),
-                    g("journal_id_astm"), g("country"),
-                    g("journal_id_issn"), g("journal_id_csd"),
-                    g("book_publisher"),
-                    _int(g("pdbx_database_id_pubmed")), g("pdbx_database_id_doi")))
-        return 1
+    # An entry with no citation still gets an empty "primary" row, as before.
+    rp = _parse_loop(text, "citation") or [{}]
+    rows = [(r.get("id") or "primary", eid,
+             r.get("title"), r.get("journal_abbrev"), r.get("journal_volume"),
+             r.get("page_first"), r.get("page_last"), _int(r.get("year")),
+             r.get("journal_id_astm"), r.get("country"),
+             r.get("journal_id_issn"), r.get("journal_id_csd"),
+             r.get("book_publisher"),
+             _int(r.get("pdbx_database_id_pubmed")),
+             r.get("pdbx_database_id_doi")) for r in rp]
+    return _many(cur, sql, rows)
 
 def load_citation_author(cur, eid, text):
     rp = _parse_loop(text, "citation_author")
@@ -389,14 +409,7 @@ def load_citation_author(cur, eid, text):
 def load_entity(cur, eid, text, sv):
     rp = _parse_loop(text, "entity")
     if not rp:
-        eid2 = sv.get("_entity.id")
-        if eid2:
-            rp = [{"id": eid2, "type": sv.get("_entity.type"),
-                   "pdbx_description": sv.get("_entity.pdbx_description"),
-                   "formula_weight": sv.get("_entity.formula_weight"),
-                   "pdbx_number_of_molecules": sv.get("_entity.pdbx_number_of_molecules")}]
-        else:
-            log.warning("    entity: no data for %s", eid); return 0
+        log.warning("    entity: no data for %s", eid); return 0
     return _many(cur, """INSERT INTO entity
         (id,entry_id,type,pdbx_description,formula_weight,pdbx_number_of_molecules)
         VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
@@ -406,11 +419,6 @@ def load_entity(cur, eid, text, sv):
 
 def load_entity_poly(cur, eid, text, sv):
     rp = _parse_loop(text, "entity_poly")
-    if not rp:
-        eid2 = sv.get("_entity_poly.entity_id")
-        if eid2:
-            rp = [{"entity_id": eid2, "type": sv.get("_entity_poly.type"),
-                   "pdbx_seq_one_letter_code_can": sv.get("_entity_poly.pdbx_seq_one_letter_code_can")}]
     if not rp: return 0
     return _many(cur, """INSERT INTO entity_poly
         (entity_id,entry_id,type,pdbx_seq_one_letter_code_can)
@@ -452,12 +460,7 @@ def load_pdbx_entity_nonpoly(cur, eid, text):
 def load_struct_asym(cur, eid, text, sv):
     rp = _parse_loop(text, "struct_asym")
     if not rp:
-        aid = sv.get("_struct_asym.id")
-        eid2 = sv.get("_struct_asym.entity_id")
-        if aid and eid2:
-            rp = [{"id": aid, "entity_id": eid2, "details": sv.get("_struct_asym.details")}]
-        else:
-            log.warning("    struct_asym: no data for %s", eid); return 0
+        log.warning("    struct_asym: no data for %s", eid); return 0
     return _many(cur, """INSERT INTO struct_asym
         (id,entry_id,entity_id,details) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
         [(r.get("id"), eid, r.get("entity_id"), r.get("details")) for r in rp])
@@ -478,14 +481,6 @@ def load_pdbx_poly_seq_scheme(cur, eid, text):
 
 def load_struct_ref(cur, eid, text, sv):
     rp = _parse_loop(text, "struct_ref")
-    if not rp:
-        rid = sv.get("_struct_ref.id")
-        eid2 = sv.get("_struct_ref.entity_id")
-        if rid and eid2:
-            rp = [{"id": rid, "entity_id": eid2,
-                   "db_name": sv.get("_struct_ref.db_name"),
-                   "db_code": sv.get("_struct_ref.db_code"),
-                   "pdbx_db_accession": sv.get("_struct_ref.pdbx_db_accession")}]
     if not rp: return 0
     return _many(cur, """INSERT INTO struct_ref
         (id,entry_id,entity_id,db_name,db_code,pdbx_db_accession)
@@ -697,27 +692,17 @@ def load_pdbx_struct_sheet_hbond(cur, eid, text):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def load_exptl(cur, eid, text, sv):
-    rp = _parse_loop(text, "exptl")
-    if rp:
-        r = rp[0]; method = r.get("method"); crystals = _int(r.get("crystals_number"))
-    else:
-        method = sv.get("_exptl.method"); crystals = _int(sv.get("_exptl.crystals_number"))
+    r = (_parse_loop(text, "exptl") or [{}])[0]
+    method = r.get("method"); crystals = _int(r.get("crystals_number"))
     cur.execute("""INSERT INTO exptl (entry_id,method,crystals_number)
         VALUES (%s,%s,%s) ON CONFLICT DO NOTHING""", (eid, method, crystals))
     return 1
 
 def load_cell(cur, eid, text, sv):
-    rp = _parse_loop(text, "cell")
-    if rp:
-        r = rp[0]
-        la,lb,lc = r.get("length_a"),r.get("length_b"),r.get("length_c")
-        aa,ab,ag = r.get("angle_alpha"),r.get("angle_beta"),r.get("angle_gamma")
-        z = r.get("z_pdb")
-    else:
-        g = lambda k: sv.get(f"_cell.{k}")
-        la,lb,lc = g("length_a"),g("length_b"),g("length_c")
-        aa,ab,ag = g("angle_alpha"),g("angle_beta"),g("angle_gamma")
-        z = g("z_pdb")
+    r = (_parse_loop(text, "cell") or [{}])[0]
+    la,lb,lc = r.get("length_a"),r.get("length_b"),r.get("length_c")
+    aa,ab,ag = r.get("angle_alpha"),r.get("angle_beta"),r.get("angle_gamma")
+    z = r.get("z_pdb")
     cur.execute("""INSERT INTO cell
         (entry_id,length_a,length_b,length_c,angle_alpha,angle_beta,angle_gamma,Z_PDB)
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
@@ -733,17 +718,10 @@ def load_symmetry(cur, eid, sv):
     return 1
 
 def load_reflns(cur, eid, text, sv):
-    rp = _parse_loop(text, "reflns")
-    if rp:
-        r = rp[0]
-        sig_i,sig_f = r.get("observed_criterion_sigma_i"),r.get("observed_criterion_sigma_f")
-        dlo,dhi = r.get("d_resolution_low"),r.get("d_resolution_high")
-        nobs,nall,pct = r.get("number_obs"),r.get("number_all"),r.get("percent_possible_obs")
-    else:
-        g = lambda k: sv.get(f"_reflns.{k}")
-        sig_i,sig_f = g("observed_criterion_sigma_i"),g("observed_criterion_sigma_f")
-        dlo,dhi = g("d_resolution_low"),g("d_resolution_high")
-        nobs,nall,pct = g("number_obs"),g("number_all"),g("percent_possible_obs")
+    r = (_parse_loop(text, "reflns") or [{}])[0]
+    sig_i,sig_f = r.get("observed_criterion_sigma_i"),r.get("observed_criterion_sigma_f")
+    dlo,dhi = r.get("d_resolution_low"),r.get("d_resolution_high")
+    nobs,nall,pct = r.get("number_obs"),r.get("number_all"),r.get("percent_possible_obs")
     cur.execute("""INSERT INTO reflns
         (entry_id,observed_criterion_sigma_I,observed_criterion_sigma_F,
          d_resolution_low,d_resolution_high,number_obs,number_all,percent_possible_obs)
@@ -753,21 +731,15 @@ def load_reflns(cur, eid, text, sv):
     return 1
 
 def load_diffrn(cur, eid, text, sv):
-    rp = _parse_loop(text, "diffrn")
-    if rp:
-        return _many(cur, """INSERT INTO diffrn
-            (id,entry_id,ambient_temp) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING""",
-            [(r.get("id"), eid, _float(r.get("ambient_temp"))) for r in rp])
-    did = sv.get("_diffrn.id")
-    if not did: return 0
-    cur.execute("""INSERT INTO diffrn (id,entry_id,ambient_temp)
-        VALUES (%s,%s,%s) ON CONFLICT DO NOTHING""",
-        (did, eid, _float(sv.get("_diffrn.ambient_temp"))))
-    return 1
+    rp = [r for r in _parse_loop(text, "diffrn") if r.get("id")]
+    if not rp: return 0
+    return _many(cur, """INSERT INTO diffrn
+        (id,entry_id,ambient_temp) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING""",
+        [(r.get("id"), eid, _float(r.get("ambient_temp"))) for r in rp])
 
 def load_refine(cur, eid, text, sv):
-    rp = _parse_loop(text, "refine")
-    g = (lambda k: rp[0].get(k)) if rp else (lambda k: sv.get(f"_refine.{k}"))
+    r = (_parse_loop(text, "refine") or [{}])[0]
+    g = r.get
     gf = lambda k: _float(g(k))
     gi = lambda k: _int(g(k))
     cur.execute("""INSERT INTO refine
