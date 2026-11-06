@@ -6,7 +6,8 @@ import { search_entries, export_entries, find_entry, query_problem,
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
-import { detail_rows, molecule_groups, base_pair_section, fasta_of } from "./detail.js";
+import { detail_rows, molecule_groups, base_pair_section, fasta_of,
+         entry_fasta } from "./detail.js";
 
 const app = express();
 
@@ -169,6 +170,25 @@ app.get("/structure/:id", async (req, res) => {
     });
 });
 
+// FASTA has no registered media type; plain text is what tools expect.
+// attachment() guesses one from the extension, so the type is set after it.
+function send_fasta(res, filename, fasta) {
+    res.attachment(filename).set("Content-Type", "text/plain; charset=utf-8").send(fasta);
+}
+
+// Every sequenced molecule in the entry; ?only=na keeps the nucleic acids.
+app.get("/structure/:id/fasta", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+    let na_only = req.query.only === "na";
+    let fasta = entry && entry_fasta(entry.pdb_id, (await entry_contents(entry.pdb_id)).entities, { na_only });
+
+    if (!fasta) {
+        res.status(404).type("text").send(`No ${na_only ? "nucleic acid " : ""}sequence for ${req.params.id}\n`);
+        return;
+    }
+    send_fasta(res, `${entry.pdb_id}${na_only ? "_na" : ""}.fasta`, fasta);
+});
+
 // One molecule's sequence as a FASTA file, from the link under its sequence.
 app.get("/structure/:id/fasta/:entity", async (req, res) => {
     let entry = await find_entry(req.params.id);
@@ -180,11 +200,7 @@ app.get("/structure/:id/fasta/:entity", async (req, res) => {
         res.status(404).type("text").send(`No sequence for ${req.params.id} molecule ${req.params.entity}\n`);
         return;
     }
-    // FASTA has no registered media type; plain text is what tools expect.
-    // attachment() guesses one from the extension, so the type is set after it.
-    res.attachment(`${entry.pdb_id}_${entity.id}.fasta`)
-       .set("Content-Type", "text/plain; charset=utf-8")
-       .send(fasta);
+    send_fasta(res, `${entry.pdb_id}_${entity.id}.fasta`, fasta);
 });
 
 // One page of entries, narrowed by whatever filters were passed.

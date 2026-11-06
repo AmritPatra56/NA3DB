@@ -9,7 +9,8 @@ import { entry_contents, entry_citations, find_entry, search_entries, build_wher
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
-         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of } from "./detail.js";
+         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of,
+         entry_fasta, fasta_choices } from "./detail.js";
 
 after(() => close());
 
@@ -1207,4 +1208,19 @@ test("a FASTA file has an RCSB-style header and lines of 80", () => {
     assert.equal(fasta_of("1OB5", { ...entity, chains: [{ label: "A" }], source: null }).split("\n")[0],
                  ">1OB5_2|Chain A|TRANSFER-RNA, PHE");
     assert.equal(fasta_of("1OB5", { ...entity, sequence: null }), null);
+});
+
+test("an entry FASTA holds every sequenced molecule, or only the nucleic acids", () => {
+    let rna = { id: "2", kind: "RNA", description: "TRNA", sequence: "GCGGAUUUAF", chains: [{ label: "B" }] };
+    let protein = { id: "1", kind: "Protein", description: "EF-TU", sequence: "AKGEF", chains: [{ label: "A" }] };
+    let ligand = { id: "3", kind: "Ligand", description: "MG", sequence: null, chains: [{ label: "G" }] };
+    let entities = [rna, protein, ligand];
+
+    assert.equal(entry_fasta("1ob5", entities),
+                 ">1OB5_2|Chain B|TRNA\nGCGGAUUUAF\n>1OB5_1|Chain A|EF-TU\nAKGEF\n");
+    // PDB's sequence is kept: the charged tRNA's F stays.
+    assert.equal(entry_fasta("1ob5", entities, { na_only: true }), ">1OB5_2|Chain B|TRNA\nGCGGAUUUAF\n");
+    assert.deepEqual(fasta_choices(entities), { all: 2, na: 1 });
+    assert.equal(entry_fasta("1ob5", [protein], { na_only: true }), null);
+    assert.equal(entry_fasta("1ob5", [ligand]), null);
 });

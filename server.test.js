@@ -731,4 +731,7 @@ test("the report reached from a structure covers only that structure", async () 
 test("a FASTA link for a molecule without a sequence is a 404, not an empty file", async () => {
     assert.equal((await fetch(base + "/structure/1B23/fasta/99")).status, 404);
     assert.equal((await fetch(base + "/structure/NOPE/fasta/1")).status, 404);
+    // The test seed carries no sequences, so a whole-entry file is empty too.
+    assert.equal((await fetch(base + "/structure/1B23/fasta")).status, 404);
+    assert.equal((await fetch(base + "/structure/1B23/fasta?only=na")).status, 404);
 });

@@ -25,7 +25,22 @@
 
                     <% if (molecules.groups.length) { %>
                         <h2 class="citations_heading">Molecules</h2>
-                        <div class="molecules_summary"><%= molecules.summary %></div>
+                        <div class="molecules_summary">
+                            <span><%= molecules.summary %></span>
+                            <% const fasta_url = `/structure/${entry.pdb_id}/fasta`; %>
+                            <% const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>'; %>
+                            <% if (molecules.fasta.na && molecules.fasta.na < molecules.fasta.all) { %>
+                                <details class="entry_fasta">
+                                    <summary title="Download sequences as FASTA"><%- dl %>FASTA</summary>
+                                    <div class="entry_fasta_menu">
+                                        <a href="<%= fasta_url %>?only=na" download>Nucleic acids only <span><%= molecules.fasta.na %> <%= molecules.fasta.na === 1 ? "molecule" : "molecules" %></span></a>
+                                        <a href="<%= fasta_url %>" download>All polymers <span><%= molecules.fasta.all %> molecules</span></a>
+                                    </div>
+                                </details>
+                            <% } else if (molecules.fasta.all) { %>
+                                <a class="entry_fasta" href="<%= fasta_url %>" download title="Download <%= molecules.fasta.all === 1 ? "the sequence" : "all " + molecules.fasta.all + " sequences" %> as FASTA"><%- dl %>FASTA</a>
+                            <% } %>
+                        </div>
                         <% for (const g of molecules.groups) { %>
                             <details class="molecule_group" <%= g.folded ? "" : "open" %>>
                                 <summary><%= g.title %> (<%= g.rows.length %>)</summary>
@@ -199,6 +214,12 @@
             button.classList.add("copied");
             button.title = "Copied";
             setTimeout(() => { button.classList.remove("copied"); button.title = "Copy sequence"; }, 1500);
+        });
+
+        // The FASTA menu closes once a file is picked or the click lands elsewhere.
+        document.addEventListener("click", (event) => {
+            let menu = document.querySelector("details.entry_fasta[open]");
+            if (menu && (!menu.contains(event.target) || event.target.closest("a"))) menu.open = false;
         });
     </script>
 </body>

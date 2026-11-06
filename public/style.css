@@ -497,6 +497,9 @@ input::placeholder {
 
 /* The Molecules section: one table per kind, nucleic acids first. */
 .molecules_summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 6px;
     font-size: 13px;
     color: var(--text-dim);
@@ -1666,7 +1669,7 @@ input::placeholder {
     padding: 0 2px;
 }
 .sequence_actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-.sequence_copy, .sequence_fasta {
+.sequence_copy, .sequence_fasta, .entry_fasta > summary, a.entry_fasta {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -1679,8 +1682,9 @@ input::placeholder {
     text-decoration: none;
     cursor: pointer;
 }
-.sequence_copy:hover, .sequence_fasta:hover { border-color: var(--border-dark); }
-.sequence_actions svg {
+.sequence_copy:hover, .sequence_fasta:hover,
+.entry_fasta > summary:hover, a.entry_fasta:hover { border-color: var(--border-dark); }
+.sequence_actions svg, .entry_fasta svg {
     width: 14px;
     height: 14px;
     fill: none;
@@ -1691,3 +1695,31 @@ input::placeholder {
 }
 .sequence_copy .icon_done, .sequence_copy.copied .icon_copy { display: none; }
 .sequence_copy.copied .icon_done { display: inline; color: var(--focus); }
+
+/* The whole-entry FASTA, beside the Molecules summary. */
+.entry_fasta { margin-left: auto; position: relative; }
+.entry_fasta > summary { list-style: none; }
+.entry_fasta > summary::-webkit-details-marker { display: none; }
+.entry_fasta_menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 5;
+    min-width: 230px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+.entry_fasta_menu a {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-size: 13px;
+    text-decoration: none;
+}
+.entry_fasta_menu a + a { border-top: 1px solid var(--border); }
+.entry_fasta_menu a:hover { background: var(--bg-primary); }
+.entry_fasta_menu span { color: var(--text-dim); }

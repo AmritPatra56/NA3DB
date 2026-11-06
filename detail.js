@@ -282,7 +282,8 @@ export function molecule_groups(contents, residues = new Map()) {
                                   rows: contents.modified.map(modified_row) });
     }
 
-    return { groups, summary: summary.join(" · "), sources: source_section(contents.entities) };
+    return { groups, summary: summary.join(" · "), sources: source_section(contents.entities),
+             fasta: fasta_choices(contents.entities) };
 }
 
 const NUCLEIC_KINDS = new Set(["RNA", "DNA", "DNA/RNA hybrid"]);
@@ -381,4 +382,23 @@ export function fasta_of(entry_id, entity) {
                   [...new Set(organisms)].join(", ")].filter(Boolean).join("|");
     let lines = entity.sequence.match(new RegExp(`.{1,${FASTA_LINE}}`, "g"));
     return `>${header}\n${lines.join("\n")}\n`;
+}
+
+// Every molecule with a sequence in one file, in the page's order (nucleic
+// acids first). Ligands and water have no sequence, so they drop out.
+// Sequences are PDB's own: 1OB5's charged tRNA ends in F, as at RCSB.
+export function entry_fasta(entry_id, entities, { na_only = false } = {}) {
+    let records = entities
+        .filter((e) => !na_only || NUCLEIC_KINDS.has(e.kind))
+        .map((e) => fasta_of(entry_id, e))
+        .filter(Boolean);
+    return records.length ? records.join("") : null;
+}
+
+// How many records each download would hold, so the page offers a choice
+// only when the two differ.
+export function fasta_choices(entities) {
+    let sequenced = entities.filter((e) => e.sequence);
+    return { all: sequenced.length,
+             na: sequenced.filter((e) => NUCLEIC_KINDS.has(e.kind)).length };
 }
