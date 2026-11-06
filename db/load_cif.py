@@ -120,13 +120,18 @@ def mark_loaded(conn, cur, entry_id, path):
     Until the loaded_entries row exists the entry counts as partial, which is
     what makes an interrupted run safe to repeat.
     """
-    # has_nonstandard_residue is stored, not computed per search (migration
-    # 006), so it has to be written here once this entry's residues are in.
+    # has_nonstandard_residue is stored, not computed per search (migrations
+    # 006 and 010), so it has to be written here once this entry's residues
+    # are in. Only DNA, RNA and hybrid chains count, not protein.
     cur.execute("""
         UPDATE entry SET has_nonstandard_residue = EXISTS (
             SELECT 1 FROM entity_poly_seq eps
+            JOIN entity_poly ep ON ep.entry_id = eps.entry_id
+                               AND ep.entity_id = eps.entity_id
             JOIN chem_comp cc ON cc.id = eps.mon_id
-            WHERE eps.entry_id = %s AND cc.mon_nstd_flag = 'n'
+            WHERE eps.entry_id = %s
+              AND ep.type ILIKE '%%nucleotide%%'
+              AND cc.mon_nstd_flag = 'n'
         ) WHERE id = %s
     """, (entry_id, entry_id))
 

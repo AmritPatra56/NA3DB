@@ -467,3 +467,53 @@ test("Atoms leaves out water but keeps a ligand", async () => {
 test("Atoms is 0 for an entry with no coordinates", async () => {
     assert.equal(await with_fixture((q) => column_of("atom_count", "ZZ01", q)), 0);
 });
+
+// --- modified nucleotides only (micro-goal 1.8) -------------------------
+// A protein label such as MSE does not make a nucleic acid entry non-standard.
+
+async function with_residues(rows, work) {
+    return with_fixture(async (q) => {
+        await q(`INSERT INTO chem_comp (id, mon_nstd_flag) VALUES ('MSE', 'n'), ('PSU', 'n')
+                 ON CONFLICT (id) DO NOTHING`);
+        for (let [entity, num, code] of rows) {
+            await q(`INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id)
+                     VALUES ($1, 'ZZ01', $2, $3)`, [entity, num, code]);
+        }
+        return work(q);
+    });
+}
+
+// The rule migration 010 stores and load_cif.py writes, run on the fixture.
+async function stored_flag(q) {
+    let r = await q(`SELECT EXISTS (
+        SELECT 1 FROM entity_poly_seq eps
+        JOIN entity_poly ep ON ep.entry_id = eps.entry_id AND ep.entity_id = eps.entity_id
+        JOIN chem_comp cc ON cc.id = eps.mon_id
+        WHERE eps.entry_id = 'ZZ01' AND ep.type ILIKE '%nucleotide%'
+          AND cc.mon_nstd_flag = 'n') AS v`);
+    return r.rows[0].v;
+}
+
+test("a modified protein residue does not flag the entry", async () => {
+    let v = await with_residues([["1", 1, "MSE"]], stored_flag);
+    assert.equal(v, false);
+});
+
+test("a modified RNA residue flags the entry", async () => {
+    let v = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], stored_flag);
+    assert.equal(v, true);
+});
+
+test("the residue list shows nucleotide modifications, not protein ones", async () => {
+    let v = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]],
+                                (q) => column_of("nonstandard_residue", "ZZ01", q));
+    assert.equal(v, "PSU");
+});
+
+test("the residue filter does not find an entry by a protein modification", async () => {
+    let [mse, psu] = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], async (q) =>
+        [await matches({ nonstandard_residue: "MSE" }, q),
+         await matches({ nonstandard_residue: "PSU" }, q)]);
+    assert.ok(!mse.includes("ZZ01"));
+    assert.ok(psu.includes("ZZ01"));
+});

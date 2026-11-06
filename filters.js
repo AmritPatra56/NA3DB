@@ -243,11 +243,15 @@ export const FILTERS = [
     // Matches the residue code as well as its name, because a code is what
     // people type. ARRAY(SELECT ...) and not a join: a join makes the chem_comp
     // lookup correlated and re-runs it per entry. 435 ms against 7 ms.
+    // Nucleic acid chains only, like the monomer flag: MSE is a protein label.
     {
         key: "nonstandard_residue", label: "Non-standard residue",
         group: "Structure Components", kind: "text",
         where: `AND EXISTS (SELECT 1 FROM entity_poly_seq eps
+                            JOIN entity_poly ep ON ep.entry_id = eps.entry_id
+                                               AND ep.entity_id = eps.entity_id
                             WHERE eps.entry_id = e.id
+                              AND ep.type ILIKE '%nucleotide%'
                               AND eps.mon_id = ANY (ARRAY(
                                   SELECT cc.id FROM chem_comp cc
                                   WHERE cc.mon_nstd_flag = 'n'
@@ -494,8 +498,11 @@ export const COLUMNS = [
         select: `COALESCE((
                      SELECT string_agg(DISTINCT cc.id, ', ' ORDER BY cc.id)
                      FROM entity_poly_seq eps
+                     JOIN entity_poly ep ON ep.entry_id = eps.entry_id
+                                        AND ep.entity_id = eps.entity_id
                      JOIN chem_comp cc ON cc.id = eps.mon_id
                      WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
+                       AND ep.type ILIKE '%nucleotide%'
                  ), '')`
     },
 

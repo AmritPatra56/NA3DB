@@ -907,11 +907,13 @@ test("the stored monomer flag still agrees with the residues", async () => {
         SELECT count(*) AS wrong FROM entry e
         WHERE e.has_nonstandard_residue IS DISTINCT FROM EXISTS (
             SELECT 1 FROM entity_poly_seq eps
+            JOIN entity_poly ep ON ep.entry_id = eps.entry_id AND ep.entity_id = eps.entity_id
             JOIN chem_comp cc ON cc.id = eps.mon_id
             WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
+              AND ep.type ILIKE '%nucleotide%'
         )
     `);
 
     assert.equal(Number(r.rows[0].wrong), 0,
-        "has_nonstandard_residue has drifted, re-run db/migrations/006 to recompute");
+        "has_nonstandard_residue has drifted, re-run db/migrations/010 to recompute");
 });

@@ -78,10 +78,14 @@ for (const e of entries) {
         }
     }
 
+    // On the nucleic acid entity: modified nucleotides on a protein would be
+    // counted as protein modifications, which the monomer flag leaves out.
+    const na = q(String(Math.max(0, types.findIndex((t) => t.includes("nucleotide"))) + 1));
+
     residues.forEach(([code, flag], i) => {
         chem_comps.set(code, flag);
         body.push(`INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id)`
-                + ` VALUES ('1', ${id}, ${i + 1}, ${q(code)});`);
+                + ` VALUES (${na}, ${id}, ${i + 1}, ${q(code)});`);
     });
 }
 
