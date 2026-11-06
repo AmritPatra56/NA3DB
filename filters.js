@@ -484,11 +484,23 @@ export const COLUMNS = [
     // Also a scalar subquery, and not hypothetical: 18 entries have several
     // entity_src_gen rows for entity 1, which joined turned 1,489 into 1,512.
     {
+        // Every entity's organism, not entity 1's: 74 entries keep theirs on a
+        // later entity, and 1B23 has two. Names that differ only in case are
+        // one organism, spelt the way that is not all capitals.
         key: "source_organism", label: "Source organism", group: "Structure Components",
-        scope: "entry", show: ["page", "card"],
-        select: `COALESCE((SELECT g.pdbx_gene_src_scientific_name FROM entity_src_gen g
-                           WHERE g.entry_id = e.id AND g.entity_id = '1'
-                           ORDER BY g.id LIMIT 1), '')`
+        scope: "entry", show: ["page", "card"], empty: "Not recorded",
+        select: `COALESCE((
+                     SELECT string_agg(o.name, '; ' ORDER BY o.first)
+                     FROM (SELECT (array_agg(trim(g.pdbx_gene_src_scientific_name)
+                                             ORDER BY g.pdbx_gene_src_scientific_name
+                                                    = upper(g.pdbx_gene_src_scientific_name),
+                                                      lpad(g.entity_id, 10, '0')))[1] AS name,
+                                  min(lpad(g.entity_id, 10, '0')) AS first
+                             FROM entity_src_gen g
+                            WHERE g.entry_id = e.id
+                              AND trim(g.pdbx_gene_src_scientific_name) <> ''
+                            GROUP BY lower(trim(g.pdbx_gene_src_scientific_name))) o
+                 ), '')`
     },
 
     {

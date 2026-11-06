@@ -7,6 +7,7 @@ import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
 import { entry_contents, find_entry, search_entries, build_where } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT } from "./filters.js";
+import { detail_rows } from "./detail.js";
 
 after(() => close());
 
@@ -516,4 +517,39 @@ test("the residue filter does not find an entry by a protein modification", asyn
          await matches({ nonstandard_residue: "PSU" }, q)]);
     assert.ok(!mse.includes("ZZ01"));
     assert.ok(psu.includes("ZZ01"));
+});
+
+// --- source organism from every entity (micro-goal 1.9) -----------------
+
+async function organism_of(rows) {
+    return with_fixture(async (q) => {
+        for (let [entity, name] of rows) {
+            await q(`INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name)
+                     VALUES ($1, 'ZZ01', $2)`, [entity, name]);
+        }
+        return column_of("source_organism", "ZZ01", q);
+    });
+}
+
+test("the organism shows when only a later entity records it", async () => {
+    assert.equal(await organism_of([["2", "Bean pod mottle virus"]]), "Bean pod mottle virus");
+});
+
+test("every organism shows, in entity order", async () => {
+    let v = await organism_of([["10", "Homo sapiens"], ["2", "Escherichia coli"],
+                               ["3", "Thermus aquaticus"]]);
+    assert.equal(v, "Escherichia coli; Thermus aquaticus; Homo sapiens");
+});
+
+test("an organism spelt in two cases shows once, not in capitals", async () => {
+    let v = await organism_of([["1", "ESCHERICHIA COLI"], ["2", "Escherichia coli"]]);
+    assert.equal(v, "Escherichia coli");
+});
+
+test("no organism is blank in the data and 'Not recorded' on the page", async () => {
+    let v = await organism_of([]);
+    assert.equal(v, "");
+    let row = detail_rows({ source_organism: v }, "card")
+        .find((r) => r.label === "Source organism");
+    assert.equal(row.value, "Not recorded");
 });

@@ -21,7 +21,7 @@ function display(value, column) {
 }
 
 // The rows a view shows, in registry order. An empty value is dropped rather
-// than drawn blank. The view names come from each column's `show` list, so
+// than drawn blank, unless the column names what to say instead. The view names come from each column's `show` list, so
 // adding a place to display columns in means naming it there, not here.
 //
 // `also` names extra column keys for this one render: a card shows the field
@@ -36,7 +36,8 @@ export function detail_rows(entry, view = "page", also = []) {
             raw = entry[column.fallback];
         }
 
-        let value = display(raw, column);
+        // `empty` says a blank is a fact about the entry, not a gap in ours.
+        let value = display(raw, column) ?? column.empty ?? null;
         if (value !== null) rows.push({ label: column.label, value });
     }
 
