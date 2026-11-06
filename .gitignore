@@ -4,3 +4,5 @@ node_modules/
 !.env.example
 *.log
 nadb_pgdata/
+__pycache__/
+*.pyc
