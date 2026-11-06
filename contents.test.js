@@ -4,8 +4,8 @@
 
 import test, { after } from "node:test";
 import assert from "node:assert";
-import { transaction, close } from "./db.js";
-import { entry_contents, find_entry, search_entries } from "./search.js";
+import { query, transaction, close } from "./db.js";
+import { entry_contents, find_entry, search_entries, build_where } from "./search.js";
 import { COLUMNS, ENTITY_NAME_LIMIT } from "./filters.js";
 
 after(() => close());
@@ -180,6 +180,54 @@ test("find_entry and search still return entity_name", async () => {
     assert.equal((await find_entry("4TNA")).entity_name, "TRNAPHE");
     let page = await search_entries({ entry_id: "4TNA" });
     assert.equal(page.results[0].entity_name, "TRNAPHE");
+});
+
+// --- the entity_name filter (micro-goal 1.2) ----------------------------
+// The filter was always an EXISTS over every entity; these pin that down so
+// it cannot drift back to entity 1 the way the displayed column had.
+
+async function matches(params, q) {
+    let { where, values } = build_where(params);
+    let r = await q(`SELECT e.id FROM entry e WHERE ${where}`, values);
+    return r.rows.map((row) => row.id);
+}
+
+test("the entity_name filter finds an entry by a later entity", async () => {
+    let found = await with_fixture((q) => matches({ entity_name: "DNA template" }, q));
+    assert.ok(found.includes("ZZ01"));
+});
+
+test("the entity_name filter finds an entry by entity 10, past entity 9", async () => {
+    let found = await with_fixture((q) => matches({ entity_name: "primer" }, q));
+    assert.ok(found.includes("ZZ01"));
+});
+
+test("the entity_name filter still finds an entry by entity 1", async () => {
+    let found = await with_fixture((q) => matches({ entity_name: "lupus" }, q));
+    assert.ok(found.includes("ZZ01"));
+});
+
+test("the entity_name filter matches a name past the five the card shows", async () => {
+    let found = await with_fixture(async (q) => {
+        for (let i = 20; i < 26; i++) {
+            await q(`INSERT INTO entity (id, entry_id, type, pdbx_description)
+                     VALUES ($1, 'ZZ01', 'polymer', $2)`, [String(i), `Ribosomal protein L${i}`]);
+        }
+        return matches({ entity_name: "protein L25" }, q);
+    });
+    assert.ok(found.includes("ZZ01"));
+});
+
+test("excludes mode leaves out an entry whose later entity matches", async () => {
+    let found = await with_fixture((q) =>
+        matches({ entity_name: "DNA template", match: "excludes" }, q));
+    assert.ok(!found.includes("ZZ01"));
+});
+
+test("the search box's document gathers every entity, not entity 1", async () => {
+    let r = await query(`SELECT pg_get_viewdef('doc'::regclass) AS def`);
+    assert.doesNotMatch(r.rows[0].def, /\.id\s*=\s*'1'/);
+    assert.match(r.rows[0].def, /string_agg\(DISTINCT en\.pdbx_description/);
 });
 
 test("works on the plain test data without a fixture", async () => {
