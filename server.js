@@ -1,11 +1,11 @@
 import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
-         count_entries, entry_citations, entry_contents } from "./search.js";
+         count_entries, entry_citations, entry_contents, entry_base_pairs } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
-import { detail_rows, molecule_groups } from "./detail.js";
+import { detail_rows, molecule_groups, base_pair_section } from "./detail.js";
 
 const app = express();
 
@@ -163,6 +163,7 @@ app.get("/structure/:id", async (req, res) => {
         rows: detail_rows(entry),
         citations: await entry_citations(entry.pdb_id),
         molecules: molecule_groups(await entry_contents(entry.pdb_id)),
+        base_pairs: base_pair_section(await entry_base_pairs(entry.pdb_id)),
         rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
     });
 });

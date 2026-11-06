@@ -81,6 +81,8 @@ class RealFiles(unittest.TestCase):
 class Rows:
     """Cursor stand-in that keeps what a loader would insert, keyed by column name."""
     def executemany(self, sql, rows):
+        self.params = rows
+        if "(" not in sql: return
         cols = sql[sql.index("(") + 1:sql.index(")")]
         self.rows = [dict(zip([c.strip() for c in cols.split(",")], r)) for r in rows]
 
@@ -119,6 +121,14 @@ class Sources(unittest.TestCase):
                           (3, "synthetic construct", 454, 512)])
         self.assertEqual({(r["pdbx_host_org_scientific_name"], r["pdbx_host_org_ncbi_taxonomy_id"])
                           for r in rows}, {("Escherichia coli", 562)})
+
+
+class ParentBases(unittest.TestCase):
+    def test_1ob5_modified_bases_name_their_parent(self):
+        cur = Rows()
+        lc.load_parent_bases(cur, cif("1OB5"))
+        pairs = {(code, par) for par, code in cur.params}
+        self.assertTrue({("5MC", "C"), ("PSU", "U"), ("M2G", "G")} <= pairs)
 
 
 if __name__ == "__main__":

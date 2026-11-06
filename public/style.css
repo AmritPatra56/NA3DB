@@ -1554,3 +1554,62 @@ input::placeholder {
 .source_table tr.segment_continues td {
     border-bottom: none;
 }
+
+/* Base pairs section: one bar, a legend, family chips, the pair list. */
+.pair_bar {
+    display: flex;
+    height: 22px;
+    margin: 4px 0 6px;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 12px;
+}
+.pair_bar span {
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.pair_wc { background: #5dcaa5; color: #04342c; }
+.pair_gu { background: #9fe1cb; color: #04342c; }
+.pair_nc { background: #7f77dd; color: #eeedfe; }
+.pair_legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.pair_legend i {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 5px;
+    border-radius: 2px;
+}
+.pair_caption {
+    margin: 14px 0 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+.pair_families {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 13px;
+}
+.pair_families > span {
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    cursor: help;
+}
+.pair_chains, .pair_links { margin: 12px 0 0; font-size: 13px; }
+.pair_list { font-size: 13px; }
+.pair_links { padding-left: 18px; }
+.pair_list { margin-top: 12px; }
+.pair_list summary { cursor: pointer; color: var(--accent); }
+.pair_list .molecule_table { width: auto; min-width: 380px; }
+.pair_list .molecule_table td, .pair_list .molecule_table th { padding-right: 32px; }

@@ -242,3 +242,68 @@ function modified_row(m) {
         rest: positions.slice(POSITIONS_SHOWN)
     };
 }
+
+// --- the Base pairs section of the structure page ----------------------
+// One bar (Watson–Crick / G·U wobble / non-canonical), the Leontis–Westhof
+// families of the non-canonical pairs, which chains pair with which, and the
+// non-canonical pairs themselves. Pairs come from entry_base_pairs.
+
+export const PAIR_LINKS_SHOWN = 5;
+const PAIR_KINDS = [["wc", "Watson–Crick"], ["gu", "G·U wobble"], ["nc", "non-canonical"]];
+const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "sugar" };
+
+const by_chain = (a, b) => a.length - b.length || a.localeCompare(b);
+const and_list = (xs) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`;
+
+// "tWH" → "trans Watson–Crick / Hoogsteen", for a tooltip.
+export function family_name(family) {
+    let [ct, e1, e2] = family;
+    return `${ct === "c" ? "cis" : "trans"} ${EDGE[e1]} / ${EDGE[e2]}`;
+}
+
+// A sentence when every chain pairs only with itself, which is the common
+// case (a folded RNA, or copies of one); otherwise null and the links are listed.
+function self_paired(links) {
+    if (!links.every((l) => l.a === l.b)) return null;
+    let chains = links.map((l) => l.a).sort(by_chain);
+    if (chains.length === 1) return `Chain ${chains[0]} pairs only with itself.`;
+    let named = chains.length > PAIR_LINKS_SHOWN ? `${chains.length} chains` : `Chains ${and_list(chains)}`;
+    let same = links.every((l) => l.n === links[0].n);
+    let each = same ? `, ${links[0].n} ${links[0].n === 1 ? "pair" : "pairs"} each`
+             : chains.length > PAIR_LINKS_SHOWN ? "" : ` (${links.slice().sort((x, y) => by_chain(x.a, y.a)).map((l) => `${l.a} ${l.n}`).join(", ")})`;
+    return `${named} each pair only with themselves${each}.`;
+}
+
+export function base_pair_section(pairs) {
+    if (!pairs.length) return null;
+
+    let counts = { wc: 0, gu: 0, nc: 0 };
+    let families = new Map();
+    let links = new Map();
+    for (const p of pairs) {
+        counts[p.kind]++;
+        if (p.kind === "nc") families.set(p.family, (families.get(p.family) ?? 0) + 1);
+        let [a, b] = [p.chain_1, p.chain_2].sort(by_chain);
+        let link = links.get(`${a} ${b}`) ?? { a, b, n: 0 };
+        link.n++;
+        links.set(`${a} ${b}`, link);
+    }
+
+    let link_list = [...links.values()].sort((x, y) => y.n - x.n || by_chain(x.a, y.a) || by_chain(x.b, y.b));
+    return {
+        total: pairs.length,
+        bar: PAIR_KINDS.map(([kind, label]) => ({ kind, label, n: counts[kind],
+                                                  percent: 100 * counts[kind] / pairs.length })),
+        families: [...families].map(([family, n]) => ({ family, n, name: family_name(family),
+                                                        mismatch: family === "cWW" }))
+                               .sort((x, y) => y.n - x.n || x.family.localeCompare(y.family)),
+        sentence: self_paired(link_list),
+        links: link_list.map((l) => ({ ...l, text: `${l.a === l.b ? `${l.a} with itself` : `${l.a} with ${l.b}`}: `
+                                          + `${l.n.toLocaleString("en-GB")} ${l.n === 1 ? "pair" : "pairs"}` })),
+        links_shown: PAIR_LINKS_SHOWN,
+        noncanonical: pairs.filter((p) => p.kind === "nc").map((p) => ({
+            chain: p.chain_1 === p.chain_2 ? p.chain_1 : `${p.chain_1} / ${p.chain_2}`,
+            pair: `${p.res_1} – ${p.res_2}`, family: p.family, name: family_name(p.family)
+        }))
+    };
+}

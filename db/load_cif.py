@@ -823,6 +823,17 @@ def load_chem_comp(cur, text):
           _float(r.get("formula_weight"))) for r in rp])
 
 
+# A modified residue's standard parent (5MC → C), which is how a base pair with
+# a modified base is still recognised as Watson–Crick. See db/migrations/014.
+def load_parent_bases(cur, text):
+    parents = {(r.get("label_comp_id"), r.get("parent_comp_id"))
+               for r in _parse_loop(text, "pdbx_struct_mod_residue")}
+    rows = [p for p in parents if p[0] and p[1]]
+    if not rows: return 0
+    return _many(cur, """UPDATE chem_comp SET parent_comp_id = %s
+        WHERE id = %s AND parent_comp_id IS NULL""", [(par, code) for code, par in rows])
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  TIER 8
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1112,6 +1123,7 @@ def process_cif(cur, conn, filepath: str) -> dict:
 
     # T7
     S["chem_comp"] = run_table(cur, "chem_comp", load_chem_comp, cur, text)
+    S["parent_bases"] = run_table(cur, "parent_bases", load_parent_bases, cur, text)
 
     # T8
     S["ndb_struct_ntc_overall"] = run_table(cur, "ndb_struct_ntc_overall", load_ndb_struct_ntc_overall, cur, eid, sv)

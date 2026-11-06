@@ -68,6 +68,42 @@
                         <% } %>
                     <% } %>
 
+                    <h2 class="citations_heading">Base pairs</h2>
+                    <% if (!base_pairs) { %>
+                        <p class="molecule_sub">No base pairs annotated.</p>
+                    <% } else { const bp = base_pairs; %>
+                        <div class="source_legend"><%= bp.total.toLocaleString("en-GB") %> <%= bp.total === 1 ? "pair" : "pairs" %>, Leontis–Westhof classes from DNATCO</div>
+                        <div class="pair_bar" role="img" aria-label="<%= bp.bar.map((b) => `${b.n} ${b.label}`).join(', ') %>">
+                            <% for (const b of bp.bar) { if (!b.n) continue; %><span class="pair_<%= b.kind %>" style="flex:<%= b.n %>"><% if (b.percent >= 15) { %><%= b.n.toLocaleString("en-GB") %> <%= b.label %><% } %></span><% } %>
+                        </div>
+                        <div class="pair_legend"><% for (const b of bp.bar) { %><span><i class="pair_<%= b.kind %>"></i><%= b.label %> <%= b.n.toLocaleString("en-GB") %></span><% } %></div>
+                        <% if (bp.families.length) { %>
+                            <div class="pair_caption">Non-canonical, by Leontis–Westhof family</div>
+                            <div class="pair_families"><% for (const f of bp.families) { %><span title="<%= f.name %>"><%= f.family %> <%= f.n.toLocaleString("en-GB") %><% if (f.mismatch) { %> <span class="molecule_sub">mismatch</span><% } %></span><% } %></div>
+                        <% } %>
+                        <% if (bp.sentence) { %>
+                            <p class="pair_chains"><%= bp.sentence %></p>
+                        <% } else { %>
+                            <ul class="pair_links"><% bp.links.slice(0, bp.links_shown).forEach((l) => { %><li><%= l.text %></li><% }) %></ul>
+                            <% if (bp.links.length > bp.links_shown) { %>
+                                <details class="more_positions"><summary><%= bp.links.length - bp.links_shown %> more chain pairings</summary>
+                                    <ul class="pair_links"><% bp.links.slice(bp.links_shown).forEach((l) => { %><li><%= l.text %></li><% }) %></ul>
+                                </details>
+                            <% } %>
+                        <% } %>
+                        <% if (bp.noncanonical.length) { %>
+                            <details class="pair_list">
+                                <summary>Show the <%= bp.noncanonical.length.toLocaleString("en-GB") %> non-canonical pairs</summary>
+                                <div class="molecule_scroll">
+                                <table class="molecule_table">
+                                    <tr><th>Chain</th><th>Pair</th><th>Family</th></tr>
+                                    <% for (const p of bp.noncanonical) { %><tr><td><%= p.chain %></td><td><%= p.pair %></td><td title="<%= p.name %>"><%= p.family %></td></tr><% } %>
+                                </table>
+                                </div>
+                            </details>
+                        <% } %>
+                    <% } %>
+
                     <% if (molecules.sources) { const src = molecules.sources; %>
                         <% const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); %>
                         <% const org = (o) => !o ? "—" : (o.italic ? `<i>${esc(o.name)}</i>` : esc(o.name)) + (o.common ? ` <span class="molecule_sub">(${esc(o.common)})</span>` : ""); %>

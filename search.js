@@ -431,6 +431,41 @@ export async function entry_contents(id, q = query) {
     return { entities: entities.sort(by_kind_then_id), modified };
 }
 
+// Every annotated base pair of one entry, in model 1 (an NMR entry repeats
+// each pair per model). kind is judged on the parent bases, so 1OB5's
+// G30-5MC40 (cWW_G-5MC) is Watson-Crick: 'wc' is cWW G-C or A-U/T, 'gu' is
+// cWW G with U/T, 'nc' is every other pair. See db/migrations/014.
+export async function entry_base_pairs(id, q = query) {
+    let result = await q(
+        `WITH p AS (
+             SELECT l.*, a.lw_family,
+                    (SELECT min(coalesce(m.pdb_model_number, 1)) FROM ndb_base_pair_list m
+                      WHERE m.entry_id = l.entry_id) AS first_model
+               FROM ndb_base_pair_list l
+               JOIN ndb_base_pair_annotation a USING (entry_id, base_pair_id)
+              WHERE l.entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))),
+         b AS (
+             SELECT p.*,
+                    translate(regexp_replace(COALESCE(c1.parent_comp_id, p.comp_id_1), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_1,
+                    translate(regexp_replace(COALESCE(c2.parent_comp_id, p.comp_id_2), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_2
+               FROM p
+               LEFT JOIN chem_comp c1 ON c1.id = p.comp_id_1
+               LEFT JOIN chem_comp c2 ON c2.id = p.comp_id_2
+              WHERE coalesce(p.pdb_model_number, 1) = p.first_model)
+         SELECT auth_asym_id_1 AS chain_1, auth_asym_id_2 AS chain_2, lw_family AS family,
+                comp_id_1 || auth_seq_id_1 || COALESCE(NULLIF(pdb_ins_code_1, '?'), '') AS res_1,
+                comp_id_2 || auth_seq_id_2 || COALESCE(NULLIF(pdb_ins_code_2, '?'), '') AS res_2,
+                CASE WHEN lw_family <> 'cWW' THEN 'nc'
+                     WHEN least(base_1, base_2) || greatest(base_1, base_2) IN ('CG', 'AU') THEN 'wc'
+                     WHEN least(base_1, base_2) || greatest(base_1, base_2) = 'GU' THEN 'gu'
+                     ELSE 'nc' END AS kind
+           FROM b
+          ORDER BY length(auth_asym_id_1), auth_asym_id_1, seq_id_1, seq_id_2`,
+        [as_text(id).trim()]
+    );
+    return result.rows;
+}
+
 // Where each modified nucleotide sits, one row per code and chain, in the
 // author numbering the Numbering column uses. Nucleic-acid chains only, the
 // same rule as the residue filter, so a protein's MSE is not listed.

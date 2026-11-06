@@ -6,10 +6,10 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
-         missing_runs } from "./search.js";
+         missing_runs, entry_base_pairs } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
-         SOURCE_LISTED } from "./detail.js";
+         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN } from "./detail.js";
 
 after(() => close());
 
@@ -1044,4 +1044,102 @@ test("a long list of positions shows the first few and keeps the rest", () => {
     let row = m.groups[0].rows[0];
     assert.equal(row.shown.length, POSITIONS_SHOWN);
     assert.equal(row.rest.length, 12 - POSITIONS_SHOWN);
+});
+
+
+// --- base pairs (2.1d) ---------------------------------------------------
+
+// ZZ03 with the given pairs, each [model, chain_1, comp_1, seq_1, chain_2,
+// comp_2, seq_2, family]. 5MC and PSU name their parents, as migration 014
+// fills them in na3db.
+async function with_pairs(rows, work = (q) => entry_base_pairs("ZZ03", q)) {
+    let result;
+    try {
+        await transaction(async (q) => {
+            await q(`INSERT INTO entry (id) VALUES ('ZZ03')`);
+            await q(`INSERT INTO chem_comp (id, mon_nstd_flag, parent_comp_id) VALUES ('5MC', 'n', 'C'), ('PSU', 'n', 'U')
+                     ON CONFLICT (id) DO UPDATE SET parent_comp_id = EXCLUDED.parent_comp_id`);
+            for (const [i, [model, c1, r1, n1, c2, r2, n2, family]] of rows.entries()) {
+                await q(`INSERT INTO ndb_base_pair_list (base_pair_id, entry_id, pdb_model_number,
+                             auth_asym_id_1, comp_id_1, auth_seq_id_1, seq_id_1,
+                             auth_asym_id_2, comp_id_2, auth_seq_id_2, seq_id_2)
+                         VALUES ($1, 'ZZ03', $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                        [i + 1, model, c1, r1, String(n1), n1, c2, r2, String(n2), n2]);
+                await q(`INSERT INTO ndb_base_pair_annotation (base_pair_id, entry_id, lw_family, class)
+                         VALUES ($1, 'ZZ03', $2, $3)`, [i + 1, family, `${family}_${r1}-${r2}`]);
+            }
+            result = await work(q);
+            throw ROLLBACK;
+        });
+    } catch (err) {
+        if (err !== ROLLBACK) throw err;
+    }
+    return result;
+}
+
+const kinds = (pairs) => pairs.map((p) => `${p.res_1}-${p.res_2} ${p.kind}`);
+
+test("a pair with a modified base is judged on its parent: G-5MC is Watson-Crick", async () => {
+    let pairs = await with_pairs([[1, "B", "G", 30, "B", "5MC", 40, "cWW"],
+                                  [1, "B", "A", 31, "B", "PSU", 39, "cWW"],
+                                  [1, "B", "G", 4,  "B", "U", 69,   "cWW"],
+                                  [1, "B", "M2G", 26, "B", "A", 44, "cWW"],
+                                  [1, "B", "G", 15, "B", "C", 48,   "tWW"]]);
+    assert.deepEqual(kinds(pairs), ["G4-U69 gu", "G15-C48 nc", "M2G26-A44 nc", "G30-5MC40 wc", "A31-PSU39 wc"]);
+});
+
+test("DNA pairs drop the D: DG-DC is Watson-Crick, DG-DT is a wobble", async () => {
+    let pairs = await with_pairs([[1, "A", "DG", 1, "B", "DC", 12, "cWW"],
+                                  [1, "A", "DA", 2, "B", "DT", 11, "cWW"],
+                                  [1, "A", "DG", 3, "B", "DT", 10, "cWW"]]);
+    assert.deepEqual(pairs.map((p) => p.kind), ["wc", "wc", "gu"]);
+});
+
+test("an NMR entry counts its first model only", async () => {
+    let pairs = await with_pairs([[1, "A", "G", 1, "A", "C", 9, "cWW"],
+                                  [2, "A", "G", 1, "A", "C", 9, "cWW"],
+                                  [3, "A", "G", 1, "A", "C", 9, "cWW"]]);
+    assert.equal(pairs.length, 1);
+});
+
+test("an entry with no pairs has no section", async () => {
+    assert.equal(base_pair_section(await with_pairs([])), null);
+});
+
+const pair = (c1, c2, kind, family = kind === "nc" ? "tWH" : "cWW") =>
+    ({ chain_1: c1, chain_2: c2, kind, family, res_1: "G1", res_2: "C2" });
+
+test("the bar counts the three kinds and the chips only the non-canonical families", () => {
+    let s = base_pair_section([pair("B", "B", "wc"), pair("B", "B", "wc"), pair("B", "B", "gu"),
+                               pair("B", "B", "nc", "tSS"), pair("B", "B", "nc", "cWW"),
+                               pair("B", "B", "nc", "cWW")]);
+    assert.equal(s.total, 6);
+    assert.deepEqual(s.bar.map((b) => [b.kind, b.n]), [["wc", 2], ["gu", 1], ["nc", 3]]);
+    assert.deepEqual(s.families.map((f) => [f.family, f.n, f.mismatch]), [["cWW", 2, true], ["tSS", 1, false]]);
+    assert.equal(s.families[1].name, "trans sugar / sugar");
+    assert.equal(s.families.reduce((n, f) => n + f.n, 0), s.bar[2].n);
+    assert.equal(s.noncanonical.length, 3);
+});
+
+test("copies that each fold on themselves read as one sentence", () => {
+    let same = base_pair_section(["B", "D", "F"].flatMap((c) => [pair(c, c, "wc"), pair(c, c, "nc")]));
+    assert.equal(same.sentence, "Chains B, D and F each pair only with themselves, 2 pairs each.");
+    let one = base_pair_section([pair("A", "A", "wc")]);
+    assert.equal(one.sentence, "Chain A pairs only with itself.");
+    let differ = base_pair_section([pair("A", "A", "wc"), pair("B", "B", "wc"), pair("B", "B", "wc")]);
+    assert.equal(differ.sentence, "Chains A and B each pair only with themselves (A 1, B 2).");
+});
+
+test("a duplex lists its pairing once, whichever strand is written first", () => {
+    let s = base_pair_section([pair("A", "B", "wc"), pair("B", "A", "wc"), pair("A", "A", "nc")]);
+    assert.equal(s.sentence, null);
+    assert.deepEqual(s.links.map((l) => [l.text, l.n]), [["A with B: 2 pairs", 2], ["A with itself: 1 pair", 1]]);
+    assert.equal(s.noncanonical[0].chain, "A");
+    assert.equal(base_pair_section([pair("A", "B", "nc")]).noncanonical[0].chain, "A / B");
+});
+
+test("many self-paired chains are counted, not named", () => {
+    let chains = Array.from({ length: PAIR_LINKS_SHOWN + 1 }, (_, i) => `C${i}`);
+    let s = base_pair_section(chains.map((c) => pair(c, c, "wc")));
+    assert.equal(s.sentence, `${chains.length} chains each pair only with themselves, 1 pair each.`);
 });
