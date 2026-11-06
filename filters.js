@@ -510,19 +510,12 @@ export const COLUMNS = [
                  ), '')`
     },
 
+    // Stored in doc by migration 011: worked out here it cost 1.6 s an export.
     {
         key: "nonstandard_residue", label: "Non-standard residues",
         group: "Structure Components", scope: "entry",
         show: ["page", "card"],
-        select: `COALESCE((
-                     SELECT string_agg(DISTINCT cc.id, ', ' ORDER BY cc.id)
-                     FROM entity_poly_seq eps
-                     JOIN entity_poly ep ON ep.entry_id = eps.entry_id
-                                        AND ep.entity_id = eps.entity_id
-                     JOIN chem_comp cc ON cc.id = eps.mon_id
-                     WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
-                       AND ep.type ILIKE '%nucleotide%'
-                 ), '')`
+        select: `COALESCE((SELECT d.residue_codes FROM doc d WHERE d.id = e.id), '')`
     },
 
     {

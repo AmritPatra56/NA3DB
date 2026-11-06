@@ -898,6 +898,23 @@ test("the id lookup CAN be served by an index, not only by a scan", async () => 
 });
 
 
+test("the stored residue list agrees with the residues", async () => {
+    let r = await query(`
+        SELECT count(*) AS wrong FROM entry e JOIN doc d ON d.id = e.id
+        WHERE d.residue_codes IS DISTINCT FROM (
+            SELECT string_agg(DISTINCT cc.id, ', ' ORDER BY cc.id)
+            FROM entity_poly_seq eps
+            JOIN entity_poly ep ON ep.entry_id = eps.entry_id AND ep.entity_id = eps.entity_id
+            JOIN chem_comp cc ON cc.id = eps.mon_id
+            WHERE eps.entry_id = e.id AND cc.mon_nstd_flag = 'n'
+              AND ep.type ILIKE '%nucleotide%'
+        )
+    `);
+
+    assert.equal(Number(r.rows[0].wrong), 0,
+        "doc.residue_codes is stale, run REFRESH MATERIALIZED VIEW doc");
+});
+
 // --- derived columns must not drift -------------------------------------
 // has_nonstandard_residue is stored, not computed, which is only safe while it
 // agrees with the rows behind it. A loader that forgets it would be silent.

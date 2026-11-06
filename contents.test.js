@@ -506,8 +506,10 @@ test("a modified RNA residue flags the entry", async () => {
 });
 
 test("the residue list shows nucleotide modifications, not protein ones", async () => {
-    let v = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]],
-                                (q) => column_of("nonstandard_residue", "ZZ01", q));
+    let v = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], async (q) => {
+        await q(`REFRESH MATERIALIZED VIEW doc`);   // the list is stored there
+        return column_of("nonstandard_residue", "ZZ01", q);
+    });
     assert.equal(v, "PSU");
 });
 
@@ -640,4 +642,27 @@ test("a citation carries its title, pages and working links", async () => {
 
 test("an entry with no citation lists none", async () => {
     assert.deepEqual(await with_fixture((q) => entry_citations("ZZ01", q)), []);
+});
+
+// --- the search document, nucleotides only (micro-goal 1.12) ------------
+// doc is a materialized view, so the fixture rebuilds it inside the
+// transaction; the rollback puts the old one back.
+
+test("the search document holds modified nucleotides, not protein ones", async () => {
+    let row = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], async (q) => {
+        await q(`REFRESH MATERIALIZED VIEW doc`);
+        return (await q(`SELECT residues, residue_codes FROM doc WHERE id = 'ZZ01'`)).rows[0];
+    });
+    assert.match(row.residues, /^PSU\b/);
+    assert.doesNotMatch(row.residues, /MSE/);
+    assert.equal(row.residue_codes, "PSU");
+});
+
+test("the box and the residue filter agree on a protein modification", async () => {
+    let [box, filter] = await with_residues([["1", 1, "MSE"]], async (q) => {
+        await q(`REFRESH MATERIALIZED VIEW doc`);
+        return [await matches({ q: "MSE" }, q), await matches({ nonstandard_residue: "MSE" }, q)];
+    });
+    assert.equal(box.includes("ZZ01"), filter.includes("ZZ01"));
+    assert.ok(!box.includes("ZZ01"));
 });
