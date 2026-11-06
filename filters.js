@@ -576,10 +576,17 @@ export const COLUMNS = [
                                            AND ep.type ILIKE '%nucleotide%') r)::int`
     },
 
+    // One copy of the structure: an NMR entry stores every model (136D has 14,
+    // 11,158 rows for 797 atoms), and water is solvent, not the molecule.
+    // Every entry's models start at 1; HOH is the only water code loaded, DOD
+    // covers neutron structures.
     {
         key: "atom_count", label: "Atoms", group: "Contents",
         scope: "detail", thousands: true,
-        select: `(SELECT count(*) FROM atom_site t WHERE t.entry_id = e.id)::int`
+        select: `(SELECT count(*) FROM atom_site t
+                   WHERE t.entry_id = e.id
+                     AND t.pdbx_pdb_model_num = 1
+                     AND t.label_comp_id NOT IN ('HOH', 'DOD'))::int`
     },
 
     {

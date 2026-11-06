@@ -436,3 +436,34 @@ test("works on the plain test data without a fixture", async () => {
     assert.ok(c.entities.length >= 1);
     assert.equal(c.entities[0].kind, "RNA");
 });
+
+// --- atom count (micro-goal 1.7) ----------------------------------------
+// One copy of the structure: model 1 only, no water.
+
+async function insert_atoms(q, rows) {
+    for (let [asym, comp, model] of rows) {
+        await q(`INSERT INTO atom_site (entry_id, label_asym_id, label_comp_id,
+                                        pdbx_pdb_model_num) VALUES ('ZZ01', $1, $2, $3)`,
+                [asym, comp, model]);
+    }
+}
+
+test("Atoms counts model 1 only, not every NMR model", async () => {
+    let n = await with_fixture(async (q) => {
+        await insert_atoms(q, [["B", "G", 1], ["B", "G", 1], ["B", "G", 2], ["B", "G", 2]]);
+        return column_of("atom_count", "ZZ01", q);
+    });
+    assert.equal(n, 2);
+});
+
+test("Atoms leaves out water but keeps a ligand", async () => {
+    let n = await with_fixture(async (q) => {
+        await insert_atoms(q, [["D", "DA", 1], ["F", "MG", 1], ["I", "HOH", 1], ["I", "HOH", 1]]);
+        return column_of("atom_count", "ZZ01", q);
+    });
+    assert.equal(n, 2);
+});
+
+test("Atoms is 0 for an entry with no coordinates", async () => {
+    assert.equal(await with_fixture((q) => column_of("atom_count", "ZZ01", q)), 0);
+});
