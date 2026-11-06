@@ -23,6 +23,24 @@
                         </div>
                     <% } %>
 
+                    <% if (citations.length) { %>
+                        <h2 class="citations_heading">Citations</h2>
+                        <% for (const c of citations) { %>
+                            <div class="citation">
+                                <% if (c.primary) { %><span class="citation_primary">Primary</span><% } %>
+                                <% if (c.title) { %><div class="citation_title"><%= c.title %></div><% } %>
+                                <% if (c.authors.length) { %><div class="citation_authors"><%= c.authors.join(", ") %></div><% } %>
+                                <div class="citation_source">
+                                    <% if (c.journal) { %><i><%= c.journal %></i><% } %>
+                                    <%= [c.volume, c.pages].filter(Boolean).join(", ") %>
+                                    <% if (c.year) { %>(<%= c.year %>)<% } %>
+                                </div>
+                                <% if (c.doi_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.doi_url %>">DOI <%= c.doi %></a><% } %>
+                                <% if (c.pubmed_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.pubmed_url %>">PubMed <%= c.pubmed %></a><% } %>
+                            </div>
+                        <% } %>
+                    <% } %>
+
                     <a class="detail_link" target="_blank" rel="noopener"
                        href="https://www.rcsb.org/structure/<%= entry.pdb_id %>">View on rcsb.org</a>
                 </div>

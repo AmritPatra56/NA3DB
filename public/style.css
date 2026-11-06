@@ -495,6 +495,48 @@ input::placeholder {
     margin-left: 18px;
 }
 
+/* Every citation on the structure page, primary first. */
+.citations_heading {
+    margin: 24px 0 4px;
+    font-size: 11px;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.citation {
+    padding: 10px 0 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.citation .detail_link {
+    margin-top: 6px;
+}
+
+.citation_primary {
+    display: inline-block;
+    margin-bottom: 4px;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.citation_title {
+    font-weight: 600;
+}
+
+.citation_authors,
+.citation_source {
+    color: var(--text-dim);
+}
+
 /* <---------------empty state-------------> */
 
 .empty_state,

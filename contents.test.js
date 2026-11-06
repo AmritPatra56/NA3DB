@@ -5,7 +5,7 @@
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
-import { entry_contents, find_entry, search_entries, build_where } from "./search.js";
+import { entry_contents, entry_citations, find_entry, search_entries, build_where } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS } from "./filters.js";
 import { detail_rows } from "./detail.js";
 
@@ -594,4 +594,50 @@ test("the resolution sort orders by the same value the card shows", async () => 
         (await q(`SELECT e.id FROM entry e ${sort.join}
                   ORDER BY ${sort.sql}, e.id LIMIT 1`)).rows[0].id);
     assert.equal(first, "ZZ01");
+});
+
+// --- every citation (micro-goal 1.11) -----------------------------------
+
+async function with_citations(work) {
+    return with_fixture(async (q) => {
+        await q(`INSERT INTO citation (id, entry_id, title, journal_abbrev, journal_volume,
+                                       page_first, page_last, year,
+                                       pdbx_database_id_doi, pdbx_database_id_pubmed) VALUES
+                 ('10', 'ZZ01', 'Later work', 'Nature', NULL, NULL, NULL, 2005, NULL, NULL),
+                 ('1', 'ZZ01', E'Manganese\n  binding sites', 'J.Mol.Biol.', '262', '1', '12',
+                  1996, '10.1006/jmbi.1996.0408', 8893856),
+                 ('primary', 'ZZ01', 'The structure', 'Nucleic Acids Res.', '28', '1969', NULL,
+                  2000, NULL, 10756198)`);
+        await q(`INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES
+                 ('ZZ01', 'primary', 'Second, B.', 2), ('ZZ01', 'primary', 'First, A.', 1),
+                 ('ZZ01', '1', 'Other, C.', 1)`);
+        return work(q);
+    });
+}
+
+test("every citation is listed, the primary first, then by id as a number", async () => {
+    let c = await with_citations((q) => entry_citations("zz01", q));
+    assert.deepEqual(c.map((x) => x.id), ["primary", "1", "10"]);
+    assert.deepEqual(c.map((x) => x.primary), [true, false, false]);
+});
+
+test("a citation's authors keep their order", async () => {
+    let c = await with_citations((q) => entry_citations("ZZ01", q));
+    assert.deepEqual(c[0].authors, ["First, A.", "Second, B."]);
+    assert.deepEqual(c[2].authors, []);
+});
+
+test("a citation carries its title, pages and working links", async () => {
+    let c = await with_citations((q) => entry_citations("ZZ01", q));
+    assert.equal(c[1].title, "Manganese binding sites");
+    assert.equal(c[1].pages, "1-12");
+    assert.equal(c[1].doi_url, "https://doi.org/10.1006/jmbi.1996.0408");
+    assert.equal(c[1].pubmed_url, "https://pubmed.ncbi.nlm.nih.gov/8893856/");
+    assert.equal(c[0].pages, "1969");
+    assert.equal(c[0].doi_url, null);
+    assert.equal(c[2].pages, null);
+});
+
+test("an entry with no citation lists none", async () => {
+    assert.deepEqual(await with_fixture((q) => entry_citations("ZZ01", q)), []);
 });

@@ -373,6 +373,34 @@ export async function entry_contents(id, q = query) {
     return { entities: entities.sort(by_kind_then_id) };
 }
 
+// Every citation of one structure, the primary first, then the related ones
+// by id as a number. 129 entries have more than one; the cards show only the
+// primary. Whitespace is collapsed because CIF wraps long titles.
+export async function entry_citations(id, q = query) {
+    let result = await q(
+        `SELECT c.id, c.id = 'primary' AS primary,
+                regexp_replace(trim(c.title), '\\s+', ' ', 'g') AS title,
+                c.journal_abbrev AS journal, c.journal_volume AS volume,
+                c.page_first, c.page_last, c.year,
+                c.pdbx_database_id_doi AS doi, c.pdbx_database_id_pubmed AS pubmed,
+                COALESCE((SELECT json_agg(ca.name ORDER BY ca.ordinal, ca.id)
+                            FROM citation_author ca
+                           WHERE ca.entry_id = c.entry_id AND ca.citation_id = c.id),
+                         '[]') AS authors
+           FROM citation c
+          WHERE UPPER(c.entry_id) = UPPER($1)
+          ORDER BY c.id <> 'primary', length(c.id), c.id`,
+        [as_text(id).trim()]
+    );
+
+    return result.rows.map((c) => ({
+        ...c,
+        pages:      [c.page_first, c.page_last].filter(Boolean).join("-") || null,
+        doi_url:    c.doi ? "https://doi.org/" + c.doi : null,
+        pubmed_url: c.pubmed ? "https://pubmed.ncbi.nlm.nih.gov/" + c.pubmed + "/" : null
+    }));
+}
+
 export function query_problem(query) {
     let page = as_text(query.page);
 

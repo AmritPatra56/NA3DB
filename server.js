@@ -1,7 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
-         count_entries } from "./search.js";
+         count_entries, entry_citations } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
@@ -161,6 +161,7 @@ app.get("/structure/:id", async (req, res) => {
         page: "search",
         entry,
         rows: detail_rows(entry),
+        citations: await entry_citations(entry.pdb_id),
         rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
     });
 });
@@ -217,7 +218,8 @@ app.get("/api/entries/:id", async (req, res) => {
 
     // The raw fields and the display rows, never one instead of the other:
     // entry.resolution stays 2.2, rows has it as "2.20 Å".
-    res.json({ ...entry, rows: detail_rows(entry) });
+    res.json({ ...entry, rows: detail_rows(entry),
+               citations: await entry_citations(entry.pdb_id) });
 });
 
 // Returns every matching entry for the report page, not just one page.

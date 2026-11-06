@@ -546,16 +546,18 @@ export const COLUMNS = [
         select: `CASE WHEN e.has_nonstandard_residue THEN 'Non-Standard' ELSE 'Standard' END`
     },
 
+    // Not on the page as text: the Citations list there links them, for every
+    // citation and not only the primary. Still in the report and the CSV.
     {
         key: "doi", label: "DOI", group: "Citation",
-        scope: "detail",
+        scope: "detail", show: [],
         select: `(SELECT c.pdbx_database_id_doi FROM citation c
                   WHERE c.entry_id = e.id AND c.id = 'primary')`
     },
 
     {
         key: "pubmed", label: "PubMed", group: "Citation",
-        scope: "detail",
+        scope: "detail", show: [],
         select: `(SELECT c.pdbx_database_id_pubmed FROM citation c
                   WHERE c.entry_id = e.id AND c.id = 'primary')`
     },
