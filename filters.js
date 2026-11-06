@@ -544,7 +544,11 @@ export const COLUMNS = [
     {
         key: "chain_count", label: "Chains", group: "Contents",
         scope: "detail",
-        select: `(SELECT count(*) FROM struct_asym a WHERE a.entry_id = e.id)::int`
+        // Polymer chains only: struct_asym also has a row per ligand and per
+        // water, 77,095 of its 97,441 rows, so 2VON showed 8 chains for 4.
+        select: `(SELECT count(*) FROM struct_asym a
+                    JOIN entity en ON en.entry_id = a.entry_id AND en.id = a.entity_id
+                   WHERE a.entry_id = e.id AND en.type = 'polymer')::int`
     },
 
     // The subquery's own alias s shadows the outer struct s. Legal, and it is

@@ -312,6 +312,45 @@ test("an old link does not widen into the protein-only entries", async () => {
     assert.ok(!found.includes("ZZ03"));
 });
 
+// --- chain count (micro-goal 1.5) ---------------------------------------
+// struct_asym has a row per ligand and per water as well as per chain:
+// 77,095 of its 97,441 rows in the real data.
+
+async function column_of(key, id, q) {
+    let select = COLUMNS.find((c) => c.key === key).select;
+    let r = await q(`SELECT ${select} AS v FROM entry e WHERE e.id = $1`, [id]);
+    return r.rows[0].v;
+}
+
+test("Chains counts polymer chains, not ligands or water", async () => {
+    // ZZ01: A protein, B and C RNA, D DNA, E hybrid; F-H magnesium; I water.
+    assert.equal(await with_fixture((q) => column_of("chain_count", "ZZ01", q)), 5);
+});
+
+test("Chains counts every copy of a polymer", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`INSERT INTO struct_asym (id, entry_id, entity_id) VALUES ('J', 'ZZ01', '2')`);
+        return column_of("chain_count", "ZZ01", q);
+    });
+    assert.equal(n, 6);
+});
+
+test("Chains is 0 for an entry with only ligands", async () => {
+    let n = await with_fixture(async (q) => {
+        await q(`DELETE FROM struct_asym WHERE entry_id = 'ZZ01' AND id IN ('A','B','C','D','E')`);
+        return column_of("chain_count", "ZZ01", q);
+    });
+    assert.equal(n, 0);
+});
+
+test("Chains agrees with the chains entry_contents lists for polymers", async () => {
+    let [n, c] = await with_fixture(async (q) =>
+        [await column_of("chain_count", "ZZ01", q), await entry_contents("ZZ01", q)]);
+    let polymer_chains = c.entities.filter((e) => e.type === "polymer")
+                                   .reduce((sum, e) => sum + e.chains.length, 0);
+    assert.equal(n, polymer_chains);
+});
+
 test("works on the plain test data without a fixture", async () => {
     let c = await entry_contents("4TNA");
     assert.ok(c.entities.length >= 1);
