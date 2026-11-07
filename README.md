@@ -772,7 +772,7 @@ The rest is in four groups, each with its own colour (the same colours as the fi
 
 | group | section | what is there |
 | --- | --- | --- |
-| Overview | Summary | method, date, resolution, authors, organism, sizes |
+| Overview | Summary | method, date, resolution, authors, sizes |
 | Composition | Molecules | each polymer with its chains, length and modelled residues; the sequence with gaps and modified bases marked, a copy button and a `FASTA` download |
 | | Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
 | | Ligands | each small molecule, linked to its RCSB page |

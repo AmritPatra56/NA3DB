@@ -566,9 +566,9 @@ test("the card and the structure page agree on every shared row", async () => {
 
     let page = new Map(one.rows.map((r) => [r.label, r.value]));
 
-    // The page lists every molecule in its Molecules table instead of this
-    // row, which the card keeps because it has no room for the table.
-    let shown_as_table = ["Entity name"];
+    // The page shows these as tables (Molecules, Sources) instead of rows;
+    // the card keeps the rows because it has no room for the tables.
+    let shown_as_table = ["Entity name", "Source organism"];
 
     for (const row of body.results[0].card) {
         if (shown_as_table.includes(row.label)) {
