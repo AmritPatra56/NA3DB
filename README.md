@@ -27,7 +27,7 @@ find today:
 | `tRNA` | 163 structures whose title or molecule mentions transfer RNA |
 | `ribozyme` | 20 structures of RNA that acts as an enzyme |
 | `Z-DNA` | 7 structures of the left-handed form of DNA |
-| `Escherichia coli` | 86 structures taken from *E. coli* |
+| `Escherichia coli` | 189 structures taken from *E. coli* |
 | `Leonard` | 2 structures deposited by an author of that name |
 | `PSU` | 90 structures containing pseudouridine, a modified base |
 
@@ -35,9 +35,9 @@ And in the filter panel, the **Ligand** box finds what is bound to the
 molecule: `SAM` gives 10 structures holding S-adenosylmethionine, `MG` 507
 with a magnesium ion. It suggests codes and names as you type.
 
-Open the filter panel and you can be exact instead: solved by X-ray, better
-than 2 Å, containing a modified residue, scoring above 80 for conformational
-quality. Order the results eight ways, read any single structure in full at its
+Open the filter panel and you can be exact instead: solved by X-ray, made of
+RNA, containing a modified residue, scoring above 80 for conformational
+quality. Order the results eight ways, best resolution first among them, read any single structure in full at its
 own address, and export the whole set as a CSV.
 
 Every choice you make is in the URL, so a link carries your search, your page,
@@ -72,9 +72,14 @@ It works the same on a laptop and a phone.
 
 ## Contents
 
+**For users**
+
 - [What you can ask it](#what-you-can-ask-it)
 - [Using it, step by step](#using-it-step-by-step)
 - [The words on the screen](#the-words-on-the-screen) — confal, NtC, resolution and the rest, in plain terms
+
+**For developers** — running your own copy, and how it works inside
+
 - [Requirements](#requirements)
 - [Setting it up](#setting-it-up) — [quick start](#quick-start), [the real data](#loading-the-real-data), [schema changes](#changing-the-schema)
 - [Two databases](#two-databases) — why `npm test` reads a different one
@@ -86,7 +91,9 @@ It works the same on a laptop and a phone.
 - [Performance](#performance) — [beyond this size](#beyond-this-size)
 - [What is not done yet](#what-is-not-done-yet)
 
-**In a hurry?** [Quick start](#quick-start) has it running in five commands.
+Using the website needs nothing more than the three user sections. The rest
+is for running your own copy: [Quick start](#quick-start) has it running in
+five commands.
 
 ## The words on the screen
 
@@ -107,6 +114,13 @@ Two sources, each with its own vocabulary. You need these to read a result:
 
 NtC class and confal score come from DNATCO, which analyses published structures and releases
 the conformational assignment. Everything else is in the PDB entry itself.
+
+---
+
+# For developers
+
+Everything below is about running NA3DB yourself and changing it. To use the
+website, the sections above are all you need.
 
 ## Requirements
 
@@ -1004,6 +1018,9 @@ host needs real storage rather than a default volume.
 
 ## What is not done yet
 
+- **Most electron-microscopy structures show no resolution.** 441 of 497 EM
+  entries are blank because the loader reads only the X-ray fields; 496 of
+  their CIF files do have `_em_3d_reconstruction.resolution`.
 - **Two structures have no confal score.** `2JJA` and `363D`: DNATCO produced
   no overall analysis for them. Expected, not a bug.
 - **`entry.has_nonstandard_residue` is derived.** It is written by the loader
@@ -1024,7 +1041,7 @@ host needs real storage rather than a default volume.
   to score whole-word matches above fragments rather than to stop matching
   fragments. PostgreSQL's full-text index does the word-aware half, measured
   at 0 ms, and `pg_trgm` is already installed.
-- **Typos find nothing.** `ribozime` returns none of the 18 ribozyme
+- **Typos find nothing.** `ribozime` returns none of the 20 ribozyme
   structures. `pg_trgm` can do it at a word-similarity threshold of 0.5,
   measured, but the window is narrow: 0.4 returns 226 results for the same
   query. It belongs behind a no-results fallback rather than in the search
