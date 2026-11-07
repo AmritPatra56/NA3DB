@@ -372,7 +372,14 @@ if (import.meta.main) {
     // The host decides the port, not the code.
     const port = Number(process.env.PORT) || 4000;
 
-    app.listen(port, () => {
+    let server = app.listen(port, () => {
         console.log(`app is running on port ${port}`);
+    });
+
+    // In a container node is process 1, which ignores SIGTERM unless told
+    // otherwise: podman stop would wait 10 s and then kill mid-request.
+    // Finish the requests in flight, then exit.
+    process.on("SIGTERM", () => {
+        server.close(() => process.exit(0));
     });
 }
