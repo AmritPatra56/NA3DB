@@ -41,7 +41,15 @@ const pool = new Pool({
 
     max: 10,                        // most connections to hold open
     idleTimeoutMillis: 30000,       // close one after 30s unused
-    connectionTimeoutMillis: 5000   // give up asking for one after 5s
+    connectionTimeoutMillis: 5000,  // give up asking for one after 5s
+
+    // A runaway query fails after 15s instead of holding a connection forever.
+    statement_timeout: 15000,
+
+    // Session settings only; nothing is changed in the database. JIT spent
+    // 2.9 s compiling the tRNA export, which then ran in 0.6 s: our queries
+    // are many small lookups, which JIT's cost estimate mistakes for big work.
+    options: "-c jit=off"
 });
 
 // One query, returning { rows, rowCount }. Values always go in the second
