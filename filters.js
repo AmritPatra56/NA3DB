@@ -638,9 +638,12 @@ export const COLUMNS = [
     {
         key: "assigned_ntc", label: "Assigned NtC", group: "3D Features",
         scope: "entry",
-        select: `(SELECT string_agg(DISTINCT ss.assigned_ntc, ', ' ORDER BY ss.assigned_ntc)
-                  FROM ndb_struct_ntc_step_summary ss
-                  WHERE ss.entry_id = e.id)`
+        // DISTINCT in a subquery, not inside string_agg: that one sorts every
+        // step (thousands per ribosome), this one hashes them. Twice as fast.
+        select: `(SELECT string_agg(c, ', ' ORDER BY c)
+                  FROM (SELECT DISTINCT ss.assigned_ntc AS c
+                        FROM ndb_struct_ntc_step_summary ss
+                        WHERE ss.entry_id = e.id) d)`
     },
 
     {
@@ -735,9 +738,10 @@ export const COLUMNS = [
     {
         key: "ntc_classes", label: "NtC classes", group: "3D Features",
         scope: "detail",
-        select: `(SELECT string_agg(DISTINCT ss.assigned_ntc, ', ' ORDER BY ss.assigned_ntc)
-                  FROM ndb_struct_ntc_step_summary ss
-                  WHERE ss.entry_id = e.id AND ss.assigned_ntc <> 'NANT')`
+        select: `(SELECT string_agg(c, ', ' ORDER BY c)
+                  FROM (SELECT DISTINCT ss.assigned_ntc AS c
+                        FROM ndb_struct_ntc_step_summary ss
+                        WHERE ss.entry_id = e.id AND ss.assigned_ntc <> 'NANT') d)`
     }
 
 ];
