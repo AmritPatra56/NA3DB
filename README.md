@@ -766,15 +766,26 @@ results.
 
 ### The structure page
 
-`/structure/4TNA` shows, top to bottom:
+`/structure/4TNA` opens with the title, a few badges (method, resolution, polymer type, year) and one tile per count. A tile jumps to its section.
 
-| section | what is there |
-| --- | --- |
-| Summary | title, method, date, resolution, authors, organism, counts, confal and NtC |
-| Molecules | each polymer with its chains, length and modelled residues; the sequence with gaps and modified bases marked, a copy button and a `FASTA` download |
-| Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
-| Base pairs | counts by kind, the pair families, and every pair in the first model, with a `CSV` download |
-| Sources and citations | where each molecule came from, and every paper with DOI and PubMed links |
+The rest is in four groups, each with its own colour (the same colours as the filter panel):
+
+| group | section | what is there |
+| --- | --- | --- |
+| Overview | Summary | method, date, resolution, authors, organism, sizes |
+| Composition | Molecules | each polymer with its chains, length and modelled residues; the sequence with gaps and modified bases marked, a copy button and a `FASTA` download |
+| | Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
+| | Ligands | each small molecule, linked to its RCSB page |
+| | Sources | where each molecule came from: Natural, Expressed or Synthetic |
+| 3D structure | Base pairs | counts by kind, the pair families, and the non-canonical pairs in the first model, with a `CSV` download |
+| | Conformation | confal score, its percentile, the NtC steps and classes |
+| References | Citations | every paper, with DOI and PubMed links |
+| | Links and downloads | RCSB, FASTA, base pairs as CSV, the report, the entry as JSON |
+
+- **The sidebar** lists every section with its count, and marks the one you are reading. On a phone or tablet it is a row of chips under the top bar.
+- **Each section has its own address**, such as `/structure/4TNA#base-pairs`, to put in a paper or an email.
+- **A section with nothing in it** stays in the list, greyed out with `—`: "none recorded" is a fact about the entry.
+- **On each section's band:** `?` explains the terms, the chevron folds the section.
 
 ### The controls over the results
 
