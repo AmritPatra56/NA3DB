@@ -2206,22 +2206,7 @@ input::placeholder {
 
 .nav_item.empty { color: var(--text-dim); }
 
-/* The head: badges, the title, and one tile per section worth counting. */
-.structure_badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.structure_badges span {
-    padding: 2px 8px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-secondary);
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
+/* The head: the title, and one tile per section worth counting. */
 .structure_lead { border-bottom: none; }
 
 .structure_lead .detail_value {

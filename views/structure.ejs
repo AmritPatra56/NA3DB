@@ -13,9 +13,6 @@
     // instead of sitting in the Summary list.
     const by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
     const lead = by_id.summary.rows.find((r) => r.key === "title");
-    const value_of = (key) => rows.find((r) => r.key === key)?.value;
-    const badges = [value_of("method"), value_of("resolution"), value_of("polymer_type"),
-                    value_of("deposition_date")?.slice(0, 4)].filter(Boolean);
     const fmt = (n) => Number(n).toLocaleString("en-GB");
     const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
     const fasta_url = `/structure/${entry.pdb_id}/fasta`;
@@ -54,7 +51,6 @@
 
                 <div class="detail_body">
                     <div class="structure_head">
-                        <% if (badges.length) { %><div class="structure_badges"><% for (const b of badges) { %><span><%= b %></span><% } %></div><% } %>
                         <% if (lead) { %>
                             <div class="detail_field structure_lead">
                                 <div class="detail_label"><%= lead.label %></div>

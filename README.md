@@ -766,7 +766,7 @@ results.
 
 ### The structure page
 
-`/structure/4TNA` opens with the title, a few badges (method, resolution, polymer type, year) and one tile per count. A tile jumps to its section.
+`/structure/4TNA` opens with the title and one tile per count. A tile jumps to its section.
 
 The rest is in four groups, each with its own colour (the same colours as the filter panel):
 
