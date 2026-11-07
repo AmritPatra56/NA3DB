@@ -218,13 +218,25 @@ fields_toggle.addEventListener("click", function () {
 
     let params = new URLSearchParams(location.search);
 
-    if (open) params.delete("fields");
+    // A phone starts with the list shut (below), so there "open" is a
+    // choice worth keeping; elsewhere it is the default and stays unsaid.
+    if (open) phone.matches ? params.set("fields", "open") : params.delete("fields");
     else params.set("fields", "closed");
 
     history.replaceState(null, "", location.pathname + "?" + params.toString());
     sync_rail_links();
 });
 
+
+// On a phone the field list sits above the table, and some forty boxes
+// would push the table off the screen, so it starts shut unless the link
+// says otherwise. The Export button stays on screen either way.
+const phone = window.matchMedia("(max-width: 640px)");
+
+if (phone.matches && !new URLSearchParams(location.search).has("fields")) {
+    fields_panel.classList.add("hidden");
+    fields_toggle.setAttribute("aria-expanded", "false");
+}
 
 sync_rail_links();
 load_report_entries();

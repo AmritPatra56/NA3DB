@@ -2056,3 +2056,54 @@ input::placeholder {
     .pair_list summary,
     .more_rows_toggle { padding-block: 8px; }
 }
+
+/* The report on a phone: count and toggle, then the field list, then the
+   table, with Export pinned to the bottom of the screen. The two columns are
+   unwrapped (display: contents) so their parts can be put in that order. */
+@media (max-width: 640px) {
+    .interface > .results_area:has(.report_body),
+    .interface > .query_panel:has(#report_fields) { display: contents; }
+
+    /* Shut means the list folds away, not the Export button with it. */
+    .interface > .query_panel.hidden:has(#report_fields) { display: contents !important; }
+    .query_panel.hidden > #report_fields { display: none; }
+
+    .interface:has(.report_body) .results_area_header { order: 1; padding: 0 16px; }
+    #report_fields { order: 2; flex: none; }
+    .report_body   { order: 3; overflow: visible; padding: 12px 16px 16px; }
+    #report_fields + .query_panel_footer { order: 4; }
+
+    /* "Report" over the list; the count above already says where you are. */
+    .query_panel_header:has(+ #report_fields) { display: none; }
+
+    .query_panel:has(#report_fields) > .query_panel_footer {
+        display: block;
+        position: sticky;
+        bottom: 0;
+        padding: 12px 16px;
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+    }
+
+    .query_panel_footer #export_button { width: 100%; min-height: 48px; }
+
+    #report_fields { background-color: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+    .report_group { padding: 14px 16px; }
+    .check_row { min-height: 36px; }
+
+    .fields_toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 40px;
+        padding: 0 10px;
+        line-height: normal;
+        font: inherit;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .fields_toggle::before { content: "Fields"; }
+
+    .report_body .preview_scroll { max-height: 70vh; }
+}
