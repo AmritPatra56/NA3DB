@@ -544,3 +544,80 @@ paint_match_switch();
 paint_view_switch();
 sync_rail_links();
 run_search(page_from_url());
+
+// A box with suggestions: a short list under it, narrowed as you type.
+// Codes that start with the text come first, then names that contain it.
+const SUGGESTIONS_SHOWN = 8;
+
+document.querySelectorAll("input[data-suggest]").forEach((input) => {
+    let list = document.getElementById(input.getAttribute("aria-controls"));
+    let all = null;
+    let shown = [];
+    let active = -1;
+
+    async function load() {
+        if (all) return;
+        let response = await fetch("/api/" + input.dataset.suggest);
+        all = response.ok ? await response.json() : [];
+    }
+
+    function close() {
+        list.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+        active = -1;
+    }
+
+    function draw() {
+        let text = input.value.trim().toLowerCase();
+        let starts = all.filter((s) => s.code.toLowerCase().startsWith(text));
+        let named = text.length >= 3
+            ? all.filter((s) => !starts.includes(s) && (s.name ?? "").toLowerCase().includes(text))
+            : [];
+        shown = [...starts, ...named].slice(0, SUGGESTIONS_SHOWN);
+
+        list.replaceChildren(...shown.map((s, i) => {
+            let li = document.createElement("li");
+            li.role = "option";
+            li.id = `${list.id}_${i}`;
+            li.setAttribute("aria-selected", String(i === active));
+            let code = document.createElement("b");
+            code.textContent = s.code;
+            let name = document.createElement("span");
+            name.textContent = s.name ?? "";
+            let count = document.createElement("small");
+            count.textContent = s.entries;
+            li.append(code, name, count);
+            // mousedown, not click: click comes after the box's blur closes the list.
+            li.addEventListener("mousedown", (event) => { event.preventDefault(); pick(i); });
+            return li;
+        }));
+        list.hidden = shown.length === 0;
+        input.setAttribute("aria-expanded", String(!list.hidden));
+        if (active >= 0) input.setAttribute("aria-activedescendant", `${list.id}_${active}`);
+        else input.removeAttribute("aria-activedescendant");
+    }
+
+    function pick(i) {
+        input.value = shown[i].code;
+        close();
+    }
+
+    input.addEventListener("focus", async () => { await load(); if (document.activeElement === input) draw(); });
+    input.addEventListener("input", async () => { await load(); active = -1; draw(); });
+    input.addEventListener("blur", close);
+    input.addEventListener("keydown", (event) => {
+        if (list.hidden) return;
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            let step = event.key === "ArrowDown" ? 1 : -1;
+            active = (active + step + shown.length) % shown.length;
+            draw();
+            list.children[active]?.scrollIntoView({ block: "nearest" });
+        } else if (event.key === "Enter" && active >= 0) {
+            event.preventDefault();
+            pick(active);
+        } else if (event.key === "Escape") {
+            close();
+        }
+    });
+});

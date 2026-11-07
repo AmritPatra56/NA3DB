@@ -66,9 +66,14 @@
                         <% drawn.add(f.key); %>
 
                         <% if (f.kind === "text") { %>
-                        <div class="field">
+                        <div class="field<%= f.suggest ? " suggest_field" : "" %>">
                             <label for="<%= f.key %>"><%= f.label %></label>
-                            <input type="text" id="<%= f.key %>" name="<%= f.key %>">
+                            <input type="text" id="<%= f.key %>" name="<%= f.key %>"
+                                   <% if (f.placeholder) { %>placeholder="<%= f.placeholder %>"<% } %>
+                                   <% if (f.suggest) { %>data-suggest="<%= f.suggest %>" autocomplete="off"
+                                   role="combobox" aria-autocomplete="list" aria-expanded="false"
+                                   aria-controls="<%= f.key %>_options"<% } %>>
+                            <% if (f.suggest) { %><ul class="suggest_list" id="<%= f.key %>_options" role="listbox" hidden></ul><% } %>
                         </div>
 
                         <% } else if (f.kind === "number") { %>

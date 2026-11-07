@@ -313,6 +313,23 @@ export const FILTERS = [
                                     AND (cc.id ILIKE ? OR cc.name ILIKE ?))))`
     },
 
+    // A code is matched whole, since one or two letters would otherwise find
+    // half the database: K is potassium, not every name holding a k. A name
+    // is matched loosely, from three letters up, so adenosyl finds SAM and SAH.
+    // ? is %value%, so its length is the typed length plus two.
+    {
+        key: "ligand", label: "Ligand", answered_by: "ligands",
+        group: "Structure Components", kind: "text", suggest: "ligands",
+        placeholder: "e.g. SAM or adenosyl",
+        where: `AND EXISTS (SELECT 1 FROM pdbx_entity_nonpoly n
+                            WHERE n.entry_id = e.id
+                              AND n.comp_id = ANY (ARRAY(
+                                  SELECT cc.id FROM chem_comp cc
+                                  WHERE cc.id <> 'HOH'
+                                    AND (   upper(cc.id) = upper(substr(?, 2, length(?) - 2))
+                                         OR (length(?) >= 5 AND cc.name ILIKE ?)))))`
+    },
+
     {
         key: "polymer_type", label: "Polymer type",
         group: "Structure Components", kind: "pills", any: true,
@@ -598,6 +615,16 @@ export const COLUMNS = [
         select: `COALESCE((SELECT d.residue_codes FROM doc d WHERE d.id = e.id), '')`
     },
 
+    // Water left out: it is in nearly every crystal and says nothing.
+    {
+        key: "ligands", label: "Ligands",
+        group: "Structure Components", scope: "entry",
+        show: ["page", "card"],
+        select: `(SELECT string_agg(DISTINCT n.comp_id, ', ' ORDER BY n.comp_id)
+                  FROM pdbx_entity_nonpoly n
+                  WHERE n.entry_id = e.id AND n.comp_id <> 'HOH')`
+    },
+
     {
         key: "confal_score", label: "Overall confal score", group: "3D Features",
         scope: "entry", select: `ntc.confal_score`
@@ -758,9 +785,9 @@ export function public_registry() {
         max_page_size: MAX_PAGE_SIZE,
 
         filters: FILTERS.map(({ key, label, group, kind, prominent,
-                               options, any, placeholder, pair_with }) =>
+                               options, any, placeholder, pair_with, suggest }) =>
             ({ key, label, group, kind, prominent,
-               options, any, placeholder, pair_with })),
+               options, any, placeholder, pair_with, suggest })),
 
         columns: COLUMNS.map(({ key, label, group, scope, show }) =>
             ({ key, label, group, scope, show })),

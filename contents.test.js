@@ -1224,3 +1224,61 @@ test("an entry FASTA holds every sequenced molecule, or only the nucleic acids",
     assert.equal(entry_fasta("1ob5", [protein], { na_only: true }), null);
     assert.equal(entry_fasta("1ob5", [ligand]), null);
 });
+
+// ZL01 a SAM riboswitch with Mg; ZL02 only ions and drop additives; ZL03
+// water alone; ZL04 nothing at all. The seed has no ligands, so they are here.
+async function with_ligands(work) {
+    return with_fixture(async (q) => {
+        await q(`INSERT INTO chem_comp (id, name, formula) VALUES
+                 ('SAM', 'S-ADENOSYLMETHIONINE', 'C15 H22 N6 O5 S'),
+                 ('SAH', 'S-ADENOSYL-L-HOMOCYSTEINE', 'C14 H20 N6 O5 S'),
+                 ('MG', 'MAGNESIUM ION', 'Mg 2'), ('K', 'POTASSIUM ION', 'K 1'),
+                 ('CL', 'CHLORIDE ION', 'Cl -1'), ('GOL', 'GLYCEROL', 'C3 H8 O3'),
+                 ('SO4', 'SULFATE ION', 'O4 S -2'), ('HOH', 'WATER', 'H2 O')
+                 ON CONFLICT (id) DO NOTHING`);
+        let ligands = { ZL01: ["SAM", "MG"], ZL02: ["MG", "K", "CL", "GOL", "SO4"],
+                        ZL03: ["HOH"], ZL04: [] };
+        for (const [id, codes] of Object.entries(ligands)) {
+            await q(`INSERT INTO entry (id) VALUES ($1)`, [id]);
+            for (const [i, code] of codes.entries()) {
+                await q(`INSERT INTO entity (id, entry_id, type) VALUES ($1, $2, 'non-polymer')`,
+                        [String(i + 1), id]);
+                await q(`INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, comp_id) VALUES ($1, $2, $3)`,
+                        [String(i + 1), id, code]);
+            }
+        }
+        return work(async (params) => (await matches(params, q)).filter((id) => id.startsWith("ZL")).sort());
+    });
+}
+
+test("the Ligand box matches a code whole and a name from three letters", async () => {
+    let found = await with_ligands(async (m) => ({
+        sam: await m({ ligand: "sam" }),
+        k: await m({ ligand: "K" }),
+        adenosyl: await m({ ligand: "adenosyl" }),
+        // Two letters of a name are too few: "ad" is in half the dictionary.
+        short: await m({ ligand: "ad" }),
+        water: await m({ ligand: "HOH" }),
+        excludes: await m({ ligand: "MG", match: "excludes" })
+    }));
+    assert.deepEqual(found.sam, ["ZL01"]);
+    assert.deepEqual(found.k, ["ZL02"]);
+    assert.deepEqual(found.adenosyl, ["ZL01"]);
+    assert.deepEqual(found.short, []);
+    assert.deepEqual(found.water, []);
+    assert.deepEqual(found.excludes, ["ZL03", "ZL04"]);
+});
+
+test("the Ligands column lists codes in order, water left out", async () => {
+    let select = COLUMNS.find((c) => c.key === "ligands").select;
+    let shown = await with_fixture(async (q) => {
+        await q(`INSERT INTO entry (id) VALUES ('ZL05')`);
+        for (const [i, code] of ["SAM", "HOH", "MG"].entries()) {
+            await q(`INSERT INTO entity (id, entry_id, type) VALUES ($1, 'ZL05', 'non-polymer')`, [String(i + 1)]);
+            await q(`INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, comp_id) VALUES ($1, 'ZL05', $2)`,
+                    [String(i + 1), code]);
+        }
+        return (await q(`SELECT ${select} AS v FROM entry e WHERE e.id = 'ZL05'`)).rows[0].v;
+    });
+    assert.equal(shown, "MG, SAM");
+});

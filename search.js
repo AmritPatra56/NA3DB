@@ -664,3 +664,15 @@ export function query_problem(query) {
 
     return null;
 }
+// Every ligand in the database, water left out, most common first, for the
+// Ligand box's suggestions. 339 rows: small enough to send whole.
+export async function ligand_suggestions(q = query) {
+    let result = await q(
+        `SELECT n.comp_id AS code, cc.name, count(DISTINCT n.entry_id)::int AS entries
+           FROM pdbx_entity_nonpoly n
+           LEFT JOIN chem_comp cc ON cc.id = n.comp_id
+          WHERE n.comp_id <> 'HOH'
+          GROUP BY n.comp_id, cc.name
+          ORDER BY entries DESC, n.comp_id`);
+    return result.rows;
+}

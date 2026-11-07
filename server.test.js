@@ -337,7 +337,7 @@ test("/api/fields describes every filter and column", async () => {
     // field to one of them cannot quietly change what this proves: the keys
     // are drawn from the allowed set, and nothing carrying SQL is among them.
     const FILTER_FIELDS = ["key", "label", "group", "kind", "prominent",
-                           "options", "any", "placeholder", "pair_with"];
+                           "options", "any", "placeholder", "pair_with", "suggest"];
     const COLUMN_FIELDS = ["key", "label", "group", "scope", "show"];
 
     for (const filter of body.filters) {
@@ -544,7 +544,7 @@ test("every result carries its card rows", async () => {
     let reg  = await (await fetch(base + "/api/fields")).json();
 
     let expected = reg.columns.filter((c) => (c.show || ["page"]).includes("card"));
-    assert.equal(expected.length, 10);
+    assert.equal(expected.length, 11);
 
     for (const entry of body.results) {
         assert.ok(Array.isArray(entry.card), `${entry.pdb_id} has no card`);
@@ -621,7 +621,7 @@ test("the card shows the organism and not the confal score by default", async ()
 
     assert.ok(on_card.includes("Source organism"));
     assert.ok(!on_card.includes("Overall confal score"));
-    assert.equal(on_card.length, 10);
+    assert.equal(on_card.length, 11);
 });
 
 // --- the detail rows ----------------------------------------------------

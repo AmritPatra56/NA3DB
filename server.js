@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs,
-         entry_residues } from "./search.js";
+         entry_residues, ligand_suggestions } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
@@ -201,6 +201,11 @@ app.get("/structure/:id/fasta/:entity", async (req, res) => {
         return;
     }
     send_fasta(res, `${entry.pdb_id}_${entity.id}.fasta`, fasta);
+});
+
+// The ligands the Ligand box can suggest, with how many entries hold each.
+app.get("/api/ligands", async (req, res) => {
+    res.json(await ligand_suggestions());
 });
 
 // One page of entries, narrowed by whatever filters were passed.

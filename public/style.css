@@ -1723,3 +1723,35 @@ input::placeholder {
 .entry_fasta_menu a + a { border-top: 1px solid var(--border); }
 .entry_fasta_menu a:hover { background: var(--bg-primary); }
 .entry_fasta_menu span { color: var(--text-dim); }
+
+/* The suggestions under a box such as Ligand: a few rows, never the screen. */
+.suggest_field { position: relative; }
+.suggest_list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 10;
+    margin: 2px 0 0;
+    padding: 4px 0;
+    max-height: 240px;
+    overflow-y: auto;
+    list-style: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg-secondary);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+    font-size: 12px;
+}
+.suggest_list li {
+    display: grid;
+    grid-template-columns: 3.5em minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: baseline;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+.suggest_list li:hover, .suggest_list li[aria-selected="true"] { background: var(--bg-primary); }
+.suggest_list b { font-weight: 600; color: var(--accent); }
+.suggest_list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest_list small { color: var(--text-dim); }
