@@ -486,9 +486,10 @@ export async function entry_residues(id, q = query) {
 export async function entry_base_pairs(id, q = query) {
     let result = await q(
         `WITH p AS (
+             -- A window, not a subquery per row: the planner re-ran that
+             -- subquery for every pair, 13 s for a big NMR ensemble (6WLO).
              SELECT l.*, a.lw_family,
-                    (SELECT min(coalesce(m.pdb_model_number, 1)) FROM ndb_base_pair_list m
-                      WHERE m.entry_id = l.entry_id) AS first_model
+                    min(coalesce(l.pdb_model_number, 1)) OVER () AS first_model
                FROM ndb_base_pair_list l
                JOIN ndb_base_pair_annotation a USING (entry_id, base_pair_id)
               WHERE l.entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))),
