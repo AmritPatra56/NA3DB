@@ -1,0 +1,62 @@
+# /etc/nginx/sites-available/na3db.org on 195.113.167.78
+#
+# Sends na3db.org to the NA3DB app in the na3db-main pod (127.0.0.1:4100).
+# The certificate lines are the ones certbot wrote for this name; the
+# port-80 block below is kept exactly as certbot left it, default_server
+# included, because it is the server's fallback for unknown plain-http names.
+
+server {
+    server_name na3db.org www.na3db.org;
+
+    # One address for citing and sharing: www goes to the bare name.
+    if ($host = www.na3db.org) {
+        return 301 https://na3db.org$request_uri;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:4100;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # The app's slowest page is under 2 s; the database gives up at 15 s.
+        proxy_read_timeout 30s;
+
+        # Says which framework runs behind us; nobody needs to know.
+        proxy_hide_header X-Powered-By;
+    }
+
+    # nginx.conf compresses only HTML by default; CSS, scripts, JSON and the
+    # CSV downloads shrink several times too.
+    gzip on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_vary on;
+    gzip_types text/css application/javascript application/json text/csv text/plain image/svg+xml;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/na3db.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/na3db.org/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = www.na3db.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    if ($host = na3db.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80 default_server;
+    server_name na3db.org www.na3db.org;
+    return 404; # managed by Certbot
+}

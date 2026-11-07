@@ -1,0 +1,22 @@
+# Kept out of the image. Passwords above all: they arrive at run time.
+.env
+.env.*
+node_modules
+.git
+.gitignore
+.vscode
+
+# Not needed to serve pages: tests, loader, seed data, docs.
+*.test.js
+search.reference.mjs
+entries.json
+db/
+deploy/
+README.md
+Containerfile
+.containerignore
+
+# Local-only folders that git already ignores.
+nadb_pgdata/
+__pycache__/
+*.log
