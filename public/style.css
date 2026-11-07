@@ -2037,3 +2037,22 @@ input::placeholder {
     .active_filters { padding: 8px 12px; }
     .filter_chip { min-height: 36px; font-size: 13px; }
 }
+
+/* The structure page on a phone. The molecule tables keep their columns and
+   scroll sideways in their own box: squeezed to 335px, headers ran into each
+   other and codes broke mid-word ("2M G"). */
+@media (max-width: 640px) {
+    .detail_body { padding: 16px; }
+
+    .molecule_scroll { -webkit-overflow-scrolling: touch; }
+    .molecule_table { min-width: 520px; }
+    .pair_list .molecule_table { min-width: 420px; }
+
+    .sequence_copy, .sequence_fasta, .entry_fasta > summary,
+    a.entry_fasta, .pair_csv { min-height: 36px; padding-inline: 10px; }
+
+    .molecule_group summary,
+    .sequence summary,
+    .pair_list summary,
+    .more_rows_toggle { padding-block: 8px; }
+}
