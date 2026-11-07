@@ -2206,8 +2206,8 @@ input::placeholder {
 
 .nav_item.empty { color: var(--text-dim); }
 
-/* The head: the title. */
-.structure_lead { border-bottom: none; }
+/* The page opens on the Overview band; the title is its first, larger row. */
+.page_section:first-of-type { margin-top: 0; }
 
 .structure_lead .detail_value {
     font-size: 15px;

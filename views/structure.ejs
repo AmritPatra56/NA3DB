@@ -9,10 +9,7 @@
 </head>
 <body>
 <%
-    // Rows from detail.js, which the cards read too. The title leads the page
-    // instead of sitting in the Summary list.
-    const by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
-    const lead = by_id.summary.rows.find((r) => r.key === "title");
+    // Rows from detail.js, which the cards read too.
     const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
     const fasta_url = `/structure/${entry.pdb_id}/fasta`;
 
@@ -49,14 +46,6 @@
                     </nav>
 
                 <div class="detail_body">
-                    <div class="structure_head">
-                        <% if (lead) { %>
-                            <div class="detail_field structure_lead">
-                                <div class="detail_label"><%= lead.label %></div>
-                                <div class="detail_value"><%= lead.value %></div>
-                            </div>
-                        <% } %>
-                    </div>
 
                     <% for (const s of sections) { const group = PAGE_GROUPS.find((g) => g.key === s.group); %>
                     <section id="<%= s.id %>" class="page_section group_<%= s.group %><%= s.empty ? " empty" : "" %>" aria-labelledby="<%= s.id %>-title">
@@ -87,8 +76,8 @@
                             </div>
                         </div>
                         <div class="section_body" id="<%= s.id %>-body">
-                        <% for (const row of (s.rows ?? []).filter((r) => r !== lead)) { %>
-                            <div class="detail_field">
+                        <% for (const row of s.rows ?? []) { %>
+                            <div class="detail_field<%= row.key === "title" ? " structure_lead" : "" %>">
                                 <div class="detail_label"><%= row.label %></div>
                                 <div class="detail_value"><%= row.value %></div>
                             </div>
