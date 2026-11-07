@@ -39,7 +39,10 @@ export function detail_rows(entry, view = "page", also = []) {
 
         // `empty` says a blank is a fact about the entry, not a gap in ours.
         let value = display(raw, column) ?? column.empty ?? null;
-        if (value !== null) rows.push({ label: column.label, value });
+        // key lets a card pick its rows by name; searched marks the rows that
+        // answer the search, which a phone card keeps when it drops the rest.
+        if (value !== null) rows.push({ key: column.key, label: column.label, value,
+                                        searched: also.includes(column.key) });
     }
 
     return rows;

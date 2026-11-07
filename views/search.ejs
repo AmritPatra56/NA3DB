@@ -41,6 +41,8 @@
         <form class="query_panel <%= panel_open ? "" : "hidden" %>" id="query_form">
             <div class="query_panel_header">
                 <h1>Structure query</h1>
+<%# Only drawn on a phone, where the panel covers the whole screen. %>
+                <button type="button" class="panel_close" aria-label="Close filters">&times;</button>
             </div>
             <div class="query_panel_body">
 <%# The form, generated from the registry. Nothing here names a filter. %>

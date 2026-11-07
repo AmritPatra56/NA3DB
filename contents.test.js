@@ -569,6 +569,15 @@ test("a capitals-only organism reads in species case on the card, as stored in t
     assert.equal(row.value, "Saccharomyces cerevisiae; HEPATITIS C VIRUS");
 });
 
+// A phone card keeps only some rows, picked by key, plus whatever answers the
+// search. Expression host is never on a card, so here it is only searched.
+test("a card row names its column and says whether it answers the search", () => {
+    let rows = detail_rows({ title: "T", expression_host: "Escherichia coli" }, "card", ["expression_host"]);
+    assert.deepEqual(rows.find((r) => r.key === "title"),
+                     { key: "title", label: "Title", value: "T", searched: false });
+    assert.equal(rows.find((r) => r.key === "expression_host").searched, true);
+});
+
 // --- organism, taxon, how obtained and host as search filters (L7) --------
 
 // ZZ02: a natural yeast RNA and an E. coli-made Thermus protein.

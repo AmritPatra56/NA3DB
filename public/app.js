@@ -107,6 +107,9 @@ let query_form = document.getElementById("query_form");
 
 query_form.addEventListener("submit", function (e) {
     e.preventDefault();
+    // A phone's filter sheet steps aside for the results. The search writes
+    // the URL, so the panel state rides along in the same history entry.
+    if (phone.matches && panel_is_open()) set_panel(false, false);
     run_search();
 });
 
@@ -139,7 +142,7 @@ function card_html(entry) {
 
     let rows = entry.card.map(function (row) {
         return `
-            <div class="card_field">
+            <div class="card_field${row.searched ? " searched" : ""}" data-key="${escape_html(row.key)}">
                 <div class="card_label">${escape_html(row.label)}</div>
                 <div class="card_value">${escape_html(row.value)}</div>
             </div>
@@ -421,6 +424,8 @@ async function run_search(page = 1) {
                                              per_page_select.value, current_match);
         current_page = current_reply.page;
         show_page();
+        count_wanted = "";
+        paint_count(current_reply.total);
     } catch (err) {
         show_error(err.message);
     } finally {
@@ -456,14 +461,77 @@ function panel_is_open() {
     return !query_panel.classList.contains("hidden");
 }
 
-filters_toggle.addEventListener("click", function () {
-    let open = !panel_is_open();
-
+function set_panel(open, write_url = true) {
     query_panel.classList.toggle("hidden", !open);
     filters_toggle.setAttribute("aria-expanded", String(open));
 
     panel_chosen = true;
-    update_url(read_filters(), current_page);
+    if (write_url) update_url(read_filters(), current_page);
+}
+
+filters_toggle.addEventListener("click", function () {
+    set_panel(!panel_is_open());
+});
+
+// On a phone the panel is a sheet over the results, not a column beside
+// them, so it closes once it has done its job: on Search (in the submit
+// listener above), or on the cross.
+const phone = window.matchMedia("(max-width: 640px)");
+
+document.querySelector(".panel_close").addEventListener("click", function () {
+    set_panel(false);
+});
+
+// The server opens the panel for any filtered link, which on a phone would
+// greet the visitor with a sheet over the very results they came for. Only
+// an explicit ?panel=open keeps it.
+if (phone.matches && panel_is_open() && !panel_chosen) {
+    query_panel.classList.add("hidden");
+    filters_toggle.setAttribute("aria-expanded", "false");
+}
+
+
+// The panel's Search button says how many entries it would show, kept up to
+// date as filters are picked, so nobody applies filters that leave nothing.
+const COUNT_SETTLE_MS = 250;
+let search_button = query_form.querySelector(".search");
+let count_timer = null;
+let count_wanted = "";
+
+function paint_count(total) {
+    search_button.textContent = total === 0 ? "No results"
+        : total === 1 ? "Show 1 result"
+        : `Show ${total.toLocaleString("en-GB")} results`;
+}
+
+async function refresh_count() {
+    let params = filters_to_params(read_filters());
+    if (current_match) params.set("match", current_match);
+
+    let asked = params.toString();
+    count_wanted = asked;
+
+    try {
+        let res = await fetch("/api/count?" + asked);
+        if (!res.ok) throw new Error();
+        let data = await res.json();
+        if (count_wanted === asked) paint_count(data.total);
+    } catch {
+        // The button still searches; only the number is lost.
+        if (count_wanted === asked) search_button.textContent = "Search";
+    }
+}
+
+function count_soon() {
+    clearTimeout(count_timer);
+    count_timer = setTimeout(refresh_count, COUNT_SETTLE_MS);
+}
+
+// "click" for the pills, "input" for the boxes. A pill's own listener runs
+// first, so the selection has changed by the time this reads it.
+query_form.addEventListener("input", count_soon);
+query_form.addEventListener("click", function (e) {
+    if (e.target.closest(".pill")) count_soon();
 });
 
 
