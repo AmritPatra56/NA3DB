@@ -9,6 +9,7 @@ import { entry_contents, entry_citations, find_entry, search_entries, build_wher
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
+         MODIFIED_ROWS_SHOWN,
          SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of, base_pair_export, base_pairs_csv,
          entry_fasta, fasta_choices } from "./detail.js";
 
@@ -1314,4 +1315,12 @@ test("the base-pair rows say which model they come from: the first one present",
                                   [2, "A", "C", 2, "B", "G", 7, "cWW"]]);
     assert.deepEqual(pairs.map((p) => p.model), [2, 2]);
     assert.equal(base_pair_export("ZZ03", pairs).model, 2);
+});
+
+test("the modified group shows its first rows and keeps the rest for a click", async () => {
+    let m = molecule_groups({ entities: [], modified: Array.from({ length: 9 }, (_, i) => (
+        { code: "PSU", name: "PSEUDOURIDINE", label: "B", auth: "B", positions: [{ num: String(i), seen: true }] })) });
+    let group = m.groups.find((g) => g.modified);
+    assert.equal(group.shown, MODIFIED_ROWS_SHOWN);
+    assert.ok(group.rows.length > group.shown);
 });

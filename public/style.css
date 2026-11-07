@@ -1759,3 +1759,15 @@ input::placeholder {
 /* The base-pair count with its CSV download at the far end. */
 .pair_head { display: flex; align-items: center; gap: 8px; }
 .pair_csv { margin-left: auto; }
+
+/* Show all / Show fewer under a long table: a quiet link, not a button. */
+.more_rows_toggle {
+    border: none;
+    background: none;
+    padding: 4px 0;
+    color: var(--accent);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.more_rows_toggle:hover { text-decoration: underline; }

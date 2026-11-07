@@ -53,6 +53,9 @@ export function detail_rows(entry, view = "page", also = []) {
 export const FOLD_PROTEINS = 10;
 // 8G61 has 224 modified positions; a row shows this many, the rest on a click.
 export const POSITIONS_SHOWN = 5;
+// 1OB5 lists 36 modified rows (12 codes in 3 tRNA copies); the first few show,
+// the rest wait behind a button.
+export const MODIFIED_ROWS_SHOWN = 6;
 const MISSING_RUNS_SHOWN = 4;
 const UNIT = { "RNA": "nt", "DNA": "nt", "DNA/RNA hybrid": "nt", "Protein": "aa" };
 
@@ -279,6 +282,7 @@ export function molecule_groups(contents, residues = new Map()) {
         let after = groups.findLastIndex((g) => NUCLEIC_KINDS.has(g.kind)) + 1;
         groups.splice(after, 0, { kind: "Modified", title: "Modified nucleotides",
                                   polymer: false, modified: true, folded: false,
+                                  shown: MODIFIED_ROWS_SHOWN,
                                   rows: contents.modified.map(modified_row) });
     }
 
