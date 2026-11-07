@@ -426,6 +426,7 @@ async function run_search(page = 1) {
         show_page();
         count_wanted = "";
         paint_count(current_reply.total);
+        paint_chips(filters);
     } catch (err) {
         show_error(err.message);
     } finally {
@@ -691,4 +692,58 @@ document.querySelectorAll("input[data-suggest]").forEach((input) => {
             close();
         }
     });
+});
+
+
+// The filters in use as chips above the results, so a phone shows what
+// narrowed the list without opening the sheet. Built from the registry, like
+// the panel: nothing here names a filter. The search box is left out; it is
+// on screen already.
+let chips_bar = document.querySelector(".active_filters");
+let FILTER_BY_KEY = Object.fromEntries(REGISTRY.filters.map((f) => [f.key, f]));
+let RANGE_TOP = new Set(REGISTRY.filters.map((f) => f.pair_with).filter(Boolean));
+
+function chip_text(f, value) {
+    if (f.kind === "pills") {
+        let option = f.options.find((o) => o.value === value);
+        return `${f.label}: ${option ? option.label : value}`;
+    }
+    if (f.kind === "range") return `${f.label} ${RANGE_TOP.has(f.key) ? "≤" : "≥"} ${value}`;
+    return `${f.label}: ${value}`;
+}
+
+function paint_chips(filters) {
+    let chips = [];
+
+    Object.entries(filters).forEach(function ([key, value]) {
+        let f = FILTER_BY_KEY[key];
+        if (!f || f.prominent) return;
+
+        let values = Array.isArray(value) ? value : (value === "" ? [] : [value]);
+        values.forEach((v) => chips.push({ key, value: v, text: chip_text(f, v) }));
+    });
+
+    chips_bar.innerHTML = chips.map((c) => `
+        <button type="button" class="filter_chip" data-key="${escape_html(c.key)}"
+                data-value="${escape_html(c.value)}" aria-label="Remove ${escape_html(c.text)}">
+            ${escape_html(c.text)}<span aria-hidden="true">&times;</span>
+        </button>`).join("");
+
+    filters_toggle.textContent = chips.length ? `Filters · ${chips.length}` : "Filters";
+}
+
+chips_bar.addEventListener("click", function (e) {
+    let chip = e.target.closest(".filter_chip");
+    if (!chip) return;
+
+    let { key, value } = chip.dataset;
+
+    if (PILL_FILTERS.includes(key)) {
+        let left = read_pills(key).filter((v) => v !== value);
+        select_pills(key, left.length ? left : ["any"]);
+    } else {
+        document.getElementById(key).value = "";
+    }
+
+    run_search();
 });
