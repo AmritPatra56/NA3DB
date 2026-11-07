@@ -473,19 +473,19 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
     let sections = [
         { id: "summary", title: "Summary", group: "overview", rows: rows_in.summary },
         { id: "molecules", title: "Molecules", group: "composition", groups: polymers,
-          count: sum(polymers), tile: "Molecules" },
+          count: sum(polymers) },
         { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",
-          rows: rows_in.modified, groups: modified, count: sum(modified), tile: "Modified" },
+          rows: rows_in.modified, groups: modified, count: sum(modified) },
         { id: "ligands", title: "Ligands", group: "composition", rows: rows_in.ligands,
-          groups: ligands, count: sum(ligands), tile: "Ligands" },
+          groups: ligands, count: sum(ligands) },
         { id: "sources", title: "Sources", group: "composition",
           count: molecules.sources?.rows.length ?? 0 },
         { id: "base-pairs", title: "Base pairs", group: "structure",
-          count: base_pairs?.total ?? 0, tile: "Base pairs" },
+          count: base_pairs?.total ?? 0 },
         { id: "conformation", title: "Conformation", group: "structure", rows: rows_in.conformation,
-          count: steps === null ? 0 : Number(steps), tile: "NtC steps" },
+          count: steps === null ? 0 : Number(steps) },
         { id: "citations", title: "Citations", group: "references",
-          count: citations.length, tile: "Citations" },
+          count: citations.length },
         { id: "links", title: "Links and downloads", group: "references" }
     ];
 

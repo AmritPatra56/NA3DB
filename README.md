@@ -766,7 +766,7 @@ results.
 
 ### The structure page
 
-`/structure/4TNA` opens with the title and one tile per count. A tile jumps to its section.
+`/structure/4TNA` opens with the title.
 
 The rest is in four groups, each with its own colour (the same colours as the filter panel):
 
@@ -784,7 +784,7 @@ The rest is in four groups, each with its own colour (the same colours as the fi
 
 - **The sidebar** lists every section and marks the one you are reading. On a phone or tablet it is a row of chips under the top bar.
 - **Each section has its own address**, such as `/structure/4TNA#base-pairs`, to put in a paper or an email.
-- **A section with nothing in it** stays in the list, greyed out (its tile shows `—`): "none recorded" is a fact about the entry.
+- **A section with nothing in it** stays in the list, greyed out: "none recorded" is a fact about the entry.
 - **On each section's band:** `?` explains the terms, the chevron folds the section.
 
 ### The controls over the results

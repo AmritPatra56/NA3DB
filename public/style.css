@@ -2206,48 +2206,13 @@ input::placeholder {
 
 .nav_item.empty { color: var(--text-dim); }
 
-/* The head: the title, and one tile per section worth counting. */
+/* The head: the title. */
 .structure_lead { border-bottom: none; }
 
 .structure_lead .detail_value {
     font-size: 15px;
     line-height: 1.45;
 }
-
-.glance {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-    gap: 8px;
-    margin-top: 4px;
-}
-
-.glance_tile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 4px;
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--sec);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    color: var(--text);
-    text-decoration: none;
-}
-
-.glance_tile:hover { border-color: var(--sec); }
-
-.glance_tile b {
-    font-size: 18px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-}
-
-.glance_tile span {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.glance_tile.empty b { color: var(--text-dim); }
 
 /* A section: a full-width tinted band, then its body. The gap above each band
    is what tells one category from the next. */
@@ -2414,8 +2379,6 @@ input::placeholder {
     .section_nav { top: 48px; }
 
     .section_band { margin-inline: -16px; padding-inline: 16px; }
-
-    .glance { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
     .page_section,
     .page_section [id] { scroll-margin-top: 104px; }

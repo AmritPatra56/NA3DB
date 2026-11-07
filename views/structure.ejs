@@ -13,7 +13,6 @@
     // instead of sitting in the Summary list.
     const by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
     const lead = by_id.summary.rows.find((r) => r.key === "title");
-    const fmt = (n) => Number(n).toLocaleString("en-GB");
     const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
     const fasta_url = `/structure/${entry.pdb_id}/fasta`;
 
@@ -57,11 +56,6 @@
                                 <div class="detail_value"><%= lead.value %></div>
                             </div>
                         <% } %>
-                        <div class="glance">
-                            <% for (const s of sections.filter((s) => s.tile)) { %>
-                                <a href="#<%= s.id %>" class="glance_tile group_<%= s.group %><%= s.empty ? " empty" : "" %>"><b><%= s.empty ? "—" : fmt(s.count) %></b><span><%= s.tile %></span></a>
-                            <% } %>
-                        </div>
                     </div>
 
                     <% for (const s of sections) { const group = PAGE_GROUPS.find((g) => g.key === s.group); %>
