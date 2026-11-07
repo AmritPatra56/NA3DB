@@ -2197,21 +2197,12 @@ input::placeholder {
 
 .nav_item:hover { background: var(--bg-primary); }
 
-.nav_count {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--text-dim);
-    font-variant-numeric: tabular-nums;
-}
-
 .nav_item[aria-current="true"] {
     background: var(--tint);
     color: var(--ink);
     font-weight: 600;
     box-shadow: inset -3px 0 0 var(--sec);
 }
-
-.nav_item[aria-current="true"] .nav_count { color: var(--ink); }
 
 .nav_item.empty { color: var(--text-dim); }
 
@@ -2424,8 +2415,6 @@ input::placeholder {
     }
 
     .nav_item::before { display: block; width: 6px; height: 6px; }
-    .nav_count { margin-left: 2px; }
-    .nav_count:empty { display: none; }
 
     .nav_item[aria-current="true"] {
         border-color: var(--sec);

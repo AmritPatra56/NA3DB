@@ -46,7 +46,7 @@
                             <div class="nav_group group_<%= g.key %>">
                                 <div class="nav_group_label"><%= g.label %></div>
                                 <% for (const s of sections.filter((s) => s.group === g.key)) { %>
-                                    <a href="#<%= s.id %>" class="nav_item<%= s.empty ? " empty" : "" %>"><%= s.title %><span class="nav_count"><%= s.count === undefined ? "" : s.empty ? "—" : fmt(s.count) %></span></a>
+                                    <a href="#<%= s.id %>" class="nav_item<%= s.empty ? " empty" : "" %>"><%= s.title %></a>
                                 <% } %>
                             </div>
                         <% } %>
