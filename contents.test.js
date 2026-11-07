@@ -8,7 +8,7 @@ import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
-import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
+import { detail_rows, molecule_groups, structure_sections, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
          MODIFIED_ROWS_SHOWN,
          SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of, base_pair_export, base_pairs_csv,
          entry_fasta, fasta_choices } from "./detail.js";
@@ -1340,4 +1340,34 @@ test("large counts on the page carry thousands separators, like Atoms", () => {
     assert.equal(shown.Residues, "20,560");
     assert.equal(shown.Nucleotides, "7,427");
     assert.equal(shown.Atoms, "219,329");
+});
+
+
+// --- the sections of the structure page ---------------------------------
+const no_contents = { groups: [], summary: "", sources: null, fasta: { all: 0, na: 0 } };
+
+test("a section with nothing in it is listed as empty, not dropped", () => {
+    let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
+                                        base_pairs: null, citations: [] });
+    let by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
+
+    assert.equal(sections.length, 9, "every section stays in the list");
+    for (const id of ["molecules", "modified-nucleotides", "ligands", "sources",
+                      "base-pairs", "conformation", "citations"]) {
+        assert.ok(by_id[id].empty, `${id} should be marked empty`);
+    }
+    assert.ok(!by_id.summary.empty && !by_id.links.empty, "the summary and links always have content");
+});
+
+test("a row goes to the section that lists it, not to the summary", () => {
+    let rows = [{ key: "title" }, { key: "ligands" }, { key: "nonstandard_residue" },
+                { key: "monomer_flag" }, { key: "confal_score" }, { key: "atom_count" }];
+    let sections = structure_sections({ entry: {}, rows, molecules: no_contents,
+                                        base_pairs: null, citations: [] });
+    let keys = (id) => sections.find((s) => s.id === id).rows.map((r) => r.key);
+
+    assert.deepEqual(keys("summary"), ["title", "atom_count"]);
+    assert.deepEqual(keys("ligands"), ["ligands"]);
+    assert.deepEqual(keys("modified-nucleotides"), ["nonstandard_residue", "monomer_flag"]);
+    assert.deepEqual(keys("conformation"), ["confal_score"]);
 });

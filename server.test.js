@@ -644,6 +644,20 @@ test("the panel and the structure page draw the same rows", async () => {
     assert.equal((html.match(/detail_field/g) || []).length, api.rows.length);
 });
 
+// The sidebar is the page's table of contents: every entry jumps to a section
+// that exists, in the order the page reads, so a link like #base-pairs is
+// safe to cite.
+test("every sidebar link on a structure page lands on a section", async () => {
+    let html = await (await fetch(base + "/structure/4TNA")).text();
+    let links = [...html.matchAll(/class="nav_item[^"]*" href="#([^"]+)"|href="#([^"]+)" class="nav_item/g)]
+        .map((m) => m[1] ?? m[2]);
+    let sections = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
+
+    assert.deepEqual(links, ["summary", "molecules", "modified-nucleotides", "ligands", "sources",
+                             "base-pairs", "conformation", "citations", "links"]);
+    assert.deepEqual(sections, links, "one section per link, in the same order");
+});
+
 test("the raw fields survive beside the formatted rows", async () => {
     let api = await (await fetch(base + "/api/entries/4TNA")).json();
 

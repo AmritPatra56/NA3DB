@@ -8,6 +8,31 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<%
+    // Rows from detail.js, which the cards read too. The title leads the page
+    // instead of sitting in the Summary list.
+    const by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
+    const lead = by_id.summary.rows.find((r) => r.key === "title");
+    const value_of = (key) => rows.find((r) => r.key === key)?.value;
+    const badges = [value_of("method"), value_of("resolution"), value_of("polymer_type"),
+                    value_of("deposition_date")?.slice(0, 4)].filter(Boolean);
+    const fmt = (n) => Number(n).toLocaleString("en-GB");
+    const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
+    const fasta_url = `/structure/${entry.pdb_id}/fasta`;
+
+    // Said under each band's "?": the terms a reader new to the section needs.
+    const help = {
+        "summary": "What the entry is: how it was solved, when, at what resolution, and by whom, from the entry's own record.",
+        "molecules": "Each polymer once, with the chains that are copies of it. Modelled counts the residues with coordinates; missing ones are in the sequence but not in the model.",
+        "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine), with the chain and position of each copy.",
+        "ligands": "Small molecules bound in the structure: ions, cofactors, drugs. Each code links to its page at RCSB.",
+        "sources": "Where each molecule came from: Natural (taken from the organism), Expressed (made in a host) or Synthetic (made chemically).",
+        "base-pairs": "Pairs in the first model, classified by DNATCO in the Leontis–Westhof scheme: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). G–C and A–U in cWW are Watson–Crick pairs.",
+        "conformation": "Each step between two nucleotides is assigned an NtC class by DNATCO. The confal score (0–100) says how closely the steps fit their classes; the percentile ranks it against other structures.",
+        "citations": "The papers that describe this structure, the primary one first.",
+        "links": "This entry elsewhere, and its data as files."
+    };
+%>
     <div class="interface">
         <%- include("includes/rail.ejs") %>
         <div class="results_area">
@@ -15,113 +40,92 @@
                 <h1><%= entry.pdb_id %></h1>
             </div>
             <div class="results_area_body">
-                <div class="detail_body">
-<%# Rows from detail.js, which the search page's panel reads too. %>
-                    <% for (const row of rows) { %>
-                        <div class="detail_field">
-                            <div class="detail_label"><%= row.label %></div>
-                            <div class="detail_value"><%= row.value %></div>
-                        </div>
-                    <% } %>
+                <div class="structure_page">
+                    <nav class="section_nav" aria-label="Sections of this page">
+                        <% for (const g of PAGE_GROUPS) { %>
+                            <div class="nav_group group_<%= g.key %>">
+                                <div class="nav_group_label"><%= g.label %></div>
+                                <% for (const s of sections.filter((s) => s.group === g.key)) { %>
+                                    <a href="#<%= s.id %>" class="nav_item<%= s.empty ? " empty" : "" %>"><%= s.title %><span class="nav_count"><%= s.count === undefined ? "" : s.empty ? "—" : fmt(s.count) %></span></a>
+                                <% } %>
+                            </div>
+                        <% } %>
+                    </nav>
 
-                    <% if (molecules.groups.length) { %>
-                        <h2 class="citations_heading">Molecules</h2>
-                        <div class="molecules_summary">
-                            <span><%= molecules.summary %></span>
-                            <% const fasta_url = `/structure/${entry.pdb_id}/fasta`; %>
-                            <% const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>'; %>
-                            <% if (molecules.fasta.na && molecules.fasta.na < molecules.fasta.all) { %>
-                                <details class="entry_fasta">
-                                    <summary title="Download sequences as FASTA"><%- dl %>FASTA</summary>
-                                    <div class="entry_fasta_menu">
-                                        <a href="<%= fasta_url %>?only=na" download>Nucleic acids only <span><%= molecules.fasta.na %> <%= molecules.fasta.na === 1 ? "molecule" : "molecules" %></span></a>
-                                        <a href="<%= fasta_url %>" download>All polymers <span><%= molecules.fasta.all %> molecules</span></a>
-                                    </div>
-                                </details>
-                            <% } else if (molecules.fasta.all) { %>
-                                <a class="entry_fasta" href="<%= fasta_url %>" download title="Download <%= molecules.fasta.all === 1 ? "the sequence" : "all " + molecules.fasta.all + " sequences" %> as FASTA"><%- dl %>FASTA</a>
+                <div class="detail_body">
+                    <div class="structure_head">
+                        <% if (badges.length) { %><div class="structure_badges"><% for (const b of badges) { %><span><%= b %></span><% } %></div><% } %>
+                        <% if (lead) { %>
+                            <div class="detail_field structure_lead">
+                                <div class="detail_label"><%= lead.label %></div>
+                                <div class="detail_value"><%= lead.value %></div>
+                            </div>
+                        <% } %>
+                        <div class="glance">
+                            <% for (const s of sections.filter((s) => s.tile)) { %>
+                                <a href="#<%= s.id %>" class="glance_tile group_<%= s.group %><%= s.empty ? " empty" : "" %>"><b><%= s.empty ? "—" : fmt(s.count) %></b><span><%= s.tile %></span></a>
                             <% } %>
                         </div>
-                        <% for (const g of molecules.groups) { %>
-                            <details class="molecule_group" <%= g.folded ? "" : "open" %>>
-                                <summary><%= g.title %> (<%= g.rows.length %>)</summary>
-                                <div class="molecule_scroll">
-                                <table class="molecule_table">
-                                <% const pos = (p) => p.seen ? p.num : `<span class="unmodelled" title="not modelled">${p.num}</span>`; %>
-                                <% if (g.modified) { %>
-                                    <colgroup><col style="width:12%"><col style="width:46%"><col style="width:10%"><col style="width:32%"></colgroup>
-                                    <thead><tr><th>Code</th><th>Name</th><th>Chain</th><th>Positions</th></tr></thead>
-                                    <% g.rows.forEach((r, i) => { %>
-                                        <% if (i === g.shown) { %></tbody><tbody class="more_rows" hidden><% } else if (i === 0) { %><tbody><% } %>
-                                        <tr>
-                                            <td><a target="_blank" rel="noopener" href="<%= r.url %>"><%= r.code %></a></td>
-                                            <td><%= r.name ?? "—" %></td>
-                                            <td><span<% if (r.chain.title) { %> title="<%= r.chain.title %>"<% } %>><%= r.chain.name %></span></td>
-                                            <td><%- r.shown.map(pos).join(", ") %><% if (r.rest.length) { %><details class="more_positions"><summary>+ <%= r.rest.length %> more</summary><%- r.rest.map(pos).join(", ") %></details><% } %></td>
-                                        </tr>
-                                    <% }) %>
-                                    </tbody>
-                                    <% if (g.rows.length > g.shown) { %>
-                                        <tfoot><tr><td colspan="4"><button type="button" class="more_rows_toggle" aria-expanded="false"
-                                            data-more="Show all <%= g.rows.length %>" data-less="Show fewer">Show all <%= g.rows.length %></button></td></tr></tfoot>
-                                    <% } %>
-                                <% } else if (g.polymer) { %>
-                                    <colgroup><col style="width:36%"><col style="width:10%"><col style="width:20%"><col style="width:14%"><col style="width:20%"></colgroup>
-                                    <tr><th>Molecule</th><th>Chain</th><th>Modelled</th><th>Numbering</th><th>Link</th></tr>
-                                    <% for (const r of g.rows) { %>
-                                        <tr>
-                                            <td><%= r.name %><% if (r.length) { %><div class="molecule_sub"><%= r.length %></div><% } %></td>
-                                            <td><% r.chains.forEach((c, i) => { %><%= i ? ", " : "" %><span<% if (c.title) { %> title="<%= c.title %>"<% } %>><%= c.name %></span><% }) %></td>
-                                            <td><%= r.modelled ?? "—" %><% if (r.missing) { %><div class="molecule_sub">missing <%= r.missing %></div><% } %></td>
-                                            <td><%= r.numbering ?? "—" %></td>
-                                            <td><% if (!r.links.length) { %>—<% } %><% for (const l of r.links) { %><div><% if (l.url) { %><a target="_blank" rel="noopener" href="<%= l.url %>"><%= l.text %></a><% } else { %><%= l.text %><% } %></div><% } %></td>
-                                        </tr>
-                                        <% if (r.sequence) { %>
-                                            <tr class="sequence_row"><td colspan="5">
-                                                <details class="sequence">
-                                                    <summary>Show sequence</summary>
-                                                    <div class="sequence_body">
-                                                        <% for (const line of r.sequence.lines) { %><div><span class="sequence_num"><%= line.start %></span><span class="sequence_text"><% for (const run of line.runs) { %><% if (run.mark) { %><span class="sequence_<%= run.mark %>" title="<%= run.title %>"><%= run.text %></span><% } else { %><%= run.text %><% } %><% } %></span></div><% } %>
-                                                    </div>
-                                                    <div class="sequence_foot">
-                                                        <% if (r.sequence.modified) { %><span><span class="sequence_modified">G</span> modified, shown as its parent; hover for the code</span><% } %>
-                                                        <% if (r.sequence.unmodelled) { %><span><span class="sequence_unmodelled">C</span> not modelled in any chain</span><% } %>
-                                                        <span class="sequence_actions">
-                                                            <button type="button" class="sequence_copy" title="Copy sequence" aria-label="Copy sequence"><svg class="icon_copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><svg class="icon_done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></button>
-                                                            <a class="sequence_fasta" href="/structure/<%= entry.pdb_id %>/fasta/<%= r.entity_id %>" download title="Download as FASTA"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>FASTA</a>
-                                                        </span>
-                                                    </div>
-                                                </details>
-                                            </td></tr>
-                                        <% } %>
-                                    <% } %>
-                                <% } else { %>
-                                    <colgroup><col style="width:12%"><col style="width:70%"><col style="width:18%"></colgroup>
-                                    <tr><th>Code</th><th>Name</th><th>Count</th></tr>
-                                    <% for (const r of g.rows) { %>
-                                        <tr><td><% if (r.url) { %><a target="_blank" rel="noopener" href="<%= r.url %>"><%= r.code %></a><% } else { %><%= r.code ?? "—" %><% } %></td><td><%= r.name %></td><td><%= r.count %></td></tr>
-                                    <% } %>
-                                <% } %>
-                                </table>
-                                </div>
-                            </details>
-                        <% } %>
-                    <% } %>
+                    </div>
 
-                    <h2 class="citations_heading">Base pairs</h2>
-                    <% if (!base_pairs) { %>
-                        <p class="molecule_sub">No base pairs annotated.</p>
-                    <% } else { const bp = base_pairs; %>
+                    <% for (const s of sections) { const group = PAGE_GROUPS.find((g) => g.key === s.group); %>
+                    <section id="<%= s.id %>" class="page_section group_<%= s.group %><%= s.empty ? " empty" : "" %>" aria-labelledby="<%= s.id %>-title">
+                        <div class="section_band">
+                            <div class="band_title">
+                                <span class="band_group"><%= group.label %></span>
+                                <h2 id="<%= s.id %>-title"><%= s.title %></h2>
+                            </div>
+                            <div class="band_tools">
+                                <% if (s.id === "molecules" && molecules.fasta.na && molecules.fasta.na < molecules.fasta.all) { %>
+                                    <details class="entry_fasta">
+                                        <summary title="Download sequences as FASTA"><%- dl %>FASTA</summary>
+                                        <div class="entry_fasta_menu">
+                                            <a href="<%= fasta_url %>?only=na" download>Nucleic acids only <span><%= molecules.fasta.na %> <%= molecules.fasta.na === 1 ? "molecule" : "molecules" %></span></a>
+                                            <a href="<%= fasta_url %>" download>All polymers <span><%= molecules.fasta.all %> molecules</span></a>
+                                        </div>
+                                    </details>
+                                <% } else if (s.id === "molecules" && molecules.fasta.all) { %>
+                                    <a class="entry_fasta" href="<%= fasta_url %>" download title="Download <%= molecules.fasta.all === 1 ? "the sequence" : "all " + molecules.fasta.all + " sequences" %> as FASTA"><%- dl %>FASTA</a>
+                                <% } else if (s.id === "base-pairs" && base_pairs) { %>
+                                    <a class="pair_csv" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download title="Download every pair as CSV"><%- dl %>CSV</a>
+                                <% } %>
+                                <details class="band_help">
+                                    <summary aria-label="What this section shows" title="What this section shows">?</summary>
+                                    <p><%= help[s.id] %></p>
+                                </details>
+                                <button type="button" class="band_fold" aria-expanded="true" aria-controls="<%= s.id %>-body" title="Fold this section"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="section_body" id="<%= s.id %>-body">
+                        <% for (const row of (s.rows ?? []).filter((r) => r !== lead)) { %>
+                            <div class="detail_field">
+                                <div class="detail_label"><%= row.label %></div>
+                                <div class="detail_value"><%= row.value %></div>
+                            </div>
+                        <% } %>
+                        <% if (s.groups?.length > 1) { %>
+                            <div class="jump_to">Jump to: <% s.groups.forEach((g, i) => { %><%= i ? " · " : "" %><a href="#<%= s.id %>-<%= g.kind.toLowerCase().replace(/[^a-z]+/g, "-") %>"><%= g.title %></a><% }) %></div>
+                        <% } %>
+                        <% if (s.id === "molecules" && molecules.summary) { %>
+                            <div class="molecules_summary"><span><%= molecules.summary %></span></div>
+                        <% } %>
+                        <% for (const g of s.groups ?? []) { %>
+                            <div id="<%= s.id %>-<%= g.kind.toLowerCase().replace(/[^a-z]+/g, "-") %>">
+                                <%- include("includes/molecule_group.ejs", { g, entry }) %>
+                            </div>
+                        <% } %>
+
+                        <% if (s.id === "base-pairs" && base_pairs) { const bp = base_pairs; %>
+                            <div class="jump_to">Jump to: <a href="#bp-counts">Counts</a><% if (bp.families.length) { %> · <a href="#bp-families">Families</a><% } %><% if (bp.noncanonical.length) { %> · <a href="#bp-all">Non-canonical pairs</a><% } %></div>
                         <div class="source_legend pair_head">
                             <span><%= bp.total.toLocaleString("en-GB") %> <%= bp.total === 1 ? "pair" : "pairs" %>, Leontis–Westhof classes from DNATCO</span>
-                            <a class="pair_csv" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download title="Download every pair as CSV"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>CSV</a>
                         </div>
-                        <div class="pair_bar" role="img" aria-label="<%= bp.bar.map((b) => `${b.n} ${b.label}`).join(', ') %>">
+                        <div id="bp-counts" class="pair_bar" role="img" aria-label="<%= bp.bar.map((b) => `${b.n} ${b.label}`).join(', ') %>">
                             <% for (const b of bp.bar) { if (!b.n) continue; %><span class="pair_<%= b.kind %>" style="flex:<%= b.n %>"><% if (b.percent >= 15) { %><%= b.n.toLocaleString("en-GB") %> <%= b.label %><% } %></span><% } %>
                         </div>
                         <div class="pair_legend"><% for (const b of bp.bar) { %><span><i class="pair_<%= b.kind %>"></i><%= b.label %> <%= b.n.toLocaleString("en-GB") %></span><% } %></div>
                         <% if (bp.families.length) { %>
-                            <div class="pair_caption">Non-canonical, by Leontis–Westhof family</div>
+                            <div id="bp-families" class="pair_caption">Non-canonical, by Leontis–Westhof family</div>
                             <div class="pair_families"><% for (const f of bp.families) { %><span title="<%= f.name %>"><%= f.family %> <%= f.n.toLocaleString("en-GB") %><% if (f.mismatch) { %> <span class="molecule_sub">mismatch</span><% } %></span><% } %></div>
                         <% } %>
                         <% if (bp.sentence) { %>
@@ -135,7 +139,7 @@
                             <% } %>
                         <% } %>
                         <% if (bp.noncanonical.length) { %>
-                            <details class="pair_list">
+                            <details id="bp-all" class="pair_list">
                                 <summary>Show the <%= bp.noncanonical.length.toLocaleString("en-GB") %> non-canonical pairs</summary>
                                 <div class="molecule_scroll">
                                 <table class="molecule_table">
@@ -145,13 +149,12 @@
                                 </div>
                             </details>
                         <% } %>
-                    <% } %>
+                        <% } %>
 
-                    <% if (molecules.sources) { const src = molecules.sources; %>
+                        <% if (s.id === "sources" && molecules.sources) { const src = molecules.sources; %>
                         <% const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); %>
                         <% const org = (o) => !o ? "—" : (o.italic ? `<i>${esc(o.name)}</i>` : esc(o.name)) + (o.common ? ` <span class="molecule_sub">(${esc(o.common)})</span>` : ""); %>
                         <% const tax = (t) => t ? `<a target="_blank" rel="noopener" title="NCBI Taxonomy" href="${t.url}">${t.id}</a>` : "—"; %>
-                        <h2 class="citations_heading">Source</h2>
                         <div class="source_legend"><% src.legend.forEach((l, i) => { %><%= i ? " · " : "" %><b><%= l.kind %></b> = <%= l.text %><% }) %></div>
                         <div class="molecule_scroll">
                         <table class="molecule_table source_table">
@@ -177,10 +180,9 @@
                             <% } %>
                         </table>
                         </div>
-                    <% } %>
+                        <% } %>
 
-                    <% if (citations.length) { %>
-                        <h2 class="citations_heading">Citations</h2>
+                        <% if (s.id === "citations") { %>
                         <% for (const c of citations) { %>
                             <div class="citation">
                                 <% if (c.primary) { %><span class="citation_primary">Primary</span><% } %>
@@ -195,10 +197,25 @@
                                 <% if (c.pubmed_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.pubmed_url %>">PubMed <%= c.pubmed %></a><% } %>
                             </div>
                         <% } %>
-                    <% } %>
+                        <% } %>
 
-                    <a class="detail_link" target="_blank" rel="noopener"
-                       href="https://www.rcsb.org/structure/<%= entry.pdb_id %>">View on rcsb.org</a>
+                        <% if (s.id === "links") { %>
+                            <ul class="link_list">
+                                <li><a target="_blank" rel="noopener" href="https://www.rcsb.org/structure/<%= entry.pdb_id %>">View on rcsb.org</a></li>
+                                <% if (molecules.fasta.all) { %><li><a href="<%= fasta_url %>" download>Sequences as FASTA</a></li><% } %>
+                                <% if (base_pairs) { %><li><a href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download>Base pairs as CSV</a></li><% } %>
+                                <li><a href="/report<%= rail_query %>">Report of this entry, as CSV or Excel</a></li>
+                                <li><a href="/api/entries/<%= entry.pdb_id %>">This entry as JSON</a></li>
+                            </ul>
+                        <% } %>
+
+                        <% if (s.empty) { %>
+                            <p class="section_none">None recorded for this entry.</p>
+                        <% } %>
+                        </div>
+                    </section>
+                    <% } %>
+                </div>
                 </div>
             </div>
         </div>
@@ -241,6 +258,72 @@
             let menu = document.querySelector("details.entry_fasta[open]");
             if (menu && (!menu.contains(event.target) || event.target.closest("a"))) menu.open = false;
         });
+
+        // A band's chevron folds its section; arriving at a folded section by
+        // a link opens it again, or the link would land on nothing.
+        function fold(section, folded) {
+            section.querySelector(".section_body").hidden = folded;
+            let button = section.querySelector(".band_fold");
+            button.setAttribute("aria-expanded", String(!folded));
+            button.title = folded ? "Open this section" : "Fold this section";
+        }
+
+        document.addEventListener("click", (event) => {
+            let button = event.target.closest(".band_fold");
+            if (button) fold(button.closest(".page_section"), button.getAttribute("aria-expanded") === "true");
+
+            let link = event.target.closest('a[href^="#"]');
+            let target = link && document.getElementById(link.getAttribute("href").slice(1));
+            let section = target?.closest(".page_section");
+            if (section) fold(section, false);
+
+            // Only one help note open at a time, and a click elsewhere shuts it.
+            for (const help of document.querySelectorAll(".band_help[open]")) {
+                if (!help.contains(event.target)) help.open = false;
+            }
+        });
+
+        // The sidebar follows the reading position: the current section is the
+        // last one whose band has passed the top of the reading area. The
+        // address follows too, so a copied link opens at the same place.
+        const nav = document.querySelector(".section_nav");
+        const items = new Map([...nav.querySelectorAll(".nav_item")]
+            .map((a) => [a.getAttribute("href").slice(1), a]));
+        const sections = [...document.querySelectorAll(".page_section")];
+        let current = null;
+        let queued = false;
+
+        function follow() {
+            queued = false;
+            let strip = matchMedia("(max-width: 1023px)").matches;
+            let line = strip ? nav.getBoundingClientRect().bottom + 24
+                             : document.querySelector(".results_area_body").getBoundingClientRect().top + 80;
+            let here = sections.filter((s) => s.getBoundingClientRect().top <= line).at(-1) ?? sections[0];
+
+            // At the very bottom, the last short sections can never reach the
+            // line, so the end of the page counts as the last section.
+            let scroller = document.querySelector(".results_area_body");
+            let end = scroller.scrollHeight > scroller.clientHeight
+                ? scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2
+                : innerHeight + scrollY >= document.documentElement.scrollHeight - 2;
+            if (end && scrollY + scroller.scrollTop > 0) here = sections.at(-1);
+
+            if (here === current) return;
+            current?.id && items.get(current.id)?.removeAttribute("aria-current");
+            current = here;
+            let item = items.get(here.id);
+            item.setAttribute("aria-current", "true");
+            if (nav.scrollWidth > nav.clientWidth) {
+                nav.scrollLeft = item.offsetLeft - nav.clientWidth / 2 + item.offsetWidth / 2;
+            }
+            if (scrollY + scroller.scrollTop > 0) history.replaceState(null, "", "#" + here.id);
+        }
+
+        document.addEventListener("scroll", () => {
+            if (!queued) { queued = true; requestAnimationFrame(follow); }
+        }, { capture: true, passive: true });
+        addEventListener("resize", follow);
+        follow();
     </script>
 </body>
 </html>

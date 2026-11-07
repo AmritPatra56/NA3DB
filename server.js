@@ -7,7 +7,8 @@ import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
-         entry_fasta, base_pair_export, base_pairs_csv } from "./detail.js";
+         entry_fasta, base_pair_export, base_pairs_csv, structure_sections,
+         PAGE_GROUPS } from "./detail.js";
 
 const app = express();
 
@@ -165,13 +166,19 @@ app.get("/structure/:id", async (req, res) => {
 
     // The rail on this page has no script to rewrite its links, so it is given
     // the one filter that makes sense from here: this structure.
-    res.render("structure", {
-        page: "search",
+    let page = {
         entry,
         rows: detail_rows(entry),
         citations: await entry_citations(entry.pdb_id),
         molecules: molecule_groups(await entry_contents(entry.pdb_id), await entry_residues(entry.pdb_id)),
-        base_pairs: base_pair_section(await entry_base_pairs(entry.pdb_id)),
+        base_pairs: base_pair_section(await entry_base_pairs(entry.pdb_id))
+    };
+
+    res.render("structure", {
+        ...page,
+        page: "search",
+        sections: structure_sections(page),
+        PAGE_GROUPS,
         rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
     });
 });

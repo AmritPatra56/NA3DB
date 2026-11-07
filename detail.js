@@ -434,3 +434,64 @@ export function base_pairs_csv(pairs) {
     return [PAIR_FIELDS, ...pairs.map((p) => PAIR_FIELDS.map((k) => p[k]))]
         .map((row) => row.map(csv_cell).join(",")).join("\n") + "\n";
 }
+
+// --- the sections of the structure page ---------------------------------
+// Read in four groups, in the order a reader asks: what the entry is, what is
+// in it, what shape it takes, where it came from. Each group keeps the colour
+// of the filter-panel category it answers, so a search and the page it leads
+// to look like one thing.
+export const PAGE_GROUPS = [
+    { key: "overview",    label: "Overview" },
+    { key: "composition", label: "Composition" },
+    { key: "structure",   label: "3D structure" },
+    { key: "references",  label: "References" }
+];
+
+// Rows the Summary would bury, each moved to open the section that lists it.
+const ROW_SECTION = { nonstandard_residue: "modified", monomer_flag: "modified",
+                      ligands: "ligands" };
+const GROUP_SECTION = { "3D Features": "conformation" };
+
+const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
+
+// Every section in page order, with what it holds. A section with nothing in
+// it stays listed, marked empty: "none recorded" is a fact about the entry,
+// and a missing heading would read as a field we never had.
+export function structure_sections({ entry, rows, molecules, base_pairs, citations }) {
+    let group_of = new Map(columns_for("page").map((c) => [c.key, c.group]));
+    let rows_in = { summary: [], modified: [], ligands: [], conformation: [] };
+
+    for (const r of rows) {
+        rows_in[ROW_SECTION[r.key] ?? GROUP_SECTION[group_of.get(r.key)] ?? "summary"].push(r);
+    }
+
+    let polymers = molecules.groups.filter((g) => g.polymer);
+    let modified = molecules.groups.filter((g) => g.modified);
+    let ligands  = molecules.groups.filter((g) => !g.polymer && !g.modified);
+    let steps    = entry.ntc_step_count ?? null;
+
+    let sections = [
+        { id: "summary", title: "Summary", group: "overview", rows: rows_in.summary },
+        { id: "molecules", title: "Molecules", group: "composition", groups: polymers,
+          count: sum(polymers), tile: "Molecules" },
+        { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",
+          rows: rows_in.modified, groups: modified, count: sum(modified), tile: "Modified" },
+        { id: "ligands", title: "Ligands", group: "composition", rows: rows_in.ligands,
+          groups: ligands, count: sum(ligands), tile: "Ligands" },
+        { id: "sources", title: "Sources", group: "composition",
+          count: molecules.sources?.rows.length ?? 0 },
+        { id: "base-pairs", title: "Base pairs", group: "structure",
+          count: base_pairs?.total ?? 0, tile: "Base pairs" },
+        { id: "conformation", title: "Conformation", group: "structure", rows: rows_in.conformation,
+          count: steps === null ? 0 : Number(steps), tile: "NtC steps" },
+        { id: "citations", title: "Citations", group: "references",
+          count: citations.length, tile: "Citations" },
+        { id: "links", title: "Links and downloads", group: "references" }
+    ];
+
+    for (const s of sections) {
+        s.empty = s.id === "conformation" ? !s.rows.length : s.count === 0;
+    }
+
+    return sections;
+}
