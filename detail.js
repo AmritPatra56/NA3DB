@@ -447,7 +447,7 @@ export const PAGE_GROUPS = [
     { key: "references",  label: "References" }
 ];
 
-// Rows the Summary would bury, each moved to open the section that lists it.
+// Rows the Overview would bury, each moved to open the section that lists it.
 const ROW_SECTION = { nonstandard_residue: "modified", monomer_flag: "modified",
                       ligands: "ligands" };
 const GROUP_SECTION = { "3D Features": "conformation" };
@@ -459,10 +459,10 @@ const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
 // and a missing heading would read as a field we never had.
 export function structure_sections({ entry, rows, molecules, base_pairs, citations }) {
     let group_of = new Map(columns_for("page").map((c) => [c.key, c.group]));
-    let rows_in = { summary: [], modified: [], ligands: [], conformation: [] };
+    let rows_in = { overview: [], modified: [], ligands: [], conformation: [] };
 
     for (const r of rows) {
-        rows_in[ROW_SECTION[r.key] ?? GROUP_SECTION[group_of.get(r.key)] ?? "summary"].push(r);
+        rows_in[ROW_SECTION[r.key] ?? GROUP_SECTION[group_of.get(r.key)] ?? "overview"].push(r);
     }
 
     let polymers = molecules.groups.filter((g) => g.polymer);
@@ -471,7 +471,7 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
     let steps    = entry.ntc_step_count ?? null;
 
     let sections = [
-        { id: "summary", title: "Summary", group: "overview", rows: rows_in.summary },
+        { id: "overview", title: "Overview", group: "overview", rows: rows_in.overview },
         { id: "molecules", title: "Molecules", group: "composition", groups: polymers,
           count: sum(polymers) },
         { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",

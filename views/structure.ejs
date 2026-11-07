@@ -15,7 +15,7 @@
 
     // Said under each band's "?": the terms a reader new to the section needs.
     const help = {
-        "summary": "What the entry is: how it was solved, when, at what resolution, and by whom, from the entry's own record.",
+        "overview": "What the entry is: how it was solved, when, at what resolution, and by whom, from the entry's own record.",
         "molecules": "Each polymer once, with the chains that are copies of it. Modelled counts the residues with coordinates; missing ones are in the sequence but not in the model.",
         "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine), with the chain and position of each copy.",
         "ligands": "Small molecules bound in the structure: ions, cofactors, drugs. Each code links to its page at RCSB.",
@@ -37,9 +37,12 @@
                     <nav class="section_nav" aria-label="Sections of this page">
                         <% for (const g of PAGE_GROUPS) { %>
                             <div class="nav_group group_<%= g.key %>">
-                                <div class="nav_group_label"><%= g.label %></div>
-                                <% for (const s of sections.filter((s) => s.group === g.key)) { %>
-                                    <a href="#<%= s.id %>" class="nav_item<%= s.empty ? " empty" : "" %>"><%= s.title %></a>
+                                <%# A group that is one section of the same name (Overview) is
+                                    its own link, not a label over a repeat of itself. %>
+                                <% const in_group = sections.filter((s) => s.group === g.key); %>
+                                <% if (in_group[0].title !== g.label) { %><div class="nav_group_label"><%= g.label %></div><% } %>
+                                <% for (const s of in_group) { %>
+                                    <a href="#<%= s.id %>" class="nav_item<%= s.title === g.label ? " nav_solo" : "" %><%= s.empty ? " empty" : "" %>"><%= s.title %></a>
                                 <% } %>
                             </div>
                         <% } %>
@@ -51,7 +54,7 @@
                     <section id="<%= s.id %>" class="page_section group_<%= s.group %><%= s.empty ? " empty" : "" %>" aria-labelledby="<%= s.id %>-title">
                         <div class="section_band">
                             <div class="band_title">
-                                <span class="band_group"><%= group.label %></span>
+                                <% if (group.label !== s.title) { %><span class="band_group"><%= group.label %></span><% } %>
                                 <h2 id="<%= s.id %>-title"><%= s.title %></h2>
                             </div>
                             <div class="band_tools">

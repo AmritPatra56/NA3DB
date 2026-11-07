@@ -2185,6 +2185,21 @@ input::placeholder {
 /* Only the group label carries the dot on the sidebar; the chips need it. */
 .nav_item::before { display: none; }
 
+/* Overview is a group of one, so on the sidebar its link is the label. */
+@media (min-width: 1024px) {
+    .nav_item.nav_solo {
+        margin-top: 6px;
+        padding-left: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .nav_item.nav_solo::before { display: block; }
+}
+
 .nav_item {
     display: flex;
     align-items: center;

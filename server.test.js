@@ -653,7 +653,7 @@ test("every sidebar link on a structure page lands on a section", async () => {
         .map((m) => m[1] ?? m[2]);
     let sections = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
 
-    assert.deepEqual(links, ["summary", "molecules", "modified-nucleotides", "ligands", "sources",
+    assert.deepEqual(links, ["overview", "molecules", "modified-nucleotides", "ligands", "sources",
                              "base-pairs", "conformation", "citations", "links"]);
     assert.deepEqual(sections, links, "one section per link, in the same order");
 });

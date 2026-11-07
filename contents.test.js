@@ -1356,17 +1356,17 @@ test("a section with nothing in it is listed as empty, not dropped", () => {
                       "base-pairs", "conformation", "citations"]) {
         assert.ok(by_id[id].empty, `${id} should be marked empty`);
     }
-    assert.ok(!by_id.summary.empty && !by_id.links.empty, "the summary and links always have content");
+    assert.ok(!by_id.overview.empty && !by_id.links.empty, "the overview and links always have content");
 });
 
-test("a row goes to the section that lists it, not to the summary", () => {
+test("a row goes to the section that lists it, not to the overview", () => {
     let rows = [{ key: "title" }, { key: "ligands" }, { key: "nonstandard_residue" },
                 { key: "monomer_flag" }, { key: "confal_score" }, { key: "atom_count" }];
     let sections = structure_sections({ entry: {}, rows, molecules: no_contents,
                                         base_pairs: null, citations: [] });
     let keys = (id) => sections.find((s) => s.id === id).rows.map((r) => r.key);
 
-    assert.deepEqual(keys("summary"), ["title", "atom_count"]);
+    assert.deepEqual(keys("overview"), ["title", "atom_count"]);
     assert.deepEqual(keys("ligands"), ["ligands"]);
     assert.deepEqual(keys("modified-nucleotides"), ["nonstandard_residue", "monomer_flag"]);
     assert.deepEqual(keys("conformation"), ["confal_score"]);

@@ -770,7 +770,7 @@ results.
 
 | group | section | what is there |
 | --- | --- | --- |
-| Overview | Summary | title, method, date, resolution, authors, sizes |
+| Overview | Overview | title, method, date, resolution, authors, sizes |
 | Composition | Molecules | each polymer with its chains, length and modelled residues; the sequence with gaps and modified bases marked, a copy button and a `FASTA` download |
 | | Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
 | | Ligands | each small molecule, linked to its RCSB page |
