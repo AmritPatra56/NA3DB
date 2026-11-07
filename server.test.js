@@ -150,7 +150,7 @@ test("/report with no search sends you to /search", async () => {
 // A layout choice is not a search, so it must not get past the gate.
 test("a display parameter alone does not open the report", async () => {
     for (const query of ["fields=closed", "view=lines", "sort=confal_desc",
-                         "per_page=50", "page=3"]) {
+                         "per_page=50", "page=3", "panel=open"]) {
         let res = await fetch(base + "/report?" + query, { redirect: "manual" });
 
         assert.equal(res.status, 302, `/report?${query} should be turned away`);
@@ -216,8 +216,8 @@ test("the landing box is a form that needs no JavaScript", async () => {
 
 test("the landing page links to the filter panel", async () => {
     let html = await (await fetch(base + "/")).text();
-
-    assert.match(html, /landing_advanced" href="\/search"/);
+    // ?panel=open: a phone hides the panel unless the link asks for it.
+    assert.match(html, /landing_advanced" href="\/search\?panel=open"/);
 });
 
 test("every example is a link, labelled by what kind of thing it is", async () => {

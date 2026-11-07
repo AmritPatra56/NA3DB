@@ -123,7 +123,7 @@ app.get("/search", async (req, res) => {
 // The parameters that say how to show results rather than which ones. Both
 // the panel rule and the report gate have to ignore them, or a layout choice
 // would look like a search.
-const DISPLAY = ["page", "sort", "view", "per_page", "match", "fields"];
+const DISPLAY = ["page", "sort", "view", "per_page", "match", "fields", "panel"];
 
 function filters_used(query) {
     return Object.keys(query).filter((k) => !DISPLAY.includes(k));
