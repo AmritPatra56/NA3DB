@@ -1324,3 +1324,11 @@ test("the modified group shows its first rows and keeps the rest for a click", a
     assert.equal(group.shown, MODIFIED_ROWS_SHOWN);
     assert.ok(group.rows.length > group.shown);
 });
+
+test("large counts on the page carry thousands separators, like Atoms", () => {
+    let rows = detail_rows({ residue_count: 20560, nucleotide_count: 7427, atom_count: 219329 });
+    let shown = Object.fromEntries(rows.map((r) => [r.label, r.value]));
+    assert.equal(shown.Residues, "20,560");
+    assert.equal(shown.Nucleotides, "7,427");
+    assert.equal(shown.Atoms, "219,329");
+});

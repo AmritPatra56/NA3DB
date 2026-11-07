@@ -1771,3 +1771,6 @@ input::placeholder {
     cursor: pointer;
 }
 .more_rows_toggle:hover { text-decoration: underline; }
+
+/* How many entries a pill finds, quieter than its name. */
+.pill_count { margin-left: 2px; opacity: 0.6; font-variant-numeric: tabular-nums; }

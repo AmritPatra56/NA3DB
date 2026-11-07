@@ -337,7 +337,10 @@ export const FILTERS = [
                   "Protein/DNA", "Protein/RNA", "Protein/DNA/RNA",
                   "Protein", "Oligosaccharide", "Protein/Oligosaccharide", "Other"].map(option),
         expand: (values) => values.flatMap((v) => POLYMER_TYPE_ALIASES[v] || [v]),
-        where: `AND (${POLYMER_TYPE_SQL}) = ANY(?)`
+        where: `AND (${POLYMER_TYPE_SQL}) = ANY(?)`,
+        // Each pill shows how many entries it finds; one that finds none is
+        // not drawn. Every entry holds a nucleic acid, so Protein alone is 0.
+        count_by: POLYMER_TYPE_SQL
     },
 
     // Reads the column stored by migration 006: 0.9 ms against 276 ms. Both
@@ -685,7 +688,7 @@ export const COLUMNS = [
     // alternative residue. The alias s shadows the outer struct s; legal.
     {
         key: "residue_count", label: "Residues", group: "Contents",
-        scope: "detail",
+        scope: "detail", thousands: true,
         select: `(SELECT count(*) FROM (SELECT DISTINCT s.asym_id, s.seq_id
                                           FROM pdbx_poly_seq_scheme s
                                          WHERE s.entry_id = e.id) r)::int`
@@ -695,7 +698,7 @@ export const COLUMNS = [
     // residues and 14 nucleotides. Same rules, DNA, RNA and hybrid chains only.
     {
         key: "nucleotide_count", label: "Nucleotides", group: "Contents",
-        scope: "detail",
+        scope: "detail", thousands: true,
         select: `(SELECT count(*) FROM (SELECT DISTINCT s.asym_id, s.seq_id
                                           FROM pdbx_poly_seq_scheme s
                                           JOIN entity_poly ep ON ep.entry_id = s.entry_id

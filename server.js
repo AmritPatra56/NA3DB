@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs,
-         entry_residues, ligand_suggestions } from "./search.js";
+         entry_residues, ligand_suggestions, pill_counts } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
@@ -85,7 +85,7 @@ function current_polymer_types(original_url) {
     return params.toString().replaceAll("+", "%20");
 }
 
-app.get("/search", (req, res) => {
+app.get("/search", async (req, res) => {
     // The page's script selects only the pills it knows, so an old value would
     // be dropped and the search silently widened to every entry.
     let rewritten = current_polymer_types(req.originalUrl);
@@ -94,8 +94,14 @@ app.get("/search", (req, res) => {
         return;
     }
 
+    // A pill the URL selects is drawn even at 0, or the page script would
+    // drop it and silently widen the search.
+    let selected = Object.values(req.query).flatMap((v) => String(v).split(","));
+
     res.render("search", {
         page: "search",
+        counts: await pill_counts(),
+        selected,
         panel_open: panel_open(req.query),
         view: req.query.view === "lines" ? "lines" : "cards",
         match: match_mode(req.query.match)

@@ -677,3 +677,15 @@ export async function ligand_suggestions(q = query) {
           ORDER BY entries DESC, n.comp_id`);
     return result.rows;
 }
+
+// How many entries each pill of a counted filter finds, as
+// { polymer_type: { DNA: 197, ... } }. One GROUP BY per filter.
+export async function pill_counts(q = query) {
+    let counts = {};
+    for (const f of FILTERS.filter((f) => f.count_by)) {
+        let result = await q(`SELECT (${f.count_by}) AS value, count(*)::int AS n
+                                FROM entry e GROUP BY 1`);
+        counts[f.key] = Object.fromEntries(result.rows.map((r) => [r.value, r.n]));
+    }
+    return counts;
+}

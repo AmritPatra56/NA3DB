@@ -448,9 +448,11 @@ test("the form has a control for every filter in the registry", async () => {
         if (f.kind === "pills") {
             assert.ok(html.includes(`data-name="${f.key}"`),
                       `no pill group for ${f.key}`);
+            // A pill that would find nothing is left out; every other is drawn.
             for (const o of f.options) {
-                assert.ok(html.includes(`data-value="${o.value}"`),
-                          `no pill for ${f.key} = ${o.value}`);
+                let found = (await (await fetch(base + `/api/count?${f.key}=${encodeURIComponent(o.value)}`)).json()).total;
+                assert.equal(html.includes(`data-value="${o.value}"`), found > 0 || f.key !== "polymer_type",
+                             `pill for ${f.key} = ${o.value} (finds ${found})`);
             }
         } else {
             assert.ok(html.includes(`name="${f.key}"`), `no input for ${f.key}`);
@@ -760,4 +762,15 @@ test("one entry's API carries each molecule's sequence and the ligand codes", as
     let entry = await (await fetch(base + "/api/entries/4TNA")).json();
     assert.ok(entry.entities.every((e) => "sequence" in e && "comp_id" in e));
     assert.ok("ligands" in entry);
+});
+
+test("a polymer pill shows its count, and a selected empty one is still drawn", async () => {
+    let html = await (await fetch(base + "/search")).text();
+    let rna = (await (await fetch(base + "/api/count?polymer_type=RNA")).json()).total;
+    assert.match(html, new RegExp(`data-value="RNA">RNA <span class="pill_count">${rna}</span>`));
+    assert.ok(!html.includes('data-value="Oligosaccharide"'));
+
+    let asked = await (await fetch(base + "/search?polymer_type=Oligosaccharide")).text();
+    assert.ok(asked.includes('data-value="Oligosaccharide"'),
+              "a pill the URL selects must exist, or the search silently widens");
 });

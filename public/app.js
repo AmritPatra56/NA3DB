@@ -555,10 +555,13 @@ document.querySelectorAll("input[data-suggest]").forEach((input) => {
     let shown = [];
     let active = -1;
 
-    async function load() {
-        if (all) return;
-        let response = await fetch("/api/" + input.dataset.suggest);
-        all = response.ok ? await response.json() : [];
+    // One request however many events ask before it answers.
+    let loading = null;
+    function load() {
+        loading ??= fetch("/api/" + input.dataset.suggest)
+            .then((response) => (response.ok ? response.json() : []))
+            .then((rows) => { all = rows; }, () => { all = []; });
+        return loading;
     }
 
     function close() {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NA3DB</title>
+    <link rel="icon" href="/assets/favicon.ico">
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -104,8 +105,10 @@
                                 <% if (f.any) { %>
                                 <button type="button" class="pill selected" data-value="any">Any</button>
                                 <% } %>
+                                <% const n = counts[f.key]; %>
                                 <% for (const o of f.options) { %>
-                                <button type="button" class="pill" data-value="<%= o.value %>"><%= o.label %></button>
+                                <% if (n && !n[o.value] && !selected.includes(o.value)) continue; %>
+                                <button type="button" class="pill" data-value="<%= o.value %>"><%= o.label %><% if (n) { %> <span class="pill_count"><%= (n[o.value] ?? 0).toLocaleString("en-GB") %></span><% } %></button>
                                 <% } %>
                             </div>
                         </div>
