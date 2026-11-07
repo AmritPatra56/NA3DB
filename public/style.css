@@ -2107,3 +2107,22 @@ input::placeholder {
 
     .report_body .preview_scroll { max-height: 70vh; }
 }
+
+/* Landing and error pages on a phone: the button under the box at full
+   width, 16px text so iOS does not zoom on focus, and links big enough to
+   hit with a thumb. */
+@media (max-width: 640px) {
+    .landing { padding: 16px; align-items: flex-start; }
+    .landing_inner { margin: 12vh 0 0; }
+    .landing_title { font-size: 40px; }
+
+    .landing_search { flex-direction: column; }
+    .landing_search input { font-size: 16px; }
+    .landing_search button { min-height: 48px; }
+
+    .landing_examples { gap: 4px 12px; }
+    .landing_examples a { padding: 6px 2px; }
+    .landing_advanced { display: inline-block; padding: 10px 4px; }
+
+    .empty_state .detail_link { padding: 10px 4px; font-size: 15px; }
+}
