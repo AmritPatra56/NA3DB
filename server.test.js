@@ -729,9 +729,35 @@ test("the report reached from a structure covers only that structure", async () 
 });
 
 test("a FASTA link for a molecule without a sequence is a 404, not an empty file", async () => {
-    assert.equal((await fetch(base + "/structure/1B23/fasta/99")).status, 404);
+    assert.equal((await fetch(base + "/structure/4TNA/fasta/99")).status, 404);
     assert.equal((await fetch(base + "/structure/NOPE/fasta/1")).status, 404);
     // The test seed carries no sequences, so a whole-entry file is empty too.
-    assert.equal((await fetch(base + "/structure/1B23/fasta")).status, 404);
-    assert.equal((await fetch(base + "/structure/1B23/fasta?only=na")).status, 404);
+    assert.equal((await fetch(base + "/structure/4TNA/fasta")).status, 404);
+    assert.equal((await fetch(base + "/structure/4TNA/fasta?only=na")).status, 404);
+});
+
+// --- the base-pair API ---------------------------------------------------
+// The seed has no base pairs, so these check the shape and the edges; the
+// pairs themselves are tested in contents.test.js.
+test("base pairs of an unknown entry are a JSON 404", async () => {
+    let response = await fetch(base + "/api/entries/NOPE/base_pairs");
+    assert.equal(response.status, 404);
+    assert.match((await response.json()).error, /NOPE/);
+});
+
+test("an entry with no base pairs gives an empty list, in JSON and CSV", async () => {
+    let json = await (await fetch(base + "/api/entries/4tna/base_pairs")).json();
+    assert.deepEqual(json, { entry: "4TNA", model: null, total: 0,
+                             counts: { wc: 0, gu: 0, nc: 0 }, pairs: [] });
+
+    let csv = await fetch(base + "/api/entries/4TNA/base_pairs?format=csv");
+    assert.equal(csv.headers.get("content-type"), "text/csv; charset=utf-8");
+    assert.match(csv.headers.get("content-disposition"), /4TNA_base_pairs\.csv/);
+    assert.equal(await csv.text(), "chain_1,res_1,chain_2,res_2,family,kind\n");
+});
+
+test("one entry's API carries each molecule's sequence and the ligand codes", async () => {
+    let entry = await (await fetch(base + "/api/entries/4TNA")).json();
+    assert.ok(entry.entities.every((e) => "sequence" in e && "comp_id" in e));
+    assert.ok("ligands" in entry);
 });

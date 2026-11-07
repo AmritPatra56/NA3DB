@@ -402,3 +402,28 @@ export function fasta_choices(entities) {
     return { all: sequenced.length,
              na: sequenced.filter((e) => NUCLEIC_KINDS.has(e.kind)).length };
 }
+
+// --- base pairs for scripts ---------------------------------------------
+// The same rows the page draws, so the API and the page cannot disagree.
+// The model sits once at the top: every pair comes from the same one.
+const PAIR_FIELDS = ["chain_1", "res_1", "chain_2", "res_2", "family", "kind"];
+
+export function base_pair_export(entry_id, pairs) {
+    let counts = { wc: 0, gu: 0, nc: 0 };
+    for (const p of pairs) counts[p.kind]++;
+    return {
+        entry: entry_id.toUpperCase(),
+        model: pairs[0]?.model ?? null,
+        total: pairs.length,
+        counts,
+        pairs: pairs.map((p) => Object.fromEntries(PAIR_FIELDS.map((k) => [k, p[k]])))
+    };
+}
+
+// A comma, quote or line break means the whole cell is quoted, quotes doubled.
+const csv_cell = (v) => (/[",\r\n]/.test(String(v ?? "")) ? `"${String(v).replaceAll('"', '""')}"` : String(v ?? ""));
+
+export function base_pairs_csv(pairs) {
+    return [PAIR_FIELDS, ...pairs.map((p) => PAIR_FIELDS.map((k) => p[k]))]
+        .map((row) => row.map(csv_cell).join(",")).join("\n") + "\n";
+}

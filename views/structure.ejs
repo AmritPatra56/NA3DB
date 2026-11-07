@@ -105,7 +105,10 @@
                     <% if (!base_pairs) { %>
                         <p class="molecule_sub">No base pairs annotated.</p>
                     <% } else { const bp = base_pairs; %>
-                        <div class="source_legend"><%= bp.total.toLocaleString("en-GB") %> <%= bp.total === 1 ? "pair" : "pairs" %>, Leontis–Westhof classes from DNATCO</div>
+                        <div class="source_legend pair_head">
+                            <span><%= bp.total.toLocaleString("en-GB") %> <%= bp.total === 1 ? "pair" : "pairs" %>, Leontis–Westhof classes from DNATCO</span>
+                            <a class="pair_csv" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download title="Download every pair as CSV"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>CSV</a>
+                        </div>
                         <div class="pair_bar" role="img" aria-label="<%= bp.bar.map((b) => `${b.n} ${b.label}`).join(', ') %>">
                             <% for (const b of bp.bar) { if (!b.n) continue; %><span class="pair_<%= b.kind %>" style="flex:<%= b.n %>"><% if (b.percent >= 15) { %><%= b.n.toLocaleString("en-GB") %> <%= b.label %><% } %></span><% } %>
                         </div>

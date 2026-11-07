@@ -7,7 +7,7 @@ import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
-         entry_fasta } from "./detail.js";
+         entry_fasta, base_pair_export, base_pairs_csv } from "./detail.js";
 
 const app = express();
 
@@ -264,6 +264,27 @@ app.get("/api/entries/:id", async (req, res) => {
     res.json({ ...entry, rows: detail_rows(entry),
                entities: contents.entities, modified_nucleotides: contents.modified,
                citations: await entry_citations(entry.pdb_id) });
+});
+
+// Every base pair of one entry, first model, as the page lists them.
+// ?format=csv gives a file to open in a spreadsheet or pandas.
+app.get("/api/entries/:id/base_pairs", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let pairs = await entry_base_pairs(entry.pdb_id);
+
+    if (req.query.format === "csv") {
+        res.attachment(`${entry.pdb_id}_base_pairs.csv`)
+           .set("Content-Type", "text/csv; charset=utf-8")
+           .send(base_pairs_csv(pairs));
+        return;
+    }
+    res.json(base_pair_export(entry.pdb_id, pairs));
 });
 
 // Returns every matching entry for the report page, not just one page.

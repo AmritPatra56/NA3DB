@@ -9,7 +9,7 @@ import { entry_contents, entry_citations, find_entry, search_entries, build_wher
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
-         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of,
+         SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of, base_pair_export, base_pairs_csv,
          entry_fasta, fasta_choices } from "./detail.js";
 
 after(() => close());
@@ -1281,4 +1281,37 @@ test("the Ligands column lists codes in order, water left out", async () => {
         return (await q(`SELECT ${select} AS v FROM entry e WHERE e.id = 'ZL05'`)).rows[0].v;
     });
     assert.equal(shown, "MG, SAM");
+});
+
+test("the base-pair export counts every kind and keeps the page's rows", async () => {
+    let rows = [
+        { chain_1: "A", res_1: "G1", chain_2: "B", res_2: "C24", family: "cWW", kind: "wc", model: 1 },
+        { chain_1: "A", res_1: "G2", chain_2: "B", res_2: "U23", family: "cWW", kind: "gu", model: 1 },
+        { chain_1: "A", res_1: "A3", chain_2: "B", res_2: "G22", family: "tHS", kind: "nc", model: 1 }];
+    let out = base_pair_export("1abc", rows);
+
+    assert.equal(out.entry, "1ABC");
+    assert.equal(out.model, 1);
+    assert.deepEqual(out.counts, { wc: 1, gu: 1, nc: 1 });
+    assert.equal(out.total, out.counts.wc + out.counts.gu + out.counts.nc);
+    assert.deepEqual(out.pairs[2], { chain_1: "A", res_1: "A3", chain_2: "B", res_2: "G22",
+                                     family: "tHS", kind: "nc" });
+
+    // The CSV holds the same pairs, row for row.
+    let lines = base_pairs_csv(rows).trimEnd().split("\n");
+    assert.equal(lines[0], "chain_1,res_1,chain_2,res_2,family,kind");
+    assert.deepEqual(lines.slice(1).map((l) => l.split(",")),
+                     out.pairs.map((p) => Object.values(p)));
+
+    assert.deepEqual(base_pair_export("1ABC", []), { entry: "1ABC", model: null, total: 0,
+                                                    counts: { wc: 0, gu: 0, nc: 0 }, pairs: [] });
+    assert.equal(base_pairs_csv([]), "chain_1,res_1,chain_2,res_2,family,kind\n");
+});
+
+test("the base-pair rows say which model they come from: the first one present", async () => {
+    let pairs = await with_pairs([[3, "A", "G", 1, "B", "C", 8, "cWW"],
+                                  [2, "A", "G", 1, "B", "C", 8, "cWW"],
+                                  [2, "A", "C", 2, "B", "G", 7, "cWW"]]);
+    assert.deepEqual(pairs.map((p) => p.model), [2, 2]);
+    assert.equal(base_pair_export("ZZ03", pairs).model, 2);
 });

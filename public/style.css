@@ -1669,7 +1669,7 @@ input::placeholder {
     padding: 0 2px;
 }
 .sequence_actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-.sequence_copy, .sequence_fasta, .entry_fasta > summary, a.entry_fasta {
+.sequence_copy, .sequence_fasta, .entry_fasta > summary, a.entry_fasta, .pair_csv {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -1683,8 +1683,8 @@ input::placeholder {
     cursor: pointer;
 }
 .sequence_copy:hover, .sequence_fasta:hover,
-.entry_fasta > summary:hover, a.entry_fasta:hover { border-color: var(--border-dark); }
-.sequence_actions svg, .entry_fasta svg {
+.entry_fasta > summary:hover, a.entry_fasta:hover, .pair_csv:hover { border-color: var(--border-dark); }
+.sequence_actions svg, .entry_fasta svg, .pair_csv svg {
     width: 14px;
     height: 14px;
     fill: none;
@@ -1755,3 +1755,7 @@ input::placeholder {
 .suggest_list b { font-weight: 600; color: var(--accent); }
 .suggest_list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suggest_list small { color: var(--text-dim); }
+
+/* The base-pair count with its CSV download at the far end. */
+.pair_head { display: flex; align-items: center; gap: 8px; }
+.pair_csv { margin-left: auto; }

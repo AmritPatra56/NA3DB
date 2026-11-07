@@ -492,6 +492,7 @@ export async function entry_base_pairs(id, q = query) {
                LEFT JOIN chem_comp c2 ON c2.id = p.comp_id_2
               WHERE coalesce(p.pdb_model_number, 1) = p.first_model)
          SELECT auth_asym_id_1 AS chain_1, auth_asym_id_2 AS chain_2, lw_family AS family,
+                first_model AS model,
                 comp_id_1 || auth_seq_id_1 || COALESCE(NULLIF(pdb_ins_code_1, '?'), '') AS res_1,
                 comp_id_2 || auth_seq_id_2 || COALESCE(NULLIF(pdb_ins_code_2, '?'), '') AS res_2,
                 CASE WHEN lw_family <> 'cWW' THEN 'nc'
