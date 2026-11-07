@@ -156,11 +156,12 @@ body {
     background-color: #e2e8f0;
 }
 
-.rail-logo img {
+/* The NA3DB monogram: NA over 3D. Drawn inline so it takes the page font. */
+.rail-logo svg {
     display: block;
-    width: 32px;
-    height: auto;
-    filter: invert(1);
+    width: 34px;
+    height: 34px;
+    font-family: inherit;
 }
 
 .rail-item img {
@@ -1817,7 +1818,7 @@ input::placeholder {
         border-bottom: 0;
     }
 
-    .rail-logo img { width: 28px; }
+    .rail-logo svg { width: 30px; height: 30px; }
 
     .rail-brand {
         order: 1;
@@ -2399,4 +2400,85 @@ input::placeholder {
     .page_section [id] { scroll-margin-top: 104px; }
 
     .band_fold, .band_help > summary { width: 34px; height: 34px; }
+}
+
+
+/* <---------------landing: stats line and footer-------------> */
+.landing_page {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.landing_stats {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+.landing_stats b {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.site_footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-primary);
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.site_footer_links {
+    display: flex;
+    gap: 18px;
+    margin: 0 auto;
+}
+
+.site_footer_links a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.site_footer_links a:hover { text-decoration: underline; }
+
+.site_footer_support {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.support_tile {
+    display: grid;
+    place-items: center;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+}
+
+/* The logo file is drawn light for a dark ground, as the rail once used it. */
+.support_tile img {
+    display: block;
+    height: 18px;
+    width: auto;
+    filter: invert(1);
+}
+
+@media (max-width: 640px) {
+    .landing_page { flex-grow: 1; }
+
+    .site_footer {
+        flex-direction: column;
+        gap: 10px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .site_footer_links { margin: 0; }
+    .site_footer_links a { padding: 6px 2px; }
 }

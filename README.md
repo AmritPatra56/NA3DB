@@ -432,6 +432,7 @@ Page templates, in `views/`:
 | `structure.ejs` | One structure's own page, at `/structure/<id>`. |
 | `error.ejs` | Shown for any address that matches nothing. |
 | `includes/rail.ejs` | The sidebar. Written once, included by every page. |
+| `includes/footer.ejs` | The landing page's footer: how to cite, help, contact, and who supports NA3DB. |
 
 These are rendered by the server and only the resulting HTML is sent. The
 templates themselves are never downloadable, which is why `views/` sits outside

@@ -6,7 +6,7 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, EXAMPLES } from "./filters.js";
 import { once } from "node:events";
 import app from "./server.js";
-import { close as close_db } from "./db.js";
+import { close as close_db, query } from "./db.js";
 
 let base;
 let server;
@@ -727,6 +727,34 @@ test("/api/export honours the match mode", async () => {
 
     assert.ok(yes > 0 && no > 0);
     assert.equal(yes + no, all, "the two reports should cover everything once");
+});
+
+// The landing page says how big the database is and when it last changed,
+// both asked of the database, so the line cannot go stale.
+test("the landing page states the database's size and last load", async () => {
+    let html  = await (await fetch(base + "/")).text();
+    let total = (await (await fetch(base + "/api/stats")).json()).total;
+
+    assert.ok(html.includes(`<b>${total.toLocaleString("en-GB")}</b> structures`));
+
+    // The test seed may have no load record; then the date is left out, not invented.
+    let loads = Number((await query("SELECT count(*) FROM loaded_entries")).rows[0].count);
+    if (loads) assert.match(html, /updated \d{1,2} [A-Z][a-z]{2} \d{4}/);
+    else       assert.ok(!html.includes("updated"), "no load record, no date");
+});
+
+// The footer links before its pages are written; each must still answer.
+test("every footer link answers", async () => {
+    for (const path of ["/cite", "/help", "/contact"]) {
+        assert.equal((await fetch(base + path)).status, 200, path);
+    }
+});
+
+// The rail is NA3DB's own now, not the institute's logo.
+test("the rail carries the NA3DB mark, not the IBT logo", async () => {
+    let html = await (await fetch(base + "/search")).text();
+    assert.ok(html.includes('aria-label="NA3DB home"'));
+    assert.ok(!html.includes('alt="IBT logo"'));
 });
 
 // A structure page runs no script, so its rail links are built on the server.

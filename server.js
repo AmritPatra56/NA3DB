@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs,
-         entry_residues, ligand_suggestions, pill_counts } from "./search.js";
+         entry_residues, ligand_suggestions, pill_counts, database_stats } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
@@ -57,7 +57,7 @@ app.get("/api/fields", (req, res) => {
 // The front door. A bare visit gets the landing page; a visit carrying a
 // search is a bookmark from before the split, so it is sent to the page that
 // can answer it rather than being dropped on the floor.
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
     let query = req.originalUrl.split("?")[1];
 
     if (query) {
@@ -65,8 +65,19 @@ app.get("/", (req, res) => {
         return;
     }
 
-    res.render("landing", { page: "landing" });
+    res.render("landing", { page: "landing", stats: await database_stats() });
 });
+
+// The footer's pages, linked before they are written. A 200 that says so,
+// not a 404: the link is right, the page is what is missing.
+const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact" };
+
+for (const [path, heading] of Object.entries(UNWRITTEN)) {
+    app.get("/" + path, (req, res) => {
+        res.render("error", { page: "none", heading,
+                              message: "This page is being written." });
+    });
+}
 
 // The search page: the filter panel, the results and the sort control.
 //

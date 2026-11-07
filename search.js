@@ -219,6 +219,15 @@ export async function search_entries(query_params) {
     };
 }
 
+// The size of the database and when it last changed, for the landing page.
+// Asked fresh, like /api/stats, so a load shows at once.
+export async function database_stats() {
+    let result = await query(`SELECT (SELECT count(*) FROM entry) AS total,
+                                     (SELECT max(loaded_at) FROM loaded_entries) AS updated`);
+    let row = result.rows[0];
+    return { total: Number(row.total), updated: row.updated };
+}
+
 // How many entries match, without building a single row. Costs 6-45 ms where
 // a full search costs 28-38, which is what makes a count-as-you-type possible.
 export async function count_entries(query_params) {

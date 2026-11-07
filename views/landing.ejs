@@ -11,6 +11,7 @@
     <div class="interface">
         <%- include("includes/rail.ejs") %>
 
+        <div class="landing_page">
         <div class="landing">
             <div class="landing_inner">
                 <h1 class="landing_title">NA3DB</h1>
@@ -37,7 +38,15 @@
                 </p>
 
                 <a class="landing_advanced" href="/search">Advanced search</a>
+
+                <%# Both from the database, so the line moves with every load. %>
+                <p class="landing_stats">
+                    <b><%= stats.total.toLocaleString("en-GB") %></b> structures<% if (stats.updated) { %>
+                    · updated <%= stats.updated.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Prague" }) %><% } %>
+                </p>
             </div>
+        </div>
+        <%- include("includes/footer.ejs") %>
         </div>
     </div>
 
