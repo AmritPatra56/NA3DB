@@ -1774,3 +1774,59 @@ input::placeholder {
 
 /* How many entries a pill finds, quieter than its name. */
 .pill_count { margin-left: 2px; opacity: 0.6; font-variant-numeric: tabular-nums; }
+
+
+/* <---------------------------phones-----------------------------> */
+
+/* A phone gets the page as one scrolling document instead of an app shell of
+   inner scroll boxes: the browser bar can then hide on scroll, and nothing is
+   trapped in a box shorter than the thumb. The rail turns into a bar across
+   the top, since a 60px column is a sixth of a 375px screen. */
+@media (max-width: 640px) {
+    .interface {
+        flex-direction: column;
+        height: auto;
+        min-height: 100dvh;
+    }
+
+    .workspace { height: auto; }
+
+    .query_panel_body,
+    .results_area_body { overflow: visible; }
+
+    .rail {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+
+        width: 100%;
+        height: 48px;
+        flex-direction: row;
+        align-items: center;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* The logo and the name on the left, the page icons on the right. */
+    .rail-icons { display: contents; }
+
+    .rail-logo,
+    .rail-item {
+        width: 48px;
+        height: 48px;
+        border-bottom: 0;
+    }
+
+    .rail-logo img { width: 28px; }
+
+    .rail-brand {
+        order: 1;
+        margin: 0 auto 0 2px;
+
+        font-size: 18px;
+        writing-mode: horizontal-tb;
+        transform: none;
+    }
+
+    .rail-item { order: 2; }
+}
