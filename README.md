@@ -31,6 +31,10 @@ find today:
 | `Leonard` | 2 structures deposited by an author of that name |
 | `PSU` | 90 structures containing pseudouridine, a modified base |
 
+And in the filter panel, the **Ligand** box finds what is bound to the
+molecule: `SAM` gives 10 structures holding S-adenosylmethionine, `MG` 507
+with a magnesium ion. It suggests codes and names as you type.
+
 Open the filter panel and you can be exact instead: solved by X-ray, better
 than 2 Å, containing a modified residue, scoring above 80 for conformational
 quality. Order the results eight ways, read any single structure in full at its
@@ -42,9 +46,34 @@ your ordering and your layout to whoever you send it to.
 Nothing is behind a login, and the browser contacts no host but this one. It
 runs as a single Node process in front of a single PostgreSQL database.
 
+## Using it, step by step
+
+It works the same on a laptop and a phone.
+
+1. **Search.** Type in the box on the front page and press `Search`. The
+   number under the box tells you how many structures match before you do.
+2. **Narrow it down.** Press `Filters` and pick what you need: method,
+   polymer type, organism, ligand, confal score and more. The button at the
+   bottom says how many results you will get (`Show 50 results`), so you
+   never land on an empty page.
+3. **See what is applied.** Each filter in use shows as a chip above the
+   results, like `Experimental method: X-ray ×`. Press `×` to drop one.
+4. **Look through the results.** `Cards` shows the key facts of each
+   structure; `Lines` shows one row each. Change the order with `Sort`.
+5. **Open a structure.** Press any card or line. Its page lists every
+   molecule with its sequence, the modified nucleotides, the base pairs, the
+   citations and a link to the PDB.
+6. **Take the data with you.**
+   - sequences: the `FASTA` button, for one molecule or the whole entry
+   - base pairs: the `CSV` button on the structure page
+   - the result list: the Report icon, choose your columns, `Export to CSV`
+7. **Share it.** Copy the address. Everything you chose is in the link, so
+   whoever opens it sees exactly what you saw.
+
 ## Contents
 
 - [What you can ask it](#what-you-can-ask-it)
+- [Using it, step by step](#using-it-step-by-step)
 - [The words on the screen](#the-words-on-the-screen) — confal, NtC, resolution and the rest, in plain terms
 - [Requirements](#requirements)
 - [Setting it up](#setting-it-up) — [quick start](#quick-start), [the real data](#loading-the-real-data), [schema changes](#changing-the-schema)
@@ -61,8 +90,7 @@ runs as a single Node process in front of a single PostgreSQL database.
 
 ## The words on the screen
 
-Two sources, each with its own vocabulary. You need these seven to read a
-result:
+Two sources, each with its own vocabulary. You need these to read a result:
 
 | word | what it means |
 | --- | --- |
@@ -73,8 +101,11 @@ result:
 | **Non-standard residue** | A building block that is not one of the four usual bases, nearly always a chemical modification of one. `PSU` is pseudouridine, the most common. |
 | **NtC class** | A name for the shape of one step between two neighbouring residues, one of 97, such as `AA00`. It is a vocabulary of known conformations: rather than list angles, you say which shape the step matches. |
 | **Confal score** | 0 to 96, how closely a whole structure's steps match those known shapes. High means conventional geometry; low means unusual, which may be a real finding or a modelling problem. |
+| **Ligand** | A small molecule bound to the structure, such as an ion (`MG`), a cofactor (`SAM`) or a drug. Named by its three-letter PDB code. Water is left out. |
+| **Base pair** | Two bases held together by hydrogen bonds. `cWW` is the familiar Watson–Crick edge-to-edge pairing; the page counts Watson–Crick (A–U, G–C), G·U wobble and non-canonical pairs separately, judging modified bases by the base they came from. |
+| **FASTA** | The standard text format for sequences, one `>` header line per molecule. Any alignment or sequence tool reads it. |
 
-The last two come from DNATCO, which analyses published structures and releases
+NtC class and confal score come from DNATCO, which analyses published structures and releases
 the conformational assignment. Everything else is in the PDB entry itself.
 
 ## Requirements
@@ -705,15 +736,45 @@ Two layouts, chosen with `Cards | Lines` and remembered in the URL. Switching
 between them redraws what the browser already holds, so it makes no request:
 the reply behind the current page carries every field both views need.
 
-A **card** is the ten fields `show: [..., "card"]` names, drawn by `detail.js`
+A **card** is the fields `show: [..., "card"]` names, drawn by `detail.js`
 from the same registry the structure page reads, so the two cannot describe one
-entry differently. Six across on a wide screen, stepping down to one as the
-space narrows. The count follows the results area rather than the window,
-because a media query cannot see the filter panel: with it open at 1366px the
-results have 856px, and six cards there would be unreadable.
+entry differently. A field you searched on joins the card even if it is not
+normally there, so a result never has to be taken on trust. Six across on a
+wide screen, stepping down as the space narrows. The count follows the results
+area rather than the window, because a media query cannot see the filter
+panel: with it open at 1366px the results have 856px, and six cards there would
+be unreadable.
 
 A **line** is the id, date, resolution, title and method. Clicking either opens
 that structure's page.
+
+### On a phone
+
+Below 640px wide the same pages rearrange rather than shrink:
+
+- the side rail becomes a bar across the top
+- the filters open as a full-screen sheet; `Show N results` closes it onto the
+  results, and a filtered link opens on the results, not the sheet
+- cards go two a row and keep the title, method, date, resolution, polymer
+  type and whatever was searched on (one a row below 340px)
+- tables on the structure page scroll sideways in their own box
+- on the report, the table comes first, `Fields` folds the column list open
+  above it, and `Export to CSV` stays pinned to the bottom of the screen
+
+Tablets (641–1023px) keep the side rail and stack the filters above the
+results.
+
+### The structure page
+
+`/structure/4TNA` shows, top to bottom:
+
+| section | what is there |
+| --- | --- |
+| Summary | title, method, date, resolution, authors, organism, counts, confal and NtC |
+| Molecules | each polymer with its chains, length and modelled residues; the sequence with gaps and modified bases marked, a copy button and a `FASTA` download |
+| Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
+| Base pairs | counts by kind, the pair families, and every pair in the first model, with a `CSV` download |
+| Sources and citations | where each molecule came from, and every paper with DOI and PubMed links |
 
 ### The controls over the results
 
@@ -723,7 +784,9 @@ that structure's page.
 | `Show _n_ per page` | any whole number, capped at 200 |
 | `Sort by` | eight orders, two each for deposition date, resolution, confal score and entry id |
 | `Cards \| Lines` | the layout |
-| `Filters` | the panel |
+| `Filters` | the panel. Shows how many filters are on, as in `Filters · 2` |
+| filter chips | one per filter in use, above the results. `×` removes it and searches again |
+| `Show N results` | the panel's search button, counting as you pick filters |
 
 `/structure/4TNA` is built on the server, so the whole record is in the HTML
 before any script runs, and an id that does not exist returns a genuine **404**
@@ -737,7 +800,7 @@ the HTML page. Browsers and `api.js` each get the format they can use.
 
 ## API
 
-Seven endpoints, all returning JSON.
+Ten endpoints. All return JSON unless noted.
 
 | endpoint | returns |
 | --- | --- |
@@ -748,6 +811,10 @@ Seven endpoints, all returning JSON.
 | `GET /api/count` | How many entries a search would return, and nothing else. 6-45 ms, which is what lets the landing page count as you type. |
 | `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
 | `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. Takes `sort` and `match` too, so a downloaded file matches what was on screen. |
+| `GET /api/entries/:id/base_pairs` | Every base pair of the entry's first model: `{entry, model, total, counts, pairs}`, each pair with its chains, residues, family and kind (`wc`, `gu`, `nc`). `?format=csv` returns a CSV file instead. |
+| `GET /api/ligands` | Every ligand code with its name and how many entries hold it. What the Ligand box suggests from. |
+| `GET /structure/:id/fasta` | Plain-text FASTA of every sequenced molecule in the entry, as a download. `?only=na` keeps the nucleic acids. |
+| `GET /structure/:id/fasta/:entity` | One molecule's FASTA, by its entity id. |
 
 The two are different questions, and they fail differently. `/api/entries`
 narrows a list, so matching nothing is a successful `200` with an empty
@@ -783,6 +850,10 @@ that field. Any unknown parameter is ignored.
 | `entity_name` | contains, case-insensitive |
 | `source_organism` | contains, case-insensitive |
 | `nonstandard_residue` | contains, case-insensitive |
+| `ligand` | the exact code (`SAM`), or a name fragment of 5 letters or more (`adenosyl`) |
+| `expression_host` | contains, case-insensitive |
+| `taxonomy_id` | exact number |
+| `source_kind` | one of, comma-separated: `Natural`, `Expressed`, `Synthetic`, `Not recorded` |
 | `assigned_ntc` | contains, case-insensitive |
 | `confal_min`, `confal_max` | numeric range |
 | `experimental_method` | one of, comma-separated |
@@ -798,6 +869,16 @@ Examples:
 /api/entries?polymer_type=RNA&page=2
 /api/entries/4TNA
 /api/export?source_organism=sacch
+/api/entries?ligand=SAM
+/api/entries/1EHZ/base_pairs?format=csv
+/structure/1EHZ/fasta?only=na
+```
+
+From Python:
+
+```python
+import pandas as pd
+pairs = pd.read_csv("http://localhost:4000/api/entries/1EHZ/base_pairs?format=csv")
 ```
 
 A query that cannot be answered returns 400 with a readable message, for
@@ -922,8 +1003,9 @@ host needs real storage rather than a default volume.
 - **No automated backups.** `pg_dump -Fc` takes about four minutes and produces
   1.2 GB from a 9.6 GB database. Nothing runs it on a schedule yet, and no
   restore has been tested.
-- **`public/app.js` is 470 lines doing six jobs**, reading the form, drawing
-  the cards or lines, pagination, the layout and panel controls, and history.
+- **`public/app.js` is 750 lines doing eight jobs**, reading the form, drawing
+  the cards or lines, pagination, the layout and panel controls, the live
+  count, the filter chips, the ligand suggestions, and history.
   It works, and it is the next file that will want splitting.
 - **Results are not ranked.** Every match counts the same, so a structure
   whose *title* says ribozyme sits beside one that merely has an author named
