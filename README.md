@@ -64,8 +64,8 @@ It works the same on a laptop and a phone.
 3. **See what is applied.** Each filter in use shows as a chip above the
    results, like `Experimental method: X-ray ×`. Press `×` to drop one.
 4. **Look through the results.** Three views, switched at the top:
-   - `Arcs` (the default): a grid of base-pair pictures, one per structure
-   - `Cards`: the picture on the left, the key facts on the right
+   - `Arcs`: a grid of base-pair pictures, one per structure
+   - `Cards` (the default): the picture on the left, the key facts on the right
    - `Lines`: one row each
 
    Change the order with `Sort`.
@@ -801,7 +801,7 @@ way, and writes its choice into the URL.
 ### What a result looks like
 
 Three layouts, chosen with `Arcs | Cards | Lines` and remembered in the URL
-(`?view=cards`; Arcs, the default, leaves it out). Switching between them
+(`?view=arcs`, `?view=lines`; Cards, the default, leaves it out). Switching between them
 redraws what the browser already holds, so it makes no request: the reply
 behind the current page carries every field all three views need.
 

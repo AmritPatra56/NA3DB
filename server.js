@@ -115,7 +115,7 @@ app.get("/search", async (req, res) => {
         counts: await pill_counts(),
         selected,
         panel_open: panel_open(req.query),
-        view: ["cards", "lines"].includes(req.query.view) ? req.query.view : "arcs",
+        view: ["arcs", "lines"].includes(req.query.view) ? req.query.view : "cards",
         match: match_mode(req.query.match)
     });
 });

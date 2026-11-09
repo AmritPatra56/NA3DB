@@ -522,12 +522,12 @@ test("a column can be fetched without being displayed", async () => {
 // Both views draw the same reply, so switching is a redraw rather than a new
 // request. The server renders the pressed state so the right button is lit on
 // arrival instead of correcting itself after the script runs.
-test("the page offers all three layouts, Arcs first and pressed by default", async () => {
-    for (const [url, pressed] of [["/search", "arcs"],
+test("the page offers all three layouts, Arcs first, Cards pressed by default", async () => {
+    for (const [url, pressed] of [["/search", "cards"],
                                   ["/search?view=cards", "cards"],
                                   ["/search?view=lines", "lines"],
                                   ["/search?view=arcs", "arcs"],
-                                  ["/search?view=nonsense", "arcs"]]) {
+                                  ["/search?view=nonsense", "cards"]]) {
         let html = await (await fetch(base + url)).text();
 
         assert.match(html, /data-view="arcs"[\s\S]*data-view="cards"[\s\S]*data-view="lines"/, `${url}: order`);
@@ -945,5 +945,5 @@ test("the search page offers an Arcs view, and its tiles can open the viewer", a
     assert.match(html, /data-view="arcs"\s+aria-pressed="true">Arcs</);
     assert.match(html, /<dialog id="arc_viewer"/);
     assert.match(html, /<script type="module" src="\/arc_viewer.js"><\/script>/);
-    assert.match(await (await fetch(base + "/search?view=bogus")).text(), /data-view="arcs"\s+aria-pressed="true"/);
+    assert.match(await (await fetch(base + "/search?view=bogus")).text(), /data-view="cards"\s+aria-pressed="true"/);
 });

@@ -276,14 +276,14 @@ function tile_html(entry) {
     `;
 }
 
-// Arcs is the default: the shape tells a reader what each entry is at a glance.
-// "cards" and "lines" are the only other accepted values, so a stale or
+// Cards is the default: the picture and the facts side by side.
+// "arcs" and "lines" are the only other accepted values, so a stale or
 // hand-edited URL falls back rather than drawing nothing.
 const VIEWS = { cards: card_html, lines: row_html, arcs: tile_html };
 
 function view_from_url() {
     let view = new URLSearchParams(location.search).get("view");
-    return Object.hasOwn(VIEWS, view) ? view : "arcs";
+    return Object.hasOwn(VIEWS, view) ? view : "cards";
 }
 
 let current_view = view_from_url();
@@ -486,7 +486,7 @@ function update_url(filters, page) {
     if (page > 1) params.set("page", page);
     if (sort_select.value !== REGISTRY.default_sort) params.set("sort", sort_select.value);
     if (panel_chosen) params.set("panel", panel_is_open() ? "open" : "closed");
-    if (current_view !== "arcs") params.set("view", current_view);
+    if (current_view !== "cards") params.set("view", current_view);
 
     if (Number(per_page_select.value) !== REGISTRY.default_page_size) {
         params.set("per_page", per_page_select.value);
