@@ -1115,6 +1115,26 @@ test("an NMR entry counts its first model only", async () => {
     assert.equal(pairs.length, 1);
 });
 
+test("each pair says where it sits, and which copy of the chain each end is", async () => {
+    let pairs = await with_pairs([[1, "A", "G", 1, "A", "C", 9, "cWW"],
+                                  [1, "A", "G", 2, "A", "C", 8, "cWW"]], async (q) => {
+        await q(`UPDATE ndb_base_pair_list SET asym_id_1 = 'A', asym_id_2 = 'A',
+                        struct_oper_id_1 = '1', struct_oper_id_2 = '1' WHERE entry_id = 'ZZ03'`);
+        await q(`UPDATE ndb_base_pair_list SET struct_oper_id_2 = '2'
+                  WHERE entry_id = 'ZZ03' AND seq_id_1 = 2`);
+        return entry_base_pairs("ZZ03", q);
+    });
+    let where = pairs.map(({ label_1, pos_1, copy_1, label_2, pos_2, copy_2 }) =>
+        ({ label_1, pos_1, copy_1, label_2, pos_2, copy_2 }));
+
+    assert.deepEqual(where, [{ label_1: "A", pos_1: 1, copy_1: "1", label_2: "A", pos_2: 9, copy_2: "1" },
+                             { label_1: "A", pos_1: 2, copy_1: "1", label_2: "A", pos_2: 8, copy_2: "2" }]);
+    // The picture's fields stay out of the files people download.
+    assert.deepEqual(Object.keys(base_pair_export("ZZ03", pairs).pairs[0]),
+                     ["chain_1", "res_1", "chain_2", "res_2", "family", "kind"]);
+    assert.equal(base_pairs_csv(pairs).split("\n")[0], "chain_1,res_1,chain_2,res_2,family,kind");
+});
+
 test("an entry with no pairs has no section", async () => {
     assert.equal(base_pair_section(await with_pairs([])), null);
 });

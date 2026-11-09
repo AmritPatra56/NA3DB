@@ -137,10 +137,45 @@ let method_labels = {
 // One result as a card: the label and value rows detail.js built on the
 // server, so a card and the structure page cannot describe the same entry
 // differently. Clicking anywhere on it opens that page.
+// Fields the card's head already says, so they are not repeated below it.
+const CARD_HEAD = new Set(["title", "method", "deposition_date", "resolution", "polymer_type"]);
+const fmt = (v) => Number(v).toLocaleString("en-GB");
+
+// One result as a card: the arc picture on the left; on the right the id and
+// title, a row of the numbers a reader compares first, then a row of every
+// other field and the links.
 function card_html(entry) {
     let id = escape_html(entry.pdb_id);
+    let url_id = encodeURIComponent(entry.pdb_id);
+    let a = entry.arcs;
 
-    let rows = entry.card.map(function (row) {
+    let method = method_labels[entry.method] || entry.method;
+    let resolution = entry.resolution == null ? null : Number(entry.resolution).toFixed(2) + " Å";
+    let facts = [
+        ["Method", [method, resolution].filter(Boolean).join(" · ")],
+        ["Deposited", entry.deposition_date ? String(entry.deposition_date).slice(0, 4) : null],
+        ["Nucleotides", a ? fmt(a.nucleotides) : null],
+        ["Base pairs", a ? `${fmt(a.pairs)} <small>(${fmt(a.wc)} WC)</small>` : "None annotated"],
+        ["Modified", a ? fmt(a.modified) : null],
+        ["Strands drawn", a ? fmt(a.strands) : null]
+    ].filter(([, value]) => value);
+
+    // The phone card's short forms: first author, paper, organisms on one
+    // line, and the modified residues as chips; the full fields wait behind More.
+    let field = (key) => entry.card.find((row) => row.key === key)?.value ?? "";
+    let authors = field("all_authors").split(/,\s*(?=[^,]+,)/);
+    let first = authors[0] ? authors[0].replace(/,\s*/, " ").replace(/\.$/, "") + (authors.length > 1 ? " et al." : "") : "";
+    let brief = [first, field("published"), field("source_organism").replace(/;\s*/g, ", ")].filter(Boolean);
+    let residues = field("nonstandard_residue").split(/,\s*/).filter(Boolean);
+    let ligands = field("ligands").split(/,\s*/).filter(Boolean).length;
+    let chips = residues.map((r) => `<span class="card_chip">${escape_html(r)}</span>`).join("")
+        + (ligands ? `<span class="card_chip card_chip_dim">+${ligands} ligand${ligands === 1 ? "" : "s"}</span>` : "");
+    let year = entry.deposition_date ? String(entry.deposition_date).slice(0, 4) : "";
+    let when = [[method, resolution].filter(Boolean).join(" "), year].filter(Boolean).join(" · ");
+    let nums = a ? [["nt", a.nucleotides], ["pairs", a.pairs], ["WC", a.wc], ["modified", a.modified]]
+        .map(([k, v]) => `<div><b>${fmt(v)}</b><span>${k}</span></div>`).join("") : "";
+
+    let rows = entry.card.filter((row) => !CARD_HEAD.has(row.key) || row.searched).map(function (row) {
         return `
             <div class="card_field${row.searched ? " searched" : ""}" data-key="${escape_html(row.key)}">
                 <div class="card_label">${escape_html(row.label)}</div>
@@ -149,14 +184,43 @@ function card_html(entry) {
         `;
     }).join("");
 
+    // The picture opens full screen (arc_viewer.js); the rest of the card
+    // opens the structure page.
     return `
         <article class="result_card" data-id="${id}">
-            <h3 class="card_id">${id}</h3>
-            ${rows}
-            <div class="card_links">
-                <a class="detail_link" target="_blank" rel="noopener"
-                   href="https://www.rcsb.org/structure/${id}">View on rcsb.org</a>
-                <a class="detail_link" href="/structure/${id}">Open full page</a>
+            <figure class="card_picture">
+                <button type="button" class="card_zoom" data-arc-open="${id}"
+                        title="Open the arc picture full screen"${a ? "" : " disabled"}>
+                    <img src="/structure/${url_id}/arcs.svg" alt="Base pairs of ${id} drawn as arcs"
+                         loading="lazy" width="300" height="150">
+                </button>
+                ${a ? `<figcaption>
+                    <span>${a.strands === 1 ? "1 strand" : fmt(a.strands) + " strands"} · ${fmt(a.nucleotides)} nt · ${fmt(a.pairs)} pairs</span>
+                    <button type="button" class="arc_full" data-arc-open="${id}">⤢ Full screen</button>
+                </figcaption>` : ""}
+            </figure>
+            <div class="card_head">
+                <h3 class="card_id">${id}${entry.polymer_type ? ` <span class="card_badge">${escape_html(entry.polymer_type)}</span>` : ""}</h3>
+                <p class="card_title">${escape_html(entry.title)}</p>
+                <p class="card_when">${escape_html(when)}</p>
+            </div>
+            <dl class="card_facts">${facts.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("")}</dl>
+            <div class="card_brief">
+                ${nums ? `<div class="card_nums">${nums}</div>` : ""}
+                ${brief.length ? `<p class="card_cite">${escape_html(brief.join(" · "))}</p>` : ""}
+                ${chips ? `<p class="card_chips">${chips}</p>` : ""}
+                <div class="card_actions">
+                    <a class="card_open" href="/structure/${url_id}">Open entry</a>
+                    <a class="card_rcsb" target="_blank" rel="noopener" href="https://www.rcsb.org/structure/${id}">RCSB ↗</a>
+                    <button type="button" class="card_more" aria-expanded="false">More ▾</button>
+                </div>
+            </div>
+            <div class="card_rest">${rows}
+                <div class="card_links">
+                    <a class="detail_link" target="_blank" rel="noopener"
+                       href="https://www.rcsb.org/structure/${id}">View on rcsb.org</a>
+                    <a class="detail_link" href="/structure/${url_id}">Open full page</a>
+                </div>
             </div>
         </article>
     `;
@@ -184,13 +248,42 @@ function row_html(entry) {
     `;
 }
 
-// Cards is the default: it is the view that shows the conformational data.
-// "lines" is the only other accepted value, so a stale or hand-edited URL
-// falls back rather than drawing nothing.
+// One result as a tile in the Arcs view: the entry's base pairs drawn as
+// arcs, then its id, title and one line of facts. The picture is an image the
+// browser fetches only as the tile scrolls into view; pressing it opens the
+// picture full screen (arc_viewer.js), the text opens the structure page.
+function tile_html(entry) {
+    let id = escape_html(entry.pdb_id);
+    let url_id = encodeURIComponent(entry.pdb_id);
+    let facts = [method_labels[entry.method] || entry.method,
+                 entry.resolution === null ? null : entry.resolution.toFixed(2) + " Å",
+                 entry.deposition_date ? String(entry.deposition_date).slice(0, 4) : null]
+        .filter(Boolean).map(escape_html).join(" · ");
+
+    return `
+        <article class="arc_tile" data-id="${id}">
+            <button type="button" class="arc_tile_picture" data-arc-open="${id}"
+                    title="Open the arc picture full screen">
+                <img src="/structure/${url_id}/arcs.svg" alt="Base pairs of ${id} drawn as arcs"
+                     loading="lazy" width="300" height="150">
+            </button>
+            <a class="arc_tile_text" href="/structure/${url_id}">
+                <b>${id}</b>
+                <span class="arc_tile_title">${escape_html(entry.title)}</span>
+                <span class="arc_tile_facts">${facts}</span>
+            </a>
+        </article>
+    `;
+}
+
+// Arcs is the default: the shape tells a reader what each entry is at a glance.
+// "cards" and "lines" are the only other accepted values, so a stale or
+// hand-edited URL falls back rather than drawing nothing.
+const VIEWS = { cards: card_html, lines: row_html, arcs: tile_html };
+
 function view_from_url() {
-    return new URLSearchParams(location.search).get("view") === "lines"
-        ? "lines"
-        : "cards";
+    let view = new URLSearchParams(location.search).get("view");
+    return Object.hasOwn(VIEWS, view) ? view : "arcs";
 }
 
 let current_view = view_from_url();
@@ -198,10 +291,9 @@ let current_view = view_from_url();
 // Draws one page into the results list, replacing whatever was there.
 function render_results(list) {
     let container = document.querySelector(".results_list");
-    let cards = current_view === "cards";
-
-    container.classList.toggle("as_cards", cards);
-    container.innerHTML = list.map(cards ? card_html : row_html).join("");
+    container.classList.toggle("as_cards", current_view === "cards");
+    container.classList.toggle("as_arcs", current_view === "arcs");
+    container.innerHTML = list.map(VIEWS[current_view]).join("");
 }
 
 // What the results area is showing: the last reply from the server.
@@ -394,7 +486,7 @@ function update_url(filters, page) {
     if (page > 1) params.set("page", page);
     if (sort_select.value !== REGISTRY.default_sort) params.set("sort", sort_select.value);
     if (panel_chosen) params.set("panel", panel_is_open() ? "open" : "closed");
-    if (current_view !== "cards") params.set("view", current_view);
+    if (current_view !== "arcs") params.set("view", current_view);
 
     if (Number(per_page_select.value) !== REGISTRY.default_page_size) {
         params.set("per_page", per_page_select.value);
@@ -439,8 +531,16 @@ async function run_search(page = 1) {
 let results_list = document.querySelector(".results_list");
 
 results_list.addEventListener("click", function (e) {
-    // A link inside a card is its own destination.
-    if (e.target.closest("a")) return;
+    // A link inside a card is its own destination, and its picture opens the
+    // full-screen viewer instead.
+    let more = e.target.closest(".card_more");
+    if (more) {
+        let open = more.closest(".result_card").classList.toggle("show_more");
+        more.setAttribute("aria-expanded", open);
+        more.textContent = open ? "Less ▴" : "More ▾";
+        return;
+    }
+    if (e.target.closest("a, [data-arc-open]")) return;
 
     let result = e.target.closest(".result_card, .result_row");
     if (!result) return;

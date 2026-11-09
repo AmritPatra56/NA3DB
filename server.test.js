@@ -7,6 +7,8 @@ import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, EXAMPLES } from "./filter
 import { once } from "node:events";
 import app from "./server.js";
 import { close as close_db, query } from "./db.js";
+import { find_entry, entry_contents, entry_residues } from "./search.js";
+import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS } from "./detail.js";
 
 let base;
 let server;
@@ -520,13 +522,17 @@ test("a column can be fetched without being displayed", async () => {
 // Both views draw the same reply, so switching is a redraw rather than a new
 // request. The server renders the pressed state so the right button is lit on
 // arrival instead of correcting itself after the script runs.
-test("the page offers both layouts, with the right one pressed", async () => {
-    for (const [url, pressed] of [["/search", "cards"],
+test("the page offers all three layouts, Arcs first and pressed by default", async () => {
+    for (const [url, pressed] of [["/search", "arcs"],
+                                  ["/search?view=cards", "cards"],
                                   ["/search?view=lines", "lines"],
-                                  ["/search?view=nonsense", "cards"]]) {
+                                  ["/search?view=arcs", "arcs"],
+                                  ["/search?view=nonsense", "arcs"]]) {
         let html = await (await fetch(base + url)).text();
 
-        for (const view of ["cards", "lines"]) {
+        assert.match(html, /data-view="arcs"[\s\S]*data-view="cards"[\s\S]*data-view="lines"/, `${url}: order`);
+
+        for (const view of ["arcs", "cards", "lines"]) {
             let button = html.match(
                 new RegExp(`data-view="${view}"\\s+aria-pressed="(true|false)"`));
 
@@ -815,4 +821,129 @@ test("a polymer pill shows its count, and a selected empty one is still drawn", 
     let asked = await (await fetch(base + "/search?polymer_type=Oligosaccharide")).text();
     assert.ok(asked.includes('data-value="Oligosaccharide"'),
               "a pill the URL selects must exist, or the search silently widens");
+});
+
+
+// --- the arc picture in Base pairs ----------------------------------------
+
+// The seed has no base pairs, so the picture is drawn from fixture pairs
+// through the same template the route renders.
+const render = (view, locals) =>
+    new Promise((ok, fail) => app.render(view, locals, (err, html) => err ? fail(err) : ok(html)));
+
+async function page_with_arcs(arcs) {
+    let entry = await find_entry("4TNA");
+    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
+    let page = { entry, rows: detail_rows(entry), citations: [],
+                 molecules: molecule_groups(contents, residues), base_pairs: null, arcs };
+    return render("structure", { ...page, page: "search", sections: structure_sections(page),
+                                 PAGE_GROUPS, rail_query: "" });
+}
+
+const section = (html, id) => {
+    let from = html.indexOf(`<section id="${id}"`);
+    return html.slice(from, html.indexOf("</section>", from));
+};
+const pairs_section = (html) => section(html, "base-pairs");
+const arc_pair = (label_1, pos_1, label_2, pos_2, kind = "wc", copy_2 = "1") =>
+    ({ label_1, pos_1, label_2, pos_2, family: kind === "nc" ? "tWH" : "cWW", kind, copy_1: "1", copy_2 });
+const dna = (labels, length) => [{ id: "1", kind: "DNA", length,
+                                   chains: labels.map((label) => ({ label, auth: label })) }];
+const plain = (length, modified = []) =>
+    new Map([["1", Array.from({ length }, (_, i) => ({ pos: i + 1, modified: modified.includes(i + 1) }))]]);
+
+test("Overview is rows only; an entry without pairs draws no picture anywhere", async () => {
+    let html = await (await fetch(base + "/structure/4TNA")).text();
+    let top = section(html, "overview");
+
+    assert.ok(!html.includes("arc_picture"));
+    assert.ok(!top.includes("arc_") && !top.includes("No base pairs annotated"));
+    assert.match(top, /class="detail_field structure_lead">\s*<div class="detail_label">Title</, "the title is the first row again");
+});
+
+test("Base pairs opens with the pairs drawn as arcs, with a key; Overview has none", async () => {
+    let arcs = pair_arcs(dna(["A", "B"], 6), plain(6, [3]),
+                         [arc_pair("A", 1, "B", 6), arc_pair("A", 2, "B", 5, "gu"), arc_pair("A", 3, "B", 4, "nc")]);
+    let page = await page_with_arcs(arcs);
+    let html = pairs_section(page);
+
+    assert.ok(!section(page, "overview").includes("arc_picture"), "not in Overview");
+    assert.ok(html.includes('<figure class="arc_picture">'));
+    for (const kind of ["wc", "gu", "nc"]) {
+        let d = html.match(new RegExp(`<path class="arc_${kind}" d="([^"]*)"`))[1];
+        assert.equal((d.match(/M/g) || []).length, 1, `one ${kind} arc`);
+    }
+    assert.match(html, /<path class="arc_dot" d="M/);
+    assert.match(html, /aria-label="Arc diagram: 3 base pairs drawn as arcs over 2 strands \(A, B\), 12 nucleotides"/);
+    assert.match(html, />A<\/text>.*>B<\/text>/s);
+    assert.ok(html.includes("2 strands · 12 nt"));
+    assert.match(html, /<path class="arc_gu" d="M[^"]+"><title>A:2 – B:5 · cWW<\/title>/, "each arc names its pair on hover");
+    assert.match(html, />5′<\/text>.*>3′<\/text>/s);
+    assert.ok(html.includes("arc_mod"), "a key entry for the modified dot");
+    assert.ok(!html.includes("symmetry copy"), "no copies, no note");
+    assert.ok(!html.includes("No base pairs annotated"));
+});
+
+test("a symmetry copy is named A′, drawn dashed and explained under the picture", async () => {
+    let arcs = pair_arcs(dna(["A"], 4), plain(4),
+                         [arc_pair("A", 1, "A", 4, "wc", "2"), arc_pair("A", 2, "A", 3, "wc", "2")]);
+    let html = pairs_section(await page_with_arcs(arcs));
+
+    assert.match(html, /class="arc_strand arc_copy"/);
+    assert.match(html, />A′<\/text>/);
+    assert.ok(html.includes("′ marks a symmetry copy from the crystal"));
+    assert.ok(!html.includes("arc_mod"), "nothing modified, no key entry for it");
+    assert.ok(!html.includes('<i class="arc_gu">') && !html.includes('<i class="arc_nc">'),
+              "the key lists only the kinds drawn");
+});
+
+test("the arcs API gives the viewer every pair as numbers, and a 404 for an unknown entry", async () => {
+    let res = await fetch(base + "/api/entries/4tna/arcs");
+    assert.equal(res.status, 200);
+    let body = await res.json();
+    assert.deepEqual({ ...body, title: undefined }, { pdb_id: "4TNA", title: undefined, strands: [], pairs: [] }, "the seed has no pairs");
+    assert.equal(typeof body.title, "string", "the viewer heads itself with the title");
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/arcs")).status, 404);
+});
+
+test("the picture opens full screen: a button for it, the dialog, and its script", async () => {
+    let arcs = pair_arcs(dna(["A", "B"], 6), plain(6), [arc_pair("A", 1, "B", 6)]);
+    let html = await page_with_arcs(arcs);
+
+    assert.equal((html.match(/data-arc-open="4TNA"/g) || []).length, 2, "the picture and the Full screen button");
+    assert.match(html, /<dialog id="arc_viewer"/);
+    assert.match(html, /<script type="module" src="\/arc_viewer.js"><\/script>/);
+    for (const part of ["av_summary", "av_info", "Leontis–Westhof families", "av_fams", "av_rows"]) {
+        assert.ok(html.includes(part), `the viewer has its ${part}: every pair on screen without a click`);
+    }
+
+    let none = await (await fetch(base + "/structure/4TNA")).text();
+    assert.ok(!none.includes("arc_viewer"), "no pairs, no viewer");
+    assert.equal((await fetch(base + "/arc_viewer.js")).status, 200);
+});
+
+test("each entry has a small arc picture for the Arcs view, kept by the browser for an hour", async () => {
+    let res = await fetch(base + "/structure/4tna/arcs.svg");
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get("content-type"), /^image\/svg\+xml/);
+    assert.equal(res.headers.get("cache-control"), "public, max-age=3600");
+    assert.match(await res.text(), /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg".*No base pairs annotated/s);
+    assert.equal((await fetch(base + "/structure/ZZZZ/arcs.svg")).status, 404);
+});
+
+test("each search result carries its card's arc numbers, null when nothing is drawn", async () => {
+    let body = await (await fetch(base + "/api/entries?q=4TNA")).json();
+    let entry = body.results.find((e) => e.pdb_id === "4TNA");
+
+    assert.ok(entry && "arcs" in entry);
+    assert.equal(entry.arcs, null, "the seed has no pairs");
+});
+
+test("the search page offers an Arcs view, and its tiles can open the viewer", async () => {
+    let html = await (await fetch(base + "/search?view=arcs")).text();
+
+    assert.match(html, /data-view="arcs"\s+aria-pressed="true">Arcs</);
+    assert.match(html, /<dialog id="arc_viewer"/);
+    assert.match(html, /<script type="module" src="\/arc_viewer.js"><\/script>/);
+    assert.match(await (await fetch(base + "/search?view=bogus")).text(), /data-view="arcs"\s+aria-pressed="true"/);
 });

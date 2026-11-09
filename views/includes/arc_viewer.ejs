@@ -1,0 +1,42 @@
+<%# The arc picture full screen, filled by /arc_viewer.js when a [data-arc-open]
+    button is pressed. Shared by the structure page and the Arcs view. Every
+    pair is on screen: counts above the drawing, the pointed pair under it, and
+    the whole list, by Leontis–Westhof family, beside it. %>
+<dialog id="arc_viewer" class="arc_viewer" aria-label="Arc picture, full screen">
+    <div class="av_box">
+        <div class="av_top">
+            <strong class="av_id"></strong>
+            <span class="av_title"></span>
+            <button type="button" class="av_close">Close ✕</button>
+        </div>
+        <div class="av_main">
+            <div class="av_stage">
+                <div class="av_summary"></div>
+                <div class="av_zoom">
+                    <button type="button" class="av_in" aria-label="Zoom in">＋</button>
+                    <button type="button" class="av_out" aria-label="Zoom out">－</button>
+                    <button type="button" class="av_fit">Fit</button>
+                    <span>drag to move · wheel or buttons to zoom</span>
+                </div>
+                <svg class="av_svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Arc diagram, full screen"></svg>
+                <div class="av_info" aria-live="polite"></div>
+            </div>
+            <div class="av_side">
+                <div class="av_sec">
+                    <h4>Leontis–Westhof families</h4>
+                    <div class="av_fams"></div>
+                    <p class="av_legend"><span>● Watson–Crick edge</span><span>■ Hoogsteen edge</span><span>▲ Sugar edge</span><span>filled cis · open trans</span></p>
+                    <p class="av_copynote" hidden>′ marks a symmetry copy from the crystal</p>
+                </div>
+                <div class="av_list">
+                    <table>
+                        <thead><tr><th>#</th><th>Base 1</th><th>Base 2</th><th>Family</th><th>Type</th></tr></thead>
+                        <tbody class="av_rows"></tbody>
+                    </table>
+                </div>
+                <a class="av_table" href="#base-pairs">Base pairs table on the entry page ↓</a>
+            </div>
+        </div>
+    </div>
+</dialog>
+<script type="module" src="/arc_viewer.js"></script>

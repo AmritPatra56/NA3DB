@@ -97,6 +97,32 @@
                             </div>
                         <% } %>
 
+                        <% if (s.id === "base-pairs" && arcs) { const a = arcs; const strands = a.chains.length; const labelled = strands <= 8; %>
+                            <figure class="arc_picture">
+                                <button type="button" class="arc_zoom" data-arc-open="<%= entry.pdb_id %>" title="Open full screen">
+                                <svg viewBox="0 0 <%= a.width %> <%= a.height %>" role="img" aria-label="Arc diagram: <%= a.counts.drawn %> base pairs drawn as arcs over <%= strands === 1 ? "one strand" : strands + " strands" %> (<%= a.chains.map((c) => c.name).join(", ") %>), <%= a.counts.nucleotides.toLocaleString("en-GB") %> nucleotides">
+                                    <% for (const c of a.chains) { %><line class="arc_strand<%= c.symmetry ? " arc_copy" : "" %>" x1="<%= c.x1 %>" y1="<%= a.base %>" x2="<%= c.x2 %>" y2="<%= a.base %>"/><% } %>
+                                    <g class="arc_lines" stroke-width="<%= a.stroke %>">
+                                    <% if (a.each) { for (const e of a.each) { %><path class="arc_<%= e.kind %>" d="<%= e.d %>"><title><%= e.label %></title></path><% } } else { %>
+                                    <path class="arc_nc" d="<%= a.paths.nc %>"/>
+                                    <path class="arc_gu" d="<%= a.paths.gu %>"/>
+                                    <path class="arc_wc" d="<%= a.paths.wc %>"/>
+                                    <% } %>
+                                    </g>
+                                    <% if (a.dot_path) { %><path class="arc_dot" d="<%= a.dot_path %>"/><% } %>
+                                    <% if (labelled) { for (const c of a.chains) { const wide = c.x2 - c.x1 >= 30; %>
+                                    <% if (wide) { %><text class="arc_name" x="<%= c.x1 %>" y="<%= a.base + 14 %>">5′</text><text class="arc_name arc_end" x="<%= c.x2 %>" y="<%= a.base + 14 %>">3′</text><% } %>
+                                    <% if ((strands > 1 || c.symmetry) && c.x2 - c.x1 >= 12) { %><text class="arc_name arc_mid" x="<%= Math.round((c.x1 + c.x2) * 5) / 10 %>" y="<%= a.base + 14 %>"><%= c.name %></text><% } %>
+                                    <% } } %>
+                                </svg>
+                                </button>
+                                <figcaption>
+                                    <span><%= strands === 1 ? "1 strand" : strands + " strands" %> · <%= a.counts.nucleotides.toLocaleString("en-GB") %> nt<% if (a.each) { %> · hover an arc for its pair<% } %><button type="button" class="arc_full" data-arc-open="<%= entry.pdb_id %>">⤢ Full screen</button></span>
+                                    <span class="arc_key"><% for (const [kind, label] of [["wc", "Watson–Crick"], ["gu", "G·U wobble"], ["nc", "non-canonical"]]) { if (a.paths[kind]) { %><span><i class="arc_<%= kind %>"></i><%= label %></span><% } } %><% if (a.counts.modified) { %><span><i class="arc_mod"></i>modified</span><% } %></span>
+                                    <% if (a.counts.copies) { %><span class="arc_note">′ marks a symmetry copy from the crystal</span><% } %>
+                                </figcaption>
+                            </figure>
+                        <% } %>
                         <% if (s.id === "base-pairs" && base_pairs) { const bp = base_pairs; %>
                             <div class="jump_to">Jump to: <a href="#bp-counts">Counts</a><% if (bp.families.length) { %> · <a href="#bp-families">Families</a><% } %><% if (bp.noncanonical.length) { %> · <a href="#bp-all">Non-canonical pairs</a><% } %></div>
                         <div class="source_legend pair_head">
@@ -202,6 +228,9 @@
             </div>
         </div>
     </div>
+    <% if (arcs) { %>
+    <%- include("includes/arc_viewer.ejs") %>
+    <% } %>
     <script>
         // Copies the letters only: no line numbers, no block spaces.
         document.addEventListener("click", async (event) => {

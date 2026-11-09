@@ -371,6 +371,197 @@ export function base_pair_section(pairs) {
     };
 }
 
+// --- the arc picture ------------------------------------------------------
+// The base pairs as an arc diagram, the way R-chie draws them
+// (doi:10.1093/nar/gks241): each paired nucleic-acid chain is a line, 5' on
+// the left, chains side by side; each pair is an arc between its two
+// nucleotides, taller the further apart they are. A tRNA comes out as its
+// cloverleaf seen from the side, a duplex as a rainbow.
+//
+// Only chains that take part in a pair are drawn, so a ribosome's 60 chains
+// do not crowd the line. Each kind is a single path, so the 3,953 pairs of
+// the largest entry are still three small elements. A pair listed twice
+// (alternate locations) is drawn once.
+//
+// A crystal often holds one strand of a duplex and makes the other by
+// symmetry: 1D26's A1 pairs with A8 of copy 2. That copy is drawn as its own
+// strand, A′, so the duplex shows as two strands and not as a hairpin in A.
+export const ARC_WIDTH = 300;
+export const ARC_HEIGHT = 170;
+export const ARC_HOVER_MAX = 500;   // above this, one path per kind and no hover text
+const ARC_BASE = 146;    // y of the chain line; 5' and 3' sit below it
+const ARC_TOP = 8;       // the widest arc peaks here
+const ARC_PAD = 8;
+const ARC_GAP = 16;      // between two strands, shrunk when there are many
+const ARC_DOT = 2.4;
+const PRIMES = ["′", "″", "‴"];
+const IDENTITY = "1";    // struct_oper_id of the copy in the file
+const round1 = (v) => Math.round(v * 10) / 10;
+const by_copy = (a, b) => (b === IDENTITY) - (a === IDENTITY) || a.localeCompare(b, "en", { numeric: true });
+
+export function pair_arcs(entities, residues, pairs) {
+    let chains = new Map();
+    for (const e of entities) {
+        if (!NUCLEIC_KINDS.has(e.kind)) continue;
+        let res = residues.get(e.id) ?? [];
+        let length = res.reduce((n, r) => Math.max(n, Number(r.pos)), 0) || e.length || 0;
+        let modified = res.filter((r) => r.modified).map((r) => Number(r.pos));
+        for (const c of e.chains) {
+            chains.set(c.label, { label: c.label, name: chain_name(c), length, modified, order: chains.size,
+                                  sequence: String(e.sequence ?? "").replace(/\s+/g, "") });
+        }
+    }
+
+    // One end of a pair: a chain, which copy of it, and a position.
+    let ends_of = (p) => [{ label: p.label_1, copy: String(p.copy_1 ?? IDENTITY), pos: p.pos_1 },
+                          { label: p.label_2, copy: String(p.copy_2 ?? IDENTITY), pos: p.pos_2 }];
+    let fits = ({ label, pos }) => {
+        let c = chains.get(label);
+        return c && Number.isInteger(pos) && pos >= 1 && pos <= c.length;
+    };
+
+    let seen = new Set();
+    let drawn = [];
+    let unplaced = 0;
+    for (const p of pairs) {
+        let ends = ends_of(p);
+        let key = ends.map((e) => `${e.label} ${e.copy} ${e.pos}`).sort().join("|") + ` ${p.family}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (!ends.every(fits)) { unplaced++; continue; }
+        drawn.push({ ...p, ends });
+    }
+    if (!drawn.length) return null;
+
+    // Strands in the page's order (nucleic acids by entity, then chain), each
+    // chain's own copy before its symmetry copies.
+    let strands = new Map();
+    for (const e of drawn.flatMap((p) => p.ends)) {
+        let key = `${e.label} ${e.copy}`;
+        if (!strands.has(key)) strands.set(key, { ...chains.get(e.label), copy: e.copy });
+    }
+    let line = [...strands.values()].sort((x, y) => x.order - y.order || by_copy(x.copy, y.copy));
+    for (const c of line) {
+        let others = line.filter((s) => s.label === c.label && s.copy !== IDENTITY).map((s) => s.copy);
+        let rank = others.indexOf(c.copy);
+        c.symmetry = c.copy !== IDENTITY;
+        c.shown = !c.symmetry ? c.name : rank < PRIMES.length ? c.name + PRIMES[rank] : `${c.name} (copy ${c.copy})`;
+    }
+
+    let total = line.reduce((n, c) => n + c.length, 0);
+    let room = ARC_WIDTH - 2 * ARC_PAD;
+    let gap = line.length > 1 ? Math.min(ARC_GAP, room * 0.25 / (line.length - 1)) : 0;
+    let step = (room - gap * (line.length - 1)) / total;
+
+    let start = new Map();
+    let x = ARC_PAD;
+    for (const c of line) {
+        start.set(`${c.label} ${c.copy}`, x);
+        c.x1 = round1(x);
+        c.x2 = round1(x + c.length * step);
+        x += c.length * step + gap;
+    }
+    let at = (e) => start.get(`${e.label} ${e.copy}`) + (e.pos - 0.5) * step;
+
+    // A cubic curve peaks at 3/4 of its control height.
+    let reach = ARC_BASE - ARC_TOP - 3;
+    let arc = (p) => {
+        let [a, b] = p.ends.map(at).sort((u, v) => u - v);
+        let peak = 3 + reach * (b - a) / room;
+        let y = round1(ARC_BASE - peak / 0.75);
+        return `M${round1(a)} ${ARC_BASE}C${round1(a)} ${y} ${round1(b)} ${y} ${round1(b)} ${ARC_BASE}`;
+    };
+    // One path per kind, coloured as in the Base pairs section.
+    let paths = { wc: "", gu: "", nc: "" };
+    for (const p of drawn) paths[p.kind] += arc(p);
+
+    // Few enough pairs to give each its own arc, named on hover as the Base
+    // pairs table names it; a copy's end carries its prime.
+    let shown = new Map(line.map((c) => [`${c.label} ${c.copy}`, c.shown]));
+    let named = (e, res) => `${shown.get(`${e.label} ${e.copy}`)}:${res ?? e.pos}`;
+    let label = (p) => `${named(p.ends[0], p.res_1)} – ${named(p.ends[1], p.res_2)} · ${p.family}`;
+    let each = drawn.length > ARC_HOVER_MAX ? null
+             : drawn.map((p) => ({ kind: p.kind, d: arc(p), label: label(p) }));
+
+    // The same picture as numbers, for the full-screen viewer to draw at any
+    // size: strands end to end, nucleotide i of the whole line at index i.
+    let first = new Map();
+    let n = 0;
+    let on_line = line.map((c) => {
+        first.set(`${c.label} ${c.copy}`, n);
+        let s = { name: c.shown, symmetry: c.symmetry, start: n, length: c.length,
+                  modified: c.modified.filter((pos) => pos <= c.length),
+                  sequence: c.sequence.slice(0, c.length) };
+        n += c.length;
+        return s;
+    });
+    let index = (e) => first.get(`${e.label} ${e.copy}`) + e.pos;
+    let layout = {
+        strands: on_line,
+        // [5′-most end, other end, kind, hover label, LW family, the two ends
+        // named in the same order as the positions].
+        pairs: drawn.map((p) => {
+            let ends = [[p.ends[0], p.res_1], [p.ends[1], p.res_2]]
+                .map(([e, res]) => ({ i: index(e), name: named(e, res) }))
+                .sort((u, v) => u.i - v.i);
+            return [ends[0].i, ends[1].i, p.kind, label(p), p.family, ends[0].name, ends[1].name];
+        })
+    };
+
+    let dots = line.flatMap((c) => c.modified.filter((pos) => pos <= c.length).map((pos) => {
+        let cx = round1(at({ label: c.label, copy: c.copy, pos }));
+        return `M${round1(cx - ARC_DOT)} ${ARC_BASE}a${ARC_DOT} ${ARC_DOT} 0 1 0 ${2 * ARC_DOT} 0a${ARC_DOT} ${ARC_DOT} 0 1 0 ${-2 * ARC_DOT} 0`;
+    }));
+
+    return {
+        width: ARC_WIDTH, height: ARC_HEIGHT, base: ARC_BASE,
+        chains: line.map(({ label, copy, symmetry, shown, length, x1, x2 }) =>
+            ({ label, copy, symmetry, name: shown, length, x1, x2 })),
+        paths, each, layout,
+        // Bold for a duplex, fine for a ribosome, so neither looks empty nor
+        // turns into a blob.
+        stroke: Math.round(Math.max(0.4, 1.7 * Math.min(1, Math.sqrt(40 / drawn.length))) * 100) / 100,
+        dot_path: dots.join(""),
+        counts: { drawn: drawn.length,
+                  copies: line.filter((c) => c.symmetry).length, unplaced,
+                  nucleotides: total, modified: dots.length }
+    };
+}
+
+// --- the arc picture as a few numbers ------------------------------------
+
+// What a result card says beside its picture. Null when nothing is drawn.
+export function arc_summary(arcs) {
+    if (!arcs) return null;
+    return { strands: arcs.chains.length, nucleotides: arcs.counts.nucleotides,
+             pairs: arcs.counts.drawn, modified: arcs.counts.modified,
+             wc: arcs.layout.pairs.filter((p) => p[2] === "wc").length };
+}
+
+// --- the arc picture as a small image ------------------------------------
+
+const THUMB_COLOURS = { wc: "#139068", gu: "#e0a030", nc: "#7f77dd" };
+const xml = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+// One entry's picture as a standalone SVG for the Arcs view: no labels, bolder
+// lines, its own colours (an <img> does not see the page's stylesheet).
+export function arc_thumbnail(arcs, pdb_id) {
+    if (!arcs) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" role="img" aria-label="${xml(pdb_id)}: no base pairs annotated">`
+             + `<text x="150" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">No base pairs annotated</text></svg>`;
+    }
+    let stroke = Math.round(Math.min(2.4, arcs.stroke * 1.4) * 100) / 100;
+    let lines = arcs.chains.map((c) =>
+        `<line x1="${c.x1}" y1="${arcs.base}" x2="${c.x2}" y2="${arcs.base}"${c.symmetry ? ' stroke-dasharray="4 2.5"' : ""}/>`).join("");
+    let paths = ["nc", "gu", "wc"].filter((k) => arcs.paths[k])
+        .map((k) => `<path stroke="${THUMB_COLOURS[k]}" d="${arcs.paths[k]}"/>`).join("");
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 2 ${arcs.width} ${arcs.base + 4}" role="img" aria-label="${xml(pdb_id)}: ${arcs.counts.drawn} base pairs as arcs">`
+         + `<g stroke="#64748b" stroke-width="2.6" stroke-linecap="round">${lines}</g>`
+         + `<g fill="none" stroke-width="${stroke}">${paths}</g>`
+         + (arcs.dot_path ? `<path fill="#26215c" d="${arcs.dot_path}"/>` : "")
+         + `</svg>`;
+}
+
 // --- FASTA ---------------------------------------------------------------
 // One polymer in the header layout RCSB uses, so files from both sites look
 // alike: >1OB5_2|Chains B, D, F|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932).

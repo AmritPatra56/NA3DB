@@ -503,6 +503,15 @@ export async function entry_base_pairs(id, q = query) {
               WHERE coalesce(p.pdb_model_number, 1) = p.first_model)
          SELECT auth_asym_id_1 AS chain_1, auth_asym_id_2 AS chain_2, lw_family AS family,
                 first_model AS model,
+                -- Where the pair sits in the sequence, for the arc picture.
+                -- Kept out of the CSV and JSON by PAIR_FIELDS.
+                asym_id_1 AS label_1, seq_id_1 AS pos_1,
+                asym_id_2 AS label_2, seq_id_2 AS pos_2,
+                -- Which copy of the chain: 1 is the one in the file; another
+                -- number is a symmetry copy from the crystal, so A1 with A8
+                -- under 1 and 2 is two strands, not a hairpin in one.
+                COALESCE(struct_oper_id_1, '1') AS copy_1,
+                COALESCE(struct_oper_id_2, '1') AS copy_2,
                 comp_id_1 || auth_seq_id_1 || COALESCE(NULLIF(pdb_ins_code_1, '?'), '') AS res_1,
                 comp_id_2 || auth_seq_id_2 || COALESCE(NULLIF(pdb_ins_code_2, '?'), '') AS res_2,
                 CASE WHEN lw_family <> 'cWW' THEN 'nc'

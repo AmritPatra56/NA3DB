@@ -7,7 +7,7 @@ import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
-         entry_fasta, base_pair_export, base_pairs_csv, structure_sections,
+         entry_fasta, base_pair_export, base_pairs_csv, structure_sections, pair_arcs, arc_thumbnail, arc_summary,
          PAGE_GROUPS } from "./detail.js";
 
 const app = express();
@@ -115,7 +115,7 @@ app.get("/search", async (req, res) => {
         counts: await pill_counts(),
         selected,
         panel_open: panel_open(req.query),
-        view: req.query.view === "lines" ? "lines" : "cards",
+        view: ["cards", "lines"].includes(req.query.view) ? req.query.view : "arcs",
         match: match_mode(req.query.match)
     });
 });
@@ -175,16 +175,20 @@ app.get("/structure/:id", async (req, res) => {
         return;
     }
 
-    // The rail on this page has no script to rewrite its links, so it is given
-    // the one filter that makes sense from here: this structure.
+    let [contents, residues, pairs] = await Promise.all([entry_contents(entry.pdb_id),
+                                                         entry_residues(entry.pdb_id),
+                                                         entry_base_pairs(entry.pdb_id)]);
     let page = {
         entry,
         rows: detail_rows(entry),
         citations: await entry_citations(entry.pdb_id),
-        molecules: molecule_groups(await entry_contents(entry.pdb_id), await entry_residues(entry.pdb_id)),
-        base_pairs: base_pair_section(await entry_base_pairs(entry.pdb_id))
+        molecules: molecule_groups(contents, residues),
+        base_pairs: base_pair_section(pairs),
+        arcs: pair_arcs(contents.entities, residues, pairs)
     };
 
+    // The rail on this page has no script to rewrite its links, so it is given
+    // the one filter that makes sense from here: this structure.
     res.render("structure", {
         ...page,
         page: "search",
@@ -252,8 +256,10 @@ app.get("/api/entries", async (req, res) => {
     // on trust. No extra query: the field is already on the row.
     let answering = columns_answering(req.query);
 
-    found.results = found.results.map((entry) =>
-        ({ ...entry, card: detail_rows(entry, "card", answering) }));
+    let summaries = await Promise.all(found.results.map((entry) => arc_numbers(entry.pdb_id)));
+
+    found.results = found.results.map((entry, i) =>
+        ({ ...entry, card: detail_rows(entry, "card", answering), arcs: summaries[i] }));
 
     res.json(found);
 });
@@ -309,6 +315,56 @@ app.get("/api/entries/:id/base_pairs", async (req, res) => {
         return;
     }
     res.json(base_pair_export(entry.pdb_id, pairs));
+});
+
+// One entry's arc picture, worked out from its contents, residues and pairs.
+async function arcs_of(id) {
+    let [contents, residues, pairs] = await Promise.all([entry_contents(id), entry_residues(id),
+                                                         entry_base_pairs(id)]);
+    let arcs = pair_arcs(contents.entities, residues, pairs);
+    ARC_NUMBERS.set(id, { at: Date.now(), value: arc_summary(arcs) });
+    return arcs;
+}
+
+// The numbers a result card shows beside its picture. About 18 ms an entry
+// (0.5 s at worst), so they are kept for an hour, as long as the browser keeps
+// the picture they describe; a new load shows up within that hour.
+const ARC_NUMBERS = new Map();
+const HOUR = 3600 * 1000;
+
+async function arc_numbers(id) {
+    let kept = ARC_NUMBERS.get(id);
+    if (!kept || Date.now() - kept.at > HOUR) await arcs_of(id);
+    return ARC_NUMBERS.get(id).value;
+}
+
+// The arc picture as a small image for the Arcs view. The browser asks for one
+// only as a tile scrolls into view, and keeps it for an hour.
+app.get("/structure/:id/arcs.svg", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).type("text/plain").send(`No entry with id ${req.params.id}`);
+        return;
+    }
+
+    res.set("Cache-Control", "public, max-age=3600")
+       .type("image/svg+xml")
+       .send(arc_thumbnail(await arcs_of(entry.pdb_id), entry.pdb_id));
+});
+
+// The arc picture as numbers, for the full-screen viewer. Fetched only when
+// someone opens it, so a ribosome's 4,000 pairs never weigh down the page.
+app.get("/api/entries/:id/arcs", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let arcs = await arcs_of(entry.pdb_id);
+    res.json({ pdb_id: entry.pdb_id, title: entry.title, ...(arcs?.layout ?? { strands: [], pairs: [] }) });
 });
 
 // Returns every matching entry for the report page, not just one page.
