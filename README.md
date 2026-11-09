@@ -2,10 +2,15 @@
 
 **A search engine for the 3D shapes of DNA and RNA.**
 
+**Live at [na3db.org](https://na3db.org).**
+
 Every entry here is a real molecule whose structure was measured in a
-laboratory and published. NA3DB puts 1,489 of them behind one search box: find
-them by id, molecule, author or organism, narrow by how they were measured and
-what shape they take, read any one in full, and download the results as a CSV.
+laboratory and published. NA3DB puts 1,489 of them behind one search box:
+
+- **find** them by id, molecule, author or organism
+- **narrow** by how they were measured and what shape they take
+- **see** every base pair at a glance, drawn as arcs
+- **read** any one in full, and **download** the results as a CSV
 
 **1,489 structures · 50.7 million atoms · 1,487 confal scores · 97 NtC classes**
 
@@ -58,17 +63,59 @@ It works the same on a laptop and a phone.
    never land on an empty page.
 3. **See what is applied.** Each filter in use shows as a chip above the
    results, like `Experimental method: X-ray ×`. Press `×` to drop one.
-4. **Look through the results.** `Cards` shows the key facts of each
-   structure; `Lines` shows one row each. Change the order with `Sort`.
-5. **Open a structure.** Press any card or line. Its page lists every
+4. **Look through the results.** Three views, switched at the top:
+   - `Arcs` (the default): a grid of base-pair pictures, one per structure
+   - `Cards`: the picture on the left, the key facts on the right
+   - `Lines`: one row each
+
+   Change the order with `Sort`.
+5. **See the base pairs full screen.** Press any arc picture. Every pair is
+   listed beside the drawing with its Leontis–Westhof family; point at an arc
+   or a row to see that pair, pick a family to see only those, and zoom in to
+   read the sequence. See [Reading an arc picture](#reading-an-arc-picture).
+6. **Open a structure.** Press any card or line. Its page lists every
    molecule with its sequence, the modified nucleotides, the base pairs, the
    citations and a link to the PDB.
-6. **Take the data with you.**
+7. **Take the data with you.**
    - sequences: the `FASTA` button, for one molecule or the whole entry
    - base pairs: the `CSV` button on the structure page
    - the result list: the Report icon, choose your columns, `Export to CSV`
-7. **Share it.** Copy the address. Everything you chose is in the link, so
+8. **Share it.** Copy the address. Everything you chose is in the link, so
    whoever opens it sees exactly what you saw.
+
+## Reading an arc picture
+
+The molecule is drawn as a straight line, 5′ on the left and 3′ on the right.
+Each base pair is an arc joining its two bases.
+
+| what you see | what it means |
+| --- | --- |
+| green arc | Watson–Crick pair (A–U, G–C) |
+| orange arc | G·U wobble |
+| purple arc | non-canonical pair; full screen, its Leontis–Westhof symbol sits on top |
+| nested arcs | a stem: bases pairing in a row |
+| crossing arcs | a pseudoknot or a long-range contact |
+| dark dot on the line | a modified nucleotide |
+| gaps in the line | separate strands, each named under it |
+
+The **Leontis–Westhof symbol** says which edges of the two bases touch:
+● Watson–Crick edge, ■ Hoogsteen edge, ▲ Sugar edge; filled for cis, open for
+trans. So ●● is `cWW`, the classic pair, and ○□ is `tWH`.
+
+The full-screen viewer adds:
+
+- **counts** above the drawing: pairs, Watson–Crick, G·U, non-canonical (and
+  how many families), nucleotides (and how many modified), strands
+- **every pair in a list** beside it: number, both bases, family, type
+- **family chips**: press `tWH` to see only those pairs, on the drawing and in
+  the list
+- **point at an arc or a row** and the panel under the drawing says which pair
+  it is in words: "trans Watson–Crick / Hoogsteen · non-canonical · spans 6 nt"
+- **zoom** with the buttons or the wheel; close enough and the sequence
+  letters appear, modified ones white on dark
+
+The picture shows the first model of the entry. Where the PDB file holds a
+crystal symmetry copy, its bases are marked `′`.
 
 ## Contents
 
@@ -76,6 +123,7 @@ It works the same on a laptop and a phone.
 
 - [What you can ask it](#what-you-can-ask-it)
 - [Using it, step by step](#using-it-step-by-step)
+- [Reading an arc picture](#reading-an-arc-picture) — colours, symbols and the full-screen viewer
 - [The words on the screen](#the-words-on-the-screen) — confal, NtC, resolution and the rest, in plain terms
 
 **For developers** — running your own copy, and how it works inside
@@ -91,7 +139,7 @@ It works the same on a laptop and a phone.
 - [Performance](#performance) — [beyond this size](#beyond-this-size)
 - [What is not done yet](#what-is-not-done-yet)
 
-Using the website needs nothing more than the three user sections. The rest
+Using the website needs nothing more than the four user sections. The rest
 is for running your own copy: [Quick start](#quick-start) has it running in
 five commands.
 
@@ -110,6 +158,8 @@ Two sources, each with its own vocabulary. You need these to read a result:
 | **Confal score** | 0 to 96, how closely a whole structure's steps match those known shapes. High means conventional geometry; low means unusual, which may be a real finding or a modelling problem. |
 | **Ligand** | A small molecule bound to the structure, such as an ion (`MG`), a cofactor (`SAM`) or a drug. Named by its three-letter PDB code. Water is left out. |
 | **Base pair** | Two bases held together by hydrogen bonds. `cWW` is the familiar Watson–Crick edge-to-edge pairing; the page counts Watson–Crick (A–U, G–C), G·U wobble and non-canonical pairs separately, judging modified bases by the base they came from. |
+| **Leontis–Westhof family** | The standard name for how two bases pair: which edge of each base touches (**W**atson–Crick, **H**oogsteen, **S**ugar) and whether the bonds are **c**is or **t**rans. `cWW` is the familiar pair; there are twelve families in all, and every one of them occurs in this database. |
+| **Arc diagram** | A picture of all the base pairs of a structure at once: the sequence as a line, each pair as an arc. See [Reading an arc picture](#reading-an-arc-picture). |
 | **FASTA** | The standard text format for sequences, one `>` header line per molecule. Any alignment or sequence tool reads it. |
 
 NtC class and confal score come from DNATCO, which analyses published structures and releases
@@ -360,7 +410,7 @@ or a hosting platform passes real values in.
 npm test
 ```
 
-**237 tests, about two seconds, no test framework installed**: `node --test`
+**413 tests, about three seconds, no test framework installed**: `node --test`
 ships with Node. They check the real SQL rather than a pretend version of it,
 so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 120 seeded entries and is never touched by the loaders. See
@@ -372,6 +422,7 @@ so they need a running PostgreSQL, specifically `na3db_test`, which holds the
 | `server.test.js` | Routes, status codes, response formats, which files must not be downloadable, that no SQL reaches `/api/fields`, and that the generated form carries a control for every filter. |
 | `equivalence.test.js` | 150+ filter combinations checked against the JavaScript implementation this replaced. |
 | `errors.test.js` | 503 versus 500, HTML versus JSON, and that nothing leaks. |
+| `arcs.test.js` | The arc layout: strand order, pair ends, families, the card numbers. |
 | `landing.test.js` | The count-as-you-type logic, run against stubbed browser globals: the debounce, the wording, and that a slow reply arriving late is thrown away. |
 
 `equivalence.test.js` is the unusual one. Instead of hand-written expected
@@ -446,6 +497,7 @@ Page templates, in `views/`:
 | `structure.ejs` | One structure's own page, at `/structure/<id>`. |
 | `error.ejs` | Shown for any address that matches nothing. |
 | `includes/rail.ejs` | The sidebar. Written once, included by every page. |
+| `includes/arc_viewer.ejs` | The full-screen viewer's dialog, filled by `arc_viewer.js`. |
 | `includes/footer.ejs` | The landing page's footer: how to cite, help, contact, and who supports NA3DB. |
 
 These are rendered by the server and only the resulting HTML is sent. The
@@ -467,7 +519,8 @@ Browser side, in `public/`:
 | `style.css` | Every visual decision. |
 | `shared.js` | HTML escaping, and conversion between a query string and a filters object. Takes the filter names from the registry the server injects. |
 | `api.js` | The browser's only door to the server. Nothing in the browser contacts any other host. |
-| `app.js` | The search page. Reads the form, draws the cards or lines, runs the layout and panel controls. Decides nothing about the data. |
+| `app.js` | The search page. Reads the form, draws the arcs, cards or lines, runs the layout and panel controls. Decides nothing about the data. |
+| `arc_viewer.js` | The full-screen arc viewer: drawing, zoom, the pair list, family chips. Opens from any `[data-arc-open]` button, on the search page or a structure page. |
 | `report.js` | The report page. Field selection and CSV building. |
 | `landing.js` | The count under the landing box. An addition, never a dependency: the form works without it. |
 
@@ -747,18 +800,28 @@ way, and writes its choice into the URL.
 
 ### What a result looks like
 
-Two layouts, chosen with `Cards | Lines` and remembered in the URL. Switching
-between them redraws what the browser already holds, so it makes no request:
-the reply behind the current page carries every field both views need.
+Three layouts, chosen with `Arcs | Cards | Lines` and remembered in the URL
+(`?view=cards`; Arcs, the default, leaves it out). Switching between them
+redraws what the browser already holds, so it makes no request: the reply
+behind the current page carries every field all three views need.
 
-A **card** is the fields `show: [..., "card"]` names, drawn by `detail.js`
-from the same registry the structure page reads, so the two cannot describe one
-entry differently. A field you searched on joins the card even if it is not
-normally there, so a result never has to be taken on trust. Six across on a
-wide screen, stepping down as the space narrows. The count follows the results
-area rather than the window, because a media query cannot see the filter
-panel: with it open at 1366px the results have 856px, and six cards there would
-be unreadable.
+An **arc tile** is the entry's arc picture (`/structure/:id/arcs.svg`), its id
+and its title. Pressing the picture opens the full-screen viewer.
+
+A **card** is one a row: the arc picture on the left; on the right the id,
+polymer type and title, a row of facts (method, deposited, nucleotides, base
+pairs, modified, strands), and below them the other fields with links to RCSB
+and the full page. The numbers come from `arc_summary()` in `detail.js` and
+travel in `/api/entries` as `arcs`. The fields are those
+`show: [..., "card"]` names, drawn from the same registry the structure page
+reads, so the two cannot describe one entry differently. A field you searched
+on joins the card even if it is not normally there, so a result never has to be
+taken on trust.
+
+The card steps down at 1099, 759 and 489px of results width. The steps follow
+the results area rather than the window (container queries), because a media
+query cannot see the filter panel: with it open at 1366px the results have
+856px.
 
 A **line** is the id, date, resolution, title and method. Clicking either opens
 that structure's page.
@@ -770,8 +833,14 @@ Below 640px wide the same pages rearrange rather than shrink:
 - the side rail becomes a bar across the top
 - the filters open as a full-screen sheet; `Show N results` closes it onto the
   results, and a filtered link opens on the results, not the sheet
-- cards go two a row and keep the title, method, date, resolution, polymer
-  type and whatever was searched on (one a row below 340px)
+- cards turn compact, about 380px tall: id and method on one line, the title
+  in two, a short arc picture, four numbers (nt, pairs, WC, modified), the
+  first author and paper on one line, the modified residues as chips, and
+  `Open entry`, `RCSB ↗` and `More ▾`. `More` unfolds every field; a field you
+  searched on stays visible
+- arc tiles go two a row
+- the full-screen viewer stacks: drawing on top, families and the pair list
+  below
 - tables on the structure page scroll sideways in their own box
 - on the report, the table comes first, `Fields` folds the column list open
   above it, and `Export to CSV` stays pinned to the bottom of the screen
@@ -790,7 +859,7 @@ results.
 | | Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
 | | Ligands | each small molecule, linked to its RCSB page |
 | | Sources | where each molecule came from: Natural, Expressed or Synthetic |
-| 3D structure | Base pairs | counts by kind, the pair families, and the non-canonical pairs in the first model, with a `CSV` download |
+| 3D structure | Base pairs | the arc picture across the full width (press it for full screen), counts by kind, the pair families, and the non-canonical pairs in the first model, with a `CSV` download |
 | | Conformation | confal score, its percentile, the NtC steps and classes |
 | References | Citations | every paper, with DOI and PubMed links |
 | | Links and downloads | RCSB, FASTA, base pairs as CSV, the report, the entry as JSON |
@@ -807,7 +876,7 @@ results.
 | `Contains \| Excludes` | whether the search finds those entries or every other one. Inverts the whole search, box and filters together, so the two halves always add up to the database |
 | `Show _n_ per page` | any whole number, capped at 200 |
 | `Sort by` | eight orders, two each for deposition date, resolution, confal score and entry id |
-| `Cards \| Lines` | the layout |
+| `Arcs \| Cards \| Lines` | the layout |
 | `Filters` | the panel. Shows how many filters are on, as in `Filters · 2` |
 | filter chips | one per filter in use, above the results. `×` removes it and searches again |
 | `Show N results` | the panel's search button, counting as you pick filters |
@@ -824,18 +893,20 @@ the HTML page. Browsers and `api.js` each get the format they can use.
 
 ## API
 
-Ten endpoints. All return JSON unless noted.
+Twelve endpoints. All return JSON unless noted.
 
 | endpoint | returns |
 | --- | --- |
 | `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` with `"down"`. Runs `SELECT 1`: it tests the connection, never the data. |
 | `GET /api/stats` | `{"total":1489}`. Counted fresh on every request. |
 | `GET /api/fields` | The filters and columns this API understands, so a client can discover them instead of hard-coding them. Labels, categories, kinds and pill options; never the SQL. |
-| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. Each result carries the rows its card draws. Takes `page`, `sort`, `per_page` and `match`. |
+| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. Each result carries the rows its card draws and its arc numbers (`arcs`, null when nothing is drawn). Takes `page`, `sort`, `per_page` and `match`. |
 | `GET /api/count` | How many entries a search would return, and nothing else. 6-45 ms, which is what lets the landing page count as you type. |
 | `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
 | `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. Takes `sort` and `match` too, so a downloaded file matches what was on screen. |
 | `GET /api/entries/:id/base_pairs` | Every base pair of the entry's first model: `{entry, model, total, counts, pairs}`, each pair with its chains, residues, family and kind (`wc`, `gu`, `nc`). `?format=csv` returns a CSV file instead. |
+| `GET /api/entries/:id/arcs` | What the arc picture is drawn from: `{strands, pairs}`. Each strand has its name, start, length, sequence and modified positions; each pair is `[i, j, kind, label, family, base_1, base_2]`, `i < j`. Cached on the server for an hour. |
+| `GET /structure/:id/arcs.svg` | The small arc picture, as SVG. The browser keeps it for an hour. |
 | `GET /api/ligands` | Every ligand code with its name and how many entries hold it. What the Ligand box suggests from. |
 | `GET /structure/:id/fasta` | Plain-text FASTA of every sequenced molecule in the entry, as a download. `?only=na` keeps the nucleic acids. |
 | `GET /structure/:id/fasta/:entity` | One molecule's FASTA, by its entity id. |
@@ -1030,8 +1101,8 @@ host needs real storage rather than a default volume.
 - **No automated backups.** `pg_dump -Fc` takes about four minutes and produces
   1.2 GB from a 9.6 GB database. Nothing runs it on a schedule yet, and no
   restore has been tested.
-- **`public/app.js` is 750 lines doing eight jobs**, reading the form, drawing
-  the cards or lines, pagination, the layout and panel controls, the live
+- **`public/app.js` is 850 lines doing eight jobs**, reading the form, drawing
+  the arcs, cards or lines, pagination, the layout and panel controls, the live
   count, the filter chips, the ligand suggestions, and history.
   It works, and it is the next file that will want splitting.
 - **Results are not ranked.** Every match counts the same, so a structure
@@ -1053,4 +1124,6 @@ host needs real storage rather than a default volume.
   `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: require-corp` on every response, including
   worker scripts, so the reverse proxy has to be able to set those.
-- **Not deployed.** Runs locally only.
+- **The arc numbers are worked out on first request.** About 18 ms an entry,
+  then cached for an hour, so the first search through 100 ribosomes takes
+  about 4 s and the next 0.2 s. Warming the cache at start-up would remove that.
