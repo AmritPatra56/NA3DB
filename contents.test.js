@@ -1371,9 +1371,9 @@ test("a section with nothing in it is listed as empty, not dropped", () => {
                                         base_pairs: null, citations: [] });
     let by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
 
-    assert.equal(sections.length, 9, "every section stays in the list");
+    assert.equal(sections.length, 10, "every section stays in the list");
     for (const id of ["molecules", "modified-nucleotides", "ligands", "sources",
-                      "base-pairs", "conformation", "citations"]) {
+                      "base-pairs", "sequence-map", "conformation", "citations"]) {
         assert.ok(by_id[id].empty, `${id} should be marked empty`);
     }
     assert.ok(!by_id.overview.empty && !by_id.links.empty, "the overview and links always have content");

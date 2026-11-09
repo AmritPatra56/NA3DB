@@ -21,6 +21,7 @@
         "ligands": "Small molecules bound in the structure: ions, cofactors, drugs. Each code links to its page at RCSB.",
         "sources": "Where each molecule came from: Natural (taken from the organism), Expressed (made in a host) or Synthetic (made chemically).",
         "base-pairs": "Pairs in the first model, classified by DNATCO in the Leontis–Westhof scheme: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). G–C and A–U in cWW are Watson–Crick pairs.",
+        "sequence-map": "Every nucleotide on one ruler: the sequence, the NtC step to the next nucleotide coloured by its CANA class (bar height is the confal score), then every base pair in layered dot-bracket notation, one row per Leontis–Westhof family. Hover a column to see its pairs and step.",
         "conformation": "Each step between two nucleotides is assigned an NtC class by DNATCO. The confal score (0–100) says how closely the steps fit their classes; the percentile ranks it against other structures.",
         "citations": "The papers that describe this structure, the primary one first.",
         "links": "This entry elsewhere, and its data as files."
@@ -122,6 +123,11 @@
                                     <% if (a.counts.copies) { %><span class="arc_note">′ marks a symmetry copy from the crystal</span><% } %>
                                 </figcaption>
                             </figure>
+                        <% } %>
+                        <% if (s.id === "sequence-map" && !s.empty) { %>
+                            <div class="seqmap" data-entry="<%= entry.pdb_id %>">
+                                <p class="seqmap_wait">Drawing the sequence map…</p>
+                            </div>
                         <% } %>
                         <% if (s.id === "base-pairs" && base_pairs) { const bp = base_pairs; %>
                             <div class="jump_to">Jump to: <a href="#bp-counts">Counts</a><% if (bp.families.length) { %> · <a href="#bp-families">Families</a><% } %><% if (bp.noncanonical.length) { %> · <a href="#bp-all">Non-canonical pairs</a><% } %></div>
@@ -231,6 +237,7 @@
     <% if (arcs) { %>
     <%- include("includes/arc_viewer.ejs") %>
     <% } %>
+    <% if (sections.some((s) => s.id === "sequence-map" && !s.empty)) { %><script type="module" src="/seqmap.js"></script><% } %>
     <script>
         // Copies the letters only: no line numbers, no block spaces.
         document.addEventListener("click", async (event) => {

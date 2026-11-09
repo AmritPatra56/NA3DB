@@ -660,7 +660,7 @@ test("every sidebar link on a structure page lands on a section", async () => {
     let sections = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
 
     assert.deepEqual(links, ["overview", "molecules", "modified-nucleotides", "ligands", "sources",
-                             "base-pairs", "conformation", "citations", "links"]);
+                             "base-pairs", "sequence-map", "conformation", "citations", "links"]);
     assert.deepEqual(sections, links, "one section per link, in the same order");
 });
 
@@ -831,11 +831,11 @@ test("a polymer pill shows its count, and a selected empty one is still drawn", 
 const render = (view, locals) =>
     new Promise((ok, fail) => app.render(view, locals, (err, html) => err ? fail(err) : ok(html)));
 
-async function page_with_arcs(arcs) {
+async function page_with_arcs(arcs, nucleic_chains = 0) {
     let entry = await find_entry("4TNA");
     let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
     let page = { entry, rows: detail_rows(entry), citations: [],
-                 molecules: molecule_groups(contents, residues), base_pairs: null, arcs };
+                 molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains };
     return render("structure", { ...page, page: "search", sections: structure_sections(page),
                                  PAGE_GROUPS, rail_query: "" });
 }
@@ -946,4 +946,31 @@ test("the search page offers an Arcs view, and its tiles can open the viewer", a
     assert.match(html, /<dialog id="arc_viewer"/);
     assert.match(html, /<script type="module" src="\/arc_viewer.js"><\/script>/);
     assert.match(await (await fetch(base + "/search?view=bogus")).text(), /data-view="cards"\s+aria-pressed="true"/);
+});
+
+test("the sequence map API: a 404 for an entry with no nucleic-acid chain, and for an unknown one", async () => {
+    // The seed's 4TNA lists no chains; sequence_map itself is in seqmap.test.js.
+    let res = await fetch(base + "/api/entries/4tna/sequence_map");
+    assert.equal(res.status, 404);
+    assert.deepEqual(await res.json(), { error: "4TNA has no nucleic-acid chain" });
+    assert.equal((await fetch(base + "/api/entries/4tna/sequence_map?format=text")).status, 404);
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/sequence_map")).status, 404);
+});
+
+test("the structure page has a Sequence map section between Base pairs and Conformation, drawn by its own script", async () => {
+    let html = await page_with_arcs(null, 2);
+    let map = section(html, "sequence-map");
+    assert.match(map, /class="seqmap" data-entry="4TNA"/);
+    assert.match(html, /href="#sequence-map"/);
+    assert.match(html, /<script type="module" src="\/seqmap.js"><\/script>/);
+    assert.ok(html.indexOf('id="base-pairs"') < html.indexOf('id="sequence-map"') &&
+              html.indexOf('id="sequence-map"') < html.indexOf('id="conformation"'));
+    let script = await (await fetch(base + "/seqmap.js")).text();
+    for (const part of ["seqmap_full", "seqmap_dialog", "smd_overview", "smd_strands", 'data-zoom="fit"', "seqmap_jump"]) {
+        assert.ok(script.includes(part), `the script draws the full-screen view's ${part}`);
+    }
+
+    let none = await (await fetch(base + "/structure/4TNA")).text();
+    assert.ok(section(none, "sequence-map").includes("None recorded"), "no chains, nothing to draw");
+    assert.ok(!none.includes("/seqmap.js"), "and no script for it");
 });

@@ -525,6 +525,38 @@ export async function entry_base_pairs(id, q = query) {
     return result.rows;
 }
 
+// What the sequence map needs beyond the pairs: every nucleotide of every
+// nucleic-acid chain (its letter, author number, whether it is in the model)
+// and every NtC step of model 1 with its CANA class and confidence (confal).
+// A modified nucleotide's letter is its parent's, in lower case.
+export async function entry_sequence_tracks(id, q = query) {
+    let e = `(SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))`;
+    let [residues, steps] = await Promise.all([
+        q(`SELECT s.asym_id AS label, s.seq_id AS pos, min(s.mon_id) AS code,
+                  min(s.pdb_seq_num::text || COALESCE(NULLIF(s.pdb_ins_code, ''), '')) AS num,
+                  bool_or(s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', '')) AS seen,
+                  min(COALESCE(c.parent_comp_id, s.mon_id)) AS parent,
+                  bool_or(c.mon_nstd_flag = 'n') AS modified
+             FROM pdbx_poly_seq_scheme s
+             JOIN entity_poly ep ON ep.entry_id = s.entry_id AND ep.entity_id = s.entity_id
+             LEFT JOIN chem_comp c ON c.id = s.mon_id
+            WHERE s.entry_id = ${e} AND ep.type ILIKE '%nucleotide%'
+            GROUP BY s.asym_id, s.seq_id
+            ORDER BY length(s.asym_id), s.asym_id, s.seq_id`, [as_text(id).trim()]),
+        q(`SELECT t.label_asym_id_1 AS label_1, t.label_seq_id_1 AS pos_1,
+                  t.label_asym_id_2 AS label_2, t.label_seq_id_2 AS pos_2,
+                  m.assigned_ntc AS ntc, m.assigned_cana AS cana,
+                  m.confal_score AS confal, m.closest_ntc AS closest
+             FROM ndb_struct_ntc_step t
+             JOIN ndb_struct_ntc_step_summary m ON m.entry_id = t.entry_id AND m.step_id = t.id
+            WHERE t.entry_id = ${e}
+              AND coalesce(t.pdb_model_number, 1) = (SELECT min(coalesce(pdb_model_number, 1))
+                                                       FROM ndb_struct_ntc_step WHERE entry_id = ${e})`,
+          [as_text(id).trim()])
+    ]);
+    return { residues: residues.rows, steps: steps.rows };
+}
+
 // Where each modified nucleotide sits, one row per code and chain, in the
 // author numbering the Numbering column uses. Nucleic-acid chains only, the
 // same rule as the residue filter, so a protein's MSE is not listed.

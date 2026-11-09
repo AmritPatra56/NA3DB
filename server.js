@@ -1,13 +1,13 @@
 import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
-         count_entries, entry_citations, entry_contents, entry_base_pairs,
+         count_entries, entry_citations, entry_contents, entry_base_pairs, entry_sequence_tracks,
          entry_residues, ligand_suggestions, pill_counts, database_stats } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
-         entry_fasta, base_pair_export, base_pairs_csv, structure_sections, pair_arcs, arc_thumbnail, arc_summary,
+         entry_fasta, base_pair_export, base_pairs_csv, structure_sections, pair_arcs, sequence_map, sequence_map_text, nucleic_chain_count, arc_thumbnail, arc_summary,
          PAGE_GROUPS } from "./detail.js";
 
 const app = express();
@@ -184,7 +184,8 @@ app.get("/structure/:id", async (req, res) => {
         citations: await entry_citations(entry.pdb_id),
         molecules: molecule_groups(contents, residues),
         base_pairs: base_pair_section(pairs),
-        arcs: pair_arcs(contents.entities, residues, pairs)
+        arcs: pair_arcs(contents.entities, residues, pairs),
+        nucleic_chains: nucleic_chain_count(contents.entities)
     };
 
     // The rail on this page has no script to rewrite its links, so it is given
@@ -365,6 +366,36 @@ app.get("/api/entries/:id/arcs", async (req, res) => {
 
     let arcs = await arcs_of(entry.pdb_id);
     res.json({ pdb_id: entry.pdb_id, title: entry.title, ...(arcs?.layout ?? { strands: [], pairs: [] }) });
+});
+
+// The sequence map of the strands in ?strands=A,B (a symmetry copy as
+// A:2_755), or of the first chain with pairs and its partners. ?format=text
+// gives the layered dot-bracket file, NtC steps in its # lines.
+app.get("/api/entries/:id/sequence_map", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let [contents, tracks, pairs] = await Promise.all([entry_contents(entry.pdb_id),
+                                                       entry_sequence_tracks(entry.pdb_id),
+                                                       entry_base_pairs(entry.pdb_id)]);
+    let wanted = String(req.query.strands ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    let map = sequence_map(contents.entities, tracks, pairs, wanted);
+
+    if (!map) {
+        res.status(404).json({ error: `${entry.pdb_id} has no nucleic-acid chain` });
+        return;
+    }
+    if (req.query.format === "text") {
+        res.attachment(`${entry.pdb_id}_${map.shown.join("_").replaceAll(":", "-")}.lbn.txt`)
+           .type("text/plain; charset=utf-8")
+           .send(sequence_map_text(entry.pdb_id, map));
+        return;
+    }
+    res.json({ pdb_id: entry.pdb_id, ...map });
 });
 
 // Returns every matching entry for the report page, not just one page.

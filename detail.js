@@ -399,6 +399,10 @@ const IDENTITY = "1";    // struct_oper_id of the copy in the file
 const round1 = (v) => Math.round(v * 10) / 10;
 const by_copy = (a, b) => (b === IDENTITY) - (a === IDENTITY) || a.localeCompare(b, "en", { numeric: true });
 
+// How many nucleic-acid chains a sequence map can show.
+export const nucleic_chain_count = (entities) =>
+    entities.filter((e) => NUCLEIC_KINDS.has(e.kind)).reduce((n, e) => n + e.chains.length, 0);
+
 export function pair_arcs(entities, residues, pairs) {
     let chains = new Map();
     for (const e of entities) {
@@ -648,7 +652,7 @@ const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
 // Every section in page order, with what it holds. A section with nothing in
 // it stays listed, marked empty: "none recorded" is a fact about the entry,
 // and a missing heading would read as a field we never had.
-export function structure_sections({ entry, rows, molecules, base_pairs, citations }) {
+export function structure_sections({ entry, rows, molecules, base_pairs, citations, nucleic_chains = 0 }) {
     let group_of = new Map(columns_for("page").map((c) => [c.key, c.group]));
     let rows_in = { overview: [], modified: [], ligands: [], conformation: [] };
 
@@ -673,6 +677,7 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
           count: molecules.sources?.rows.length ?? 0 },
         { id: "base-pairs", title: "Base pairs", group: "structure",
           count: base_pairs?.total ?? 0 },
+        { id: "sequence-map", title: "Sequence map", group: "structure", count: nucleic_chains },
         { id: "conformation", title: "Conformation", group: "structure", rows: rows_in.conformation,
           count: steps === null ? 0 : Number(steps) },
         { id: "citations", title: "Citations", group: "references",
@@ -685,4 +690,197 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
     }
 
     return sections;
+}
+
+// ---- Sequence map ----------------------------------------------------------
+// One ruler per set of strands: the sequence, the NtC step between each two
+// nucleotides, and every base pair in layered dot-bracket rows (one row per
+// Leontis–Westhof family, a base that pairs twice in one family spilling to
+// another row). The notation is the one from the NA hackathon 2026
+// (ws2 layered-bp-notation); its text round-trips back to the pairs.
+const LBN_BRACKETS = ["()", "[]", "{}", "<>", "Aa", "Bb", "Cc", "Dd"];
+const LBN_FAMILIES = ["cWH", "cWS", "cHW", "cHH", "cHS", "cSW", "cSH", "cSS",
+                      "tWW", "tWH", "tWS", "tHW", "tHH", "tHS", "tSW", "tSH", "tSS"];
+const LBN_SEP = "&";
+const flip_lw = (f) => f[0] + f[2] + f[1];
+const crosses = ([i, j], [k, l]) => (i < k && k < j && j < l) || (k < i && i < l && l < j);
+const strand_token = (label, copy) => (copy === IDENTITY ? label : `${label}:${copy}`);
+
+// A, C, G, U or T; a modified nucleotide is its parent in lower case, and
+// one with no known parent is n.
+function nucleotide_letter(r) {
+    let base = String(r.parent ?? r.code ?? "").replace(/^D(?=[ACGTU]$)/, "");
+    let letter = /^[ACGTUI]$/.test(base) ? base : "N";
+    return r.modified ? letter.toLowerCase() : letter;
+}
+
+// One dot-bracket line: brackets of a deeper kind for a pair that crosses one
+// already drawn in the same row.
+function bracket_line(width, seps, pairs) {
+    let chars = Array.from({ length: width }, (_, i) => (seps.has(i) ? LBN_SEP : "."));
+    let drawn = [];
+    for (const p of [...pairs].sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
+        let level = 0;
+        while (drawn.some(([q, l]) => l === level && crosses(p, q))) level++;
+        drawn.push([p, level]);
+        let kind = LBN_BRACKETS[Math.min(level, LBN_BRACKETS.length - 1)];
+        chars[p[0]] = kind[0];
+        chars[p[1]] = kind[1];
+    }
+    return chars.join("");
+}
+
+// The strands a map can show: every nucleic-acid chain as it is in the file,
+// and every symmetry copy that pairs with one. Each knows whom it pairs with.
+function map_strands(entities, by_chain, pairs) {
+    let strands = new Map();
+    let order = 0;
+    for (const e of entities) {
+        if (!NUCLEIC_KINDS.has(e.kind)) continue;
+        for (const c of e.chains) {
+            if (!by_chain.has(c.label)) continue;
+            strands.set(strand_token(c.label, IDENTITY),
+                        { label: c.label, copy: IDENTITY, base: chain_name(c), order: order++, partners: new Set() });
+        }
+    }
+    let ends = (p) => [strand_token(p.label_1, String(p.copy_1 ?? IDENTITY)),
+                       strand_token(p.label_2, String(p.copy_2 ?? IDENTITY))];
+    for (const p of pairs) {
+        let [a, b] = ends(p);
+        for (const [key, label, copy] of [[a, p.label_1, String(p.copy_1 ?? IDENTITY)],
+                                          [b, p.label_2, String(p.copy_2 ?? IDENTITY)]]) {
+            let own = strands.get(strand_token(label, IDENTITY));
+            if (own && !strands.has(key)) strands.set(key, { ...own, copy, partners: new Set() });
+        }
+        if (strands.has(a) && strands.has(b)) {
+            strands.get(a).partners.add(b);
+            strands.get(b).partners.add(a);
+        }
+    }
+    let list = [...strands.entries()].map(([key, s]) => ({ key, ...s }))
+        .sort((x, y) => x.order - y.order || by_copy(x.copy, y.copy));
+    for (const s of list) {
+        let rank = list.filter((t) => t.label === s.label && t.copy !== IDENTITY).findIndex((t) => t.copy === s.copy);
+        s.symmetry = s.copy !== IDENTITY;
+        s.name = !s.symmetry ? s.base : rank < PRIMES.length ? s.base + PRIMES[rank] : `${s.base} (copy ${s.copy})`;
+    }
+    return list;
+}
+
+// The map for the strands asked for (tokens such as A or A:2_755), or, when
+// none are, the first chain with pairs and the strands it pairs with.
+export function sequence_map(entities, tracks, pairs, wanted = []) {
+    let by_chain = new Map();
+    for (const r of tracks.residues) {
+        if (!by_chain.has(r.label)) by_chain.set(r.label, []);
+        by_chain.get(r.label).push(r);
+    }
+    let strands = map_strands(entities, by_chain, pairs);
+    if (!strands.length) return null;
+
+    let known = new Set(strands.map((s) => s.key));
+    let chosen = wanted.filter((k) => known.has(k));
+    if (!chosen.length) {
+        let first = strands.find((s) => s.partners.size) ?? strands[0];
+        chosen = [first.key, ...[...first.partners].filter((k) => k !== first.key)];
+    }
+    let shown = strands.filter((s) => chosen.includes(s.key));
+
+    // The ruler: strands end to end, a separator column between two.
+    let cols = [];
+    let at = new Map();
+    let seps = new Set();
+    shown.forEach((s, n) => {
+        if (n) { seps.add(cols.length); cols.push(null); }
+        for (const r of by_chain.get(s.label)) {
+            at.set(`${s.key} ${r.pos}`, cols.length);
+            cols.push({ strand: n, pos: r.pos, num: r.num, code: r.code, letter: nucleotide_letter(r),
+                        seen: r.seen !== false });
+        }
+    });
+
+    // Each pair once, lower column first, its family read from that side.
+    let seen = new Set();
+    let placed = [];
+    for (const p of pairs) {
+        let i = at.get(`${strand_token(p.label_1, String(p.copy_1 ?? IDENTITY))} ${p.pos_1}`);
+        let j = at.get(`${strand_token(p.label_2, String(p.copy_2 ?? IDENTITY))} ${p.pos_2}`);
+        if (i === undefined || j === undefined || i === j) continue;
+        let family = p.family;
+        if (i > j) [i, j, family] = [j, i, flip_lw(family)];
+        let key = `${i} ${j} ${family}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        placed.push({ i, j, family, row: family === "cWW" ? (p.kind === "wc" ? "WC" : "cWW") : family });
+    }
+
+    // One row per family in a fixed order; a base already used in its row
+    // goes to an overflow row of the same family, packed as tightly as fits.
+    let rows = [];
+    let overflow = [];
+    for (const name of ["WC", "cWW", ...LBN_FAMILIES]) {
+        let group = placed.filter((p) => p.row === name).sort((a, b) => a.i - b.i || a.j - b.j);
+        if (!group.length) continue;
+        let used = new Set();
+        let row = [];
+        let extra = [];
+        for (const p of group) {
+            if (used.has(p.i) || used.has(p.j)) { extra.push(p); continue; }
+            row.push(p);
+            used.add(p.i).add(p.j);
+        }
+        rows.push({ name, family: name === "WC" ? "cWW" : name, pairs: row });
+        let buckets = [];
+        for (const p of extra) {
+            let b = buckets.find((b) => !b.some((q) => [q.i, q.j].includes(p.i) || [q.i, q.j].includes(p.j)));
+            b ? b.push(p) : buckets.push([p]);
+        }
+        overflow.push(...buckets.map((b) => ({ name: name === "WC" ? "cWW" : name, family: name === "WC" ? "cWW" : name,
+                                               pairs: b, overflow: true })));
+    }
+    rows.push(...overflow);
+    for (const r of rows) {
+        r.text = bracket_line(cols.length, seps, r.pairs.map((p) => [p.i, p.j]));
+        r.pairs = r.pairs.map((p) => [p.i, p.j]);
+    }
+
+    // The step from each nucleotide to the next one on the ruler; symmetry
+    // copies share their chain's steps.
+    let steps = [];
+    for (const t of tracks.steps) {
+        for (const [n, s] of shown.entries()) {
+            if (t.label_1 !== s.label || t.label_2 !== s.label) continue;
+            let i = at.get(`${s.key} ${t.pos_1}`);
+            if (i === undefined || at.get(`${s.key} ${t.pos_2}`) !== i + 1) continue;
+            let assigned = t.ntc && t.ntc !== "NANT";
+            steps.push({ i, ntc: assigned ? t.ntc : null, cana: assigned ? t.cana : "NAN",
+                         confal: t.confal === null ? null : Number(t.confal), closest: t.closest ?? null, strand: n });
+        }
+    }
+    steps.sort((a, b) => a.i - b.i);
+
+    let seq = cols.map((c) => (c ? c.letter : LBN_SEP)).join("");
+    return {
+        strands: strands.map(({ key, name, symmetry, label, partners }) =>
+            ({ key, name, symmetry, label, length: by_chain.get(label).length, partners: [...partners] })),
+        shown: shown.map((s) => s.key),
+        names: shown.map((s) => s.name),
+        cols: cols.map((c) => c && [c.letter, c.num, c.seen ? 1 : 0, c.code]),
+        rows: rows.map(({ name, family, text, pairs, overflow }) => ({ name, family, text, pairs, overflow: !!overflow })),
+        steps,
+        seq
+    };
+}
+
+// The map as the notation's text file: a header naming the strands, the rows
+// under one ruler, and the NtC steps as # comments, which readers skip.
+export function sequence_map_text(pdb_id, map) {
+    let lines = [`>${[pdb_id, ...map.shown].join("|")}`,
+                 `# strands: ${map.names.join(", ")}; '${LBN_SEP}' separates strands`];
+    let by_i = new Map(map.steps.map((s) => [s.i, s]));
+    lines.push(`# ntc: ${map.steps.map((s) => `${s.i + 1}:${s.ntc ?? "NANT"}`).join(" ")}`);
+    lines.push(`# cana (step after each column): ${map.cols.map((c, i) => (c ? by_i.get(i)?.cana ?? "-" : LBN_SEP)).join(" ")}`);
+    lines.push(`${"seq".padEnd(12)}: ${map.seq}`);
+    for (const r of map.rows) lines.push(`${r.name.padEnd(12)}: ${r.text}`);
+    return lines.join("\n") + "\n";
 }
