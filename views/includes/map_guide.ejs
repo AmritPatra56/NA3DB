@@ -11,29 +11,29 @@
         <svg class="map_guide" viewBox="0 0 680 262" role="img" aria-labelledby="map-guide-title">
             <title id="map-guide-title">A made-up 14-nucleotide RNA: its pairs as arcs above the sequence, and the same pairs as bracket rows below it, one row per kind of pair</title>
             <g fill="none" stroke-width="1.6">
-                <path d="M123 104 Q292 -72 461 104" stroke="#139068"/>
-                <path d="M149 104 Q292 -56 435 104" stroke="#139068"/>
-                <path d="M175 104 Q292 -32 409 104" stroke="#139068"/>
-                <path d="M201 104 Q253 28 305 104" stroke="#e0a030"/>
-                <path d="M227 104 Q292 16 357 104" stroke="#7f77dd"/>
-                <path d="M279 104 Q344 16 409 104" stroke="#7f77dd"/>
-                <path d="M357 104 Q409 28 461 104" stroke="#7f77dd" stroke-dasharray="4 3"/>
+                <path d="M123 104 Q292 -72 461 104" style="stroke:var(--pair-wc)"/>
+                <path d="M149 104 Q292 -56 435 104" style="stroke:var(--pair-wc)"/>
+                <path d="M175 104 Q292 -32 409 104" style="stroke:var(--pair-wc)"/>
+                <path d="M201 104 Q253 28 305 104" style="stroke:var(--pair-gu)"/>
+                <path d="M227 104 Q292 16 357 104" style="stroke:var(--pair-nc)"/>
+                <path d="M279 104 Q344 16 409 104" style="stroke:var(--pair-nc)"/>
+                <path d="M357 104 Q409 28 461 104" style="stroke:var(--pair-nc)" stroke-dasharray="4 3"/>
             </g>
             <text class="mg_label" x="40" y="128">seq</text>
             <text class="mg_mono" x="<%= at(1,2,3,4,5,6,7,8,9,10,11,12,13,14) %>" y="128">GCUGAcGUAACAGC</text>
             <% for (const k of [1, 5, 10, 14]) { %><text class="mg_ruler" x="<%= X[k - 1] %>" y="146"><%= k %></text><% } %>
-            <text class="mg_label" x="40" y="170" fill="#139068">WC</text>
-            <text class="mg_label" x="40" y="194" fill="#e0a030">cWW</text>
-            <text class="mg_label" x="40" y="218" fill="#7f77dd">tHS</text>
-            <text class="mg_label mg_over" x="40" y="242" fill="#7f77dd">tHS</text>
+            <text class="mg_label" x="40" y="170" style="fill:var(--pair-wc)">WC</text>
+            <text class="mg_label" x="40" y="194" style="fill:var(--pair-gu)">cWW</text>
+            <text class="mg_label" x="40" y="218" style="fill:var(--pair-nc)">tHS</text>
+            <text class="mg_label mg_over" x="40" y="242" style="fill:var(--pair-nc)">tHS</text>
             <text class="mg_mono mg_dot" x="<%= at(4,5,6,7,8,9,10,11) %>" y="170">........</text>
-            <text class="mg_mono" x="<%= at(1,2,3,12,13,14) %>" y="170" fill="#139068">((()))</text>
+            <text class="mg_mono" x="<%= at(1,2,3,12,13,14) %>" y="170" style="fill:var(--pair-wc)">((()))</text>
             <text class="mg_mono mg_dot" x="<%= at(1,2,3,5,6,7,9,10,11,12,13,14) %>" y="194">............</text>
-            <text class="mg_mono" x="<%= at(4,8) %>" y="194" fill="#e0a030">()</text>
+            <text class="mg_mono" x="<%= at(4,8) %>" y="194" style="fill:var(--pair-gu)">()</text>
             <text class="mg_mono mg_dot" x="<%= at(1,2,3,4,6,8,9,11,13,14) %>" y="218">..........</text>
-            <text class="mg_mono" x="<%= at(5,7,10,12) %>" y="218" fill="#7f77dd">([)]</text>
+            <text class="mg_mono" x="<%= at(5,7,10,12) %>" y="218" style="fill:var(--pair-nc)">([)]</text>
             <text class="mg_mono mg_dot" x="<%= at(1,2,3,4,5,6,7,8,9,11,12,13) %>" y="242">............</text>
-            <text class="mg_mono" x="<%= at(10,14) %>" y="242" fill="#7f77dd">()</text>
+            <text class="mg_mono" x="<%= at(10,14) %>" y="242" style="fill:var(--pair-nc)">()</text>
             <text class="mg_note" x="490" y="170">G–C and A–U</text>
             <text class="mg_note" x="490" y="194">here a G·U wobble</text>
             <text class="mg_note" x="490" y="218">[ ] crosses ( )</text>

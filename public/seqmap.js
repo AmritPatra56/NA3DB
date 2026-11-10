@@ -14,13 +14,19 @@ const Y_SEQ = RULER, Y_NTC = RULER + SEQ + 2, Y_ROWS = Y_NTC + NTC + GAP;
 const LABEL_W = 44;
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-export const ROW_COLOUR = { WC: "#139068", cWW: "#e0a030" };
-export const OTHER_ROW = "#7f77dd";
+// Tokens from style.css, so the rows follow the theme.
+export const ROW_COLOUR = { WC: "var(--pair-wc)", cWW: "var(--pair-gu)" };
+export const OTHER_ROW = "var(--pair-nc)";
 const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "sugar" };
 
 export const el = (name, attrs = {}, parent) => {
     let node = document.createElementNS(SVG_NS, name);
-    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    // A token (var(--...)) is not a valid presentation attribute; as a style
+    // property it is.
+    for (const [k, v] of Object.entries(attrs)) {
+        if ((k === "fill" || k === "stroke") && String(v).startsWith("var(")) node.style.setProperty(k, v);
+        else node.setAttribute(k, v);
+    }
     parent?.append(node);
     return node;
 };
@@ -36,25 +42,30 @@ export function patterns(svg) {
                                 patternUnits: "userSpaceOnUse",
                                 ...(c.look === "stripe" ? { patternTransform: "rotate(45)" } : {}) }, defs);
         el("rect", { width: 4, height: 4, fill: c.fill[0] }, p);
-        if (c.look === "stripe") el("rect", { width: 1.5, height: 4, fill: "#fff" }, p);
-        else el("circle", { cx: 2, cy: 2, r: 0.9, fill: "#fff" }, p);
+        if (c.look === "stripe") el("rect", { width: 1.5, height: 4, fill: "var(--ntc-gap)" }, p);
+        else el("circle", { cx: 2, cy: 2, r: 0.9, fill: "var(--ntc-gap)" }, p);
     }
 }
 const paint = (c) => (c.look ? `url(#sm_${c.look}_${c.fill[0].slice(1)})` : c.fill[0]);
+
+// A hairline round a bar wide enough to keep its colour inside it: on the
+// dark ground the deep A-form blue needs it (--ntc-edge is transparent in
+// light).
+const edge = (w) => (w >= 4 ? { class: "ntc_bar" } : {});
 
 // One NtC bar centred between its two nucleotides.
 export function bar(g, x, w, h, bottom, code) {
     let c = CANA[code] ?? CANA.NAN;
     if (code === "NAN" || !CANA[code]) {
         el("rect", { x: x - w / 2 + 0.5, y: bottom - 10.5, width: w - 1, height: 10, rx: 1.5,
-                     fill: "#fff", stroke: "#9ca3af", "stroke-width": 1 }, g);
+                     fill: "var(--ntc-nan)", stroke: "var(--ntc-nan-line)", "stroke-width": 1 }, g);
         return;
     }
     if (c.fill.length === 2) {
-        el("rect", { x: x - w / 2, y: bottom - h, width: w / 2, height: h, fill: c.fill[0] }, g);
-        el("rect", { x, y: bottom - h, width: w / 2, height: h, fill: c.fill[1] }, g);
+        el("rect", { x: x - w / 2, y: bottom - h, width: w / 2, height: h, fill: c.fill[0], ...edge(w / 2) }, g);
+        el("rect", { x, y: bottom - h, width: w / 2, height: h, fill: c.fill[1], ...edge(w / 2) }, g);
     } else {
-        el("rect", { x: x - w / 2, y: bottom - h, width: w, height: h, fill: paint(c) }, g);
+        el("rect", { x: x - w / 2, y: bottom - h, width: w, height: h, fill: paint(c), ...edge(w) }, g);
     }
 }
 
@@ -125,7 +136,7 @@ function draw_map(box, w) {
     map.rows.forEach((r, k) => {
         let t = el("text", { x: 4, y: row_y(k) + 4, class: "seqmap_label" + (r.overflow ? " seqmap_over" : "") }, lab);
         t.textContent = r.name;
-        t.setAttribute("fill", ROW_COLOUR[r.name] ?? OTHER_ROW);
+        t.style.fill = ROW_COLOUR[r.name] ?? OTHER_ROW;
     });
 
     let svg = scroll.querySelector(".seqmap_svg");

@@ -1,0 +1,7 @@
+<%# The theme, before the stylesheet paints. Auto (no data-theme) leaves it to
+    the device, through prefers-color-scheme in style.css; a visitor's own
+    choice, kept by public/theme.js, is set here so the page never flashes the
+    other theme first. %>
+    <meta name="color-scheme" content="light dark">
+    <script>try { var t = localStorage.getItem("na3db-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
+    <script src="/theme.js" defer></script>

@@ -35,11 +35,11 @@ const esc = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 // open for trans. Drawn centred on x, y.
 function glyph(fam, x, y, r = 4.5) {
     if (!/^[ct][WHS][WHS]$/.test(fam)) return "";
-    let fill = fam[0] === "c" ? "currentColor" : "#fff";
+    let fill = fam[0] === "c" ? "currentColor" : "var(--bg-secondary)";
     let one = (e, cx) => e === "W" ? `<circle cx="${cx}" cy="${y}" r="${r}"/>`
         : e === "H" ? `<rect x="${cx - r}" y="${y - r}" width="${2 * r}" height="${2 * r}"/>`
         : `<path d="M${cx - r - 1} ${y + r}L${cx + r + 1} ${y + r}L${cx} ${y - r - 1}Z"/>`;
-    return `<g fill="${fill}" stroke="currentColor" stroke-width="1.4">${one(fam[1], x - r - 1)}${one(fam[2], x + r + 1)}</g>`;
+    return `<g style="fill:${fill}" stroke="currentColor" stroke-width="1.4">${one(fam[1], x - r - 1)}${one(fam[2], x + r + 1)}</g>`;
 }
 const glyph_html = (fam) => `<svg class="av_glyph" width="26" height="12" viewBox="0 0 26 12" aria-hidden="true">${glyph(fam, 13, 6, 4.5)}</svg>`;
 const family_words = (f) => /^[ct][WHS][WHS]$/.test(f) ? `${f[0] === "c" ? "cis" : "trans"} ${EDGE[f[1]]} / ${EDGE[f[2]]}` : f;

@@ -211,11 +211,13 @@ test("the small picture is a standalone image: own colours, no labels, escaped i
     let svg = arc_thumbnail(d, "1D26");
 
     assert.match(svg, /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
-    assert.match(svg, /<path stroke="#139068" d="M/);
-    assert.match(svg, /<path stroke="#7f77dd" d="M/);
+    assert.match(svg, /<path stroke="#139068" class="wc" d="M/);
+    assert.match(svg, /<path stroke="#7f77dd" class="nc" d="M/);
     assert.ok(!svg.includes("#e0a030"), "no G·U, no G·U path");
     assert.match(svg, /stroke-dasharray/, "the copy is dashed");
-    assert.match(svg, /<path fill="#26215c"/, "modified dots");
+    assert.match(svg, /<path fill="#26215c" class="m"/, "modified dots");
+    // Dark colours ride along for a page in the dark theme.
+    assert.match(svg, /@media \(prefers-color-scheme: dark\)/);
     assert.ok(!svg.includes("<text"), "no labels at this size");
     assert.match(arc_thumbnail(null, `<x>"`), /&lt;x>&quot;: no base pairs annotated/);
 });

@@ -3,7 +3,9 @@
 
 // Hue is the family (A blue, B orange, Z green), shade or pattern the
 // variant, two halves a transition read 5′ to 3′. Okabe–Ito colours, so they
-// stay apart for colour-blind readers too.
+// stay apart for colour-blind readers too. The same in both themes, except
+// the two neutrals: OPN and NAN are tokens in style.css, since a black or
+// white bar would vanish or glare on the dark ground.
 export const CANA = {
     AAA: { fill: ["#0072B2"] },               AAw: { fill: ["#56B4E9"] },
     AAu: { fill: ["#0072B2"], look: "stripe" },
@@ -12,8 +14,8 @@ export const CANA = {
     "A-B": { fill: ["#0072B2", "#E69F00"] },  "B-A": { fill: ["#E69F00", "#0072B2"] },
     B12: { fill: ["#E69F00", "#D55E00"] },
     ZZZ: { fill: ["#009E73"] }, ICL: { fill: ["#CC79A7"] },
-    OPN: { fill: ["#222222"] }, SYN: { fill: ["#F0E442"] },
-    NAN: { fill: ["#ffffff"] }
+    OPN: { fill: ["var(--ntc-opn)"] }, SYN: { fill: ["#F0E442"] },
+    NAN: { fill: ["var(--ntc-nan)"] }
 };
 export const CANA_GROUPS = [
     ["A-form family", ["AAA", "AAw", "AAu"]],

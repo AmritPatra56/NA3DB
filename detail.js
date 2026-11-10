@@ -549,21 +549,27 @@ const THUMB_COLOURS = { wc: "#139068", gu: "#e0a030", nc: "#7f77dd" };
 const xml = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
 // One entry's picture as a standalone SVG for the Arcs view: no labels, bolder
-// lines, its own colours (an <img> does not see the page's stylesheet).
+// lines, its own colours (an <img> does not see the page's stylesheet). The
+// light colours are attributes; the dark ones a media query, which inside an
+// <img> follows the color-scheme of the page around it, so the one cached file
+// serves both themes. Same values as the tokens in style.css.
+const THUMB_DARK = `<style>@media (prefers-color-scheme: dark) {`
+    + `.s{stroke:#85858a}.wc{stroke:#1d9e75}.nc{stroke:#afa9ec}.m{fill:#cecbf6}.e{fill:#85858a}}</style>`;
 export function arc_thumbnail(arcs, pdb_id) {
     if (!arcs) {
         return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" role="img" aria-label="${xml(pdb_id)}: no base pairs annotated">`
-             + `<text x="150" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">No base pairs annotated</text></svg>`;
+             + `<text x="150" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8" class="e">No base pairs annotated</text>${THUMB_DARK}</svg>`;
     }
     let stroke = Math.round(Math.min(2.4, arcs.stroke * 1.4) * 100) / 100;
     let lines = arcs.chains.map((c) =>
         `<line x1="${c.x1}" y1="${arcs.base}" x2="${c.x2}" y2="${arcs.base}"${c.symmetry ? ' stroke-dasharray="4 2.5"' : ""}/>`).join("");
     let paths = ["nc", "gu", "wc"].filter((k) => arcs.paths[k])
-        .map((k) => `<path stroke="${THUMB_COLOURS[k]}" d="${arcs.paths[k]}"/>`).join("");
+        .map((k) => `<path stroke="${THUMB_COLOURS[k]}" class="${k}" d="${arcs.paths[k]}"/>`).join("");
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 2 ${arcs.width} ${arcs.base + 4}" role="img" aria-label="${xml(pdb_id)}: ${arcs.counts.drawn} base pairs as arcs">`
-         + `<g stroke="#64748b" stroke-width="2.6" stroke-linecap="round">${lines}</g>`
+         + THUMB_DARK
+         + `<g stroke="#64748b" stroke-width="2.6" stroke-linecap="round" class="s">${lines}</g>`
          + `<g fill="none" stroke-width="${stroke}">${paths}</g>`
-         + (arcs.dot_path ? `<path fill="#26215c" d="${arcs.dot_path}"/>` : "")
+         + (arcs.dot_path ? `<path fill="#26215c" class="m" d="${arcs.dot_path}"/>` : "")
          + `</svg>`;
 }
 
@@ -738,8 +744,8 @@ export function cana_background(code) {
     let c = CANA[code] ?? CANA.NAN;
     let [a, b] = c.fill;
     if (b) return `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
-    if (c.look === "stripe") return `repeating-linear-gradient(45deg, ${a} 0 2.5px, #fff 2.5px 4px)`;
-    if (c.look === "dot") return `radial-gradient(circle, #fff 0.9px, transparent 1.1px) 0 0 / 4px 4px, ${a}`;
+    if (c.look === "stripe") return `repeating-linear-gradient(45deg, ${a} 0 2.5px, var(--ntc-gap) 2.5px 4px)`;
+    if (c.look === "dot") return `radial-gradient(circle, var(--ntc-gap) 0.9px, transparent 1.1px) 0 0 / 4px 4px, ${a}`;
     return a;
 }
 
