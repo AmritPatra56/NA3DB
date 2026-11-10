@@ -1061,6 +1061,80 @@ input::placeholder {
     text-decoration: underline;
 }
 
+/* Browse: three cards, one question each. The bar is the row's count against
+   the largest in its card, so the cards compare within themselves only. */
+.browse_lead {
+    margin-top: 40px;
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+.browse {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    text-align: left;
+}
+
+.browse_card {
+    padding: 14px 14px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-primary);
+}
+
+.browse_card h2 {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.browse_hint {
+    margin: 2px 0 8px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+}
+
+.browse_card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.browse_card a {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    column-gap: 8px;
+    padding: 5px 0 6px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.browse_name small {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.browse_count {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+.browse_bar {
+    grid-column: 1 / -1;
+    height: 3px;
+    margin-top: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--accent) calc(var(--share) * 100%), var(--border) 0);
+    opacity: 0.55;
+}
+
+.browse_card a:hover .browse_name { color: var(--accent); }
+.browse_card a:hover .browse_bar { opacity: 1; }
+
 /* Quiet on purpose: most visitors want the box, and the ones who want the
    filters are looking for this. */
 .landing_advanced {
@@ -2227,6 +2301,10 @@ input::placeholder {
     .landing_examples { gap: 4px 12px; }
     .landing_examples a { padding: 6px 2px; }
     .landing_advanced { display: inline-block; padding: 10px 4px; }
+
+    .browse_lead { margin-top: 28px; }
+    .browse { grid-template-columns: 1fr; }
+    .browse_card a { padding: 9px 0 10px; font-size: 15px; }
 
     .empty_state .detail_link { padding: 10px 4px; font-size: 15px; }
 }

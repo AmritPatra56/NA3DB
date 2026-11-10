@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs, entry_sequence_tracks,
-         entry_residues, ligand_suggestions, pill_counts, database_stats,
+         entry_residues, ligand_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
@@ -66,7 +66,8 @@ app.get("/", async (req, res) => {
         return;
     }
 
-    res.render("landing", { page: "landing", stats: await database_stats() });
+    let [stats, browse] = await Promise.all([database_stats(), browse_counts()]);
+    res.render("landing", { page: "landing", stats, browse });
 });
 
 // The footer's pages, linked before they are written. A 200 that says so,

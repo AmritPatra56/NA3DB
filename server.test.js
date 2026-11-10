@@ -3,7 +3,7 @@
 
 import test, { before, after } from "node:test";
 import assert from "node:assert";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, EXAMPLES } from "./filters.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, EXAMPLES, BROWSE, TOPICS } from "./filters.js";
 import { once } from "node:events";
 import app from "./server.js";
 import { close as close_db, query } from "./db.js";
@@ -750,6 +750,66 @@ test("the landing page states the database's size and last load", async () => {
     let loads = Number((await query("SELECT count(*) FROM loaded_entries")).rows[0].count);
     if (loads) assert.match(html, /updated \d{1,2} [A-Z][a-z]{2} \d{4}/);
     else       assert.ok(!html.includes("updated"), "no load record, no date");
+});
+
+// --- browse cards on the landing page -------------------------------------
+// Each row shows a number and links to a search; the two must agree, or the
+// front page promises results the search does not give.
+function shown_rows(html) {
+    let rows = [];
+    let re = /<li><a href="([^"]+)">\s*<span class="browse_name">([^<]+)[\s\S]*?<span class="browse_count">([\d,]+)<\/span>/g;
+    for (let m of html.matchAll(re)) {
+        rows.push({ url: m[1].replaceAll("&amp;", "&"), label: m[2].trim(), count: Number(m[3].replaceAll(",", "")) });
+    }
+    return rows;
+}
+
+test("every browse row's number is what its link finds", async () => {
+    let rows = shown_rows(await (await fetch(base + "/")).text());
+    assert.equal(rows.length, BROWSE.flatMap((g) => g.rows).length, "a row is missing from the page");
+
+    for (const row of rows) {
+        let found = (await (await fetch(base + "/api/count" + row.url.slice("/search".length))).json()).total;
+        assert.equal(row.count, found, `${row.label}: shows ${row.count}, its link finds ${found}`);
+    }
+});
+
+// An entry has one polymer type and one method, so those two cards each
+// cover the whole database once. A missing or doubled value shows up here.
+test("made-of and method rows each add up to every entry", async () => {
+    let total = (await (await fetch(base + "/api/stats")).json()).total;
+    let rows  = shown_rows(await (await fetch(base + "/")).text());
+
+    for (const key of ["polymer_type=", "experimental_method="]) {
+        let sum = rows.filter((r) => r.url.startsWith("/search?" + key)).reduce((a, r) => a + r.count, 0);
+        assert.equal(sum, total, key);
+    }
+});
+
+test("the landing page shows the three questions, without em dashes", async () => {
+    let html = await (await fetch(base + "/")).text();
+    for (const group of BROWSE) assert.ok(html.includes(group.question), group.question);
+    assert.ok(html.includes("Not sure what to type? Start from what you know."));
+    assert.ok(!html.includes("\u2014"), "no em dash on the landing page");
+});
+
+// Topic words are matched as written, in the title or a molecule name only.
+test("a topic matches its words in a title or molecule name", async () => {
+    for (const topic of TOPICS) {
+        let patterns = topic.words.map((w) => "%" + w.replace(/[\\%_]/g, "\\$&") + "%");
+        let direct = Number((await query(
+            `SELECT count(*) FROM entry e
+              WHERE EXISTS (SELECT 1 FROM struct st WHERE st.entry_id = e.id AND st.title ILIKE ANY($1))
+                 OR EXISTS (SELECT 1 FROM entity en WHERE en.entry_id = e.id AND en.pdbx_description ILIKE ANY($1))`,
+            [patterns])).rows[0].count);
+        let api = (await (await fetch(base + "/api/count?topic=" + encodeURIComponent(topic.value))).json()).total;
+        assert.equal(api, direct, topic.value);
+    }
+});
+
+test("an unknown topic matches nothing", async () => {
+    let n = (await (await fetch(base + "/api/count?topic=nonsense")).json()).total;
+    assert.equal(n, 0);
 });
 
 // The footer links before its pages are written; each must still answer.

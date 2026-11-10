@@ -86,9 +86,6 @@ export const GROUPS = [
 // accepts. `kind` is the label beside it, not a category in the data.
 export const EXAMPLES = [
     { term: "119D",             kind: "an entry id" },
-    { term: "tRNA",             kind: "a molecule" },
-    { term: "ribozyme",         kind: "an entity" },
-    { term: "Z-DNA",            kind: "a structure" },
     { term: "Escherichia coli", kind: "an organism" },
     { term: "Leonard",          kind: "an author" },
 
@@ -97,6 +94,58 @@ export const EXAMPLES = [
     // without it. This one goes to the filter that owns them, which also opens
     // the panel and shows where that filter lives.
     { term: "PSU", kind: "a residue", filter: "nonstandard_residue" }
+];
+
+// The molecules offered on the landing page and as pills in the panel. An
+// entry is one when its own title or one of its molecule names says so, in
+// any of `words`, ignoring case. Nothing is inferred: 2DCG is Z-DNA by shape,
+// but its title says "left-handed", so it is not counted. Paper titles are
+// left out on purpose, since they describe the study rather than the entry
+// (9G4P's paper says "tRNA-mimicking"; the entry is not a tRNA). `note` is a
+// plain-words label for the landing page and changes nothing that is counted.
+export const TOPICS = [
+    { value: "tRNA",       words: ["tRNA", "transfer RNA"], note: "carries amino acids" },
+    { value: "Ribosome",   words: ["ribosome"],    note: "makes proteins" },
+    { value: "Nucleosome", words: ["nucleosome"],  note: "DNA wrapped on histones" },
+    { value: "CRISPR",     words: ["CRISPR"],      note: "RNA-guided cutting" },
+    { value: "Quadruplex", words: ["quadruplex"],  note: "four-stranded" },
+    { value: "Riboswitch", words: ["riboswitch"],  note: "RNA that senses a molecule" },
+    { value: "Ribozyme",   words: ["ribozyme"],    note: "RNA that acts as an enzyme" },
+    { value: "Aptamer",    words: ["aptamer"],     note: "made to bind a target" },
+    { value: "Z-DNA",      words: ["Z-DNA"],       note: "left-handed DNA" }
+];
+
+// The ILIKE patterns for chosen topics. An unknown topic adds none, so it
+// matches nothing rather than everything.
+export function topic_patterns(values) {
+    return values.flatMap((v) => TOPICS.find((t) => t.value === v)?.words ?? [])
+                 .map((w) => "%" + w.replace(/[\\%_]/g, "\\$&") + "%");
+}
+
+// The landing page's three ways in, one question each. Every row is a filter
+// link, counted with the very query the link runs (search.js browse_counts),
+// so a row and its results cannot disagree. Made of and method each cover
+// every entry once: an entry has one polymer type and one method.
+const browse_row = (label, key, values, note = null) =>
+    ({ label, note, params: { [key]: values },
+       url: "/search?" + key + "=" + values.map(encodeURIComponent).join(",") });
+
+export const BROWSE = [
+    { question: "What is it made of?", hint: "The molecules in the entry", rows: [
+        browse_row("DNA", "polymer_type", ["DNA"]),
+        browse_row("RNA", "polymer_type", ["RNA"]),
+        browse_row("DNA and RNA", "polymer_type", ["DNA/RNA"]),
+        browse_row("Protein with DNA", "polymer_type", ["Protein/DNA"]),
+        browse_row("Protein with RNA", "polymer_type", ["Protein/RNA"]),
+        browse_row("Protein with DNA and RNA", "polymer_type", ["Protein/DNA/RNA"])
+    ] },
+    { question: "Which molecule?", hint: "Named in its title or a molecule",
+      rows: TOPICS.map((t) => browse_row(t.value, "topic", [t.value], t.note)) },
+    { question: "How was it solved?", hint: "The experimental method", rows: [
+        browse_row("X-ray", "experimental_method", ["X-RAY DIFFRACTION"]),
+        browse_row("Electron microscopy", "experimental_method", ["ELECTRON MICROSCOPY"]),
+        browse_row("NMR", "experimental_method", ["SOLUTION NMR", "SOLID-STATE NMR"])
+    ] }
 ];
 
 // Where an example sends you. Everything goes through the box unless it names
@@ -328,6 +377,18 @@ export const FILTERS = [
                                   WHERE cc.id <> 'HOH'
                                     AND (   upper(cc.id) = upper(substr(?, 2, length(?) - 2))
                                          OR (length(?) >= 5 AND cc.name ILIKE ?)))))`
+    },
+
+    // See TOPICS. Both ? are the one array of patterns.
+    {
+        key: "topic", label: "Molecule",
+        group: "Structure Components", kind: "pills", any: true,
+        options: TOPICS.map((t) => option(t.value)),
+        expand: topic_patterns,
+        where: `AND (EXISTS (SELECT 1 FROM struct st
+                             WHERE st.entry_id = e.id AND st.title ILIKE ANY(?))
+                  OR EXISTS (SELECT 1 FROM entity ent
+                             WHERE ent.entry_id = e.id AND ent.pdbx_description ILIKE ANY(?)))`
     },
 
     {

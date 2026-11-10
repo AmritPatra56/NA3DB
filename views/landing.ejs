@@ -37,6 +37,28 @@
                     <% } %>
                 </p>
 
+                <%# Three ways in for someone with no term in mind. Every row
+                    is a filter link; its number and bar come from the same
+                    query (search.js browse_counts). %>
+                <p class="browse_lead">Not sure what to type? Start from what you know.</p>
+                <div class="browse">
+                    <% for (const group of browse) { %>
+                    <section class="browse_card">
+                        <h2><%= group.question %></h2>
+                        <p class="browse_hint"><%= group.hint %></p>
+                        <ul>
+                            <% for (const row of group.rows) { %>
+                            <li><a href="<%= row.url %>">
+                                <span class="browse_name"><%= row.label %><% if (row.note) { %> <small><%= row.note %></small><% } %></span>
+                                <span class="browse_count"><%= row.count.toLocaleString("en-GB") %></span>
+                                <span class="browse_bar" style="--share: <%= row.share.toFixed(3) %>"></span>
+                            </a></li>
+                            <% } %>
+                        </ul>
+                    </section>
+                    <% } %>
+                </div>
+
                 <a class="landing_advanced" href="/search?panel=open">Advanced search</a>
 
                 <%# Both from the database, so the line moves with every load. %>

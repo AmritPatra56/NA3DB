@@ -4,7 +4,7 @@
 import { query } from "./db.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, sort_by,
-         page_size_from, match_mode, RESOLUTION_SQL } from "./filters.js";
+         page_size_from, match_mode, RESOLUTION_SQL, BROWSE } from "./filters.js";
 
 
 // One raw query value as a single string, whatever shape it arrived in.
@@ -238,6 +238,27 @@ export async function count_entries(query_params) {
     return Number(counted.rows[0].n);
 }
 
+
+// The landing page's BROWSE rows with their counts, each counted by the very
+// query its link runs. Kept for ten minutes: the data changes only on a load.
+const BROWSE_TTL_MS = 10 * 60 * 1000;
+let browse_cache = null;
+
+export async function browse_counts() {
+    if (browse_cache && Date.now() - browse_cache.at < BROWSE_TTL_MS) return browse_cache.groups;
+
+    let groups = await Promise.all(BROWSE.map(async (group) => ({
+        ...group,
+        rows: await Promise.all(group.rows.map(async (row) =>
+            ({ ...row, count: await count_entries(row.params) })))
+    })));
+    for (let group of groups) {
+        let most = Math.max(...group.rows.map((r) => r.count), 1);
+        for (let row of group.rows) row.share = row.count / most;
+    }
+    browse_cache = { at: Date.now(), groups };
+    return groups;
+}
 
 // Every matching entry for the report, up to EXPORT_LIMIT. Says whether it
 // stopped early so the page can warn.
