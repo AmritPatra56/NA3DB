@@ -2795,9 +2795,12 @@ input::placeholder {
 
 
 /* <---------------landing: stats line and footer-------------> */
+/* Scrolls inside itself, as the other pages do, so the rail stays the full
+   height of the window. Left to the page, the rail ended one screen down. */
 .landing_page {
     flex-grow: 1;
     min-width: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }

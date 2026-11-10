@@ -123,3 +123,13 @@ test("clearing the box clears the count", async () => {
     page.type("");
     assert.equal(page.readout.textContent, "");
 });
+
+// The window is one screen tall (.interface is 100vh) and the rail fills it.
+// If the landing let the page scroll instead of itself, the rail would end one
+// screen down and leave a gap under the name.
+test("the landing scrolls inside itself, so the rail stays the full height", () => {
+    const css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    const rule = css.match(/^\.landing_page \{([^}]*)\}/m)[1];
+    assert.match(rule, /overflow-y: auto;/);
+    assert.match(css, /^\.interface \{[^}]*height: 100vh;/m);
+});
