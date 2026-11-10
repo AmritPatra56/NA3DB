@@ -4,6 +4,7 @@
 // detail panel and the structure page cannot format the same field differently.
 
 import { columns_for } from "./filters.js";
+import { CANA, CANA_NAMES } from "./public/cana.js";
 
 // One value as display text, or null when there is nothing to show.
 // The locale is pinned: toLocaleString() with none uses the viewer's machine,
@@ -638,13 +639,15 @@ export function base_pairs_csv(pairs) {
 export const PAGE_GROUPS = [
     { key: "overview",    label: "Overview" },
     { key: "composition", label: "Composition" },
-    { key: "structure",   label: "3D structure" },
+    { key: "structure",   label: "Structure" },
     { key: "references",  label: "References" }
 ];
 
-// Rows the Overview would bury, each moved to open the section that lists it.
-const ROW_SECTION = { nonstandard_residue: "modified", monomer_flag: "modified",
-                      ligands: "ligands" };
+// Rows the page shows another way: the modified nucleotide and ligand codes
+// head the tables that list each one, and the NtC classes are counted in
+// Conformation. Cards and exports still show them as rows.
+export const SHOWN_ELSEWHERE = new Set(["nonstandard_residue", "monomer_flag", "ligands",
+                                 "assigned_ntc", "ntc_classes"]);
 const GROUP_SECTION = { "3D Features": "conformation" };
 
 const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
@@ -652,12 +655,13 @@ const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
 // Every section in page order, with what it holds. A section with nothing in
 // it stays listed, marked empty: "none recorded" is a fact about the entry,
 // and a missing heading would read as a field we never had.
-export function structure_sections({ entry, rows, molecules, base_pairs, citations, nucleic_chains = 0 }) {
+export function structure_sections({ entry, rows, molecules, base_pairs, citations, nucleic_chains = 0,
+                                    same_entries = 0, ntc_classes = [] }) {
     let group_of = new Map(columns_for("page").map((c) => [c.key, c.group]));
-    let rows_in = { overview: [], modified: [], ligands: [], conformation: [] };
+    let rows_in = { overview: [], conformation: [] };
 
     for (const r of rows) {
-        rows_in[ROW_SECTION[r.key] ?? GROUP_SECTION[group_of.get(r.key)] ?? "overview"].push(r);
+        if (!SHOWN_ELSEWHERE.has(r.key)) rows_in[GROUP_SECTION[group_of.get(r.key)] ?? "overview"].push(r);
     }
 
     let polymers = molecules.groups.filter((g) => g.polymer);
@@ -669,17 +673,17 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
         { id: "overview", title: "Overview", group: "overview", rows: rows_in.overview },
         { id: "molecules", title: "Molecules", group: "composition", groups: polymers,
           count: sum(polymers) },
-        { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",
-          rows: rows_in.modified, groups: modified, count: sum(modified) },
-        { id: "ligands", title: "Ligands", group: "composition", rows: rows_in.ligands,
-          groups: ligands, count: sum(ligands) },
         { id: "sources", title: "Sources", group: "composition",
           count: molecules.sources?.rows.length ?? 0 },
+        { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",
+          groups: modified, count: sum(modified) },
+        { id: "ligands", title: "Ligands", group: "composition", groups: ligands, count: sum(ligands) },
         { id: "base-pairs", title: "Base pairs", group: "structure",
           count: base_pairs?.total ?? 0 },
-        { id: "sequence-map", title: "Sequence map", group: "structure", count: nucleic_chains },
         { id: "conformation", title: "Conformation", group: "structure", rows: rows_in.conformation,
-          count: steps === null ? 0 : Number(steps) },
+          ntc: ntc_section(ntc_classes), count: steps === null ? 0 : Number(steps) },
+        { id: "sequence-map", title: "Sequence map", group: "structure", count: nucleic_chains },
+        { id: "same-sequence", title: "Same sequence", group: "structure", count: same_entries },
         { id: "citations", title: "Citations", group: "references",
           count: citations.length },
         { id: "links", title: "Links and downloads", group: "references" }
@@ -692,6 +696,53 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
     return sections;
 }
 
+// The NtC classes of an entry's steps, counted and grouped by CANA class,
+// so each colour sits beside its name. A-form, B-form and transitions are a
+// family each; the few-member classes share "Other shapes"; steps with no
+// class (NtC code NANT) come last, apart, as they are not a shape. Within a family the commonest class leads, and within
+// a class the commonest NtC. `background` is CSS drawing the same swatch as
+// the sequence map's bar; `key` is every class, for the colour fold-out.
+const NTC_FAMILIES = [
+    ["A-form family", ["AAA", "AAw", "AAu"]],
+    ["B-form family", ["BBB", "BBw", "miB", "BB2"]],
+    ["Transitions", ["A-B", "B-A", "B12"]],
+    ["Other shapes", ["ZZZ", "ICL", "OPN", "SYN"]],
+    ["No NtC class", ["NAN"]]
+];
+
+export function ntc_section(classes) {
+    let by_cana = new Map();
+    for (const c of classes) {
+        let cana = c.ntc === "NANT" || !CANA[c.cana] ? "NAN" : c.cana;
+        if (!by_cana.has(cana)) by_cana.set(cana, []);
+        by_cana.get(cana).push({ ntc: c.ntc, n: Number(c.n) });
+    }
+    let by_count = (x, y) => y.n - x.n || x.ntc.localeCompare(y.ntc);
+    let families = [];
+    for (const [name, codes] of NTC_FAMILIES) {
+        let list = codes.filter((code) => by_cana.has(code)).map((code) => {
+            let ntcs = by_cana.get(code).sort(by_count);
+            return { cana: code, name: CANA_NAMES[code], background: cana_background(code),
+                     n: ntcs.reduce((t, c) => t + c.n, 0), ntcs };
+        });
+        list.sort((x, y) => y.n - x.n);
+        if (list.length) families.push({ name, n: list.reduce((t, c) => t + c.n, 0), classes: list });
+    }
+    let unassigned = by_cana.get("NAN")?.reduce((t, c) => t + c.n, 0) ?? 0;
+    let assigned = families.reduce((t, f) => t + f.n, 0) - unassigned;
+    let key = Object.keys(CANA).map((code) => ({ cana: code, name: CANA_NAMES[code], background: cana_background(code) }));
+    return { families, assigned, unassigned, key };
+}
+
+export function cana_background(code) {
+    let c = CANA[code] ?? CANA.NAN;
+    let [a, b] = c.fill;
+    if (b) return `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
+    if (c.look === "stripe") return `repeating-linear-gradient(45deg, ${a} 0 2.5px, #fff 2.5px 4px)`;
+    if (c.look === "dot") return `radial-gradient(circle, #fff 0.9px, transparent 1.1px) 0 0 / 4px 4px, ${a}`;
+    return a;
+}
+
 // ---- Sequence map ----------------------------------------------------------
 // One ruler per set of strands: the sequence, the NtC step between each two
 // nucleotides, and every base pair in layered dot-bracket rows (one row per
@@ -702,13 +753,13 @@ const LBN_BRACKETS = ["()", "[]", "{}", "<>", "Aa", "Bb", "Cc", "Dd"];
 const LBN_FAMILIES = ["cWH", "cWS", "cHW", "cHH", "cHS", "cSW", "cSH", "cSS",
                       "tWW", "tWH", "tWS", "tHW", "tHH", "tHS", "tSW", "tSH", "tSS"];
 const LBN_SEP = "&";
-const flip_lw = (f) => f[0] + f[2] + f[1];
+export const flip_lw = (f) => f[0] + f[2] + f[1];
 const crosses = ([i, j], [k, l]) => (i < k && k < j && j < l) || (k < i && i < l && l < j);
 const strand_token = (label, copy) => (copy === IDENTITY ? label : `${label}:${copy}`);
 
 // A, C, G, U or T; a modified nucleotide is its parent in lower case, and
 // one with no known parent is n.
-function nucleotide_letter(r) {
+export function nucleotide_letter(r) {
     let base = String(r.parent ?? r.code ?? "").replace(/^D(?=[ACGTU]$)/, "");
     let letter = /^[ACGTUI]$/.test(base) ? base : "N";
     return r.modified ? letter.toLowerCase() : letter;
@@ -728,6 +779,38 @@ function bracket_line(width, seps, pairs) {
         chars[p[1]] = kind[1];
     }
     return chars.join("");
+}
+
+// One row per family in a fixed order; a base already used in its row goes
+// to an overflow row of the same family, packed as tightly as fits. Each
+// placed pair is { i, j, family, row } with i < j; any other field it has
+// stays on it, so a caller can mark pairs and still read the mark back.
+export function layer_rows(placed, width, seps = new Set()) {
+    let rows = [];
+    let overflow = [];
+    for (const name of ["WC", "cWW", ...LBN_FAMILIES]) {
+        let group = placed.filter((p) => p.row === name).sort((a, b) => a.i - b.i || a.j - b.j);
+        if (!group.length) continue;
+        let used = new Set();
+        let row = [];
+        let extra = [];
+        for (const p of group) {
+            if (used.has(p.i) || used.has(p.j)) { extra.push(p); continue; }
+            row.push(p);
+            used.add(p.i).add(p.j);
+        }
+        rows.push({ name, family: name === "WC" ? "cWW" : name, pairs: row });
+        let buckets = [];
+        for (const p of extra) {
+            let b = buckets.find((b) => !b.some((q) => [q.i, q.j].includes(p.i) || [q.i, q.j].includes(p.j)));
+            b ? b.push(p) : buckets.push([p]);
+        }
+        overflow.push(...buckets.map((b) => ({ name: name === "WC" ? "cWW" : name, family: name === "WC" ? "cWW" : name,
+                                               pairs: b, overflow: true })));
+    }
+    rows.push(...overflow);
+    for (const r of rows) r.text = bracket_line(width, seps, r.pairs.map((p) => [p.i, p.j]));
+    return rows;
 }
 
 // The strands a map can show: every nucleic-acid chain as it is in the file,
@@ -814,35 +897,8 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
         placed.push({ i, j, family, row: family === "cWW" ? (p.kind === "wc" ? "WC" : "cWW") : family });
     }
 
-    // One row per family in a fixed order; a base already used in its row
-    // goes to an overflow row of the same family, packed as tightly as fits.
-    let rows = [];
-    let overflow = [];
-    for (const name of ["WC", "cWW", ...LBN_FAMILIES]) {
-        let group = placed.filter((p) => p.row === name).sort((a, b) => a.i - b.i || a.j - b.j);
-        if (!group.length) continue;
-        let used = new Set();
-        let row = [];
-        let extra = [];
-        for (const p of group) {
-            if (used.has(p.i) || used.has(p.j)) { extra.push(p); continue; }
-            row.push(p);
-            used.add(p.i).add(p.j);
-        }
-        rows.push({ name, family: name === "WC" ? "cWW" : name, pairs: row });
-        let buckets = [];
-        for (const p of extra) {
-            let b = buckets.find((b) => !b.some((q) => [q.i, q.j].includes(p.i) || [q.i, q.j].includes(p.j)));
-            b ? b.push(p) : buckets.push([p]);
-        }
-        overflow.push(...buckets.map((b) => ({ name: name === "WC" ? "cWW" : name, family: name === "WC" ? "cWW" : name,
-                                               pairs: b, overflow: true })));
-    }
-    rows.push(...overflow);
-    for (const r of rows) {
-        r.text = bracket_line(cols.length, seps, r.pairs.map((p) => [p.i, p.j]));
-        r.pairs = r.pairs.map((p) => [p.i, p.j]);
-    }
+    let rows = layer_rows(placed, cols.length, seps);
+    for (const r of rows) r.pairs = r.pairs.map((p) => [p.i, p.j]);
 
     // The step from each nucleotide to the next one on the ruler; symmetry
     // copies share their chain's steps.

@@ -8,7 +8,7 @@ import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
-import { detail_rows, molecule_groups, structure_sections, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
+import { detail_rows, molecule_groups, structure_sections, ntc_section, cana_background, PAGE_GROUPS, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
          MODIFIED_ROWS_SHOWN,
          SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of, base_pair_export, base_pairs_csv,
          entry_fasta, fasta_choices } from "./detail.js";
@@ -1371,23 +1371,55 @@ test("a section with nothing in it is listed as empty, not dropped", () => {
                                         base_pairs: null, citations: [] });
     let by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
 
-    assert.equal(sections.length, 10, "every section stays in the list");
+    assert.equal(sections.length, 11, "every section stays in the list");
     for (const id of ["molecules", "modified-nucleotides", "ligands", "sources",
-                      "base-pairs", "sequence-map", "conformation", "citations"]) {
+                      "base-pairs", "sequence-map", "same-sequence", "conformation", "citations"]) {
         assert.ok(by_id[id].empty, `${id} should be marked empty`);
     }
     assert.ok(!by_id.overview.empty && !by_id.links.empty, "the overview and links always have content");
 });
 
-test("a row goes to the section that lists it, not to the overview", () => {
+test("a row the page shows another way is left out; the rest go where they belong", () => {
     let rows = [{ key: "title" }, { key: "ligands" }, { key: "nonstandard_residue" },
-                { key: "monomer_flag" }, { key: "confal_score" }, { key: "atom_count" }];
+                { key: "monomer_flag" }, { key: "confal_score" }, { key: "assigned_ntc" },
+                { key: "ntc_classes" }, { key: "atom_count" }];
     let sections = structure_sections({ entry: {}, rows, molecules: no_contents,
                                         base_pairs: null, citations: [] });
-    let keys = (id) => sections.find((s) => s.id === id).rows.map((r) => r.key);
+    let keys = (id) => (sections.find((s) => s.id === id).rows ?? []).map((r) => r.key);
 
     assert.deepEqual(keys("overview"), ["title", "atom_count"]);
-    assert.deepEqual(keys("ligands"), ["ligands"]);
-    assert.deepEqual(keys("modified-nucleotides"), ["nonstandard_residue", "monomer_flag"]);
-    assert.deepEqual(keys("conformation"), ["confal_score"]);
+    assert.deepEqual(keys("ligands"), [], "the table lists every ligand code");
+    assert.deepEqual(keys("modified-nucleotides"), [], "the table lists every modified code");
+    assert.deepEqual(keys("conformation"), ["confal_score"], "NtC classes are counted, not listed twice");
+});
+
+test("NtC steps are counted by CANA class, each class named, no class last and apart", () => {
+    let t = ntc_section([{ ntc: "AA00", cana: "AAA", n: 31 }, { ntc: "AA08", cana: "AAw", n: 5 },
+                         { ntc: "AA01", cana: "AAA", n: 31 }, { ntc: "BB00", cana: "BBB", n: 2 },
+                         { ntc: "NANT", cana: "NAN", n: 4 }, { ntc: "XX99", cana: "???", n: 1 },
+                         { ntc: "ZZ01", cana: "ZZZ", n: 3 }]);
+    assert.deepEqual(t.families.map((f) => [f.name, f.n]),
+                     [["A-form family", 67], ["B-form family", 2], ["Other shapes", 3], ["No NtC class", 5]]);
+    assert.deepEqual(t.families[0].classes.map((c) => [c.cana, c.name, c.n]),
+                     [["AAA", "A-form", 62], ["AAw", "A-like, α/γ switched", 5]], "commonest class first");
+    assert.deepEqual(t.families[0].classes[0].ntcs.map((x) => x.ntc), ["AA00", "AA01"], "ties by name");
+    assert.deepEqual(t.families[3].classes.map((c) => c.cana), ["NAN"], "no class comes last, apart");
+    assert.deepEqual(t.families[3].classes[0].ntcs.map((x) => x.ntc), ["NANT", "XX99"],
+                     "a class we do not know is shown as no class, not dropped");
+    assert.equal(t.assigned, 72);
+    assert.equal(t.unassigned, 5);
+    assert.equal(t.key.length, 15, "the fold-out shows every class");
+    assert.ok(t.key.every((k) => k.name && k.background));
+    assert.equal(cana_background("AAA"), "#0072B2");
+    assert.match(cana_background("A-B"), /linear-gradient\(90deg, #0072B2 50%, #E69F00 50%\)/);
+    assert.deepEqual(ntc_section([]).families, []);
+});
+
+test("the page groups its sections as the filter panel does", () => {
+    let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
+                                        base_pairs: null, citations: [] });
+    assert.deepEqual(sections.map((s) => s.id),
+                     ["overview", "molecules", "sources", "modified-nucleotides", "ligands", "base-pairs",
+                      "conformation", "sequence-map", "same-sequence", "citations", "links"]);
+    assert.equal(PAGE_GROUPS.find((g) => g.key === "structure").label, "Structure");
 });

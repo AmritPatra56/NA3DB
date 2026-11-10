@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NA3DB — <%= entry.pdb_id %></title>
+    <title>NA3DB · <%= entry.pdb_id %></title>
     <link rel="icon" href="/assets/favicon.ico">
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -22,7 +22,8 @@
         "sources": "Where each molecule came from: Natural (taken from the organism), Expressed (made in a host) or Synthetic (made chemically).",
         "base-pairs": "Pairs in the first model, classified by DNATCO in the Leontis–Westhof scheme: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). G–C and A–U in cWW are Watson–Crick pairs.",
         "sequence-map": "Every nucleotide on one ruler: the sequence, the NtC step to the next nucleotide coloured by its CANA class (bar height is the confal score), then every base pair in layered dot-bracket notation, one row per Leontis–Westhof family. Hover a column to see its pairs and step.",
-        "conformation": "Each step between two nucleotides is assigned an NtC class by DNATCO. The confal score (0–100) says how closely the steps fit their classes; the percentile ranks it against other structures.",
+        "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
+        "conformation": "Each step between two nucleotides is assigned an NtC class by DNATCO, grouped here by CANA family and counted. The confal score (0–100) says how closely the steps fit their classes; the percentile ranks it against other structures.",
         "citations": "The papers that describe this structure, the primary one first.",
         "links": "This entry elsewhere, and its data as files."
     };
@@ -86,6 +87,28 @@
                                 <div class="detail_value"><%= row.value %></div>
                             </div>
                         <% } %>
+                        <% if (s.id === "conformation" && s.ntc?.families.length) { const t = s.ntc; const fmt = (n) => n.toLocaleString("en-GB"); %>
+                            <div class="pair_caption">Steps by shape, each colour named</div>
+                                <details class="guide">
+                                    <summary>How the colours work</summary>
+                                    <div class="guide_body">
+                                        <p>Colour is the family: blue A, orange B, green Z, pink intercalated, black opened, yellow syn. A paler shade, stripes or dots mark a variant. Two halves mark a transition, read 5′ to 3′. An empty box is a step with no class.</p>
+                                        <div class="cana_key"><% for (const k of t.key) { %><span><i class="cana_swatch" style="background:<%= k.background %>"></i><code><%= k.cana %></code><%= k.name %></span><% } %></div>
+                                        <p class="guide_source">Classes and their meaning: <a target="_blank" rel="noopener" href="https://doi.org/10.1093/nar/gkaa383">DNATCO, Černý et al. 2020, NAR 48:6367</a>. Colours: NA3DB's own, chosen to stay apart for colour-blind readers.</p>
+                                    </div>
+                                </details>
+                            <% for (const f of t.families) { %>
+                                <div class="ntc_family_name"><%= f.name %> · <%= fmt(f.n) %> <%= f.n === 1 ? "step" : "steps" %></div>
+                                <% for (const c of f.classes) { %>
+                                    <div class="ntc_line">
+                                        <i class="cana_swatch" style="background:<%= c.background %>"></i>
+                                        <span class="ntc_name"><b><%= c.name %></b> <code><%= c.cana %></code></span>
+                                        <span class="ntc_count"><%= fmt(c.n) %></span>
+                                        <span class="ntc_chips"><% for (const x of c.ntcs) { %><span class="ntc_chip" title="<%= x.ntc %>: <%= fmt(x.n) %> <%= x.n === 1 ? "step" : "steps" %>"><%= x.ntc %> ×<%= fmt(x.n) %></span><% } %></span>
+                                    </div>
+                                <% } %>
+                            <% } %>
+                        <% } %>
                         <% if (s.groups?.length > 1) { %>
                             <div class="jump_to">Jump to: <% s.groups.forEach((g, i) => { %><%= i ? " · " : "" %><a href="#<%= s.id %>-<%= g.kind.toLowerCase().replace(/[^a-z]+/g, "-") %>"><%= g.title %></a><% }) %></div>
                         <% } %>
@@ -125,8 +148,14 @@
                             </figure>
                         <% } %>
                         <% if (s.id === "sequence-map" && !s.empty) { %>
+                            <%- include("includes/map_guide.ejs") %>
                             <div class="seqmap" data-entry="<%= entry.pdb_id %>">
                                 <p class="seqmap_wait">Drawing the sequence map…</p>
+                            </div>
+                        <% } %>
+                        <% if (s.id === "same-sequence" && !s.empty) { %>
+                            <div class="sameseq" data-entry="<%= entry.pdb_id %>">
+                                <p class="seqmap_wait">Finding the chains with this sequence…</p>
                             </div>
                         <% } %>
                         <% if (s.id === "base-pairs" && base_pairs) { const bp = base_pairs; %>
@@ -167,8 +196,9 @@
 
                         <% if (s.id === "sources" && molecules.sources) { const src = molecules.sources; %>
                         <% const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); %>
-                        <% const org = (o) => !o ? "—" : (o.italic ? `<i>${esc(o.name)}</i>` : esc(o.name)) + (o.common ? ` <span class="molecule_sub">(${esc(o.common)})</span>` : ""); %>
-                        <% const tax = (t) => t ? `<a target="_blank" rel="noopener" title="NCBI Taxonomy" href="${t.url}">${t.id}</a>` : "—"; %>
+                        <% const NONE = '<span class="molecule_sub">none</span>'; %>
+                        <% const org = (o) => !o ? NONE : (o.italic ? `<i>${esc(o.name)}</i>` : esc(o.name)) + (o.common ? ` <span class="molecule_sub">(${esc(o.common)})</span>` : ""); %>
+                        <% const tax = (t) => t ? `<a target="_blank" rel="noopener" title="NCBI Taxonomy" href="${t.url}">${t.id}</a>` : NONE; %>
                         <div class="source_legend"><% src.legend.forEach((l, i) => { %><%= i ? " · " : "" %><b><%= l.kind %></b> = <%= l.text %><% }) %></div>
                         <div class="molecule_scroll">
                         <table class="molecule_table source_table">
@@ -186,7 +216,7 @@
                                         <td><% if (seg.range) { %><b><%= seg.range %></b> <% } %><%- org(seg.organism) %></td>
                                         <td><%- tax(seg.taxon) %></td>
                                         <% if (i === 0) { %>
-                                            <td rowspan="<%= n %>"><%- r.host ? `${org(r.host.organism)}${r.host.taxon ? ` (${tax(r.host.taxon)})` : ""}` : "—" %></td>
+                                            <td rowspan="<%= n %>"><%- r.host ? `${org(r.host.organism)}${r.host.taxon ? ` (${tax(r.host.taxon)})` : ""}` : NONE %></td>
                                         <% } %>
                                         <% if (src.notes) { %><td class="molecule_sub"><%= seg.notes ?? "" %></td><% } %>
                                     </tr>
@@ -223,7 +253,9 @@
                             </ul>
                         <% } %>
 
-                        <% if (s.empty) { %>
+                        <% if (s.empty && s.id === "same-sequence") { %>
+                            <p class="section_none">No other entry has a chain with exactly this sequence.</p>
+                        <% } else if (s.empty) { %>
                             <p class="section_none">None recorded for this entry.</p>
                         <% } %>
                         </div>
@@ -238,6 +270,7 @@
     <%- include("includes/arc_viewer.ejs") %>
     <% } %>
     <% if (sections.some((s) => s.id === "sequence-map" && !s.empty)) { %><script type="module" src="/seqmap.js"></script><% } %>
+    <% if (sections.some((s) => s.id === "same-sequence" && !s.empty)) { %><script type="module" src="/sameseq.js"></script><% } %>
     <script>
         // Copies the letters only: no line numbers, no block spaces.
         document.addEventListener("click", async (event) => {

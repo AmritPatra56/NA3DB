@@ -2,7 +2,8 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs, entry_sequence_tracks,
-         entry_residues, ligand_suggestions, pill_counts, database_stats } from "./search.js";
+         entry_residues, ligand_suggestions, pill_counts, database_stats,
+         same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
@@ -175,10 +176,12 @@ app.get("/structure/:id", async (req, res) => {
         return;
     }
 
-    let [contents, residues, pairs] = await Promise.all([entry_contents(entry.pdb_id),
-                                                         entry_residues(entry.pdb_id),
-                                                         entry_base_pairs(entry.pdb_id)]);
+    let [contents, residues, pairs, same_entries, ntc_classes] = await Promise.all([
+        entry_contents(entry.pdb_id), entry_residues(entry.pdb_id), entry_base_pairs(entry.pdb_id),
+        same_sequence_count(entry.pdb_id), entry_ntc_classes(entry.pdb_id)]);
     let page = {
+        same_entries,
+        ntc_classes,
         entry,
         rows: detail_rows(entry),
         citations: await entry_citations(entry.pdb_id),
@@ -396,6 +399,43 @@ app.get("/api/entries/:id/sequence_map", async (req, res) => {
         return;
     }
     res.json({ pdb_id: entry.pdb_id, ...map });
+});
+
+// Every entry with a chain of this entry's sequence, letter for letter, and
+// how each chain compares to this entry's first one.
+app.get("/api/entries/:id/same_sequence", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+    res.json({ pdb_id: entry.pdb_id, groups: await same_sequence(entry.pdb_id) });
+});
+
+// Two chains of one sequence side by side: ?a=1B23:A&b=9MTP:CB, each an
+// entry and a chain's label id.
+app.get("/api/same_sequence/compare", async (req, res) => {
+    let [a, b] = [String(req.query.a ?? ""), String(req.query.b ?? "")];
+
+    if (!/^[^:]+:[^:]+$/.test(a) || !/^[^:]+:[^:]+$/.test(b)) {
+        res.status(400).json({ error: "Give two chains as ?a=ENTRY:CHAIN&b=ENTRY:CHAIN" });
+        return;
+    }
+    if (a.toUpperCase() === b.toUpperCase()) {
+        res.status(400).json({ error: "Pick two different chains" });
+        return;
+    }
+    let result = await compare_same_sequence(a, b);
+    if (result === null) {
+        res.status(404).json({ error: `${a} or ${b} is not a nucleic-acid chain with a plain A, C, G, T, U sequence` });
+        return;
+    }
+    if (result === false) {
+        res.status(400).json({ error: `${a} and ${b} do not have the same sequence` });
+        return;
+    }
+    res.json(result);
 });
 
 // Returns every matching entry for the report page, not just one page.

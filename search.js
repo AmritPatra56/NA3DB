@@ -2,8 +2,9 @@
 // Server only. It never touches HTTP and never touches the screen.
 
 import { query } from "./db.js";
+import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, sort_by,
-         page_size_from, match_mode } from "./filters.js";
+         page_size_from, match_mode, RESOLUTION_SQL } from "./filters.js";
 
 
 // One raw query value as a single string, whatever shape it arrived in.
@@ -667,6 +668,20 @@ export function missing_runs(missing) {
 // Every citation of one structure, the primary first, then the related ones
 // by id as a number. 129 entries have more than one; the cards show only the
 // primary. Whitespace is collapsed because CIF wraps long titles.
+// How many of an entry's steps DNATCO assigned to each NtC class. One row in
+// the step summary is one step: their count is ndb_struct_ntc_overall's
+// num_steps in every entry.
+export async function entry_ntc_classes(id, q = query) {
+    let result = await q(
+        `SELECT s.assigned_ntc AS ntc, s.assigned_cana AS cana, count(*)::int AS n
+           FROM ndb_struct_ntc_step_summary s
+          WHERE s.entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))
+          GROUP BY 1, 2`,
+        [as_text(id).trim()]
+    );
+    return result.rows;
+}
+
 export async function entry_citations(id, q = query) {
     let result = await q(
         `SELECT c.id, c.id = 'primary' AS primary,
@@ -739,4 +754,251 @@ export async function pill_counts(q = query) {
         counts[f.key] = Object.fromEntries(result.rows.map((r) => [r.value, r.n]));
     }
     return counts;
+}
+
+// ---- Same sequence in other entries ------------------------------------------
+// Which nucleic-acid entities share a sequence letter for letter. Asking
+// Postgres each time took 120-290 ms, so every sequence is held here, keyed
+// by polymer type and sequence (sequence_key). A hash over every entity_poly
+// row (16 ms) tells when a load has changed one, and the index is rebuilt.
+// It is checked at most every SAME_SEQUENCE_CHECK_MS, one check at a time.
+export const SAME_SEQUENCE_CHECK_MS = 2000;
+const SEQUENCE_SIGNATURE =
+    `SELECT count(*)::text || ' ' || coalesce(sum(hashtext(entry_id || ' ' || entity_id || ' ' ||
+            coalesce(type, '') || ' ' || coalesce(pdbx_seq_one_letter_code_can, ''))::bigint), 0)::text AS s
+       FROM entity_poly`;
+let seq_index = null;
+let seq_checked = 0;
+let seq_pending = null;
+
+async function build_sequence_index(q) {
+    let [signature, rows] = await Promise.all([
+        q(SEQUENCE_SIGNATURE),
+        q(`SELECT entry_id, entity_id, type, pdbx_seq_one_letter_code_can AS seq
+             FROM entity_poly WHERE type ILIKE '%nucleotide%'`)
+    ]);
+    let by_key = new Map();
+    let by_entity = new Map();
+    for (const r of rows.rows) {
+        let key = sequence_key(r.type, r.seq);
+        if (!key) continue;
+        by_entity.set(`${r.entry_id.toUpperCase()} ${r.entity_id}`, key);
+        if (!by_key.has(key)) by_key.set(key, []);
+        by_key.get(key).push({ entry: r.entry_id, entity: r.entity_id });
+    }
+    return { signature: signature.rows[0].s, by_key, by_entity };
+}
+
+export async function sequence_index(q = query, now = Date.now()) {
+    if (seq_index && now - seq_checked < SAME_SEQUENCE_CHECK_MS) return seq_index;
+    seq_pending ??= (async () => {
+        try {
+            let sig = (await q(SEQUENCE_SIGNATURE)).rows[0].s;
+            if (!seq_index || seq_index.signature !== sig) seq_index = await build_sequence_index(q);
+            seq_checked = Date.now();
+            return seq_index;
+        } finally {
+            seq_pending = null;
+        }
+    })();
+    return seq_pending;
+}
+
+// The groups an entry's nucleic-acid entities belong to that reach another
+// entry: each its key and every { entry, entity } in it, this entry's first.
+export async function same_sequence_groups(id, q = query) {
+    let index = await sequence_index(q);
+    let upper = as_text(id).trim().toUpperCase();
+    let groups = [];
+    let done = new Set();
+    let mine = [...index.by_entity.entries()].filter(([k]) => k.startsWith(upper + " "))
+        .sort(([x], [y]) => x.localeCompare(y, "en", { numeric: true }));
+    for (const [, key] of mine) {
+        if (done.has(key)) continue;
+        done.add(key);
+        let members = index.by_key.get(key);
+        if (!members.some((m) => m.entry.toUpperCase() !== upper)) continue;
+        groups.push({ key, members: [...members].sort((a, b) =>
+            (b.entry.toUpperCase() === upper) - (a.entry.toUpperCase() === upper) ||
+            a.entry.localeCompare(b.entry) || a.entity.localeCompare(b.entity, "en", { numeric: true })) });
+    }
+    return groups;
+}
+
+// How many other entries share a sequence with this one, for the page's
+// section count.
+export async function same_sequence_count(id, q = query) {
+    let upper = as_text(id).trim().toUpperCase();
+    let others = new Set();
+    for (const g of await same_sequence_groups(id, q)) {
+        for (const m of g.members) if (m.entry.toUpperCase() !== upper) others.add(m.entry);
+    }
+    return others.size;
+}
+
+// A chain's sequence key and entity, or null when it is not a plain
+// nucleic-acid chain of a known entry.
+export async function chain_sequence_key(entry, label, q = query) {
+    let index = await sequence_index(q);
+    let r = await q(`SELECT entry_id, entity_id FROM struct_asym WHERE upper(entry_id) = upper($1) AND id = $2`,
+                    [as_text(entry).trim(), as_text(label).trim()]);
+    if (!r.rows.length) return null;
+    let { entry_id, entity_id } = r.rows[0];
+    let key = index.by_entity.get(`${entry_id.toUpperCase()} ${entity_id}`);
+    return key ? { key, entry: entry_id, entity: entity_id, label: as_text(label).trim() } : null;
+}
+
+// What the table lists for each entry of a group: its title, method and
+// resolution, and every chain of the entity with its author name, how much of
+// it is modelled and its mean backbone confidence.
+export async function same_sequence_members(members, q = query) {
+    let entries = [...new Set(members.map((m) => m.entry))];
+    let [about, chains] = await Promise.all([
+        q(`SELECT e.id AS entry, s.title,
+                  (SELECT string_agg(DISTINCT x.method, ', ') FROM exptl x WHERE x.entry_id = e.id) AS method,
+                  ${RESOLUTION_SQL} AS resolution
+             FROM entry e
+             LEFT JOIN struct s ON s.entry_id = e.id
+             LEFT JOIN reflns rf  ON rf.entry_id  = e.id
+             LEFT JOIN refine rfn ON rfn.entry_id = e.id
+            WHERE e.id = ANY($1)`, [entries]),
+        q(`SELECT s.entry_id AS entry, s.entity_id AS entity, s.asym_id AS label, min(s.pdb_strand_id) AS auth,
+                  count(DISTINCT s.seq_id) FILTER (WHERE s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', ''))::int AS seen,
+                  count(DISTINCT s.seq_id)::int AS length
+             FROM pdbx_poly_seq_scheme s
+             JOIN unnest($1::text[], $2::text[]) AS m(entry, entity) ON s.entry_id = m.entry AND s.entity_id = m.entity
+            GROUP BY s.entry_id, s.entity_id, s.asym_id
+            ORDER BY s.entry_id, length(s.asym_id), s.asym_id`,
+          [members.map((m) => m.entry), members.map((m) => m.entity)])
+    ]);
+    let by_entry = new Map(about.rows.map((r) => [r.entry, { ...r, resolution: r.resolution === null ? null : Number(r.resolution) }]));
+    return { about: by_entry, chains: chains.rows };
+}
+
+// Everything compare_chains reads for a set of chains, given as
+// { entry, label }: residues, base pairs within the chain and NtC steps, all
+// of the entry's first model. A pair counts only between two nucleotides of
+// the chain as it is in the file, not with a symmetry copy. A step whose
+// nucleotide has alternate positions is taken once, for the first one.
+export async function chain_tracks(chains, q = query) {
+    let entries = chains.map((c) => c.entry);
+    let labels = chains.map((c) => c.label);
+    let wanted = `JOIN unnest($1::text[], $2::text[]) AS w(entry, label)`;
+    let [residues, pairs, steps] = await Promise.all([
+        q(`SELECT s.entry_id AS entry, s.asym_id AS label, s.seq_id AS pos,
+                  string_agg(DISTINCT s.mon_id, '/' ORDER BY s.mon_id) AS code,
+                  min(s.pdb_seq_num::text || COALESCE(NULLIF(s.pdb_ins_code, ''), '')) AS num,
+                  bool_or(s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', '')) AS seen,
+                  min(COALESCE(c.parent_comp_id, s.mon_id)) AS parent,
+                  bool_or(c.mon_nstd_flag = 'n') AS modified,
+                  string_agg(DISTINCT c.name, ' / ') FILTER (WHERE c.mon_nstd_flag = 'n') AS chem
+             FROM pdbx_poly_seq_scheme s
+             ${wanted} ON s.entry_id = w.entry AND s.asym_id = w.label
+             LEFT JOIN chem_comp c ON c.id = s.mon_id
+            GROUP BY s.entry_id, s.asym_id, s.seq_id
+            ORDER BY s.entry_id, s.asym_id, s.seq_id`, [entries, labels]),
+        q(`WITH m AS (SELECT l.entry_id, min(coalesce(l.pdb_model_number, 1)) AS first_model
+                        FROM ndb_base_pair_list l WHERE l.entry_id = ANY($1) GROUP BY l.entry_id),
+              p AS (SELECT l.entry_id, l.asym_id_1 AS label, l.seq_id_1 AS pos_1, l.seq_id_2 AS pos_2,
+                           a.lw_family AS family,
+                           translate(regexp_replace(COALESCE(c1.parent_comp_id, l.comp_id_1), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_1,
+                           translate(regexp_replace(COALESCE(c2.parent_comp_id, l.comp_id_2), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_2
+                      FROM ndb_base_pair_list l
+                      ${wanted} ON l.entry_id = w.entry AND l.asym_id_1 = w.label
+                      JOIN m ON m.entry_id = l.entry_id AND coalesce(l.pdb_model_number, 1) = m.first_model
+                      JOIN ndb_base_pair_annotation a ON a.entry_id = l.entry_id AND a.base_pair_id = l.base_pair_id
+                      LEFT JOIN chem_comp c1 ON c1.id = l.comp_id_1
+                      LEFT JOIN chem_comp c2 ON c2.id = l.comp_id_2
+                     WHERE l.asym_id_2 = l.asym_id_1
+                       AND COALESCE(l.struct_oper_id_1, '1') = '1' AND COALESCE(l.struct_oper_id_2, '1') = '1')
+           SELECT entry_id AS entry, label, pos_1, pos_2, family,
+                  CASE WHEN family <> 'cWW' THEN 'nc'
+                       WHEN least(base_1, base_2) || greatest(base_1, base_2) IN ('CG', 'AU') THEN 'wc'
+                       WHEN least(base_1, base_2) || greatest(base_1, base_2) = 'GU' THEN 'gu'
+                       ELSE 'nc' END AS kind
+             FROM p`, [entries, labels]),
+        q(`WITH m AS (SELECT t.entry_id, min(coalesce(t.pdb_model_number, 1)) AS first_model
+                        FROM ndb_struct_ntc_step t WHERE t.entry_id = ANY($1) GROUP BY t.entry_id)
+           SELECT DISTINCT ON (t.entry_id, t.label_asym_id_1, t.label_seq_id_1)
+                  t.entry_id AS entry, t.label_asym_id_1 AS label, t.label_seq_id_1 AS pos_1, t.label_seq_id_2 AS pos_2,
+                  s.assigned_ntc AS ntc, s.assigned_cana AS cana, s.confal_score AS confal
+             FROM ndb_struct_ntc_step t
+             ${wanted} ON t.entry_id = w.entry AND t.label_asym_id_1 = w.label
+             JOIN m ON m.entry_id = t.entry_id AND coalesce(t.pdb_model_number, 1) = m.first_model
+             JOIN ndb_struct_ntc_step_summary s ON s.entry_id = t.entry_id AND s.step_id = t.id
+            WHERE t.label_asym_id_2 = t.label_asym_id_1 AND t.label_seq_id_2 = t.label_seq_id_1 + 1
+            ORDER BY t.entry_id, t.label_asym_id_1, t.label_seq_id_1,
+                     coalesce(t.label_alt_id_1, ''), coalesce(t.label_alt_id_2, ''), t.id`, [entries, labels])
+    ]);
+    let out = new Map(chains.map((c) => [`${c.entry} ${c.label}`, { residues: [], pairs: [], steps: [] }]));
+    for (const [kind, rows] of [["residues", residues.rows], ["pairs", pairs.rows], ["steps", steps.rows]]) {
+        for (const r of rows) out.get(`${r.entry} ${r.label}`)?.[kind].push(r);
+    }
+    return out;
+}
+
+const chain_id = (c) => `${c.entry}:${c.label}`;
+const chain_title = (c) => `${c.entry} ${c.auth ?? c.label}`;
+const mean_confal = (steps) => {
+    let sure = steps.filter((s) => s.ntc && s.ntc !== "NANT" && s.confal !== null).map((s) => Number(s.confal));
+    return sure.length ? Math.round(sure.reduce((x, y) => x + y, 0) / sure.length) : null;
+};
+
+// The section's table: for each group this entry is in, every entry with the
+// sequence, each chain with how it compares to this entry's first chain, and
+// which chain is the best model of the sequence.
+export async function same_sequence(id, q = query) {
+    let upper = as_text(id).trim().toUpperCase();
+    let groups = await Promise.all((await same_sequence_groups(id, q)).map(async (g) => {
+        let { about, chains } = await same_sequence_members(g.members, q);
+        if (!chains.length) return null;
+        let tracks = await chain_tracks(chains, q);
+        let [type, seq] = g.key.split("\n");
+        let ref = chains.find((c) => c.entry.toUpperCase() === upper) ?? chains[0];
+        let ref_tracks = tracks.get(`${ref.entry} ${ref.label}`);
+        let rows = chains.map((c) => {
+            let t = tracks.get(`${c.entry} ${c.label}`);
+            let a = about.get(c.entry) ?? {};
+            let summary = null;
+            if (c !== ref) {
+                let s = compare_chains({ name: chain_title(ref), ...ref_tracks }, { name: chain_title(c), ...t }).summary;
+                summary = { verdict: s.verdict, headline: s.headline, differences: s.differences };
+            }
+            return { id: chain_id(c), entry: c.entry, label: c.label, auth: c.auth, name: chain_title(c),
+                     seen: c.seen, length: c.length, confal: mean_confal(t.steps), pairs: t.pairs.length,
+                     resolution: a.resolution ?? null, summary };
+        });
+        let best = [...rows].sort(best_rank)[0];
+        let entries = [];
+        for (const r of rows) {
+            let e = entries.find((x) => x.entry === r.entry);
+            if (!e) {
+                let a = about.get(r.entry) ?? {};
+                e = { entry: r.entry, title: a.title ?? null, method: a.method ?? null, resolution: a.resolution ?? null,
+                      this: r.entry.toUpperCase() === upper, chains: [] };
+                entries.push(e);
+            }
+            e.chains.push(r);
+        }
+        return { kind: POLY_KINDS[type] ?? "Other", type, length: seq.length,
+                 ref: chain_id(ref), best: best.id, entries };
+    }));
+    return groups.filter(Boolean);
+}
+
+// Two chains side by side, given as ENTRY:LABEL. null when either is not a
+// plain nucleic-acid chain; false when their sequences are not the same.
+export async function compare_same_sequence(a_id, b_id, q = query) {
+    let parse = (s) => { let [entry, label] = as_text(s).split(":"); return [entry ?? "", label ?? ""]; };
+    let [a, b] = await Promise.all([chain_sequence_key(...parse(a_id), q), chain_sequence_key(...parse(b_id), q)]);
+    if (!a || !b) return null;
+    if (a.key !== b.key) return false;
+    let { chains } = await same_sequence_members([{ entry: a.entry, entity: a.entity }, { entry: b.entry, entity: b.entity }], q);
+    let find = (x) => chains.find((c) => c.entry === x.entry && c.label === x.label);
+    let [ca, cb] = [find(a), find(b)];
+    if (!ca || !cb) return null;
+    let tracks = await chain_tracks([ca, cb], q);
+    let result = compare_chains({ name: chain_title(ca), ...tracks.get(`${ca.entry} ${ca.label}`) },
+                                { name: chain_title(cb), ...tracks.get(`${cb.entry} ${cb.label}`) });
+    return { ...result, ids: [chain_id(ca), chain_id(cb)] };
 }

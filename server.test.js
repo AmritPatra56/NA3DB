@@ -8,7 +8,7 @@ import { once } from "node:events";
 import app from "./server.js";
 import { close as close_db, query } from "./db.js";
 import { find_entry, entry_contents, entry_residues } from "./search.js";
-import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS } from "./detail.js";
+import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE } from "./detail.js";
 
 let base;
 let server;
@@ -642,12 +642,15 @@ test("the panel and the structure page draw the same rows", async () => {
 
     assert.ok(api.rows.length > 0, "there should be rows to compare");
 
-    for (const row of api.rows) {
+    // The modified, ligand and NtC rows are left out: the page shows them as
+    // tables and counts, which hold every code the rows list.
+    let on_page = api.rows.filter((row) => !SHOWN_ELSEWHERE.has(row.key));
+    for (const row of on_page) {
         assert.ok(html.includes(`>${row.label}<`), `the page is missing ${row.label}`);
     }
 
     // Same count, so the page cannot carry extras either.
-    assert.equal((html.match(/detail_field/g) || []).length, api.rows.length);
+    assert.equal((html.match(/detail_field/g) || []).length, on_page.length);
 });
 
 // The sidebar is the page's table of contents: every entry jumps to a section
@@ -659,8 +662,8 @@ test("every sidebar link on a structure page lands on a section", async () => {
         .map((m) => m[1] ?? m[2]);
     let sections = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
 
-    assert.deepEqual(links, ["overview", "molecules", "modified-nucleotides", "ligands", "sources",
-                             "base-pairs", "sequence-map", "conformation", "citations", "links"]);
+    assert.deepEqual(links, ["overview", "molecules", "sources", "modified-nucleotides", "ligands",
+                             "base-pairs", "conformation", "sequence-map", "same-sequence", "citations", "links"]);
     assert.deepEqual(sections, links, "one section per link, in the same order");
 });
 
@@ -831,11 +834,12 @@ test("a polymer pill shows its count, and a selected empty one is still drawn", 
 const render = (view, locals) =>
     new Promise((ok, fail) => app.render(view, locals, (err, html) => err ? fail(err) : ok(html)));
 
-async function page_with_arcs(arcs, nucleic_chains = 0) {
+async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0) {
     let entry = await find_entry("4TNA");
     let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
     let page = { entry, rows: detail_rows(entry), citations: [],
-                 molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains };
+                 molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains,
+                 same_entries };
     return render("structure", { ...page, page: "search", sections: structure_sections(page),
                                  PAGE_GROUPS, rail_query: "" });
 }
@@ -957,14 +961,54 @@ test("the sequence map API: a 404 for an entry with no nucleic-acid chain, and f
     assert.equal((await fetch(base + "/api/entries/ZZZZ/sequence_map")).status, 404);
 });
 
-test("the structure page has a Sequence map section between Base pairs and Conformation, drawn by its own script", async () => {
+test("the same sequence API: no groups for an entry that shares none, a 404 for an unknown one", async () => {
+    // The seed has no two entries with one sequence; compare_chains itself is
+    // in sameseq.test.js.
+    let res = await fetch(base + "/api/entries/4tna/same_sequence");
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { pdb_id: "4TNA", groups: [] });
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/same_sequence")).status, 404);
+});
+
+test("the compare API takes two different chains as ENTRY:CHAIN", async () => {
+    let get = (qs) => fetch(base + "/api/same_sequence/compare" + qs);
+    for (const qs of ["", "?a=4TNA:A", "?a=4TNA&b=4TNA:A", "?a=4TNA:A:B&b=4TNA:A"]) {
+        assert.equal((await get(qs)).status, 400, qs);
+    }
+    let same = await get("?a=4TNA:A&b=4tna:a");
+    assert.equal(same.status, 400);
+    assert.deepEqual(await same.json(), { error: "Pick two different chains" });
+    assert.equal((await get("?a=ZZZZ:A&b=4TNA:A")).status, 404);
+});
+
+test("the structure page has a Same sequence section after the Sequence map, drawn by its own script", async () => {
+    let html = await page_with_arcs(null, 1, 3);
+    let same = section(html, "same-sequence");
+    assert.match(same, /class="sameseq" data-entry="4TNA"/);
+    assert.match(html, /<script type="module" src="\/sameseq.js"><\/script>/);
+    assert.ok(html.indexOf('id="sequence-map"') < html.indexOf('id="same-sequence"') &&
+              html.indexOf('id="same-sequence"') < html.indexOf('id="citations"'));
+    assert.ok(!/\u2014/.test(same), "no em dash in what the section says");
+    let script = await (await fetch(base + "/sameseq.js")).text();
+    for (const part of ["ss_bar", "ss_swap", "ss_full", "ss_dialog", "ss_list", "ss_best",
+                        "Everything without a number is the same in both. Click a number to find it."]) {
+        assert.ok(script.includes(part), `the script draws ${part}`);
+    }
+    assert.ok(!/\u2014/.test(script), "no em dash anywhere the script writes");
+
+    let none = await (await fetch(base + "/structure/4TNA")).text();
+    assert.ok(section(none, "same-sequence").includes("No other entry has a chain with exactly this sequence."));
+    assert.ok(!none.includes("/sameseq.js"), "and no script for it");
+});
+
+test("the structure page has a Sequence map section after Conformation, drawn by its own script", async () => {
     let html = await page_with_arcs(null, 2);
     let map = section(html, "sequence-map");
     assert.match(map, /class="seqmap" data-entry="4TNA"/);
     assert.match(html, /href="#sequence-map"/);
     assert.match(html, /<script type="module" src="\/seqmap.js"><\/script>/);
-    assert.ok(html.indexOf('id="base-pairs"') < html.indexOf('id="sequence-map"') &&
-              html.indexOf('id="sequence-map"') < html.indexOf('id="conformation"'));
+    assert.ok(html.indexOf('id="base-pairs"') < html.indexOf('id="conformation"') &&
+              html.indexOf('id="conformation"') < html.indexOf('id="sequence-map"'));
     let script = await (await fetch(base + "/seqmap.js")).text();
     for (const part of ["seqmap_full", "seqmap_dialog", "smd_overview", "smd_strands", 'data-zoom="fit"', "seqmap_jump"]) {
         assert.ok(script.includes(part), `the script draws the full-screen view's ${part}`);
@@ -973,4 +1017,27 @@ test("the structure page has a Sequence map section between Base pairs and Confo
     let none = await (await fetch(base + "/structure/4TNA")).text();
     assert.ok(section(none, "sequence-map").includes("None recorded"), "no chains, nothing to draw");
     assert.ok(!none.includes("/seqmap.js"), "and no script for it");
+});
+
+// Em dashes read as machine-written; a blank cell says "none" instead.
+test("no em dash anywhere a structure page or an error page shows", async () => {
+    for (const path of ["/structure/4TNA", "/structure/ZZZZ"]) {
+        let html = await (await fetch(base + path)).text();
+        let shown = html.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<!--[\s\S]*?-->/g, "");
+        assert.ok(!shown.includes("—"), `${path} shows an em dash`);
+    }
+});
+
+test("the sequence map explains its bracket rows, and Conformation names its colours", async () => {
+    let html = await page_with_arcs(null, 2);
+    let map = section(html, "sequence-map");
+    assert.match(map, /<details class="guide" id="sequence-map-guide">/);
+    for (const part of ["((()))", "([)]", "GCUGAcGUAACAGC", "A nucleotide pairs once per row."]) {
+        assert.ok(map.includes(part), `the guide shows ${part}`);
+    }
+    assert.ok(!/\u2014/.test(map), "no em dash in the guide");
+    let cana = await (await fetch(base + "/cana.js")).text();
+    assert.ok(cana.includes("CANA_NAMES"));
+    let none = await (await fetch(base + "/structure/4TNA")).text();
+    assert.ok(!section(none, "sequence-map").includes("sequence-map-guide"), "no guide over an empty section");
 });

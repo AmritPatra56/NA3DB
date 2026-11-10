@@ -3,6 +3,9 @@
 // class, as tall as its confal score) and the base pairs in layered
 // dot-bracket rows. Hover or tap a column for its pairs and steps.
 
+import { CANA, CANA_GROUPS, CANA_NAMES } from "./cana.js";
+export { CANA, CANA_GROUPS, CANA_NAMES };
+
 const W = 14;                       // one column, as the section draws it
 const W_MIN = 0.5, W_MAX = 28;      // the zoom buttons' range; Fit may go narrower
 const LETTERS = 9;                  // narrower than this, letters give way to ticks
@@ -11,42 +14,21 @@ const Y_SEQ = RULER, Y_NTC = RULER + SEQ + 2, Y_ROWS = Y_NTC + NTC + GAP;
 const LABEL_W = 44;
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-// Hue is the family (A blue, B orange, Z green), shade or pattern the
-// variant, two halves a transition read 5′ to 3′. Okabe–Ito colours, so they
-// stay apart for colour-blind readers too.
-const CANA = {
-    AAA: { fill: ["#0072B2"] },               AAw: { fill: ["#56B4E9"] },
-    AAu: { fill: ["#0072B2"], look: "stripe" },
-    BBB: { fill: ["#E69F00"] },               BBw: { fill: ["#E69F00"], look: "stripe" },
-    miB: { fill: ["#E69F00"], look: "dot" },  BB2: { fill: ["#D55E00"] },
-    "A-B": { fill: ["#0072B2", "#E69F00"] },  "B-A": { fill: ["#E69F00", "#0072B2"] },
-    B12: { fill: ["#E69F00", "#D55E00"] },
-    ZZZ: { fill: ["#009E73"] }, ICL: { fill: ["#CC79A7"] },
-    OPN: { fill: ["#222222"] }, SYN: { fill: ["#F0E442"] },
-    NAN: { fill: ["#ffffff"] }
-};
-const CANA_GROUPS = [
-    ["A-form family", ["AAA", "AAw", "AAu"]],
-    ["B-form family", ["BBB", "BBw", "miB", "BB2"]],
-    ["transitions", ["A-B", "B-A", "B12"]],
-    ["Z-form", ["ZZZ"]], ["intercalated", ["ICL"]], ["opened", ["OPN"]], ["syn base", ["SYN"]],
-    ["no NtC class", ["NAN"]]
-];
-const ROW_COLOUR = { WC: "#139068", cWW: "#e0a030" };
-const OTHER_ROW = "#7f77dd";
+export const ROW_COLOUR = { WC: "#139068", cWW: "#e0a030" };
+export const OTHER_ROW = "#7f77dd";
 const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "sugar" };
 
-const el = (name, attrs = {}, parent) => {
+export const el = (name, attrs = {}, parent) => {
     let node = document.createElementNS(SVG_NS, name);
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
     parent?.append(node);
     return node;
 };
-const html = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+export const html = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const flip = (f) => f[0] + f[2] + f[1];
 
 // Stripes and dots for the variants, one pattern per colour.
-function patterns(svg) {
+export function patterns(svg) {
     let defs = el("defs", {}, svg);
     for (const c of Object.values(CANA)) {
         if (!c.look) continue;
@@ -61,7 +43,7 @@ function patterns(svg) {
 const paint = (c) => (c.look ? `url(#sm_${c.look}_${c.fill[0].slice(1)})` : c.fill[0]);
 
 // One NtC bar centred between its two nucleotides.
-function bar(g, x, w, h, bottom, code) {
+export function bar(g, x, w, h, bottom, code) {
     let c = CANA[code] ?? CANA.NAN;
     if (code === "NAN" || !CANA[code]) {
         el("rect", { x: x - w / 2 + 0.5, y: bottom - 10.5, width: w - 1, height: 10, rx: 1.5,
@@ -76,7 +58,7 @@ function bar(g, x, w, h, bottom, code) {
     }
 }
 
-function swatch(code) {
+export function swatch(code) {
     let svg = el("svg", { width: 12, height: 14, viewBox: "0 0 12 14", "aria-hidden": "true" });
     patterns(svg);
     bar(svg, 6, 10, 13, 14, code);
@@ -90,7 +72,7 @@ const key_html = (map) => {
         <span class="seqmap_key_title">NtC step, by CANA class <em>(bar height: confal)</em></span>
         ${CANA_GROUPS.map(([name, codes]) => codes.some((c) => used.includes(c))
             ? `<span class="seqmap_group"><b>${name}</b>${codes.filter((c) => used.includes(c))
-                  .map((c) => `<span>${swatch(c)}${c}</span>`).join("")}</span>` : "").join("")}
+                  .map((c) => `<span>${swatch(c)}${c} ${CANA_NAMES[c]}</span>`).join("")}</span>` : "").join("")}
         <span class="seqmap_key_title">Pairs</span>
         <span class="seqmap_group"><span><i style="background:${ROW_COLOUR.WC}"></i>WC: Watson–Crick</span><span><i style="background:${ROW_COLOUR.cWW}"></i>cWW: other cis W–W</span><span><i style="background:${OTHER_ROW}"></i>other families</span><span><b class="seqmap_mod">a</b>lower case: modified</span>${map.names.length > 1 ? `<span><b class="seqmap_cross">•</b>under a bracket: partner on another strand</span>` : ""}</span>`;
 };

@@ -11,7 +11,7 @@
             <% if (i === g.shown) { %></tbody><tbody class="more_rows" hidden><% } else if (i === 0) { %><tbody><% } %>
             <tr>
                 <td><a target="_blank" rel="noopener" href="<%= r.url %>"><%= r.code %></a></td>
-                <td><%= r.name ?? "—" %></td>
+                <td><% if (r.name == null) { %><span class="molecule_sub">none</span><% } else { %><%= r.name %><% } %></td>
                 <td><span<% if (r.chain.title) { %> title="<%= r.chain.title %>"<% } %>><%= r.chain.name %></span></td>
                 <td><%- r.shown.map(pos).join(", ") %><% if (r.rest.length) { %><details class="more_positions"><summary>+ <%= r.rest.length %> more</summary><%- r.rest.map(pos).join(", ") %></details><% } %></td>
             </tr>
@@ -28,9 +28,9 @@
             <tr>
                 <td><%= r.name %><% if (r.length) { %><div class="molecule_sub"><%= r.length %></div><% } %></td>
                 <td><% r.chains.forEach((c, i) => { %><%= i ? ", " : "" %><span<% if (c.title) { %> title="<%= c.title %>"<% } %>><%= c.name %></span><% }) %></td>
-                <td><%= r.modelled ?? "—" %><% if (r.missing) { %><div class="molecule_sub">missing <%= r.missing %></div><% } %></td>
-                <td><%= r.numbering ?? "—" %></td>
-                <td><% if (!r.links.length) { %>—<% } %><% for (const l of r.links) { %><div><% if (l.url) { %><a target="_blank" rel="noopener" href="<%= l.url %>"><%= l.text %></a><% } else { %><%= l.text %><% } %></div><% } %></td>
+                <td><% if (r.modelled == null) { %><span class="molecule_sub">none</span><% } else { %><%= r.modelled %><% } %><% if (r.missing) { %><div class="molecule_sub">missing <%= r.missing %></div><% } %></td>
+                <td><% if (r.numbering == null) { %><span class="molecule_sub">none</span><% } else { %><%= r.numbering %><% } %></td>
+                <td><% if (!r.links.length) { %><span class="molecule_sub">none</span><% } %><% for (const l of r.links) { %><div><% if (l.url) { %><a target="_blank" rel="noopener" href="<%= l.url %>"><%= l.text %></a><% } else { %><%= l.text %><% } %></div><% } %></td>
             </tr>
             <% if (r.sequence) { %>
                 <tr class="sequence_row"><td colspan="5">
@@ -55,7 +55,7 @@
         <colgroup><col style="width:12%"><col style="width:70%"><col style="width:18%"></colgroup>
         <tr><th>Code</th><th>Name</th><th>Count</th></tr>
         <% for (const r of g.rows) { %>
-            <tr><td><% if (r.url) { %><a target="_blank" rel="noopener" href="<%= r.url %>"><%= r.code %></a><% } else { %><%= r.code ?? "—" %><% } %></td><td><%= r.name %></td><td><%= r.count %></td></tr>
+            <tr><td><% if (r.url) { %><a target="_blank" rel="noopener" href="<%= r.url %>"><%= r.code %></a><% } else { %><% if (r.code == null) { %><span class="molecule_sub">none</span><% } else { %><%= r.code %><% } %><% } %></td><td><%= r.name %></td><td><%= r.count %></td></tr>
         <% } %>
     <% } %>
     </table>
