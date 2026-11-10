@@ -15,15 +15,15 @@
 
     // Said under each band's "?": the terms a reader new to the section needs.
     const help = {
-        "overview": "What the entry is: how it was solved, when, at what resolution, and by whom, from the entry's own record.",
-        "molecules": "Each polymer once, with the chains that are copies of it. Modelled counts the residues with coordinates; missing ones are in the sequence but not in the model.",
-        "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine), with the chain and position of each copy.",
-        "ligands": "Small molecules bound in the structure: ions, cofactors, drugs. Each code links to its page at RCSB.",
-        "sources": "Where each molecule came from: Natural (taken from the organism), Expressed (made in a host) or Synthetic (made chemically).",
-        "base-pairs": "Pairs in the first model, classified by DNATCO in the Leontis–Westhof scheme: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). G–C and A–U in cWW are Watson–Crick pairs.",
-        "sequence-map": "Every nucleotide on one ruler: the sequence, the NtC step to the next nucleotide coloured by its CANA class (bar height is the confal score), then every base pair in layered dot-bracket notation, one row per Leontis–Westhof family. Hover a column to see its pairs and step.",
+        "overview": "What the entry is: its title, how it was solved, when it was deposited, at what resolution, by whom and in which paper, what it is made of, and its size in chains, residues, nucleotides and atoms. From the entry's own PDB record.",
+        "molecules": "Each polymer once, with the chains that are copies of it. Modelled is how many of its residues have coordinates, out of the full sequence; missing ones are in the sequence but not in the model. Numbering is the authors' own residue numbers, which can skip or start above 1. Link is the molecule in UniProt or another sequence database.",
+        "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine). One row per kind in each chain, with every position it occupies, in the authors' numbering.",
+        "ligands": "Small molecules bound in the structure: ions, cofactors, drugs and sugars. Count is how many copies the entry holds. Each code links to its page at RCSB. Water is left out.",
+        "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxon its NCBI taxonomy number, Produced in the host it was made in when expressed.",
+        "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). A cWW pair of G–C or A–U counts as Watson–Crick, G–U as a wobble, everything else as non-canonical. A modified base counts as the base it came from.",
+        "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (colour is its CANA class, height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
         "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
-        "conformation": "Each step between two nucleotides is assigned an NtC class by DNATCO, grouped here by CANA family and counted. The confal score (0–100) says how closely the steps fit their classes; the percentile ranks it against other structures.",
+        "conformation": "Each step from one nucleotide to the next gets an NtC class from DNATCO, such as AA00. Similar classes form a CANA class, such as AAA (A-form); the list groups them by family, each with its colour, and How the colours work has the key. The confal score (0 to 100) says how well the steps fit their classes; the percentile ranks it against other structures. Steps DNATCO could not class (NANT) are counted last.",
         "citations": "The papers that describe this structure, the primary one first.",
         "links": "This entry elsewhere, and its data as files."
     };
