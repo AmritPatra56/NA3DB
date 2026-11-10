@@ -22,7 +22,16 @@ function mount() {
     });
 
     const box = element({ value: "", form: { submitted: false, submit() { this.submitted = true; } } });
-    const readout = element({ textContent: "" });
+    // Text and links appended to the readout read on as its text, as in a page.
+    const readout = element({
+        textContent: "", links: [],
+        append(...parts) {
+            for (const p of parts) {
+                this.textContent += typeof p === "string" ? p : p.textContent;
+                if (typeof p !== "string") this.links.push(p);
+            }
+        }
+    });
 
     const pending = [];
     const timers = [];
@@ -31,7 +40,8 @@ function mount() {
     // is deliberately no escape_html here.
     const context = {
         document: {
-            querySelector: (sel) => sel.includes("input") ? box : readout
+            querySelector: (sel) => sel.includes("input") ? box : readout,
+            createElement: () => ({ href: "", textContent: "" })
         },
         fetch: (url) => new Promise((resolve) => { pending.push({ url, resolve }); }),
         setTimeout: (fn) => { timers.push(fn); return timers.length; },
@@ -132,4 +142,20 @@ test("the landing scrolls inside itself, so the rail stays the full height", () 
     const rule = css.match(/^\.landing_page \{([^}]*)\}/m)[1];
     assert.match(rule, /overflow-y: auto;/);
     assert.match(css, /^\.interface \{[^}]*height: 100vh;/m);
+});
+
+// Nothing matched but something close did: each close search is a link to
+// its own results, with the count it gives. Nothing is searched for the user.
+test("no match offers close searches as links with their counts", async () => {
+    const page = mount();
+
+    page.type("ribozome");
+    page.settle();
+    await page.reply(0, { total: 0, suggestions: [{ field: "q", value: "ribosome", total: 133 },
+                                                   { field: "q", value: "ribozyme", total: 20 }] });
+
+    assert.equal(page.readout.textContent,
+                 "no structures match. Did you mean ribosome (133) or ribozyme (20)?");
+    assert.deepEqual(page.readout.links.map((a) => a.href),
+                     ["/search?q=ribosome", "/search?q=ribozyme"]);
 });

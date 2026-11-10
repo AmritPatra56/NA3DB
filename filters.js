@@ -166,7 +166,7 @@ const normalised = (column) =>
 
 // Every source organism of an entry, whichever way each molecule was made
 // (db/migrations/012): name, taxon ID and entity, one row each.
-const SOURCES_SQL = `(SELECT g.entry_id, g.entity_id, g.pdbx_gene_src_scientific_name AS organism,
+export const SOURCES_SQL = `(SELECT g.entry_id, g.entity_id, g.pdbx_gene_src_scientific_name AS organism,
                              g.pdbx_gene_src_ncbi_taxonomy_id AS taxid
                         FROM entity_src_gen g
                       UNION ALL
@@ -201,6 +201,8 @@ export const FILTERS = [
         prominent: true,
         // `match` in the query says whether this clause is used or negated.
         negatable: "match",
+        // Matched word by word, each word in this clause: see search_units.
+        words: true,
         // Every field this searches is gathered into one row per entry by
         // the doc materialized view, so this is one lookup rather than the
         // five correlated subqueries it used to be. See db/migrations/007.
@@ -228,7 +230,9 @@ export const FILTERS = [
                               AND (   d.id       ILIKE ?
                                    OR d.entities ILIKE ?
                                    OR d.residues ILIKE ?
-                                   OR d.prose    LIKE  ?~))`
+                                   OR d.prose    LIKE  ?~
+                                   OR d.id IN (SELECT s.entry_id FROM ${SOURCES_SQL} s
+                                               WHERE s.taxid = ANY(?@))))`
     },
 
     // The only filter on a column of `entry` itself. ILIKE because plain LIKE
@@ -239,11 +243,14 @@ export const FILTERS = [
     },
 
     {
+        // Every word in one author's name, in any order: names are stored
+        // as "Sponer, J.", and people type "J. Sponer" or "Sponer J".
         key: "author_name", label: "Author name", group: "Demographics", kind: "text",
+        each_word: true,
         where: `AND EXISTS (SELECT 1 FROM citation_author ca
                             WHERE ca.entry_id = e.id
                               AND ca.citation_id = 'primary'
-                              AND ca.name ILIKE ?)`
+                              AND ca.name ILIKE ALL (?))`
     },
 
     // = ANY(?) takes the whole array as one parameter, however many pills are
@@ -291,6 +298,10 @@ export const FILTERS = [
     {
         key: "assigned_ntc", label: "Assigned NtC", group: "3D Features", kind: "text",
         answered_by: "assigned_ntc",
+        // A class is four characters (AA00, NANT). Anything much longer cannot
+        // match, and scanning a million steps to say so ran into the 15 s
+        // statement timeout for a pasted paragraph.
+        max_length: 8,
         where: `AND EXISTS (SELECT 1 FROM ndb_struct_ntc_step_summary ss
                             WHERE ss.entry_id = e.id
                               AND ss.assigned_ntc ILIKE ?)`
@@ -308,9 +319,16 @@ export const FILTERS = [
     // Escherichia coli is a source in 189 entries and a host in 816.
     {
         key: "source_organism", label: "Source organism",
-        group: "Structure Components", kind: "text",
-        where: `AND EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
-                            WHERE s.entry_id = e.id AND s.organism ILIKE ?)`
+        group: "Structure Components", kind: "text", suggest: "source_organisms",
+        placeholder: "e.g. mouse or Mus musculus",
+        // Or any taxon the text names (taxonomy.js): mouse, E. coli, yeast.
+        // IN, not = ANY(ARRAY(...)): the ids are hashed once per search instead
+        // of scanned per entry: 12 ms rather than 185 for Bacteria.
+        where: `AND (EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
+                             WHERE s.entry_id = e.id
+                               AND s.organism ILIKE ?)
+                  OR e.id IN (SELECT s.entry_id FROM ${SOURCES_SQL} s
+                                      WHERE s.taxid = ANY(?@)))`
     },
 
     // Exact: 562 is Escherichia coli and not its strains, so 1OB5's host
@@ -338,28 +356,31 @@ export const FILTERS = [
 
     {
         key: "expression_host", label: "Expression host", answered_by: "expression_host",
-        group: "Structure Components", kind: "text",
-        where: `AND EXISTS (SELECT 1 FROM entity_src_gen g
-                            WHERE g.entry_id = e.id
-                              AND g.pdbx_host_org_scientific_name ILIKE ?)`
+        group: "Structure Components", kind: "text", suggest: "expression_hosts",
+        placeholder: "e.g. E. coli or human",
+        // Or any taxon the text names, as for the source organism.
+        where: `AND (EXISTS (SELECT 1 FROM entity_src_gen g
+                             WHERE g.entry_id = e.id
+                               AND g.pdbx_host_org_scientific_name ILIKE ?)
+                  OR e.id IN (SELECT g.entry_id FROM entity_src_gen g
+                                      WHERE g.pdbx_host_org_ncbi_taxonomy_id = ANY(?@)))`
     },
 
     // Matches the residue code as well as its name, because a code is what
-    // people type. ARRAY(SELECT ...) and not a join: a join makes the chem_comp
-    // lookup correlated and re-runs it per entry. 435 ms against 7 ms.
-    // Nucleic acid chains only, like the monomer flag: MSE is a protein label.
+    // people type. Nucleic acid chains only, like the monomer flag: MSE is a
+    // protein label. The codes each entry holds come ready made from the doc
+    // view (its residue_codes, the list the cards show), so this compares two
+    // short lists rather than reading 800,000 residue rows: 3 ms, not 400.
+    // Same answer as reading the residues for all 225 inputs tried.
     {
         key: "nonstandard_residue", label: "Non-standard residue",
         group: "Structure Components", kind: "text",
-        where: `AND EXISTS (SELECT 1 FROM entity_poly_seq eps
-                            JOIN entity_poly ep ON ep.entry_id = eps.entry_id
-                                               AND ep.entity_id = eps.entity_id
-                            WHERE eps.entry_id = e.id
-                              AND ep.type ILIKE '%nucleotide%'
-                              AND eps.mon_id = ANY (ARRAY(
-                                  SELECT cc.id FROM chem_comp cc
+        where: `AND EXISTS (SELECT 1 FROM doc d
+                            WHERE d.id = e.id
+                              AND string_to_array(d.residue_codes, ', ') && ARRAY(
+                                  SELECT cc.id::text FROM chem_comp cc
                                   WHERE cc.mon_nstd_flag = 'n'
-                                    AND (cc.id ILIKE ? OR cc.name ILIKE ?))))`
+                                    AND (cc.id ILIKE ? OR cc.name ILIKE ?)))`
     },
 
     // A code is matched whole, since one or two letters would otherwise find
@@ -444,6 +465,12 @@ const RESOLUTION_JOIN = `LEFT JOIN reflns rf  ON rf.entry_id  = e.id
                          LEFT JOIN refine rfn ON rfn.entry_id = e.id`;
 
 export const SORTS = [
+    // Ranked by how well an entry answers the search box (search.js,
+    // best_match); with nothing typed every entry ties and it is id order.
+    {
+        key: "best", label: "Best match",
+        join: "", sql: "e.id ASC", unique: true, ranked: true
+    },
     {
         key: "deposition_desc", label: "Deposition date, newest first",
         join: "LEFT JOIN pdbx_database_status ds ON ds.entry_id = e.id",
@@ -488,7 +515,7 @@ export const SORTS = [
 
 // The order used when the URL asks for nothing, or asks for something unknown.
 // By key and not by position, so reordering the dropdown cannot change it.
-export const DEFAULT_SORT = SORTS.find((s) => s.key === "id_asc");
+export const DEFAULT_SORT = SORTS.find((s) => s.key === "best");
 
 // One sort by key, never a value from the URL reaching the SQL: an unknown key
 // falls back to the default rather than being interpolated.

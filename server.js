@@ -2,9 +2,10 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs, entry_sequence_tracks,
-         entry_residues, ligand_suggestions, pill_counts, database_stats, browse_counts,
+         entry_residues, ligand_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
+import { did_you_mean } from "./suggest.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
@@ -12,6 +13,13 @@ import { detail_rows, molecule_groups, base_pair_section, fasta_of,
          PAGE_GROUPS } from "./detail.js";
 
 const app = express();
+
+// Control characters out of every :id once, before any route reads it, so a
+// NUL never reaches PostgreSQL or comes back inside a 404 message.
+app.param("id", (req, res, next, id) => {
+    req.params.id = id.replace(/[\x00-\x1f\x7f]/g, "");
+    next();
+});
 
 app.use(express.static(path.join(import.meta.dirname, "public")));
 
@@ -236,6 +244,14 @@ app.get("/structure/:id/fasta/:entity", async (req, res) => {
     send_fasta(res, `${entry.pdb_id}_${entity.id}.fasta`, fasta);
 });
 
+// The organisms the Source organism and Expression host boxes can suggest.
+app.get("/api/source_organisms", async (req, res) => {
+    res.json(await organism_suggestions("source_organisms"));
+});
+app.get("/api/expression_hosts", async (req, res) => {
+    res.json(await organism_suggestions("expression_hosts"));
+});
+
 // The ligands the Ligand box can suggest, with how many entries hold each.
 app.get("/api/ligands", async (req, res) => {
     res.json(await ligand_suggestions());
@@ -251,6 +267,7 @@ app.get("/api/entries", async (req, res) => {
     }
 
     let found = await search_entries(req.query);
+    if (found.total === 0) found.suggestions = await did_you_mean(req.query);
 
     // The display rows travel with each result, the same way /api/entries/:id
     // carries them: the formatting lives in detail.js and cannot cross JSON,
@@ -280,7 +297,9 @@ app.get("/api/count", async (req, res) => {
         return;
     }
 
-    res.json({ total: await count_entries(req.query) });
+    // A search that finds nothing says what it might have meant, never more.
+    let total = await count_entries(req.query);
+    res.json(total === 0 ? { total, suggestions: await did_you_mean(req.query) } : { total });
 });
 
 // One entry by its PDB id. In the path, because it names which entry rather

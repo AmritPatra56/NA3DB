@@ -3,15 +3,44 @@
 
 import { query } from "./db.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, sort_by,
+import { taxa_named, taxon } from "./taxonomy.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
          page_size_from, match_mode, RESOLUTION_SQL, BROWSE } from "./filters.js";
 
 
 // One raw query value as a single string, whatever shape it arrived in.
+// PostgreSQL refuses a NUL in text, so ?q=%00 or /structure/%00 was a 500.
 function as_text(value) {
     if (value === undefined) return "";
     if (Array.isArray(value)) return as_text(value[0]);
-    return String(value);
+    return String(value).replaceAll("\u0000", "");
+}
+
+// Letters that do not come apart into a base letter and an accent, and Greek
+// letters, which the chemical names in the data spell out (alpha-amanitin).
+const SPELLED = {
+    "ß": "ss", "æ": "ae", "œ": "oe", "ø": "o", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "ı": "i",
+    "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta", "ε": "epsilon", "ζ": "zeta",
+    "η": "eta", "θ": "theta", "ι": "iota", "κ": "kappa", "λ": "lambda", "μ": "mu", "ν": "nu",
+    "ξ": "xi", "ο": "omicron", "π": "pi", "ρ": "rho", "σ": "sigma", "ς": "sigma", "τ": "tau",
+    "υ": "upsilon", "φ": "phi", "χ": "chi", "ψ": "psi", "ω": "omega"
+};
+const SPELLED_RE = new RegExp(`[${Object.keys(SPELLED).join("")}]`, "giu");
+
+// A typed value as the data spells it. The data is plain ASCII (Muller,
+// Sponer, Cerny), so accents are folded; dropping the accented letter instead
+// made Cerny "ern" and found 140 wrong entries. Spaces are trimmed and runs of
+// them made one, so "ribosome " and a phone's trailing space find the same.
+export function clean_text(value) {
+    return value
+        .normalize("NFD").replace(/\p{M}/gu, "")
+        .replace(SPELLED_RE, (ch) => {
+            let lower = ch.toLowerCase(), spelled = SPELLED[lower];
+            return ch === lower ? spelled : spelled[0].toUpperCase() + spelled.slice(1);
+        })
+        .replace(/\s+/g, " ")
+        .replace(/[\x00-\x1f\x7f]/g, "")
+        .trim();
 }
 
 // One raw query value as a list. Takes a comma-joined string, a repeated key,
@@ -22,7 +51,7 @@ function as_list(value) {
     let parts = Array.isArray(value) ? value : String(value).split(",");
 
     return parts.map(function (part) {
-        return String(part).trim();
+        return String(part).replaceAll("\u0000", "").trim();
     }).filter(function (part) {
         return part !== "" && part !== "any";
     });
@@ -34,7 +63,7 @@ function query_to_filters(query) {
     let filters = {};
 
     TEXT_FILTERS.forEach(function (key) {
-        filters[key] = as_text(query[key]);
+        filters[key] = clean_text(as_text(query[key]));
     });
 
     PILL_FILTERS.forEach(function (key) {
@@ -79,6 +108,62 @@ function like_normalised(text) {
 }
 
 
+// A plural as its singular, so ribosomes finds ribosome. Letters only: 1DNS
+// is an id, not the plural of 1DN. Short words are left alone.
+export function singular(word) {
+    if (word.length < 4 || !/^[a-z]+$/i.test(word)) return word;
+    if (/ies$/i.test(word)) return word.slice(0, -3) + "y";
+    if (/(ch|sh|x|ss|z)es$/i.test(word)) return word.slice(0, -2);
+    if (/[^su]s$/i.test(word)) return word.slice(0, -1);
+    return word;
+}
+
+// More words than this is a pasted paragraph; it is matched as one phrase,
+// as before, instead of as a clause per word.
+const MAX_UNITS = 12;
+
+// What the search box asks for: a list of units, every one of which must
+// match, each a list of spellings any one of which will do. This is how the
+// big structure databases read a search: all the words, in any order, with
+// quotes for an exact phrase.
+//
+//   "yeast tRNA"     [[yeast], [tRNA]]
+//   ribosomes        [[ribosome]]            a plural finds the singular
+//   families         [[families], [family]]  when the singular is not a prefix
+//   "z dna"          [[z dna, zdna, z-dna]]  a lone letter joins the next word
+//   "\"yeast tRNA\"" [[yeast tRNA]]          quotes keep a phrase whole
+//
+// A lone letter matches nearly everything, which is why it joins the next
+// word: Z DNA is how people type Z-DNA. Not a or i, which are words.
+export function search_units(text) {
+    let units = [];
+    let rest = text.replace(/"([^"]*)"/g, (_, phrase) => {
+        phrase = phrase.trim();
+        if (phrase) units.push([phrase]);
+        return " ";
+    });
+    let words = rest.replaceAll("\"", " ")
+        .replace(/(^| )([b-hj-z])\.(?=[a-z]{2})/gi, "$1$2. ")   // e.coli -> e. coli
+        .split(" ").filter(Boolean);
+
+    for (let i = 0; i < words.length; i++) {
+        let word = words[i], next = words[i + 1];
+        // "E. coli" glues like "E coli": the dot is an abbreviation, not a word.
+        if (/^[b-hj-z]\.?$/i.test(word) && next) {
+            let letter = word[0];
+            // Last, the other way round: authors are stored "Sponer, J.",
+            // which is "sponer j" in the prose, so J. Sponer finds them.
+            units.push([`${letter} ${next}`, `${letter}${next}`, `${letter}-${next}`, `${next} ${letter}`]);
+            i++;
+            continue;
+        }
+        let one = singular(word);
+        units.push(word.toLowerCase().startsWith(one.toLowerCase()) ? [one] : [word, one]);
+    }
+
+    return units.length > MAX_UNITS ? [[text]] : units;
+}
+
 // Per kind: was it filled in, and what goes into the ?. Three rules cover ten
 // of the eleven filters. Lives here, not in the registry, because like_contains
 // is an engine detail. A confal score of 0 is truthy and survives `active`.
@@ -102,23 +187,41 @@ export function build_where(query_params) {
     // Every ? in the clause becomes the number the value landed at, so a
     // clause and its value cannot drift apart.
     // ? is the value. ?~ is the same value with its punctuation dropped, for
-    // the branches matching against normalised prose. ?~ goes first, or the
-    // bare ? would eat its question mark.
-    function add(clause, value, normalised) {
+    // the branches matching against normalised prose. ?@ is the taxonomy ids
+    // the typed text names (taxonomy.js), so mouse finds Mus musculus.
+    // ?~ and ?@ go first, or the bare ? would eat their question marks.
+    function bind(clause, value, normalised, typed) {
         values.push(value);
 
-        let sql = clause.replaceAll("?~", "\u0000").replaceAll("?", "$" + values.length);
+        let sql = clause.replaceAll("?~", "\u0000").replaceAll("?@", "\u0001")
+                        .replaceAll("?", "$" + values.length);
 
         if (sql.includes("\u0000")) {
             values.push(normalised);
             sql = sql.replaceAll("\u0000", "$" + values.length);
         }
+        if (sql.includes("\u0001")) {
+            values.push(taxa_named(typed));
+            sql = sql.replaceAll("\u0001", "$" + values.length + "::int[]");
+        }
 
-        tests.push(sql);
+        return sql;
     }
+    const add = (clause, value, normalised, typed) => tests.push(bind(clause, value, normalised, typed));
 
     for (const filter of FILTERS) {
         let value = f[filter.key];
+
+        // The search box: each word its own clause, any spelling of it will do.
+        if (filter.words) {
+            for (const unit of search_units(value)) {
+                let either = unit.map((spelling) =>
+                    bind(filter.where, like_contains(spelling), like_normalised(spelling), spelling)
+                        .replace(/^\s*AND\s+/, ""));
+                tests.push(`AND (${either.join("\n         OR ")})`);
+            }
+            continue;
+        }
 
         // A filter writing its own clause, with no parameter. null = inactive.
         if (filter.clause) {
@@ -133,8 +236,21 @@ export function build_where(query_params) {
         // Old spellings a bookmark may still carry, turned into current ones.
         if (filter.expand) value = filter.expand(value);
 
+        // Longer than anything the column holds: matches nothing, at once.
+        if (filter.max_length && value.trim().length > filter.max_length) {
+            tests.push("AND FALSE");
+            continue;
+        }
+
+        // One pattern per word, all of which must match the same row.
+        if (filter.each_word) {
+            let words = value.split(/[\s,]+/).filter(Boolean);
+            add(filter.where, (words.length ? words : [value]).map(like_contains));
+            continue;
+        }
+
         add(filter.where, rule.param(value),
-            rule.normalised && rule.normalised(value));
+            rule.normalised && rule.normalised(value), value);
     }
 
     // Nothing was asked, so there is nothing to invert either: excluding
@@ -163,6 +279,48 @@ export function build_where(query_params) {
     return { where: search, values };
 }
 
+// The ORDER BY for the Best match sort, and the values it adds after the
+// WHERE's. Lower ranks first:
+//   0  the whole search as one phrase, and every word as a whole word
+//   1  the whole phrase, but a word only inside a longer one
+//   2  the words apart, each a whole word somewhere
+//   3  the words apart, some only inside longer words
+// So TAR lists HIV TAR first and "target" last, and Thermus ribosome lists
+// titles saying "Thermus thermophilus 70S ribosome" before the rest. Ties,
+// and every entry when the box is empty, go in id order.
+//
+// A whole word is checked in the normalised prose and also in the title,
+// entities and residues as written, where a hyphen still separates words:
+// A-DNA holds DNA as a word, though its prose reads adna.
+function best_match(query_params, offset, sort) {
+    let text = clean_text(as_text(query_params.q));
+    let units = text ? search_units(text) : [];
+    if (!sort.ranked || units.length === 0) {
+        return { order: sort.unique ? sort.sql : `${sort.sql}, e.id`, values: [] };
+    }
+
+    let values = [];
+    let p = (v) => { values.push(v); return "$" + (offset + values.length); };
+
+    let phrase = text.replaceAll("\"", " ").replace(/\s+/g, " ").trim();
+    let has_phrase = `(d.prose LIKE ${p(like_normalised(phrase))} OR d.entities ILIKE ${p(like_contains(phrase))})`;
+
+    // Spellings are already [a-z0-9 ] once normalised, so they are safe in a
+    // regular expression. A plural ending is allowed after any of them.
+    let whole = units.map((unit) => {
+        let spellings = [...new Set(unit.map((s) => like_normalised(s).slice(1, -1)).filter((s) => s && s !== "-"))];
+        if (spellings.length === 0) return "TRUE";
+        let re = p(`(^|[^a-z0-9])(${spellings.join("|")})(s|es)?([^a-z0-9]|$)`);
+        return `(d.prose ~ ${re} OR lower(coalesce(d.title, '')) ~ ${re}
+                 OR lower(coalesce(d.entities, '')) ~ ${re} OR lower(coalesce(d.residues, '')) ~ ${re})`;
+    }).join(" AND ");
+
+    let rank = `(SELECT CASE WHEN ${has_phrase} THEN 0 ELSE 2 END
+                      + CASE WHEN ${whole} THEN 0 ELSE 1 END
+                   FROM doc d WHERE d.id = e.id)`;
+    return { order: `${rank}, e.id`, values };
+}
+
 // Cap on one export, so a single request cannot exhaust memory.
 const EXPORT_LIMIT = 5000;
 
@@ -189,7 +347,7 @@ export async function search_entries(query_params) {
     // ORDER BY. e.id last breaks ties, or a tied row could appear on two pages;
     // a column that is already unique does not need it.
     let sort = sort_by(as_text(query_params.sort));
-    let order = sort.unique ? sort.sql : `${sort.sql}, e.id`;
+    let { order, values: ranking } = best_match(query_params, values.length, sort);
 
     let [rows, counted] = await Promise.all([
         // Ids first, then the columns for those ten. With the columns in the
@@ -204,7 +362,7 @@ export async function search_entries(query_params) {
                    ORDER BY ${order}
                    LIMIT ${page_size} OFFSET ${offset}
                )
-               ORDER BY ${order}`, values),
+               ORDER BY ${order}`, [...values, ...ranking]),
 
         query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)
     ]);
@@ -268,13 +426,13 @@ export async function export_entries(query_params) {
     // The same order the screen used, so a downloaded CSV matches what was on
     // it. No extra join: ENTRY_JOINS already has every table a sort needs.
     let sort = sort_by(as_text(query_params.sort));
-    let order = sort.unique ? sort.sql : `${sort.sql}, e.id`;
+    let { order, values: ranking } = best_match(query_params, values.length, sort);
 
     let [rows, counted] = await Promise.all([
         query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
                WHERE ${where}
                ORDER BY ${order}
-               LIMIT ${EXPORT_LIMIT}`, values),
+               LIMIT ${EXPORT_LIMIT}`, [...values, ...ranking]),
 
         query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values)
     ]);
@@ -763,6 +921,58 @@ export async function ligand_suggestions(q = query) {
           GROUP BY n.comp_id, cc.name
           ORDER BY entries DESC, n.comp_id`);
     return result.rows;
+}
+
+// The organisms the Source organism and Expression host boxes can suggest,
+// one row per taxon with its common names and how many entries hold it,
+// in the { code, name, entries } shape the Ligand box uses. code is NCBI's
+// scientific name, which the box finds whatever the depositor wrote.
+// One row per taxon and spelling, with the entries holding it.
+const ORGANISM_ROWS = {
+    source_organisms: `SELECT s.taxid, s.organism, array_agg(DISTINCT s.entry_id) AS ids
+                         FROM ${SOURCES_SQL} s
+                        WHERE s.organism IS NOT NULL OR s.taxid IS NOT NULL GROUP BY 1, 2`,
+    expression_hosts: `SELECT g.pdbx_host_org_ncbi_taxonomy_id AS taxid,
+                              g.pdbx_host_org_scientific_name AS organism,
+                              array_agg(DISTINCT g.entry_id) AS ids
+                         FROM entity_src_gen g
+                        WHERE g.pdbx_host_org_scientific_name IS NOT NULL
+                           OR g.pdbx_host_org_ncbi_taxonomy_id IS NOT NULL
+                        GROUP BY 1, 2`
+};
+const organism_cache = {};
+
+export async function organism_suggestions(role, q = query) {
+    if (organism_cache[role] && Date.now() - organism_cache[role].at < BROWSE_TTL_MS) {
+        return organism_cache[role].rows;
+    }
+    let groups = (await q(ORGANISM_ROWS[role])).rows;
+
+    // One row per name. Two ids NCBI has since merged are one organism.
+    let names = new Map();
+    for (const g of groups) {
+        let t = g.taxid === null ? null : taxon(g.taxid);
+        let code = t ? t.name : g.organism;
+        if (code && !names.has(code)) names.set(code, t ? t.common.join(", ") : "");
+    }
+
+    // Counted by the box's own rule, so the number is what picking it finds:
+    // the name inside the written one, or a taxon the name means.
+    // Escherichia coli counts its strains, as the search will.
+    let rows = [...names].map(([code, name]) => {
+        let lower = code.toLowerCase();
+        let taxa = new Set(taxa_named(code));
+        let ids = new Set();
+        for (const g of groups) {
+            if (taxa.has(g.taxid) || (g.organism ?? "").toLowerCase().includes(lower)) {
+                g.ids.forEach((id) => ids.add(id));
+            }
+        }
+        return { code, name, entries: ids.size };
+    }).sort((a, b) => b.entries - a.entries || a.code.localeCompare(b.code));
+
+    organism_cache[role] = { at: Date.now(), rows };
+    return rows;
 }
 
 // How many entries each pill of a counted filter finds, as

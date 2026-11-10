@@ -113,6 +113,16 @@ test("an unknown id is 404 with a readable message", async () => {
     assert.match((await res.json()).error, /ZZZZ/);
 });
 
+// A NUL or other control character in an id was a 500 from PostgreSQL.
+test("an id holding a control character is a 404, and the message does not echo it", async () => {
+    for (const path of ["/structure/%00", "/api/entries/%00", "/api/entries/ZZ%00ZZ/arcs"]) {
+        let res = await fetch(base + path);
+        assert.equal(res.status, 404, path);
+        assert.ok(!/[\x00-\x08\x0b\x0c\x0e-\x1f]|\\u0000/.test(await res.text()), path);
+    }
+    assert.equal((await fetch(base + "/api/entries/4TNA%00")).status, 200);
+});
+
 test("an impossible query is 400, not 500", async () => {
     let res = await fetch(base + "/api/entries?confal_min=9&confal_max=2");
 
@@ -490,7 +500,7 @@ test("the page offers every sort the registry defines, and no SQL", async () => 
     let html = await (await fetch(base + "/search")).text();
     let reg  = await (await fetch(base + "/api/fields")).json();
 
-    assert.equal(reg.sorts.length, 8);
+    assert.equal(reg.sorts.length, 9);
 
     for (const sort of reg.sorts) {
         assert.ok(html.includes(`value="${sort.key}"`), `no option for ${sort.key}`);
@@ -1100,4 +1110,36 @@ test("the sequence map explains its bracket rows, and Conformation names its col
     assert.ok(cana.includes("CANA_NAMES"));
     let none = await (await fetch(base + "/structure/4TNA")).text();
     assert.ok(!section(none, "sequence-map").includes("sequence-map-guide"), "no guide over an empty section");
+});
+
+// A search that finds nothing carries its "Did you mean" offers; one that
+// finds something carries none, so the count stays one cheap query.
+test("count and entries offer close searches only when nothing matched", async () => {
+    let none = await (await fetch(base + "/api/count?q=ribozome")).json();
+    assert.equal(none.total, 0);
+    assert.deepEqual(none.suggestions[0], { field: "q", value: "ribosome", total: none.suggestions[0].total });
+
+    let page = await (await fetch(base + "/api/entries?q=ribozome")).json();
+    assert.deepEqual(page.suggestions, none.suggestions);
+
+    let some = await (await fetch(base + "/api/count?q=ribosome")).json();
+    assert.ok(some.total > 0);
+    assert.equal(some.suggestions, undefined);
+    assert.equal((await (await fetch(base + "/api/entries?q=ribosome")).json()).suggestions, undefined);
+});
+
+test("the results page has a place for the offers, hidden until needed", async () => {
+    let html = await (await fetch(base + "/search?q=ribozome")).text();
+    assert.match(html, /class="did_you_mean hidden"/);
+});
+
+test("the organism boxes have suggestions, each with its common names and count", async () => {
+    for (const path of ["/api/source_organisms", "/api/expression_hosts"]) {
+        let rows = await (await fetch(base + path)).json();
+        assert.ok(rows.length > 0, path);
+        assert.ok(rows.every((r) => typeof r.code === "string" && typeof r.entries === "number"), path);
+    }
+    let html = await (await fetch(base + "/search")).text();
+    assert.match(html, /data-suggest="source_organisms"/);
+    assert.match(html, /data-suggest="expression_hosts"/);
 });

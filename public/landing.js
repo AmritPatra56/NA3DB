@@ -26,6 +26,23 @@ function show(text) {
     readout.textContent = text;
 }
 
+// Nothing matched: say so, and offer any close searches as links, each with
+// the count it gives. Never applied for the user.
+function show_none(suggestions) {
+    show("no structures match");
+    if (suggestions.length === 0) return;
+
+    readout.append(". Did you mean ");
+    suggestions.forEach(function (s, i) {
+        if (i > 0) readout.append(i === suggestions.length - 1 ? " or " : ", ");
+        let link = document.createElement("a");
+        link.href = "/search?q=" + encodeURIComponent(s.value);
+        link.textContent = s.value;
+        readout.append(link, ` (${s.total.toLocaleString("en-GB")})`);
+    });
+    readout.append("?");
+}
+
 async function count(term) {
     try {
         let res = await fetch("/api/count?q=" + encodeURIComponent(term));
@@ -34,7 +51,7 @@ async function count(term) {
         let data = await res.json();
         if (wanted !== term) return;
 
-        if (data.total === 0)      show("no structures match");
+        if (data.total === 0)      show_none(data.suggestions || []);
         else if (data.total === 1) show("1 structure");
         else                       show(data.total.toLocaleString("en-GB") + " structures");
     } catch {

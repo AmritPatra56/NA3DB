@@ -315,10 +315,41 @@ function update_header(total, start, shown) {
 }
 
 // Shows "No entries found" when the count is zero, and nothing else does.
-function update_empty_state(count) {
+// Under it, any searches the server found close to what was typed, each a
+// real link with the count it gives. Never applied without a click.
+function update_empty_state(count, suggestions = []) {
     let empty = document.querySelector(".empty_state");
     empty.classList.toggle("hidden", count > 0);
+
+    let line = empty.querySelector(".did_you_mean");
+    line.replaceChildren();
+    line.classList.toggle("hidden", count > 0 || suggestions.length === 0);
+    if (count > 0 || suggestions.length === 0) return;
+
+    line.append("Did you mean ");
+    suggestions.forEach(function (s, i) {
+        if (i > 0) line.append(i === suggestions.length - 1 ? " or " : ", ");
+        let params = new URLSearchParams(location.search);
+        params.set(s.field, s.value);
+        params.delete("page");
+        let link = document.createElement("a");
+        link.href = location.pathname + "?" + params.toString().replaceAll("+", "%20");
+        link.dataset.field = s.field;
+        link.dataset.value = s.value;
+        link.textContent = s.value;
+        line.append(link, ` (${s.total.toLocaleString("en-GB")})`);
+    });
+    line.append("?");
 }
+
+// A suggestion searches in place, like typing it and pressing Search.
+document.querySelector(".did_you_mean").addEventListener("click", function (e) {
+    let link = e.target.closest("a[data-field]");
+    if (!link || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    document.getElementById(link.dataset.field).value = link.dataset.value;
+    run_search(1);
+});
 
 // Switches spinner, list, error box and Search button between waiting and not.
 function set_loading(is_loading) {
@@ -412,7 +443,7 @@ function show_page() {
 
     render_results(current_reply.results);
     update_header(current_reply.total, start, current_reply.results.length);
-    update_empty_state(current_reply.total);
+    update_empty_state(current_reply.total, current_reply.suggestions);
     render_pagination(current_reply.pages);
 }
 
@@ -742,8 +773,11 @@ document.querySelectorAll("input[data-suggest]").forEach((input) => {
     function draw() {
         let text = input.value.trim().toLowerCase();
         let starts = all.filter((s) => s.code.toLowerCase().startsWith(text));
+        // From three letters, anywhere in the code or the name: musculus
+        // finds Mus musculus, mouse finds it by its common name.
         let named = text.length >= 3
-            ? all.filter((s) => !starts.includes(s) && (s.name ?? "").toLowerCase().includes(text))
+            ? all.filter((s) => !starts.includes(s) &&
+                                `${s.code} ${s.name ?? ""}`.toLowerCase().includes(text))
             : [];
         shown = [...starts, ...named].slice(0, SUGGESTIONS_SHOWN);
 

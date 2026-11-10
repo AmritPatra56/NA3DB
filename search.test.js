@@ -6,7 +6,7 @@ import assert from "node:assert";
 import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
 import { find_entry, export_entries, search_entries, query_problem,
-         build_where } from "./search.js";
+         build_where, search_units } from "./search.js";
 import { SORTS, DEFAULT_SORT, sort_by,
          columns_answering, columns_for,
          PAGE_SIZE_SUGGESTIONS, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE,
@@ -190,7 +190,7 @@ test("results come back in id order when nothing asks otherwise", async () => {
     let expected = [...ids].sort((a, b) => a.localeCompare(b));
 
     assert.deepEqual(ids, expected);
-    assert.equal(DEFAULT_SORT.key, "id_asc");
+    assert.equal(DEFAULT_SORT.key, "best");
 });
 
 test("the first page starts at the first id overall", async () => {
@@ -285,7 +285,9 @@ test("placeholders are numbered in the order the values were added", () => {
 
     assert.match(built.where, /\$1/);
     assert.match(built.where, /\$2/);
-    assert.deepEqual(built.values, ["%tna%", "%sacch%"]);
+    // The third is the taxa "sacch" names, none: it is part of a word.
+    assert.match(built.where, /\$3/);
+    assert.deepEqual(built.values, ["%tna%", "%sacch%", []]);
 });
 
 test("a value never reaches the SQL text", () => {
@@ -379,12 +381,13 @@ test("a % or _ typed in the box stays literal", async () => {
 test("the box takes one typed value and matches it two ways", async () => {
     let built = build_where({ q: "z-dna" });
 
-    // Four branches over the doc view, two parameters: the literal value for
-    // the id, the entity descriptions and the residues, the normalised one
-    // for prose.
-    assert.deepEqual(built.values, ["%z-dna%", "%zdna%"]);
+    // Five branches over the doc view, three parameters: the literal value
+    // for the id, the entity descriptions and the residues, the normalised
+    // one for prose, and the taxa it names (none) for the source organisms.
+    assert.deepEqual(built.values, ["%z-dna%", "%zdna%", []]);
     assert.equal((built.where.match(/\$1/g) || []).length, 3);
     assert.equal((built.where.match(/\$2/g) || []).length, 1);
+    assert.equal((built.where.match(/\$3/g) || []).length, 1);
 });
 
 test("punctuation in the box is optional", async () => {
@@ -615,7 +618,9 @@ test("the document's residues answer the same question the filter does", async (
 // title and no author anywhere containing that phrase. 1,484 of 1,489 entries
 // could produce a match like it.
 
-test("a phrase spanning the title and the authors matches nothing", async () => {
+// Quoted, because two loose words may sit in different fields: that is a
+// match. A phrase may not run from one field into the next.
+test("a quoted phrase spanning the title and the authors matches nothing", async () => {
     let rows = (await query(`
         SELECT d.id,
                (SELECT st.title FROM struct st WHERE st.entry_id = d.id) AS title,
@@ -638,7 +643,7 @@ test("a phrase spanning the title and the authors matches nothing", async () => 
         if (!lastOfTitle || !firstOfAuthors) continue;
 
         let spanning = `${lastOfTitle} ${firstOfAuthors}`;
-        let found = (await export_entries({ q: spanning })).results.map((e) => e.pdb_id);
+        let found = (await export_entries({ q: `"${spanning}"` })).results.map((e) => e.pdb_id);
 
         // Another entry may hold the phrase for real; this one cannot, because
         // the only place it exists is across the join.
@@ -688,7 +693,7 @@ test("a newline in the search cannot breach the separator", async () => {
     let lastOfTitle = String(row.title).trim().split(/\s+/).pop();
     let firstOfAuthors = String(row.authors).trim().split(/\s+/)[0];
 
-    let found = (await export_entries({ q: `${lastOfTitle}\n${firstOfAuthors}` }))
+    let found = (await export_entries({ q: `"${lastOfTitle}\n${firstOfAuthors}"` }))
                     .results.map((e) => e.pdb_id);
 
     assert.ok(!found.includes(row.id),
@@ -952,4 +957,169 @@ test("the stored monomer flag still agrees with the residues", async () => {
 
     assert.equal(Number(r.rows[0].wrong), 0,
         "has_nonstandard_residue has drifted, re-run db/migrations/010 to recompute");
+});
+
+// --- what people type: spaces, accents, stray bytes -------------------------
+
+test("spaces around a search do not change it, and runs of them count as one", () => {
+    let plain = build_where({ q: "ribosome", author_name: "Sponer, J" });
+    assert.deepEqual(build_where({ q: "  ribosome ", author_name: " Sponer,   J " }), plain);
+});
+
+test("a box holding only spaces is an empty box", () => {
+    assert.deepEqual(build_where({ q: "   ", entry_id: " " }), build_where({}));
+});
+
+// The data is plain ASCII: Muller, Sponer, Cerny. Dropping the accented letter
+// instead turned Cerny into "ern" and found 140 wrong entries.
+test("accents are folded, so Müller, Šponer and Černý find the ASCII names", () => {
+    assert.deepEqual(build_where({ author_name: "Müller" }), build_where({ author_name: "Muller" }));
+    assert.deepEqual(build_where({ q: "Šponer Černý" }), build_where({ q: "Sponer Cerny" }));
+    assert.deepEqual(build_where({ q: "Øster Straße Łódź" }), build_where({ q: "Oster Strasse Lodz" }));
+});
+
+// Chemical names in the data spell Greek letters out.
+test("a Greek letter is spelled out, as the chemical names in the data are", () => {
+    assert.deepEqual(build_where({ ligand: "α-amanitin" }), build_where({ ligand: "alpha-amanitin" }));
+});
+
+// PostgreSQL refuses a NUL in text, and that was a 500 from ?q=%00.
+test("a NUL byte is dropped instead of breaking the query", async () => {
+    assert.deepEqual(build_where({ q: "ribo\u0000some" }), build_where({ q: "ribosome" }));
+    assert.equal((await find_entry("4TNA\u0000")).pdb_id, "4TNA");
+    await search_entries({ q: "\u0000", author_name: "\u0000" });
+});
+
+// --- words, not one phrase -------------------------------------------------
+
+const ids_for = async (params) => (await export_entries(params)).results.map((e) => e.pdb_id).sort();
+
+// Every major structure database matches all the words, in any order, and
+// takes quotes for an exact phrase. "Thermus ribosome" found 0 of 22.
+test("every word must match, in any order", async () => {
+    let one = await ids_for({ q: "yeast transfer" });
+    assert.ok(one.length >= 4, one.join());
+    assert.deepEqual(await ids_for({ q: "transfer yeast" }), one);
+    assert.deepEqual(await ids_for({ q: "transfer   YEAST" }), one);
+});
+
+test("quotes ask for the exact phrase", async () => {
+    assert.deepEqual(await ids_for({ q: "\"transfer yeast\"" }), []);
+    assert.ok((await ids_for({ q: "\"yeast phenylalanine\"" })).length > 0);
+    assert.deepEqual(await ids_for({ q: "\"\"" }), await ids_for({}));
+});
+
+test("a plural finds the singular", async () => {
+    let dodecamer = await ids_for({ q: "dodecamer" });
+    assert.ok(dodecamer.length > 0);
+    assert.deepEqual(await ids_for({ q: "dodecamers" }), dodecamer);
+    assert.deepEqual(await ids_for({ q: "ribosomes" }), await ids_for({ q: "ribosome" }));
+});
+
+// An id is not a plural: 1DNS must not become 1DN and find 1DN4, 1DN5...
+test("a word with digits is never trimmed as a plural", async () => {
+    assert.deepEqual(await ids_for({ q: "1DNS" }), ["1DNS"]);
+});
+
+// One letter on its own matches nearly everything, so it joins the next word:
+// Z DNA reads as Z-DNA, as people write it.
+test("a lone letter joins the next word, so Z DNA finds Z-DNA", async () => {
+    let zdna = await ids_for({ q: "Z-DNA" });
+    assert.ok(zdna.length > 0);
+    assert.deepEqual(await ids_for({ q: "z dna" }), zdna);
+    assert.deepEqual(await ids_for({ q: "zdna" }), zdna);
+});
+
+// "E. coli" is the same abbreviation as "E coli"; the dot must not turn the E
+// into a word of its own that matches almost every entry.
+test("a lone letter with a dot joins the next word too", async () => {
+    let plain = await ids_for({ q: "E coli" });
+    assert.ok(plain.length > 0);
+    assert.deepEqual(await ids_for({ q: "E. coli" }), plain);
+    assert.deepEqual(search_units("E. coli"), [["E coli", "Ecoli", "E-coli", "coli E"]]);
+    assert.deepEqual(await ids_for({ q: "e.coli" }), plain);
+});
+
+test("contains and excludes still add up to the whole table with several words", async () => {
+    let all = (await ids_for({})).length;
+    let yes = (await ids_for({ q: "yeast transfer" })).length;
+    let no = (await ids_for({ q: "yeast transfer", match: "excludes" })).length;
+    assert.equal(yes + no, all);
+});
+
+test("a pasted paragraph neither fails nor builds a giant query", async () => {
+    let words = Array.from({ length: 300 }, (_, i) => `word${i}`).join(" ");
+    let { values } = build_where({ q: words });
+    assert.ok(values.length < 100, values.length);
+    assert.deepEqual(await ids_for({ q: words }), []);
+});
+
+// --- best match first ------------------------------------------------------
+
+// Entries holding the exact phrase come before those holding the words apart.
+test("with a search, entries holding the whole phrase come first", async () => {
+    let phrase = await ids_for({ q: "\"phenylalanine trna\"" });
+    let ordered = (await export_entries({ q: "phenylalanine trna" })).results.map((e) => e.pdb_id);
+    assert.ok(phrase.length > 0 && ordered.length > phrase.length);
+    assert.deepEqual(ordered.slice(0, phrase.length).sort(), phrase);
+});
+
+test("a whole word ranks above the same letters inside another word", async () => {
+    let ordered = (await export_entries({ q: "dna" })).results.map((e) => e.pdb_id);
+    // 25QK has DNA only inside dsDNA; 30LM has it as a word. By id alone 25QK
+    // would come first. A-DNA counts as the word: the hyphen separates.
+    assert.ok(ordered.indexOf("30LM") >= 0 && ordered.indexOf("30LM") < ordered.indexOf("25QK"), ordered.join());
+    assert.ok(ordered.indexOf("1VJ4") < ordered.indexOf("25QK"), "A-DNA holds DNA as a word");
+});
+
+test("a chosen sort still wins over best match", async () => {
+    let ordered = (await export_entries({ q: "dna", sort: "id_desc" })).results.map((e) => e.pdb_id);
+    assert.deepEqual(ordered, [...ordered].sort().reverse());
+});
+
+
+// --- probe findings: author order, residues, NtC length ------------------
+
+// Authors are stored "Westhof, E.". People type the initial first.
+test("the author box takes the words of one name in any order", async () => {
+    let stored = await ids_for({ author_name: "Westhof, E." });
+    assert.ok(stored.length > 0);
+    assert.deepEqual(await ids_for({ author_name: "E. Westhof" }), stored);
+    assert.deepEqual(await ids_for({ author_name: "Westhof E" }), stored);
+    assert.deepEqual(await ids_for({ author_name: "westhof" }), stored);
+});
+
+test("the words must all be in one author's name, not spread across two", async () => {
+    // Westhof's initial is E; Z belongs to Seraj, who is not a Westhof.
+    assert.deepEqual(await ids_for({ author_name: "Z. Westhof" }), []);
+});
+
+test("the search box finds an author written initial first", async () => {
+    let by_name = await ids_for({ q: "Westhof" });
+    assert.ok(by_name.length > 0);
+    assert.deepEqual(await ids_for({ q: "E. Westhof" }), by_name);
+    assert.deepEqual(await ids_for({ q: "E Westhof" }), by_name);
+});
+
+// The residue box reads the codes the doc view gathered. It must give what
+// reading the residues themselves gives, for every code the data holds.
+test("the residue box answers as reading every residue would, for every code", async () => {
+    let codes = (await query(`SELECT DISTINCT cc.id FROM chem_comp cc WHERE cc.mon_nstd_flag = 'n'`))
+        .rows.map((r) => r.id);
+    assert.ok(codes.length > 0);
+    for (const code of [...codes, "pseudouridine", "methyl"]) {
+        let scanned = (await query(
+            `SELECT DISTINCT eps.entry_id AS id FROM entity_poly_seq eps
+               JOIN entity_poly ep ON ep.entry_id = eps.entry_id AND ep.entity_id = eps.entity_id
+               JOIN chem_comp cc ON cc.id = eps.mon_id
+              WHERE ep.type ILIKE '%nucleotide%' AND cc.mon_nstd_flag = 'n'
+                AND (cc.id ILIKE $1 OR cc.name ILIKE $1) ORDER BY 1`, [`%${code}%`])).rows.map((r) => r.id);
+        assert.deepEqual(await ids_for({ nonstandard_residue: code }), scanned, code);
+    }
+});
+
+test("an NtC value too long to be a class finds nothing, and Excludes everything", async () => {
+    let all = (await ids_for({})).length;
+    assert.deepEqual(await ids_for({ assigned_ntc: "x".repeat(5000) }), []);
+    assert.equal((await ids_for({ assigned_ntc: "x".repeat(5000), match: "excludes" })).length, all);
 });

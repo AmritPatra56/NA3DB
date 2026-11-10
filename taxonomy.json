@@ -1,0 +1,8863 @@
+{
+ "source": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+ "fetched": "2026-11-10",
+ "taxa": {
+  "2": {
+   "taxid": 2,
+   "name": "Bacteria",
+   "common": [
+    "bacteria",
+    "eubacteria"
+   ],
+   "synonyms": [
+    "Bacteria (ex Cavalier-Smith 1987)",
+    "Bacteria Woese et al. 2024",
+    "Bacteriobiota"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms"
+   ],
+   "current": 2
+  },
+  "197": {
+   "taxid": 197,
+   "name": "Campylobacter jejuni",
+   "common": [],
+   "synonyms": [
+    "Campylobacter fetus subsp. jejuni",
+    "Vibrio hepaticus",
+    "Vibrio jejuni"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Campylobacterota",
+    "Epsilonproteobacteria",
+    "Campylobacterales",
+    "Campylobacteraceae",
+    "Campylobacter"
+   ],
+   "current": 197
+  },
+  "210": {
+   "taxid": 210,
+   "name": "Helicobacter pylori",
+   "common": [],
+   "synonyms": [
+    "Campylobacter pylori",
+    "Campylobacter pylori subsp. pylori",
+    "Campylobacter pyloridis",
+    "Helicobacter nemestrinae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Campylobacterota",
+    "Epsilonproteobacteria",
+    "Campylobacterales",
+    "Helicobacteraceae",
+    "Helicobacter"
+   ],
+   "current": 210
+  },
+  "264": {
+   "taxid": 264,
+   "name": "Francisella tularensis subsp. novicida",
+   "common": [],
+   "synonyms": [
+    "Francisella novicida",
+    "Francisella tularensis (var. novicida)",
+    "Francisella tularensis biogroup novicida",
+    "Francisella tularensis bv. novicida",
+    "Francisella tularensis var. novicida",
+    "Pasteurella novicida"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Thiotrichales",
+    "Francisellaceae",
+    "Francisella",
+    "Francisella tularensis"
+   ],
+   "current": 264
+  },
+  "271": {
+   "taxid": 271,
+   "name": "Thermus aquaticus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Deinococcota",
+    "Deinococci",
+    "Thermales",
+    "Thermaceae",
+    "Thermus"
+   ],
+   "current": 271
+  },
+  "274": {
+   "taxid": 274,
+   "name": "Thermus thermophilus",
+   "common": [],
+   "synonyms": [
+    "\"Flavobacterium thermophilum\" Yoshida and Oshima 1971",
+    "Thermus aquaticus (SUBSP. FLAVUS)",
+    "Thermus aquaticus (SUBSP. THERMOPHILUS)",
+    "Thermus aquaticus flavus",
+    "Thermus aquaticus subsp. thermophilus",
+    "Thermus aquaticus thermophilus",
+    "Thermus flavus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Deinococcota",
+    "Deinococci",
+    "Thermales",
+    "Thermaceae",
+    "Thermus"
+   ],
+   "current": 274
+  },
+  "286": {
+   "taxid": 286,
+   "name": "Pseudomonas",
+   "common": [
+    "RNA similarity group I"
+   ],
+   "synonyms": [
+    "\"Chlorobacterium\" Guillebeau 1890, nom. rejic. Opin. 6 (not \"Chlorobacterium\" Lauterborn 1916)",
+    "Chryseomonas",
+    "Flavimonas",
+    "Liquidomonas",
+    "Loefflerella",
+    "Pseudomonas Migula 1894 (Approved Lists 1980)",
+    "Serpens",
+    "Serpens Hespell 1977 (Approved Lists 1980)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae"
+   ],
+   "current": 286
+  },
+  "287": {
+   "taxid": 287,
+   "name": "Pseudomonas aeruginosa",
+   "common": [],
+   "synonyms": [
+    "Bacillus aeruginosus",
+    "Bacillus pyocyaneus",
+    "Bacterium aeruginosum",
+    "Bacterium pyocyaneum",
+    "Micrococcus pyocyaneus",
+    "Pseudomonas aeruginosa (Schroeter 1872) Migula 1900 (Approved Lists 1980)",
+    "Pseudomonas polycolor",
+    "Pseudomonas pyocyanea",
+    "probable synonym or variety: \"Pseudomonas polycolor\" Clara 1930"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Pseudomonas",
+    "Pseudomonas aeruginosa group"
+   ],
+   "current": 287
+  },
+  "294": {
+   "taxid": 294,
+   "name": "Pseudomonas fluorescens",
+   "common": [],
+   "synonyms": [
+    "Bacillus fluorescens",
+    "Bacillus fluorescens liquefaciens",
+    "Bacterium fluorescen",
+    "Liquidomonas fluorescens"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Pseudomonas",
+    "Pseudomonas fluorescens group"
+   ],
+   "current": 294
+  },
+  "303": {
+   "taxid": 303,
+   "name": "Pseudomonas putida",
+   "common": [],
+   "synonyms": [
+    "Arthrobacter siderocapsulatus",
+    "Bacillus fluorescens putidus",
+    "Bacillus putidus",
+    "Pseudomonas arvilla",
+    "Pseudomonas convexa",
+    "Pseudomonas eisenbergii",
+    "Pseudomonas incognita",
+    "Pseudomonas ovalis",
+    "Pseudomonas rugosa",
+    "Pseudomonas striata"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Pseudomonas",
+    "Pseudomonas putida group"
+   ],
+   "current": 303
+  },
+  "317": {
+   "taxid": 317,
+   "name": "Pseudomonas syringae",
+   "common": [],
+   "synonyms": [
+    "Pseudomonas syringae subsp. syringae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Pseudomonas",
+    "Pseudomonas syringae group",
+    "Pseudomonas syringae group genomosp. 1"
+   ],
+   "current": 317
+  },
+  "339": {
+   "taxid": 339,
+   "name": "Xanthomonas campestris",
+   "common": [],
+   "synonyms": [
+    "Achromobacter lunatus",
+    "Bacillus campestris",
+    "Bacterium campestre",
+    "Phytomonas campestris",
+    "Pseudomonas campestris",
+    "Xanthomonas campestris var. aberrans",
+    "Xanthomonas campestris var. armoraceae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Lysobacterales",
+    "Lysobacteraceae",
+    "Xanthomonas"
+   ],
+   "current": 339
+  },
+  "381": {
+   "taxid": 381,
+   "name": "Mesorhizobium loti",
+   "common": [],
+   "synonyms": [
+    "Rhizobium loti"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Hyphomicrobiales",
+    "Phyllobacteriaceae",
+    "Mesorhizobium"
+   ],
+   "current": 381
+  },
+  "446": {
+   "taxid": 446,
+   "name": "Legionella pneumophila",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Legionellales",
+    "Legionellaceae",
+    "Legionella"
+   ],
+   "current": 446
+  },
+  "485": {
+   "taxid": 485,
+   "name": "Neisseria gonorrhoeae",
+   "common": [],
+   "synonyms": [
+    "Diplococcus gonorrhoeae",
+    "Gonococcus neisseri",
+    "Merismopedia gonorrhoeae",
+    "Micrococcus der gonorrhoe",
+    "Micrococcus gonococcus",
+    "Micrococcus gonorrhoeae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Neisseriales",
+    "Neisseriaceae",
+    "Neisseria"
+   ],
+   "current": 485
+  },
+  "486": {
+   "taxid": 486,
+   "name": "Neisseria lactamica",
+   "common": [],
+   "synonyms": [
+    "Neisseria lactamicus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Neisseriales",
+    "Neisseriaceae",
+    "Neisseria"
+   ],
+   "current": 486
+  },
+  "487": {
+   "taxid": 487,
+   "name": "Neisseria meningitidis",
+   "common": [],
+   "synonyms": [
+    "Diplokokkus intracellularis meningitidis",
+    "Micrococcus intracellularis",
+    "Micrococcus meningitidis",
+    "Micrococcus meningitidis cerebrospinalis",
+    "Neisseria weichselbaumii"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Neisseriales",
+    "Neisseriaceae",
+    "Neisseria"
+   ],
+   "current": 487
+  },
+  "542": {
+   "taxid": 542,
+   "name": "Zymomonas mobilis",
+   "common": [],
+   "synonyms": [
+    "Achromobacter anaerobium",
+    "Pseudomonas lindneri",
+    "Saccharomonas lindneri",
+    "Thermobacterium mobile",
+    "Zymomonas anaerobia",
+    "Zymomonas mobile"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Sphingomonadales",
+    "Zymomonadaceae",
+    "Zymomonas"
+   ],
+   "current": 542
+  },
+  "561": {
+   "taxid": 561,
+   "name": "Escherichia",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae"
+   ],
+   "current": 561
+  },
+  "562": {
+   "taxid": 562,
+   "name": "Escherichia coli",
+   "common": [
+    "E. coli"
+   ],
+   "synonyms": [
+    "Bacillus coli",
+    "Bacterium coli",
+    "Bacterium coli commune",
+    "Enterococcus coli",
+    "Escherichia/Shigella coli"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia"
+   ],
+   "current": 562
+  },
+  "573": {
+   "taxid": 573,
+   "name": "Klebsiella pneumoniae",
+   "common": [],
+   "synonyms": [
+    "'Klebsiella aerogenes' (Kruse) Taylor et al. 1956",
+    "Bacillus pneumoniae",
+    "Bacterium pneumoniae crouposae",
+    "Hyalococcus pneumoniae",
+    "Klebsiella pneumoniae aerogenes"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Klebsiella",
+    "Klebsiella pneumoniae complex"
+   ],
+   "current": 573
+  },
+  "585": {
+   "taxid": 585,
+   "name": "Proteus vulgaris",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Morganellaceae",
+    "Proteus"
+   ],
+   "current": 585
+  },
+  "663": {
+   "taxid": 663,
+   "name": "Vibrio alginolyticus",
+   "common": [],
+   "synonyms": [
+    "Beneckea alginolytica",
+    "Oceanomonas alginolytica",
+    "Pseudomonas creosotensis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Vibrionales",
+    "Vibrionaceae",
+    "Vibrio",
+    "Vibrio harveyi group"
+   ],
+   "current": 663
+  },
+  "666": {
+   "taxid": 666,
+   "name": "Vibrio cholerae",
+   "common": [],
+   "synonyms": [
+    "Bacillo virgola del Koch",
+    "Bacillus cholerae",
+    "Bacillus cholerae-asiaticae",
+    "Kommabacillus",
+    "Liquidivibrio cholerae",
+    "Microspira comma",
+    "Pacinia cholerae-asiaticae",
+    "Spirillum cholerae",
+    "Spirillum cholerae-asiaticae",
+    "Vibrio albensis",
+    "Vibrio cholera",
+    "Vibrio cholerae biovar albensis",
+    "Vibrio cholerae bv. albensis",
+    "Vibrio cholerae-asiaticae",
+    "Vibrio comma"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Vibrionales",
+    "Vibrionaceae",
+    "Vibrio"
+   ],
+   "current": 666
+  },
+  "672": {
+   "taxid": 672,
+   "name": "Vibrio vulnificus",
+   "common": [],
+   "synonyms": [
+    "Beneckea vulnifica",
+    "Vibrio vulnificus (Reichelt et al. 1979) Farmer 1980"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Vibrionales",
+    "Vibrionaceae",
+    "Vibrio"
+   ],
+   "current": 672
+  },
+  "726": {
+   "taxid": 726,
+   "name": "Haemophilus haemolyticus",
+   "common": [],
+   "synonyms": [
+    "Bacillus X"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pasteurellales",
+    "Pasteurellaceae",
+    "Haemophilus"
+   ],
+   "current": 726
+  },
+  "727": {
+   "taxid": 727,
+   "name": "Haemophilus influenzae",
+   "common": [],
+   "synonyms": [
+    "Bacterium influenzae",
+    "Coccobacillus pfeifferi",
+    "Haemophilus meningitidis",
+    "Influenza-bacillus",
+    "Mycobacterium influenzae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pasteurellales",
+    "Pasteurellaceae",
+    "Haemophilus"
+   ],
+   "current": 727
+  },
+  "729": {
+   "taxid": 729,
+   "name": "Parahaemophilus parainfluenzae",
+   "common": [],
+   "synonyms": [
+    "Haemophilus parainfluenzae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pasteurellales",
+    "Pasteurellaceae",
+    "Parahaemophilus"
+   ],
+   "current": 729
+  },
+  "735": {
+   "taxid": 735,
+   "name": "Pseudohaemophilus parahaemolyticus",
+   "common": [],
+   "synonyms": [
+    "Haemophilus parahaemolyticus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pasteurellales",
+    "Pasteurellaceae",
+    "Pseudohaemophilus"
+   ],
+   "current": 735
+  },
+  "851": {
+   "taxid": 851,
+   "name": "Fusobacterium nucleatum",
+   "common": [],
+   "synonyms": [
+    "Corynebacterium fusiforme",
+    "Fusiformis fusiformis",
+    "Fusiformis nucleatus",
+    "Fusobacterium fusiforme",
+    "Fusobacterium nucleatum subsp. fusiforme",
+    "Fusobacterium nucleatum subsp. vincentii (ex Knorr 1922) Dzink et al. 1990",
+    "Fusobacterium plauti-vincenti",
+    "Fusobacterium vincentii",
+    "Fusobacterium vincentii (Dzink et al. 1990) Kook et al. 2022",
+    "Sphaerophorus fusiformis",
+    "Fusibacterium nucleatum",
+    "Fusibacterium nucleatum subsp. fusiforme",
+    "Fusibacterium nucleatum subsp. vincentii"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Fusobacteriati",
+    "Fusobacteriota",
+    "Fusobacteriia",
+    "Fusobacteriales",
+    "Fusobacteriaceae",
+    "Fusobacterium"
+   ],
+   "current": 851
+  },
+  "853": {
+   "taxid": 853,
+   "name": "Faecalibacterium prausnitzii",
+   "common": [],
+   "synonyms": [
+    "Bacillus mucosus anaerobius",
+    "Fusobacterium prausnitzii (Hauduroy et al. 1937) Moore and Holdeman 1970 (Approved Lists 1980)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Eubacteriales",
+    "Oscillospiraceae",
+    "Faecalibacterium"
+   ],
+   "current": 853
+  },
+  "1140": {
+   "taxid": 1140,
+   "name": "Synechococcus elongatus PCC 7942 = FACHB-805",
+   "common": [],
+   "synonyms": [
+    "Anacystis nidulans R2",
+    "Synechococcus leopoliensis UTEX 2434",
+    "Synechococcus leopoliensis strain PCC 7942",
+    "Synechococcus sp. IAM M-200",
+    "Synechococcus sp. PCC 7942"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Cyanobacteriota/Melainabacteria group",
+    "Cyanobacteriota",
+    "Cyanophyceae",
+    "Synechococcales",
+    "Synechococcaceae",
+    "Synechococcus",
+    "Synechococcus elongatus"
+   ],
+   "current": 1140
+  },
+  "1148": {
+   "taxid": 1148,
+   "name": "Synechocystis sp. PCC 6803",
+   "common": [],
+   "synonyms": [
+    "Aphanocapsa sp. (strain N-1)",
+    "Aphanocapsa sp. N-1",
+    "Synechocystis sp. (ATCC 27184)",
+    "Synechocystis sp. (PCC 6803)",
+    "Synechocystis sp. (strain PCC 6803)",
+    "Synechocystis sp. ATCC 27184"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Cyanobacteriota/Melainabacteria group",
+    "Cyanobacteriota",
+    "Cyanophyceae",
+    "Synechococcales",
+    "Merismopediaceae",
+    "Synechocystis",
+    "unclassified Synechocystis"
+   ],
+   "current": 1148
+  },
+  "1272": {
+   "taxid": 1272,
+   "name": "Kocuria varians",
+   "common": [],
+   "synonyms": [
+    "Micrococcus varians"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Micrococcales",
+    "Micrococcaceae",
+    "Kocuria"
+   ],
+   "current": 1272
+  },
+  "1280": {
+   "taxid": 1280,
+   "name": "Staphylococcus aureus",
+   "common": [],
+   "synonyms": [
+    "Micrococcus aureus",
+    "Micrococcus pyogenes",
+    "Staphylococcus aureus subsp. anaerobius",
+    "Staphylococcus pyogenes aureus",
+    "Staphylococcus pyogenes citreus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Staphylococcaceae",
+    "Staphylococcus"
+   ],
+   "current": 1280
+  },
+  "1299": {
+   "taxid": 1299,
+   "name": "Deinococcus radiodurans",
+   "common": [],
+   "synonyms": [
+    "Micrococcus radiodurans",
+    "Deinococcus radiidurans"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Deinococcota",
+    "Deinococci",
+    "Deinococcales",
+    "Deinococcaceae",
+    "Deinococcus"
+   ],
+   "current": 1299
+  },
+  "1308": {
+   "taxid": 1308,
+   "name": "Streptococcus thermophilus",
+   "common": [],
+   "synonyms": [
+    "Streptococcus salivarius subsp. thermophilus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus"
+   ],
+   "current": 1308
+  },
+  "1311": {
+   "taxid": 1311,
+   "name": "Streptococcus agalactiae",
+   "common": [],
+   "synonyms": [
+    "Streptoccocus de la mammite",
+    "Streptococcus agalactiae contagiosae",
+    "Streptococcus difficile",
+    "Streptococcus difficilis",
+    "Streptococcus mastitidis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus"
+   ],
+   "current": 1311
+  },
+  "1313": {
+   "taxid": 1313,
+   "name": "Streptococcus pneumoniae",
+   "common": [],
+   "synonyms": [
+    "Diplococcus pneumoniae",
+    "Micrococcus pneumoniae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus"
+   ],
+   "current": 1313
+  },
+  "1314": {
+   "taxid": 1314,
+   "name": "Streptococcus pyogenes",
+   "common": [],
+   "synonyms": [
+    "Micrococcus scarlatinae",
+    "Streptococcus erysipelatos",
+    "Streptococcus hemolyticus",
+    "Streptococcus scarlatinae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus"
+   ],
+   "current": 1314
+  },
+  "1351": {
+   "taxid": 1351,
+   "name": "Enterococcus faecalis",
+   "common": [],
+   "synonyms": [
+    "Enterococcus proteiformis",
+    "Enterocoque",
+    "Micrococcus ovalis",
+    "Micrococcus zymogenes",
+    "Streptococcus faecalis",
+    "Streptococcus glycerinaceus",
+    "Streptococcus liquefaciens"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Enterococcaceae",
+    "Enterococcus"
+   ],
+   "current": 1351
+  },
+  "1358": {
+   "taxid": 1358,
+   "name": "Lactococcus lactis",
+   "common": [],
+   "synonyms": [
+    "Lactobacillus xylosus",
+    "Streptococcus lactis (Lister 1873) Lohnis 1909 (Approved Lists 1980)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Lactococcus"
+   ],
+   "current": 1358
+  },
+  "1395": {
+   "taxid": 1395,
+   "name": "[Bacillus] caldotenax",
+   "common": [],
+   "synonyms": [
+    "Bacillus caldotenax"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Anoxybacillaceae",
+    "Geobacillus",
+    "Geobacillus thermoleovorans group"
+   ],
+   "current": 1395
+  },
+  "1396": {
+   "taxid": 1396,
+   "name": "Bacillus cereus",
+   "common": [],
+   "synonyms": [
+    "Bacillus cereus Frankland and Frankland 1887 (Approved Lists 1980)",
+    "Bacillus endorhythmos",
+    "Bacillus medusa"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Bacillus",
+    "Bacillus cereus group"
+   ],
+   "current": 1396
+  },
+  "1422": {
+   "taxid": 1422,
+   "name": "Geobacillus stearothermophilus",
+   "common": [],
+   "synonyms": [
+    "Bacillus stearothermophilus",
+    "Bacillus thermoliquefaciens",
+    "Geobacillus stearothermophilus (Donk 1920) Nazina et al. 2001"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Anoxybacillaceae",
+    "Geobacillus"
+   ],
+   "current": 1422
+  },
+  "1423": {
+   "taxid": 1423,
+   "name": "Bacillus subtilis",
+   "common": [],
+   "synonyms": [
+    "Bacillus natto",
+    "Bacillus uniflagellatus",
+    "Vibrio subtilis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Bacillus",
+    "Bacillus subtilis group"
+   ],
+   "current": 1423
+  },
+  "1462": {
+   "taxid": 1462,
+   "name": "Geobacillus kaustophilus",
+   "common": [],
+   "synonyms": [
+    "Bacillus kaustophilus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Anoxybacillaceae",
+    "Geobacillus",
+    "Geobacillus thermoleovorans group"
+   ],
+   "current": 1462
+  },
+  "1496": {
+   "taxid": 1496,
+   "name": "Clostridioides difficile",
+   "common": [],
+   "synonyms": [
+    "Clostridium difficile (Hall and O'Toole 1935) Prevot 1938 (Approved Lists 1980)",
+    "Peptoclostridium difficile"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Peptostreptococcales",
+    "Peptostreptococcaceae",
+    "Clostridioides"
+   ],
+   "current": 1496
+  },
+  "1502": {
+   "taxid": 1502,
+   "name": "Clostridium perfringens",
+   "common": [],
+   "synonyms": [
+    "Bacterium welchii",
+    "Clostridium perfringens (Veillon and Zuber 1898) Hauduroy et al. 1937 (Approved Lists 1980)",
+    "Clostridium plagarum",
+    "s__Sarcina perfringens"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Eubacteriales",
+    "Clostridiaceae",
+    "Clostridium"
+   ],
+   "current": 1502
+  },
+  "1515": {
+   "taxid": 1515,
+   "name": "Acetivibrio thermocellus",
+   "common": [],
+   "synonyms": [
+    "Clostridium thermocellum",
+    "Hungateiclostridium thermocellum",
+    "Ruminiclostridium thermocellum"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Acetivibrionales",
+    "Acetivibrionaceae",
+    "Acetivibrio"
+   ],
+   "current": 1515
+  },
+  "1639": {
+   "taxid": 1639,
+   "name": "Listeria monocytogenes",
+   "common": [],
+   "synonyms": [
+    "Bacterium monocytogenes",
+    "Bacterium monocytogenes hominis",
+    "Corynebacterium infantisepticum",
+    "Corynebacterium parvulum",
+    "Erysipelothrix monocytogenes",
+    "Listerella hepatolytica"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Listeriaceae",
+    "Listeria"
+   ],
+   "current": 1639
+  },
+  "1717": {
+   "taxid": 1717,
+   "name": "Corynebacterium diphtheriae",
+   "common": [],
+   "synonyms": [
+    "Bacillus diphtheriae",
+    "Bacterium diphtheriae",
+    "Microsporon diphthericum",
+    "Microsporon diphtheriticum",
+    "Mycobacterium diphtheriae",
+    "Pacinia loeffleri"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Mycobacteriales",
+    "Corynebacteriaceae",
+    "Corynebacterium"
+   ],
+   "current": 1717
+  },
+  "1747": {
+   "taxid": 1747,
+   "name": "Cutibacterium acnes",
+   "common": [],
+   "synonyms": [
+    "Bacillus acnes",
+    "Corynebacterium acnes",
+    "Cutibacterium acnes (Gilchrist 1900) Scholz and Kilian 2016",
+    "Propionibacterium acnes"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Propionibacteriales",
+    "Propionibacteriaceae",
+    "Cutibacterium"
+   ],
+   "current": 1747
+  },
+  "1769": {
+   "taxid": 1769,
+   "name": "Mycobacterium leprae",
+   "common": [],
+   "synonyms": [
+    "Bacillus leprae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Mycobacteriales",
+    "Mycobacteriaceae",
+    "Mycobacterium"
+   ],
+   "current": 1769
+  },
+  "1773": {
+   "taxid": 1773,
+   "name": "Mycobacterium tuberculosis",
+   "common": [],
+   "synonyms": [
+    "Bacillus tuberculosis",
+    "Bacterium tuberculosis",
+    "Mycobacterium tuberculosis (Zopf 1883) Lehmann and Neumann 1896 (Approved Lists 1980)",
+    "Mycobacterium tuberculosis typus humanus",
+    "Mycobacterium tuberculosis var. hominis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Mycobacteriales",
+    "Mycobacteriaceae",
+    "Mycobacterium",
+    "Mycobacterium tuberculosis complex"
+   ],
+   "current": 1773
+  },
+  "1883": {
+   "taxid": 1883,
+   "name": "Streptomyces",
+   "common": [],
+   "synonyms": [
+    "\"Microstreptospora\" Yan et al.",
+    "Actinopycnidium Krasil'nikov 1962",
+    "Actinosporangium Krasil'nikov and Yuan 1961",
+    "Chainia",
+    "Elytrosporangium Falcao de Morais et al. 1966",
+    "Kitasatoa Matsumae and Hata 1968 (Approved Lists 1980)",
+    "Microellobosporia",
+    "Streptoverticillium Baldacci 1958"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae"
+   ],
+   "current": 1883
+  },
+  "1885": {
+   "taxid": 1885,
+   "name": "Streptomyces actuosus",
+   "common": [],
+   "synonyms": [
+    "'Streptomyces actuosus'"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae",
+    "Streptomyces"
+   ],
+   "current": 1885
+  },
+  "1931": {
+   "taxid": 1931,
+   "name": "Streptomyces sp.",
+   "common": [],
+   "synonyms": [
+    "Chainia sp.",
+    "Streptomyces sp",
+    "Streptoverticillium sp."
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae",
+    "Streptomyces",
+    "unclassified Streptomyces"
+   ],
+   "current": 1931
+  },
+  "2047": {
+   "taxid": 2047,
+   "name": "Rothia dentocariosa",
+   "common": [],
+   "synonyms": [
+    "Nocardia dentocariosus",
+    "Nocardia salivae",
+    "Rothia dentocariosa corrig. (Onishi (sic) 1949) Georg and Brown 1967 (Approved Lists 1980)",
+    "Rothia dentocariosus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Micrococcales",
+    "Micrococcaceae",
+    "Rothia"
+   ],
+   "current": 2047
+  },
+  "2190": {
+   "taxid": 2190,
+   "name": "Methanocaldococcus jannaschii",
+   "common": [],
+   "synonyms": [
+    "Methanococcus jannaschii"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Methanomada group",
+    "Methanococci",
+    "Methanococcales",
+    "Methanocaldococcaceae",
+    "Methanocaldococcus"
+   ],
+   "current": 2190
+  },
+  "2209": {
+   "taxid": 2209,
+   "name": "Methanosarcina mazei",
+   "common": [],
+   "synonyms": [
+    "Methanococcus frisius",
+    "Methanococcus mazei",
+    "Methanosarcina frisia",
+    "Methanosarcina frisius",
+    "Methanosarcina mazeii"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Stenosarchaea group",
+    "Methanomicrobia",
+    "Methanosarcinales",
+    "Methanosarcinaceae",
+    "Methanosarcina"
+   ],
+   "current": 2209
+  },
+  "2234": {
+   "taxid": 2234,
+   "name": "Archaeoglobus fulgidus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Archaeoglobi",
+    "Archaeoglobales",
+    "Archaeoglobaceae",
+    "Archaeoglobus"
+   ],
+   "current": 2234
+  },
+  "2238": {
+   "taxid": 2238,
+   "name": "Haloarcula marismortui",
+   "common": [],
+   "synonyms": [
+    "Flavobacterium (Halobacterium) maris-mortui",
+    "Haloarcula californiae",
+    "Haloarcula marismortui (ex Volcani 1940) Oren et al. 1990",
+    "Haloarcula sinaiiensis",
+    "Halobacterium marismortui"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Stenosarchaea group",
+    "Halobacteria",
+    "Halobacteriales",
+    "Haloarculaceae",
+    "Haloarcula"
+   ],
+   "current": 2238
+  },
+  "2261": {
+   "taxid": 2261,
+   "name": "Pyrococcus furiosus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Pyrococcus"
+   ],
+   "current": 2261
+  },
+  "2285": {
+   "taxid": 2285,
+   "name": "Sulfolobus acidocaldarius",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Thermoproteati",
+    "Thermoproteota",
+    "Thermoprotei",
+    "Sulfolobales",
+    "Sulfolobaceae",
+    "Sulfolobus"
+   ],
+   "current": 2285
+  },
+  "2287": {
+   "taxid": 2287,
+   "name": "Saccharolobus solfataricus",
+   "common": [],
+   "synonyms": [
+    "Sulfolobus solfataricus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Thermoproteati",
+    "Thermoproteota",
+    "Thermoprotei",
+    "Sulfolobales",
+    "Sulfolobaceae",
+    "Saccharolobus"
+   ],
+   "current": 2287
+  },
+  "2303": {
+   "taxid": 2303,
+   "name": "Thermoplasma acidophilum",
+   "common": [],
+   "synonyms": [
+    "Thermoplasma acidophila"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Thermoplasmatota",
+    "Thermoplasmata",
+    "Thermoplasmatales",
+    "Thermoplasmataceae",
+    "Thermoplasma"
+   ],
+   "current": 2303
+  },
+  "2336": {
+   "taxid": 2336,
+   "name": "Thermotoga maritima",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Thermotogota",
+    "Thermotogae",
+    "Thermotogales",
+    "Thermotogaceae",
+    "Thermotoga"
+   ],
+   "current": 2336
+  },
+  "2718": {
+   "taxid": 2718,
+   "name": "Cardiobacterium hominis",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Cardiobacteriales",
+    "Cardiobacteriaceae",
+    "Cardiobacterium"
+   ],
+   "current": 2718
+  },
+  "2885": {
+   "taxid": 2885,
+   "name": "Pylaiella littoralis",
+   "common": [],
+   "synonyms": [
+    "Conferva littoralis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Sar",
+    "Stramenopiles",
+    "Ochrophyta",
+    "PX clade",
+    "Phaeophyceae",
+    "Ectocarpales",
+    "Acinetosporaceae",
+    "Pylaiella"
+   ],
+   "current": 2885
+  },
+  "3077": {
+   "taxid": 3077,
+   "name": "Chlorella vulgaris",
+   "common": [],
+   "synonyms": [
+    "Chlorella vulgaris var. viridis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Chlorophyta",
+    "core chlorophytes",
+    "Trebouxiophyceae",
+    "Chlorellales",
+    "Chlorellaceae",
+    "Chlorella clade",
+    "Chlorella"
+   ],
+   "current": 3077
+  },
+  "3562": {
+   "taxid": 3562,
+   "name": "Spinacia oleracea",
+   "common": [
+    "spinach"
+   ],
+   "synonyms": [
+    "Spinacea oleracea"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "Caryophyllales",
+    "Amaranthaceae",
+    "Chenopodioideae",
+    "Anserineae",
+    "Spinacia"
+   ],
+   "current": 3562
+  },
+  "3701": {
+   "taxid": 3701,
+   "name": "Arabidopsis",
+   "common": [],
+   "synonyms": [
+    "Cardaminopsis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "rosids",
+    "malvids",
+    "Brassicales",
+    "Brassicaceae",
+    "Camelineae"
+   ],
+   "current": 3701
+  },
+  "3702": {
+   "taxid": 3702,
+   "name": "Arabidopsis thaliana",
+   "common": [
+    "thale cress",
+    "mouse-ear cress",
+    "thale-cress"
+   ],
+   "synonyms": [
+    "Arabis thaliana"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "rosids",
+    "malvids",
+    "Brassicales",
+    "Brassicaceae",
+    "Camelineae",
+    "Arabidopsis"
+   ],
+   "current": 3702
+  },
+  "4006": {
+   "taxid": 4006,
+   "name": "Linum usitatissimum",
+   "common": [
+    "flax"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "rosids",
+    "fabids",
+    "Malpighiales",
+    "Linaceae",
+    "Linum"
+   ],
+   "current": 4006
+  },
+  "4081": {
+   "taxid": 4081,
+   "name": "Solanum lycopersicum",
+   "common": [
+    "tomato"
+   ],
+   "synonyms": [
+    "Lycopersicon esculentum",
+    "Lycopersicon esculentum var. esculentum",
+    "Solanum esculentum",
+    "Solanum lycopersicum var. humboldtii"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "asterids",
+    "lamiids",
+    "Solanales",
+    "Solanaceae",
+    "Solanoideae",
+    "Solaneae",
+    "Solanum",
+    "Solanum subgen. Lycopersicon"
+   ],
+   "current": 4081
+  },
+  "4097": {
+   "taxid": 4097,
+   "name": "Nicotiana tabacum",
+   "common": [
+    "common tobacco",
+    "American tobacco",
+    "tobacco"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "asterids",
+    "lamiids",
+    "Solanales",
+    "Solanaceae",
+    "Nicotianoideae",
+    "Nicotianeae",
+    "Nicotiana"
+   ],
+   "current": 4097
+  },
+  "4113": {
+   "taxid": 4113,
+   "name": "Solanum tuberosum",
+   "common": [
+    "potato",
+    "potatoes"
+   ],
+   "synonyms": [
+    "Solanum aracc-papa"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "eudicotyledons",
+    "Gunneridae",
+    "Pentapetalae",
+    "asterids",
+    "lamiids",
+    "Solanales",
+    "Solanaceae",
+    "Solanoideae",
+    "Solaneae",
+    "Solanum"
+   ],
+   "current": 4113
+  },
+  "4565": {
+   "taxid": 4565,
+   "name": "Triticum aestivum",
+   "common": [
+    "bread wheat",
+    "Canadian hard winter wheat",
+    "common wheat",
+    "wheat"
+   ],
+   "synonyms": [
+    "Triticum aestivum subsp. aestivum",
+    "Triticum sativum",
+    "Triticum vulgare"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "Liliopsida",
+    "Petrosaviidae",
+    "commelinids",
+    "Poales",
+    "Poaceae",
+    "BOP clade",
+    "Pooideae",
+    "Triticodae",
+    "Triticeae",
+    "Triticinae",
+    "Triticum"
+   ],
+   "current": 4565
+  },
+  "4569": {
+   "taxid": 4569,
+   "name": "Triticum sp.",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Viridiplantae",
+    "Streptophyta",
+    "Streptophytina",
+    "Embryophyta",
+    "Tracheophyta",
+    "Euphyllophyta",
+    "Spermatophyta",
+    "Magnoliopsida",
+    "Mesangiospermae",
+    "Liliopsida",
+    "Petrosaviidae",
+    "commelinids",
+    "Poales",
+    "Poaceae",
+    "BOP clade",
+    "Pooideae",
+    "Triticodae",
+    "Triticeae",
+    "Triticinae",
+    "Triticum",
+    "unclassified Triticum"
+   ],
+   "current": 4569
+  },
+  "4896": {
+   "taxid": 4896,
+   "name": "Schizosaccharomyces pombe",
+   "common": [
+    "fission yeast"
+   ],
+   "synonyms": [
+    "Schizosaccharomyces malidevorans"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "Taphrinomycotina",
+    "Schizosaccharomycetes",
+    "Schizosaccharomycetales",
+    "Schizosaccharomycetaceae",
+    "Schizosaccharomyces"
+   ],
+   "current": 4896
+  },
+  "4922": {
+   "taxid": 4922,
+   "name": "Komagataella pastoris",
+   "common": [],
+   "synonyms": [
+    "Pichia pastoris",
+    "Zygosaccharomyces pastoris"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Pichiomycetes",
+    "Pichiales",
+    "Pichiaceae",
+    "Komagataella"
+   ],
+   "current": 4922
+  },
+  "4932": {
+   "taxid": 4932,
+   "name": "Saccharomyces cerevisiae",
+   "common": [
+    "brewer's yeast",
+    "baker's yeast"
+   ],
+   "synonyms": [
+    "Candida robusta",
+    "Mycoderma cerevisiae",
+    "Saccharomyces boulardii (nom. inval.)",
+    "Saccharomyces capensis",
+    "Saccharomyces cerevisiae (Desm.) Meyen ex E.C. Hansen, 1883",
+    "Saccharomyces diastaticus",
+    "Saccharomyces italicus",
+    "Saccharomyces oviformis",
+    "Saccharomyces uvarum var. melibiosus",
+    "Saccharomyces boulardii",
+    "Saccharomyces cerevisiae 'var. diastaticus'"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Saccharomyces"
+   ],
+   "current": 4932
+  },
+  "5476": {
+   "taxid": 5476,
+   "name": "Candida albicans",
+   "common": [],
+   "synonyms": [
+    "Candida albicans var. stellatoidea",
+    "Candida stellatoidea",
+    "Dematium albicans",
+    "Endomyces albicans",
+    "Monilia albicans",
+    "Monilia stellatoidea",
+    "Myceloblastanon albicans",
+    "Mycotorula albicans",
+    "Oidium albicans",
+    "Parasaccharomyces albicans",
+    "Procandida albicans",
+    "Procandida stellatoidea",
+    "Saccharomyces albicans",
+    "Syringospora albicans"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Pichiomycetes",
+    "Serinales",
+    "Debaryomycetaceae",
+    "Candida"
+   ],
+   "current": 5476
+  },
+  "5661": {
+   "taxid": 5661,
+   "name": "Leishmania donovani",
+   "common": [],
+   "synonyms": [
+    "Leishmania (Leishmania) donovani"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Leishmaniinae",
+    "Leishmania",
+    "Leishmania",
+    "Leishmania donovani species complex"
+   ],
+   "current": 5661
+  },
+  "5664": {
+   "taxid": 5664,
+   "name": "Leishmania major",
+   "common": [],
+   "synonyms": [
+    "Leishmania (Leishmania) major",
+    "Leishmania tropica major"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Leishmaniinae",
+    "Leishmania",
+    "Leishmania",
+    "Leishmania major species complex"
+   ],
+   "current": 5664
+  },
+  "5671": {
+   "taxid": 5671,
+   "name": "Leishmania infantum",
+   "common": [],
+   "synonyms": [
+    "Leishmania (Leishmania) infantum",
+    "Leishmania donovani infantum"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Leishmaniinae",
+    "Leishmania",
+    "Leishmania",
+    "Leishmania donovani species complex"
+   ],
+   "current": 5671
+  },
+  "5691": {
+   "taxid": 5691,
+   "name": "Trypanosoma brucei",
+   "common": [],
+   "synonyms": [
+    "Trypanosoma (Trypanozoon) brucei",
+    "Trypanosoma brucei subgroup"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Trypanosoma",
+    "Trypanozoon"
+   ],
+   "current": 5691
+  },
+  "5693": {
+   "taxid": 5693,
+   "name": "Trypanosoma cruzi",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Trypanosoma",
+    "Schizotrypanum"
+   ],
+   "current": 5693
+  },
+  "5702": {
+   "taxid": 5702,
+   "name": "Trypanosoma brucei brucei",
+   "common": [],
+   "synonyms": [
+    "Trypanosoma (Trypanozoon) brucei brucei",
+    "Trypanosoma brucei subsp. brucei"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Trypanosoma",
+    "Trypanozoon",
+    "Trypanosoma brucei"
+   ],
+   "current": 5702
+  },
+  "5722": {
+   "taxid": 5722,
+   "name": "Trichomonas vaginalis",
+   "common": [],
+   "synonyms": [
+    "Tritrichomonas vaginalis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Metamonada",
+    "Parabasalia",
+    "Trichomonadida",
+    "Trichomonadidae",
+    "Trichomonas"
+   ],
+   "current": 5722
+  },
+  "5791": {
+   "taxid": 5791,
+   "name": "Badhamia polycephala",
+   "common": [],
+   "synonyms": [
+    "Physarum polycephalum"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Amoebozoa",
+    "Evosea",
+    "Eumycetozoa",
+    "Myxogastria",
+    "Myxogastromycetidae",
+    "Physariida",
+    "Physaraceae",
+    "Badhamia"
+   ],
+   "current": 5791
+  },
+  "5833": {
+   "taxid": 5833,
+   "name": "Plasmodium falciparum",
+   "common": [
+    "malaria parasite P. falciparum"
+   ],
+   "synonyms": [
+    "Plasmodium (Laverania) falciparum"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Sar",
+    "Alveolata",
+    "Apicomplexa",
+    "Aconoidasida",
+    "Haemosporida",
+    "Plasmodiidae",
+    "Plasmodium",
+    "Laverania"
+   ],
+   "current": 5833
+  },
+  "5890": {
+   "taxid": 5890,
+   "name": "Tetrahymena",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Sar",
+    "Alveolata",
+    "Ciliophora",
+    "Intramacronucleata",
+    "Oligohymenophorea",
+    "Hymenostomatida",
+    "Tetrahymenina",
+    "Tetrahymenidae"
+   ],
+   "current": 5890
+  },
+  "5911": {
+   "taxid": 5911,
+   "name": "Tetrahymena thermophila",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Sar",
+    "Alveolata",
+    "Ciliophora",
+    "Intramacronucleata",
+    "Oligohymenophorea",
+    "Hymenostomatida",
+    "Tetrahymenina",
+    "Tetrahymenidae",
+    "Tetrahymena"
+   ],
+   "current": 5911
+  },
+  "6132": {
+   "taxid": 6132,
+   "name": "Octocorallia",
+   "common": [
+    "soft corals",
+    "sea whips"
+   ],
+   "synonyms": [
+    "Alcyonacea",
+    "Alcyonaria",
+    "Gorgonacea",
+    "Telestacea"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Cnidaria",
+    "Anthozoa"
+   ],
+   "current": 6132
+  },
+  "6239": {
+   "taxid": 6239,
+   "name": "Caenorhabditis elegans",
+   "common": [],
+   "synonyms": [
+    "Rhabditis elegans"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Nematoda",
+    "Chromadorea",
+    "Rhabditida",
+    "Rhabditina",
+    "Rhabditomorpha",
+    "Rhabditoidea",
+    "Rhabditidae",
+    "Peloderinae",
+    "Caenorhabditis"
+   ],
+   "current": 6239
+  },
+  "7091": {
+   "taxid": 7091,
+   "name": "Bombyx mori",
+   "common": [
+    "domestic silkworm",
+    "silk moth",
+    "silkworm"
+   ],
+   "synonyms": [
+    "Phalaena mori"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Aparaglossata",
+    "Panorpida",
+    "Amphiesmenoptera",
+    "Lepidoptera",
+    "Glossata",
+    "Neolepidoptera",
+    "Heteroneura",
+    "Ditrysia",
+    "Obtectomera",
+    "Bombycoidea",
+    "Bombycidae",
+    "Bombycinae",
+    "Bombyx"
+   ],
+   "current": 7091
+  },
+  "7108": {
+   "taxid": 7108,
+   "name": "Spodoptera frugiperda",
+   "common": [
+    "fall armyworm"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Aparaglossata",
+    "Panorpida",
+    "Amphiesmenoptera",
+    "Lepidoptera",
+    "Glossata",
+    "Neolepidoptera",
+    "Heteroneura",
+    "Ditrysia",
+    "Obtectomera",
+    "Noctuoidea",
+    "Noctuidae",
+    "Amphipyrinae",
+    "Spodoptera"
+   ],
+   "current": 7108
+  },
+  "7111": {
+   "taxid": 7111,
+   "name": "Trichoplusia ni",
+   "common": [
+    "cabbage looper"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Aparaglossata",
+    "Panorpida",
+    "Amphiesmenoptera",
+    "Lepidoptera",
+    "Glossata",
+    "Neolepidoptera",
+    "Heteroneura",
+    "Ditrysia",
+    "Obtectomera",
+    "Noctuoidea",
+    "Noctuidae",
+    "Plusiinae",
+    "Trichoplusia"
+   ],
+   "current": 7111
+  },
+  "7227": {
+   "taxid": 7227,
+   "name": "Drosophila melanogaster",
+   "common": [
+    "fruit fly"
+   ],
+   "synonyms": [
+    "Sophophora melanogaster"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Aparaglossata",
+    "Panorpida",
+    "Diptera",
+    "Brachycera",
+    "Muscomorpha",
+    "Eremoneura",
+    "Cyclorrhapha",
+    "Schizophora",
+    "Acalyptratae",
+    "Ephydroidea",
+    "Drosophilidae",
+    "Drosophilinae",
+    "Drosophilini",
+    "Drosophila",
+    "Sophophora",
+    "melanogaster group",
+    "melanogaster subgroup"
+   ],
+   "current": 7227
+  },
+  "7460": {
+   "taxid": 7460,
+   "name": "Apis mellifera",
+   "common": [
+    "honey bee",
+    "European honey bee",
+    "Western honey bee",
+    "bee",
+    "honeybee"
+   ],
+   "synonyms": [
+    "Apis mellifica"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Hymenoptera",
+    "Apocrita",
+    "Aculeata",
+    "Apoidea",
+    "Anthophila",
+    "Apidae",
+    "Apinae",
+    "Apini",
+    "Apis"
+   ],
+   "current": 7460
+  },
+  "7955": {
+   "taxid": 7955,
+   "name": "Danio rerio",
+   "common": [
+    "zebrafish",
+    "leopard danio",
+    "zebra danio",
+    "zebra fish"
+   ],
+   "synonyms": [
+    "Brachydanio rerio",
+    "Brachydanio rerio frankei",
+    "Cyprinus rerio",
+    "Danio frankei",
+    "Danio rerio frankei"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Actinopterygii",
+    "Actinopteri",
+    "Neopterygii",
+    "Teleostei",
+    "Osteoglossocephalai",
+    "Clupeocephala",
+    "Otomorpha",
+    "Ostariophysi",
+    "Otophysi",
+    "Cypriniphysae",
+    "Cypriniformes",
+    "Cyprinoidei",
+    "Danionidae",
+    "Danioninae",
+    "Danio"
+   ],
+   "current": 7955
+  },
+  "8355": {
+   "taxid": 8355,
+   "name": "Xenopus laevis",
+   "common": [
+    "African clawed frog",
+    "clawed frog",
+    "common platanna",
+    "platanna"
+   ],
+   "synonyms": [
+    "Bufo laevis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amphibia",
+    "Batrachia",
+    "Anura",
+    "Pipoidea",
+    "Pipidae",
+    "Xenopodinae",
+    "Xenopus",
+    "Xenopus"
+   ],
+   "current": 8355
+  },
+  "8364": {
+   "taxid": 8364,
+   "name": "Xenopus tropicalis",
+   "common": [
+    "tropical clawed frog",
+    "western clawed frog"
+   ],
+   "synonyms": [
+    "Silurana tropicalis",
+    "Xenopus (Silurana) tropicalis",
+    "Xenopus laevis tropicalis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amphibia",
+    "Batrachia",
+    "Anura",
+    "Pipoidea",
+    "Pipidae",
+    "Xenopodinae",
+    "Xenopus",
+    "Silurana"
+   ],
+   "current": 8364
+  },
+  "9031": {
+   "taxid": 9031,
+   "name": "Gallus gallus",
+   "common": [
+    "chicken",
+    "bantam",
+    "chickens"
+   ],
+   "synonyms": [
+    "Gallus gallus domesticus",
+    "Phasianus gallus",
+    "Gallus domesticus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Sauropsida",
+    "Sauria",
+    "Archelosauria",
+    "Archosauria",
+    "Dinosauria",
+    "Saurischia",
+    "Theropoda",
+    "Coelurosauria",
+    "Aves",
+    "Neognathae",
+    "Galloanserae",
+    "Galliformes",
+    "Phasianidae",
+    "Phasianinae",
+    "Gallus"
+   ],
+   "current": 9031
+  },
+  "9544": {
+   "taxid": 9544,
+   "name": "Macaca mulatta",
+   "common": [
+    "Rhesus monkey",
+    "rhesus macaque",
+    "rhesus macaques",
+    "rhesus monkeys"
+   ],
+   "synonyms": [
+    "Cercopithecus mulatta"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Primates",
+    "Haplorrhini",
+    "Simiiformes",
+    "Catarrhini",
+    "Cercopithecoidea",
+    "Cercopithecidae",
+    "Cercopithecinae",
+    "Macaca"
+   ],
+   "current": 9544
+  },
+  "9545": {
+   "taxid": 9545,
+   "name": "Macaca nemestrina",
+   "common": [
+    "pig-tailed macaque",
+    "pigtail macaque",
+    "pigtail monkey"
+   ],
+   "synonyms": [
+    "Simia nemestrina"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Primates",
+    "Haplorrhini",
+    "Simiiformes",
+    "Catarrhini",
+    "Cercopithecoidea",
+    "Cercopithecidae",
+    "Cercopithecinae",
+    "Macaca"
+   ],
+   "current": 9545
+  },
+  "9606": {
+   "taxid": 9606,
+   "name": "Homo sapiens",
+   "common": [
+    "human"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Primates",
+    "Haplorrhini",
+    "Simiiformes",
+    "Catarrhini",
+    "Hominoidea",
+    "Hominidae",
+    "Homininae",
+    "Homo"
+   ],
+   "current": 9606
+  },
+  "9616": {
+   "taxid": 9616,
+   "name": "Canis sp.",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Laurasiatheria",
+    "Carnivora",
+    "Caniformia",
+    "Canidae",
+    "Canis",
+    "unclassified Canis"
+   ],
+   "current": 9616
+  },
+  "9823": {
+   "taxid": 9823,
+   "name": "Sus scrofa",
+   "common": [
+    "pig",
+    "pigs",
+    "swine",
+    "wild boar"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Laurasiatheria",
+    "Artiodactyla",
+    "Suina",
+    "Suidae",
+    "Sus"
+   ],
+   "current": 9823
+  },
+  "9825": {
+   "taxid": 9825,
+   "name": "Sus scrofa domesticus",
+   "common": [
+    "domestic pig"
+   ],
+   "synonyms": [
+    "Sus domestica",
+    "Sus domesticus",
+    "Sus scrofa domestica"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Laurasiatheria",
+    "Artiodactyla",
+    "Suina",
+    "Suidae",
+    "Sus",
+    "Sus scrofa"
+   ],
+   "current": 9825
+  },
+  "9913": {
+   "taxid": 9913,
+   "name": "Bos taurus",
+   "common": [
+    "domestic cattle",
+    "bovine",
+    "cow",
+    "dairy cow",
+    "domestic cow",
+    "ox"
+   ],
+   "synonyms": [
+    "Bos bovis",
+    "Bos primigenius taurus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Laurasiatheria",
+    "Artiodactyla",
+    "Ruminantia",
+    "Pecora",
+    "Bovidae",
+    "Bovinae",
+    "Bos"
+   ],
+   "current": 9913
+  },
+  "9986": {
+   "taxid": 9986,
+   "name": "Oryctolagus cuniculus",
+   "common": [
+    "rabbit",
+    "European rabbit",
+    "Japanese white rabbit",
+    "domestic rabbit",
+    "rabbits"
+   ],
+   "synonyms": [
+    "Lepus cuniculus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Glires",
+    "Lagomorpha",
+    "Leporidae",
+    "Oryctolagus"
+   ],
+   "current": 9986
+  },
+  "10029": {
+   "taxid": 10029,
+   "name": "Cricetulus griseus",
+   "common": [
+    "Chinese hamster",
+    "Chinese hamsters"
+   ],
+   "synonyms": [
+    "Cricetulus barabensis griseus",
+    "Cricetulus aureus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Glires",
+    "Rodentia",
+    "Myomorpha",
+    "Muroidea",
+    "Cricetidae",
+    "Cricetinae",
+    "Cricetulus"
+   ],
+   "current": 10029
+  },
+  "10090": {
+   "taxid": 10090,
+   "name": "Mus musculus",
+   "common": [
+    "house mouse",
+    "mouse"
+   ],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Glires",
+    "Rodentia",
+    "Myomorpha",
+    "Muroidea",
+    "Muridae",
+    "Murinae",
+    "Mus",
+    "Mus"
+   ],
+   "current": 10090
+  },
+  "10116": {
+   "taxid": 10116,
+   "name": "Rattus norvegicus",
+   "common": [
+    "Norway rat",
+    "brown rat",
+    "rat",
+    "rats"
+   ],
+   "synonyms": [
+    "Mus norvegicus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Euarchontoglires",
+    "Glires",
+    "Rodentia",
+    "Myomorpha",
+    "Muroidea",
+    "Muridae",
+    "Murinae",
+    "Rattus"
+   ],
+   "current": 10116
+  },
+  "10254": {
+   "taxid": 10254,
+   "name": "Vaccinia virus WR",
+   "common": [],
+   "synonyms": [
+    "Vaccinia virus (strain WR)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Pokkesviricetes",
+    "Chitovirales",
+    "Poxviridae",
+    "Chordopoxvirinae",
+    "Orthopoxvirus",
+    "Orthopoxvirus vaccinia"
+   ],
+   "current": 10254
+  },
+  "10306": {
+   "taxid": 10306,
+   "name": "Human alphaherpesvirus 1 strain KOS",
+   "common": [],
+   "synonyms": [
+    "Herpes simplex virus (type 1 / strain KOS)",
+    "Human herpesvirus 1 strain KOS"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Peploviricota",
+    "Herviviricetes",
+    "Herpesvirales",
+    "Orthoherpesviridae",
+    "Alphaherpesvirinae",
+    "Simplexvirus",
+    "Simplexvirus humanalpha1",
+    "Human alphaherpesvirus 1"
+   ],
+   "current": 10306
+  },
+  "10377": {
+   "taxid": 10377,
+   "name": "Human herpesvirus 4 strain B95-8",
+   "common": [
+    "Epstein-Barr virus (strain B95-8)"
+   ],
+   "synonyms": [
+    "Human herpesvirus 4 (strain B95-8)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Peploviricota",
+    "Herviviricetes",
+    "Herpesvirales",
+    "Orthoherpesviridae",
+    "Gammaherpesvirinae",
+    "Lymphocryptovirus",
+    "Lymphocryptovirus humangamma4",
+    "human gammaherpesvirus 4"
+   ],
+   "current": 10377
+  },
+  "10469": {
+   "taxid": 10469,
+   "name": "unidentified baculovirus",
+   "common": [],
+   "synonyms": [
+    "Baculovirus",
+    "Baculovirus sp."
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Naldaviricetes",
+    "Lefavirales",
+    "Baculoviridae",
+    "unclassified Baculoviridae"
+   ],
+   "current": 10469
+  },
+  "10497": {
+   "taxid": 10497,
+   "name": "African swine fever virus",
+   "common": [],
+   "synonyms": [
+    "African swine fever virus ASF",
+    "African swine fever virus ASFV",
+    "African swine fever virus, ASFV"
+   ],
+   "acronyms": [
+    "ASFV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Pokkesviricetes",
+    "Asfuvirales",
+    "Asfarviridae",
+    "Asfivirus",
+    "Asfivirus haemorrhagiae"
+   ],
+   "current": 10497
+  },
+  "10498": {
+   "taxid": 10498,
+   "name": "African swine fever virus BA71V",
+   "common": [],
+   "synonyms": [
+    "African swine fever virus (strain BA71V)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Pokkesviricetes",
+    "Asfuvirales",
+    "Asfarviridae",
+    "Asfivirus",
+    "Asfivirus haemorrhagiae",
+    "African swine fever virus"
+   ],
+   "current": 10498
+  },
+  "10515": {
+   "taxid": 10515,
+   "name": "Human adenovirus 2",
+   "common": [],
+   "synonyms": [
+    "Adenovirus 2",
+    "Adenovirus type 2",
+    "Human adenovirus C2",
+    "Human adenovirus type 2",
+    "Human mastadenovirus 2",
+    "Mastadenovirus 2",
+    "Mastadenovirus h2",
+    "adenovirus-2"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Preplasmiviricota",
+    "Polisuviricotina",
+    "Pharingeaviricetes",
+    "Rowavirales",
+    "Adenoviridae",
+    "Mastadenovirus",
+    "Mastadenovirus caesari",
+    "Human mastadenovirus C"
+   ],
+   "current": 10515
+  },
+  "10535": {
+   "taxid": 10535,
+   "name": "unidentified adenovirus",
+   "common": [],
+   "synonyms": [
+    "Adenovirus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Preplasmiviricota",
+    "Polisuviricotina",
+    "Pharingeaviricetes",
+    "Rowavirales",
+    "Adenoviridae",
+    "Mastadenovirus",
+    "unclassified Mastadenovirus"
+   ],
+   "current": 10535
+  },
+  "10634": {
+   "taxid": 10634,
+   "name": "Alphapolyomavirus muris",
+   "common": [],
+   "synonyms": [
+    "Murine polyomavirus",
+    "Mus musculus polyomavirus 1",
+    "Polyomavirus muris",
+    "mouse polyomavirus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Floreoviria",
+    "Shotokuvirae",
+    "Cossaviricota",
+    "Papovaviricetes",
+    "Sepolyvirales",
+    "Polyomaviridae",
+    "Alphapolyomavirus"
+   ],
+   "current": 1891730
+  },
+  "10665": {
+   "taxid": 10665,
+   "name": "Tequatrovirus T4",
+   "common": [],
+   "synonyms": [
+    "Escherichia virus T4"
+   ],
+   "acronyms": [
+    "T4"
+   ],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Pantevenvirales",
+    "Straboviridae",
+    "Tevenvirinae",
+    "Tequatrovirus"
+   ],
+   "current": 10665
+  },
+  "10678": {
+   "taxid": 10678,
+   "name": "Punavirus P1",
+   "common": [],
+   "synonyms": [
+    "Escherichia virus P1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Punavirus"
+   ],
+   "current": 10678
+  },
+  "10710": {
+   "taxid": 10710,
+   "name": "Lambdavirus lambda",
+   "common": [],
+   "synonyms": [
+    "Escherichia virus Lambda"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Zimmerviridae",
+    "Jacobvirinae",
+    "Lambdavirus"
+   ],
+   "current": 10710
+  },
+  "10752": {
+   "taxid": 10752,
+   "name": "Enquatrovirus N4",
+   "common": [],
+   "synonyms": [
+    "Escherichia virus N4"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Schitoviridae",
+    "Enquatrovirinae",
+    "Enquatrovirus"
+   ],
+   "current": 10752
+  },
+  "10754": {
+   "taxid": 10754,
+   "name": "Lederbergvirus P22",
+   "common": [],
+   "synonyms": [
+    "Salmonella virus P22"
+   ],
+   "acronyms": [
+    "P22"
+   ],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Lederbergvirus"
+   ],
+   "current": 10754
+  },
+  "10760": {
+   "taxid": 10760,
+   "name": "Escherichia phage T7",
+   "common": [],
+   "synonyms": [
+    "Enterobacteria phage T7",
+    "Bacteriophage T7",
+    "T7 bacteriophage",
+    "phage T7"
+   ],
+   "acronyms": [
+    "T7"
+   ],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Autographivirales",
+    "Autotranscriptaviridae",
+    "Studiervirinae",
+    "Teseptimavirus",
+    "Teseptimavirus T7"
+   ],
+   "current": 10760
+  },
+  "10804": {
+   "taxid": 10804,
+   "name": "adeno-associated virus 2",
+   "common": [],
+   "synonyms": [
+    "Adeno associated virus 2",
+    "Adeno-Associate Virus 2",
+    "Adeno-associated virus - 2",
+    "Adeno-associated virus type 2",
+    "Adeno-assoziiertes Virus 2"
+   ],
+   "acronyms": [
+    "AAV2"
+   ],
+   "lineage": [
+    "Viruses",
+    "Floreoviria",
+    "Shotokuvirae",
+    "Cossaviricota",
+    "Quintoviricetes",
+    "Piccovirales",
+    "Parvoviridae",
+    "Parvovirinae",
+    "Dependoparvovirus",
+    "Dependoparvovirus primate1"
+   ],
+   "current": 10804
+  },
+  "10870": {
+   "taxid": 10870,
+   "name": "Inovirus M13",
+   "common": [],
+   "synonyms": [
+    "M13 phage",
+    "Coliphage M13",
+    "Escherichia virus M13",
+    "phage M13"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Floreoviria",
+    "Loebvirae",
+    "Hofneiviricota",
+    "Faserviricetes",
+    "Tubulavirales",
+    "Inoviridae",
+    "Inovirus"
+   ],
+   "current": 1977402
+  },
+  "10879": {
+   "taxid": 10879,
+   "name": "Cystovirus phi6",
+   "common": [],
+   "synonyms": [
+    "Pseudomonas virus phi6"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Duplornaviricota",
+    "Vidaverviricetes",
+    "Mindivirales",
+    "Cystoviridae",
+    "Orthocystovirus",
+    "Orthocystovirus phi6"
+   ],
+   "current": 10879
+  },
+  "11082": {
+   "taxid": 11082,
+   "name": "West Nile virus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [
+    "WNV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Kitrinoviricota",
+    "Flasuviricetes",
+    "Amarillovirales",
+    "Flaviviridae",
+    "Orthoflavivirus",
+    "Euflavivirus",
+    "Orthoflavivirus nilense"
+   ],
+   "current": 11082
+  },
+  "11103": {
+   "taxid": 11103,
+   "name": "Orthohepacivirus hominis",
+   "common": [],
+   "synonyms": [
+    "Hepacivirus C",
+    "Hepacivirus hominis",
+    "Hepatitis C virus",
+    "hepatitis C virus HCV",
+    "human hepatitis C virus",
+    "human hepatitis C virus HCV",
+    "human hepatitis virus C HCV",
+    "post-transfusion hepatitis non A non B virus"
+   ],
+   "acronyms": [
+    "HCV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Kitrinoviricota",
+    "Flasuviricetes",
+    "Amarillovirales",
+    "Hepaciviridae",
+    "Orthohepacivirus"
+   ],
+   "current": 3052230
+  },
+  "11104": {
+   "taxid": 11104,
+   "name": "Hepatitis C virus (isolate 1)",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Kitrinoviricota",
+    "Flasuviricetes",
+    "Amarillovirales",
+    "Hepaciviridae",
+    "Orthohepacivirus",
+    "Orthohepacivirus hominis",
+    "hepatitis C virus genotype 1a"
+   ],
+   "current": 11104
+  },
+  "11250": {
+   "taxid": 11250,
+   "name": "human respiratory syncytial virus",
+   "common": [],
+   "synonyms": [
+    "Human orthopneumovirus",
+    "human RSV"
+   ],
+   "acronyms": [
+    "HRSV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Pneumoviridae",
+    "Orthopneumovirus",
+    "Orthopneumovirus hominis"
+   ],
+   "current": 11250
+  },
+  "11260": {
+   "taxid": 11260,
+   "name": "Human respiratory syncytial virus A strain Long",
+   "common": [],
+   "synonyms": [
+    "Human respiratory syncytial virus (subgroup A / strain Long)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Pneumoviridae",
+    "Orthopneumovirus",
+    "Orthopneumovirus hominis",
+    "human respiratory syncytial virus",
+    "Human respiratory syncytial virus A"
+   ],
+   "current": 11260
+  },
+  "11277": {
+   "taxid": 11277,
+   "name": "Vesicular stomatitis Indiana virus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [
+    "VSIV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Rhabdoviridae",
+    "Alpharhabdovirinae",
+    "Vesiculovirus",
+    "Vesiculovirus indiana"
+   ],
+   "current": 11277
+  },
+  "11320": {
+   "taxid": 11320,
+   "name": "Influenza A virus",
+   "common": [],
+   "synonyms": [
+    "Human Influenza A Virus",
+    "Influenza virus type A",
+    "influenza A virus"
+   ],
+   "acronyms": [
+    "FLUAV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Alphainfluenzavirus",
+    "Alphainfluenzavirus influenzae"
+   ],
+   "current": 11320
+  },
+  "11520": {
+   "taxid": 11520,
+   "name": "Influenza B virus",
+   "common": [],
+   "synonyms": [
+    "Influenza virus type B"
+   ],
+   "acronyms": [
+    "FLUBV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Betainfluenzavirus",
+    "Betainfluenzavirus influenzae"
+   ],
+   "current": 11520
+  },
+  "11577": {
+   "taxid": 11577,
+   "name": "La Crosse virus",
+   "common": [],
+   "synonyms": [
+    "Bunyavirus la crosse"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Bunyaviricetes",
+    "Elliovirales",
+    "Peribunyaviridae",
+    "Orthobunyavirus",
+    "Orthobunyavirus lacrosseense"
+   ],
+   "current": 11577
+  },
+  "11620": {
+   "taxid": 11620,
+   "name": "Mammarenavirus lassaense",
+   "common": [],
+   "synonyms": [
+    "Lassa mammarenavirus",
+    "Lassa virus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Bunyaviricetes",
+    "Hareavirales",
+    "Arenaviridae",
+    "Mammarenavirus"
+   ],
+   "current": 3052310
+  },
+  "11628": {
+   "taxid": 11628,
+   "name": "Mammarenavirus machupoense",
+   "common": [],
+   "synonyms": [
+    "Machupo mammarenavirus",
+    "Machupo virus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Bunyaviricetes",
+    "Hareavirales",
+    "Arenaviridae",
+    "Mammarenavirus"
+   ],
+   "current": 3052317
+  },
+  "11676": {
+   "taxid": 11676,
+   "name": "Human immunodeficiency virus 1",
+   "common": [],
+   "synonyms": [
+    "Human immunodeficiency virus type 1",
+    "human immunodeficiency virus type 1 HIV-1",
+    "human immunodeficiency virus 1 HIV-1",
+    "human immunodeficiency virus HIV-1",
+    "human immunodeficiency virus type 1 HIV 1",
+    "human immunodeficiency virus type 1 HIV1",
+    "human immunodeficiency virus type 1, HIV-1",
+    "human immunodeficiency virus type I HIV-1",
+    "human immunodeficiency virus type-1 HIV-1",
+    "human immunodeficiency virus-1 HIV-1"
+   ],
+   "acronyms": [
+    "HIV",
+    "HIV-1",
+    "HIV1",
+    "LAV-1"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Orthoretrovirinae",
+    "Lentivirus",
+    "Lentivirus humimdef1"
+   ],
+   "current": 11676
+  },
+  "11678": {
+   "taxid": 11678,
+   "name": "Human immunodeficiency virus type 1 BH10",
+   "common": [],
+   "synonyms": [
+    "Human immunodeficiency virus type 1 (BH10 ISOLATE)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Orthoretrovirinae",
+    "Lentivirus",
+    "Lentivirus humimdef1",
+    "Human immunodeficiency virus 1",
+    "HIV-1 unknown group"
+   ],
+   "current": 11678
+  },
+  "11706": {
+   "taxid": 11706,
+   "name": "HIV-1 M:B_HXB2R",
+   "common": [],
+   "synonyms": [
+    "Human immunodeficiency virus type 1 (HXB2 ISOLATE)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Orthoretrovirinae",
+    "Lentivirus",
+    "Lentivirus humimdef1",
+    "Human immunodeficiency virus 1",
+    "HIV-1 group M",
+    "HIV-1 M:B"
+   ],
+   "current": 11706
+  },
+  "11707": {
+   "taxid": 11707,
+   "name": "Human immunodeficiency virus type 1 (HXB3 ISOLATE)",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Orthoretrovirinae",
+    "Lentivirus",
+    "Lentivirus humimdef1",
+    "Human immunodeficiency virus 1",
+    "HIV-1 unknown group"
+   ],
+   "current": 11707
+  },
+  "11786": {
+   "taxid": 11786,
+   "name": "Murine leukemia virus",
+   "common": [],
+   "synonyms": [
+    "murine leukemia virus MLV",
+    "murine leukemia virus MuLV"
+   ],
+   "acronyms": [
+    "MLV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Orthoretrovirinae",
+    "Gammaretrovirus",
+    "Gammaretrovirus murleu"
+   ],
+   "current": 11786
+  },
+  "11801": {
+   "taxid": 11801,
+   "name": "Moloney murine leukemia virus",
+   "common": [],
+   "synonyms": [
+    "Moloney murine leukemia virus M-MuLV",
+    "rat Moloney murine leukemia virus MoMuLV"
+   ],
+   "acronyms": [
+    "MMLV",
+    "MoMLV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Orthoretrovirinae",
+    "Gammaretrovirus",
+    "Gammaretrovirus murleu",
+    "Murine leukemia virus"
+   ],
+   "current": 11801
+  },
+  "11963": {
+   "taxid": 11963,
+   "name": "Human spumaretrovirus",
+   "common": [],
+   "synonyms": [
+    "foamy virus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Pararnavirae",
+    "Artverviricota",
+    "Revtraviricetes",
+    "Ortervirales",
+    "Retroviridae",
+    "Spumaretrovirinae",
+    "unclassified Spumaretrovirinae",
+    "Simian foamy virus"
+   ],
+   "current": 11963
+  },
+  "12022": {
+   "taxid": 12022,
+   "name": "Escherichia phage MS2",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage MS2",
+    "Enterobacteria phage MS2",
+    "Enterobacterio phage MS2",
+    "phage MS2",
+    "xLevivirus subgroup I"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Lenarviricota",
+    "Leviviricetes",
+    "Norzivirales",
+    "Fiersviridae",
+    "Emesvirus",
+    "Emesvirus zinderi"
+   ],
+   "current": 12022
+  },
+  "12072": {
+   "taxid": 12072,
+   "name": "Coxsackievirus B3",
+   "common": [],
+   "synonyms": [
+    "Human coxsackievirus B3",
+    "coxsackievirus B3 CVB3"
+   ],
+   "acronyms": [
+    "CVB3"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Picornaviridae",
+    "Ensavirinae",
+    "Enterovirus",
+    "Enterovirus betacoxsackie",
+    "Enterovirus B"
+   ],
+   "current": 12072
+  },
+  "12104": {
+   "taxid": 12104,
+   "name": "Encephalomyocarditis virus",
+   "common": [],
+   "synonyms": [
+    "encephalomyocarditis virus EMCV",
+    "encephalomyocarditis virus, EMCV"
+   ],
+   "acronyms": [
+    "EMCV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Picornaviridae",
+    "Caphthovirinae",
+    "Cardiovirus",
+    "Cardiovirus rueckerti",
+    "Cardiovirus A"
+   ],
+   "current": 12104
+  },
+  "12110": {
+   "taxid": 12110,
+   "name": "Foot-and-mouth disease virus",
+   "common": [],
+   "synonyms": [
+    "Foot and mouth disease virus",
+    "foot and mouth disease virus FMDV",
+    "foot-and-mouth disease virus FMDV"
+   ],
+   "acronyms": [
+    "FMDV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Picornaviridae",
+    "Caphthovirinae",
+    "Aphthovirus",
+    "Aphthovirus vesiculae"
+   ],
+   "current": 12110
+  },
+  "12136": {
+   "taxid": 12136,
+   "name": "Cricket paralysis virus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Dicistroviridae",
+    "Cripavirus",
+    "Cripavirus grylli"
+   ],
+   "current": 12136
+  },
+  "12260": {
+   "taxid": 12260,
+   "name": "Bean pod mottle virus",
+   "common": [],
+   "synonyms": [
+    "Bean-pod mottle virus"
+   ],
+   "acronyms": [
+    "BPMV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Secoviridae",
+    "Comovirinae",
+    "Comovirus",
+    "Comovirus siliquae"
+   ],
+   "current": 12260
+  },
+  "12353": {
+   "taxid": 12353,
+   "name": "Escherichia phage RB69",
+   "common": [],
+   "synonyms": [
+    "Enterobacteria phage RB69",
+    "Bacteriophage RB69",
+    "phage RB69"
+   ],
+   "acronyms": [
+    "RB69"
+   ],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Pantevenvirales",
+    "Straboviridae",
+    "Tevenvirinae",
+    "Mosigvirus",
+    "Mosigvirus RB69"
+   ],
+   "current": 12353
+  },
+  "12881": {
+   "taxid": 12881,
+   "name": "Satellite tobacco mosaic virus",
+   "common": [],
+   "synonyms": [
+    "Satellite tobacco necrosis virus",
+    "Tobacco necrosis satellite virus",
+    "tobacco mosaic satellite virus"
+   ],
+   "acronyms": [
+    "STMV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Tombendovirales",
+    "Tomosaviridae",
+    "Virtovirus",
+    "Virtovirus tabaci",
+    "Tobacco virtovirus 1"
+   ],
+   "current": 12881
+  },
+  "12908": {
+   "taxid": 12908,
+   "name": "unclassified sequences",
+   "common": [],
+   "synonyms": [
+    "unclassified"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "unclassified entries"
+   ],
+   "current": 12908
+  },
+  "28231": {
+   "taxid": 28231,
+   "name": "Geobacter",
+   "common": [],
+   "synonyms": [
+    "Geobacter Lovley et al. 1995"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Thermodesulfobacteriota",
+    "Desulfuromonadia",
+    "Geobacterales",
+    "Geobacteraceae"
+   ],
+   "current": 28231
+  },
+  "28384": {
+   "taxid": 28384,
+   "name": "other sequences",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "other entries"
+   ],
+   "current": 28384
+  },
+  "28985": {
+   "taxid": 28985,
+   "name": "Kluyveromyces lactis",
+   "common": [],
+   "synonyms": [
+    "Candida sphaerica",
+    "Kluyveromyces drosophilarum",
+    "Kluyveromyces lactis var. drosophilarum",
+    "Kluyveromyces lactis var. lactis",
+    "Kluyveromyces marxianus var. drosophilarum",
+    "Saccharomyces drosophilarum",
+    "Saccharomyces lactis",
+    "Torula sphaerica",
+    "Torulaspora lactis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Kluyveromyces"
+   ],
+   "current": 28985
+  },
+  "29252": {
+   "taxid": 29252,
+   "name": "Eganvirus ev186",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage 186",
+    "Coliphage 186",
+    "Enterobacteria phage 186",
+    "Escherichia virus 186",
+    "phage 186"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Peduoviridae",
+    "Eganvirus"
+   ],
+   "current": 29252
+  },
+  "29292": {
+   "taxid": 29292,
+   "name": "Pyrococcus abyssi",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Pyrococcus"
+   ],
+   "current": 29292
+  },
+  "31631": {
+   "taxid": 31631,
+   "name": "Human coronavirus OC43",
+   "common": [],
+   "synonyms": [
+    "Human coronavirus (strain OC43)",
+    "Human coronavirus strain OC43"
+   ],
+   "acronyms": [
+    "HCoV-OC43"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Nidovirales",
+    "Cornidovirineae",
+    "Coronaviridae",
+    "Orthocoronavirinae",
+    "Betacoronavirus",
+    "Embecovirus",
+    "Betacoronavirus gravedinis",
+    "Betacoronavirus 1"
+   ],
+   "current": 31631
+  },
+  "32046": {
+   "taxid": 32046,
+   "name": "Synechococcus elongatus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Cyanobacteriota/Melainabacteria group",
+    "Cyanobacteriota",
+    "Cyanophyceae",
+    "Synechococcales",
+    "Synechococcaceae",
+    "Synechococcus"
+   ],
+   "current": 32046
+  },
+  "32630": {
+   "taxid": 32630,
+   "name": "synthetic construct",
+   "common": [],
+   "synonyms": [
+    "artificial",
+    "artificial gene",
+    "artificial oligonucleotide",
+    "artificial sequence",
+    "synthetic",
+    "synthetic DNA",
+    "synthetic constructs",
+    "synthetic oligonucleotides"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "other entries",
+    "other sequences",
+    "artificial sequences"
+   ],
+   "current": 32630
+  },
+  "32644": {
+   "taxid": 32644,
+   "name": "unidentified",
+   "common": [],
+   "synonyms": [
+    "collection",
+    "miscellaneous nucleic acid",
+    "none",
+    "not shown",
+    "not specified",
+    "other",
+    "sonstige nucleic acid",
+    "unclassified sequence",
+    "unidentified organism",
+    "unidentified root endophyte",
+    "unknown",
+    "unknown organism",
+    "unspecified"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "unclassified entries",
+    "unclassified sequences"
+   ],
+   "current": 32644
+  },
+  "33072": {
+   "taxid": 33072,
+   "name": "Gloeobacter violaceus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Cyanobacteriota/Melainabacteria group",
+    "Cyanobacteriota",
+    "Cyanophyceae",
+    "Gloeobacterales",
+    "Gloeobacteraceae",
+    "Gloeobacter"
+   ],
+   "current": 33072
+  },
+  "33940": {
+   "taxid": 33940,
+   "name": "Geobacillus thermodenitrificans",
+   "common": [],
+   "synonyms": [
+    "Bacillus thermodenitrificans (ex Klaushofer and Hollaus 1970) Manachini et al. 2000"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Anoxybacillaceae",
+    "Geobacillus"
+   ],
+   "current": 33940
+  },
+  "35554": {
+   "taxid": 35554,
+   "name": "Geobacter sulfurreducens",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Thermodesulfobacteriota",
+    "Desulfuromonadia",
+    "Geobacterales",
+    "Geobacteraceae",
+    "Geobacter"
+   ],
+   "current": 35554
+  },
+  "35722": {
+   "taxid": 35722,
+   "name": "Parasitella parasitica",
+   "common": [],
+   "synonyms": [
+    "Parasitella simplex"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Fungi incertae sedis",
+    "Mucoromycota",
+    "Mucoromycotina",
+    "Mucoromycetes",
+    "Mucorales",
+    "Mucorineae",
+    "Mucoraceae",
+    "Parasitella"
+   ],
+   "current": 35722
+  },
+  "36329": {
+   "taxid": 36329,
+   "name": "Plasmodium falciparum 3D7",
+   "common": [],
+   "synonyms": [
+    "Plasmodium falciparum (isolate 3D7)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Sar",
+    "Alveolata",
+    "Apicomplexa",
+    "Aconoidasida",
+    "Haemosporida",
+    "Plasmodiidae",
+    "Plasmodium",
+    "Laverania",
+    "Plasmodium falciparum"
+   ],
+   "current": 36329
+  },
+  "36345": {
+   "taxid": 36345,
+   "name": "Human alphaherpesvirus 1 strain R-15",
+   "common": [],
+   "synonyms": [
+    "HSV-1 Recombinant R-15",
+    "HSV1 R-15",
+    "Herpes simplex virus (type 1 / strain R15)",
+    "Herpes simplex virus 1 strain R-15"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Peploviricota",
+    "Herviviricetes",
+    "Herpesvirales",
+    "Orthoherpesviridae",
+    "Alphaherpesvirinae",
+    "Simplexvirus",
+    "Simplexvirus humanalpha1",
+    "Human alphaherpesvirus 1"
+   ],
+   "current": 36345
+  },
+  "37762": {
+   "taxid": 37762,
+   "name": "Escherichia coli B",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli (strain B)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 37762
+  },
+  "38300": {
+   "taxid": 38300,
+   "name": "Streptomyces pristinaespiralis",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae",
+    "Streptomyces"
+   ],
+   "current": 38300
+  },
+  "38323": {
+   "taxid": 38323,
+   "name": "Bartonella henselae",
+   "common": [],
+   "synonyms": [
+    "Rochalimaea henselae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Hyphomicrobiales",
+    "Bartonellaceae",
+    "Bartonella"
+   ],
+   "current": 38323
+  },
+  "38502": {
+   "taxid": 38502,
+   "name": "Blastococcus aggregatus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Geodermatophilales",
+    "Geodermatophilaceae",
+    "Blastococcus"
+   ],
+   "current": 38502
+  },
+  "39054": {
+   "taxid": 39054,
+   "name": "Enterovirus A71",
+   "common": [],
+   "synonyms": [
+    "Enterovirus 71",
+    "Enterovirus EV-A71",
+    "Human enterovirus 71",
+    "Human enterovirus A71",
+    "Human enterovirus type 71",
+    "enterovirus type 71"
+   ],
+   "acronyms": [
+    "EV-71",
+    "EV-A71",
+    "EV71"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Picornaviridae",
+    "Ensavirinae",
+    "Enterovirus",
+    "Enterovirus alphacoxsackie",
+    "Enterovirus A"
+   ],
+   "current": 39054
+  },
+  "43263": {
+   "taxid": 43263,
+   "name": "Aquipseudomonas alcaligenes",
+   "common": [],
+   "synonyms": [
+    "Pseudomonas alcaligenes Monias 1928 (Approved Lists 1980)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Aquipseudomonas"
+   ],
+   "current": 43263
+  },
+  "45657": {
+   "taxid": 45657,
+   "name": "Desulfonema ishimotonii",
+   "common": [],
+   "synonyms": [
+    "Desulfonema ishimotoi"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Thermodesulfobacteriota",
+    "Desulfobacteria",
+    "Desulfobacterales",
+    "Desulfococcaceae",
+    "Desulfonema"
+   ],
+   "current": 45657
+  },
+  "46015": {
+   "taxid": 46015,
+   "name": "Autographa californica nucleopolyhedrovirus",
+   "common": [],
+   "synonyms": [
+    "Autographa californica multicapsid nuclear polyhedrosis virus",
+    "Autographa californica multicapsid nuclear polyhedrosis virus AcMNPV",
+    "Autographa californica nuclear polyhedrosis virus",
+    "Autographa californica nuclear polyhedrosis virus AcMNPV",
+    "Autographa californica nuclear polyhedrosis virus AcNPV",
+    "Autographa californica nuclear polyhedrosis virus, AcMNPV"
+   ],
+   "acronyms": [
+    "AcMNPV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Naldaviricetes",
+    "Lefavirales",
+    "Baculoviridae",
+    "Alphabaculovirus",
+    "Alphabaculovirus aucalifornicae",
+    "Autographa californica multiple nucleopolyhedrovirus"
+   ],
+   "current": 46015
+  },
+  "46170": {
+   "taxid": 46170,
+   "name": "Staphylococcus aureus",
+   "common": [],
+   "synonyms": [
+    "Micrococcus aureus",
+    "Micrococcus pyogenes",
+    "Staphylococcus aureus subsp. anaerobius",
+    "Staphylococcus pyogenes aureus",
+    "Staphylococcus pyogenes citreus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Staphylococcaceae",
+    "Staphylococcus"
+   ],
+   "current": 1280
+  },
+  "52274": {
+   "taxid": 52274,
+   "name": "Saguaro cactus virus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [
+    "SgCV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Kitrinoviricota",
+    "Tolucaviricetes",
+    "Tolivirales",
+    "Tombusviridae",
+    "Procedovirinae",
+    "Alphacarmovirus",
+    "Alphacarmovirus cacti"
+   ],
+   "current": 52274
+  },
+  "53953": {
+   "taxid": 53953,
+   "name": "Pyrococcus horikoshii",
+   "common": [],
+   "synonyms": [
+    "'Pyrococcus shinkaii'",
+    "Pyrococcus shinkaii"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Pyrococcus"
+   ],
+   "current": 53953
+  },
+  "59823": {
+   "taxid": 59823,
+   "name": "Prevotella sp.",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "FCB group",
+    "Bacteroidota/Chlorobiota group",
+    "Bacteroidota",
+    "Bacteroidia",
+    "Bacteroidales",
+    "Prevotellaceae",
+    "Prevotella",
+    "unclassified Prevotella"
+   ],
+   "current": 59823
+  },
+  "62977": {
+   "taxid": 62977,
+   "name": "Acinetobacter baylyi ADP1",
+   "common": [],
+   "synonyms": [
+    "Acinetobacter calcoaceticus ADP1",
+    "Acinetobacter sp. ADP1",
+    "Acinetobacter sp. BD413"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Moraxellales",
+    "Moraxellaceae",
+    "Acinetobacter",
+    "Acinetobacter baylyi"
+   ],
+   "current": 62977
+  },
+  "63363": {
+   "taxid": 63363,
+   "name": "Aquifex aeolicus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Aquificota",
+    "Aquificia",
+    "Aquificales",
+    "Aquificaceae",
+    "Aquifex"
+   ],
+   "current": 63363
+  },
+  "67293": {
+   "taxid": 67293,
+   "name": "Streptomyces echinatus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae",
+    "Streptomyces"
+   ],
+   "current": 67293
+  },
+  "67723": {
+   "taxid": 67723,
+   "name": "Amanita phalloides",
+   "common": [
+    "death cap"
+   ],
+   "synonyms": [
+    "Agaricus phalloides"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Basidiomycota",
+    "Agaricomycotina",
+    "Agaricomycetes",
+    "Agaricomycetidae",
+    "Agaricales",
+    "Pluteineae",
+    "Amanitaceae",
+    "Amanita"
+   ],
+   "current": 67723
+  },
+  "69014": {
+   "taxid": 69014,
+   "name": "Thermococcus kodakarensis KOD1",
+   "common": [],
+   "synonyms": [
+    "Pyrococcus sp. (strain KOD1)",
+    "Pyrococcus sp. KOD1",
+    "Thermococcus kodakaraensis KOD1",
+    "Thermococcus kodakarensis str. KOD1",
+    "Thermococcus kodakarensis strain KOD1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Thermococcus",
+    "Thermococcus kodakarensis"
+   ],
+   "current": 69014
+  },
+  "70601": {
+   "taxid": 70601,
+   "name": "Pyrococcus horikoshii OT3",
+   "common": [],
+   "synonyms": [
+    "Pyrococcus shinkaii OT3",
+    "Pyrococcus horikoshii OT-3",
+    "Pyrococcus horikoshii str. OT3",
+    "Pyrococcus sp. OT3"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Pyrococcus",
+    "Pyrococcus horikoshii"
+   ],
+   "current": 70601
+  },
+  "71997": {
+   "taxid": 71997,
+   "name": "Thermococcus gorgonarius",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Thermococcus"
+   ],
+   "current": 71997
+  },
+  "73141": {
+   "taxid": 73141,
+   "name": "Thiocystis violascens",
+   "common": [],
+   "synonyms": [
+    "Chromatium violaceum",
+    "Chromatium violascens"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Chromatiales",
+    "Chromatiaceae",
+    "Thiocystis"
+   ],
+   "current": 73141
+  },
+  "76114": {
+   "taxid": 76114,
+   "name": "Aromatoleum aromaticum EbN1",
+   "common": [],
+   "synonyms": [
+    "Azoarcus sp. EbN1",
+    "Aromatoleum aromaticum str. EbN1",
+    "Aromatoleum aromaticum strain EbN1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Rhodocyclales",
+    "Rhodocyclaceae",
+    "Aromatoleum",
+    "Aromatoleum aromaticum"
+   ],
+   "current": 76114
+  },
+  "83332": {
+   "taxid": 83332,
+   "name": "Mycobacterium tuberculosis H37Rv",
+   "common": [],
+   "synonyms": [
+    "Mycobacterium sp. H37Rv",
+    "Mycobacterium tuberculosis str. H37Rv",
+    "Mycobacterium tuberculosis strain H37Rv"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Mycobacteriales",
+    "Mycobacteriaceae",
+    "Mycobacterium",
+    "Mycobacterium tuberculosis complex",
+    "Mycobacterium tuberculosis"
+   ],
+   "current": 83332
+  },
+  "83333": {
+   "taxid": 83333,
+   "name": "Escherichia coli K-12",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli K12"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 83333
+  },
+  "83334": {
+   "taxid": 83334,
+   "name": "Escherichia coli O157:H7",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 83334
+  },
+  "85708": {
+   "taxid": 85708,
+   "name": "Porcine circovirus 2",
+   "common": [],
+   "synonyms": [
+    "Porcine circovirus Type II",
+    "Porcine circovirus type 2",
+    "Porcine circovirus-2"
+   ],
+   "acronyms": [
+    "PCV2"
+   ],
+   "lineage": [
+    "Viruses",
+    "Floreoviria",
+    "Shotokuvirae",
+    "Cressdnaviricota",
+    "Arfiviricetes",
+    "Cirlivirales",
+    "Circoviridae",
+    "Circovirus",
+    "Circovirus porcine2"
+   ],
+   "current": 85708
+  },
+  "85962": {
+   "taxid": 85962,
+   "name": "Helicobacter pylori 26695",
+   "common": [],
+   "synonyms": [
+    "Helicobacter pylori ATCC 700392",
+    "Helicobacter pylori KE26695",
+    "Helicobacter pylori (strain 26695)",
+    "Helicobacter pylori str. 26695",
+    "Helicobacter pylori strain 26695"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Campylobacterota",
+    "Epsilonproteobacteria",
+    "Campylobacterales",
+    "Helicobacteraceae",
+    "Helicobacter",
+    "Helicobacter pylori"
+   ],
+   "current": 85962
+  },
+  "86665": {
+   "taxid": 86665,
+   "name": "Halalkalibacterium halodurans",
+   "common": [],
+   "synonyms": [
+    "Alkalihalobacillus halodurans",
+    "Alkalihalobacillus okuhidensis",
+    "Bacillus halodurans (ex Boyer 1973) Nielsen et al. 1995",
+    "Bacillus okuhidensis",
+    "Halalkalibacterium halodurans (Nielsen et al. 1995) Joshi et al. 2022",
+    "Bacillus okuhidaensis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Halalkalibacterium (ex Joshi et al. 2022)"
+   ],
+   "current": 86665
+  },
+  "88776": {
+   "taxid": 88776,
+   "name": "Influenza A virus (A/Brevig Mission/1/1918(H1N1))",
+   "common": [],
+   "synonyms": [
+    "Influenza A virus (A/BREVIG MISSION/1/18 (H1N1))",
+    "Influenza A virus (A/Brevig Mission/1/1918 (H1N1))",
+    "Influenza A virus (A/Brevig_Mission/1/18(H1N1))",
+    "Influenza A virus (A/Brevig_Mission/1/1918(H1N1))"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Alphainfluenzavirus",
+    "Alphainfluenzavirus influenzae",
+    "Influenza A virus",
+    "H1N1 subtype"
+   ],
+   "current": 88776
+  },
+  "90371": {
+   "taxid": 90371,
+   "name": "Salmonella enterica subsp. enterica serovar Typhimurium",
+   "common": [],
+   "synonyms": [
+    "Bacillus typhimurium",
+    "Salmonella choleraesuis serotype typhimurium",
+    "Salmonella enterica 1,4,[5],12,:i:1,2",
+    "Salmonella enterica ser. typhimurium",
+    "Salmonella enterica serotype Typhimurium",
+    "Salmonella enterica serovar Typhimurium",
+    "Salmonella enterica subsp. enterica serovar 1,4,[5],12:i:1,2",
+    "Salmonella typhi-murium",
+    "Salmonella typhimurium"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Salmonella",
+    "Salmonella enterica",
+    "Salmonella enterica subsp. enterica"
+   ],
+   "current": 90371
+  },
+  "93061": {
+   "taxid": 93061,
+   "name": "Staphylococcus aureus subsp. aureus NCTC 8325",
+   "common": [],
+   "synonyms": [
+    "Staphylococcus aureus NCTC 8325",
+    "Staphylococcus aureus subsp. aureus str. NCTC 8325",
+    "Staphylococcus aureus subsp. aureus strain NCTC 8325"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Staphylococcaceae",
+    "Staphylococcus",
+    "Staphylococcus aureus"
+   ],
+   "current": 93061
+  },
+  "93062": {
+   "taxid": 93062,
+   "name": "Staphylococcus aureus subsp. aureus COL",
+   "common": [],
+   "synonyms": [
+    "Staphylococcus aureus COL"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Staphylococcaceae",
+    "Staphylococcus",
+    "Staphylococcus aureus"
+   ],
+   "current": 93062
+  },
+  "93838": {
+   "taxid": 93838,
+   "name": "Influenza A virus (A/goose/Guangdong/1/1996(H5N1))",
+   "common": [],
+   "synonyms": [
+    "Influenza A virus (A/Goose/Guangdong/1/96(H5N1))",
+    "influenza A virus (A/goose/Guangdong/1/96/(H5N1))"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Alphainfluenzavirus",
+    "Alphainfluenzavirus influenzae",
+    "Influenza A virus",
+    "H5N1 subtype"
+   ],
+   "current": 93838
+  },
+  "95486": {
+   "taxid": 95486,
+   "name": "Burkholderia cenocepacia",
+   "common": [],
+   "synonyms": [
+    "Burkholderia cepacia genomovar III"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Burkholderiales",
+    "Burkholderiaceae",
+    "Burkholderia",
+    "Burkholderia cepacia complex"
+   ],
+   "current": 95486
+  },
+  "100226": {
+   "taxid": 100226,
+   "name": "Streptomyces coelicolor A3(2)",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae",
+    "Streptomyces",
+    "Streptomyces albidoflavus group",
+    "Streptomyces coelicolor"
+   ],
+   "current": 100226
+  },
+  "101947": {
+   "taxid": 101947,
+   "name": "Pseudorabies virus Ea",
+   "common": [],
+   "synonyms": [
+    "Pseudorabies virus strain Ea",
+    "Suid herpesvirus 1 (strain Ea)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Peploviricota",
+    "Herviviricetes",
+    "Herpesvirales",
+    "Orthoherpesviridae",
+    "Alphaherpesvirinae",
+    "Varicellovirus",
+    "Varicellovirus suidalpha1",
+    "Suid alphaherpesvirus 1"
+   ],
+   "current": 101947
+  },
+  "113371": {
+   "taxid": 113371,
+   "name": "Spodoptera frugiperda ascovirus 1c",
+   "common": [],
+   "synonyms": [
+    "ascovirus SfAV1c"
+   ],
+   "acronyms": [
+    "SfAV-1c"
+   ],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Megaviricetes",
+    "Pimascovirales",
+    "Ascoviridae",
+    "Ascovirus",
+    "unclassified Ascovirus"
+   ],
+   "current": 113371
+  },
+  "115547": {
+   "taxid": 115547,
+   "name": "uncultured archaeon",
+   "common": [],
+   "synonyms": [
+    "uncultured Archaea archaeon",
+    "uncultured archaeoote"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "environmental samples"
+   ],
+   "current": 115547
+  },
+  "119072": {
+   "taxid": 119072,
+   "name": "Caldanaerobacter subterraneus subsp. tengcongensis",
+   "common": [],
+   "synonyms": [
+    "Thermoanaerobacter tengcongensis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Thermoanaerobacterales",
+    "Thermoanaerobacteraceae",
+    "Caldanaerobacter",
+    "Caldanaerobacter subterraneus"
+   ],
+   "current": 119072
+  },
+  "122280": {
+   "taxid": 122280,
+   "name": "Potato virus Y strain NTN",
+   "common": [],
+   "synonyms": [
+    "potato virus Y NTN"
+   ],
+   "acronyms": [
+    "PVY(NTN)"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Stelpaviricetes",
+    "Patatavirales",
+    "Potyviridae",
+    "Potyvirus",
+    "Potyvirus yituberosi",
+    "Potato virus Y"
+   ],
+   "current": 122280
+  },
+  "126794": {
+   "taxid": 126794,
+   "name": "Vaccinia virus Ankara",
+   "common": [],
+   "synonyms": [
+    "Vaccinia virus (strain Ankara)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Pokkesviricetes",
+    "Chitovirales",
+    "Poxviridae",
+    "Chordopoxvirinae",
+    "Orthopoxvirus",
+    "Orthopoxvirus vaccinia"
+   ],
+   "current": 126794
+  },
+  "126796": {
+   "taxid": 126796,
+   "name": "Thogoto virus (isolate SiAr 126)",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Thogotovirus",
+    "Thogotovirus thogotoense"
+   ],
+   "current": 126796
+  },
+  "128952": {
+   "taxid": 128952,
+   "name": "Ebola virus - Mayinga, Zaire, 1976",
+   "common": [],
+   "synonyms": [
+    "Ebola virus (strain Zaire Mayinga)",
+    "Ebola virus strain Zaire Mayinga",
+    "Zaire ebolavirus - Mayinga (Zaire, 1976)",
+    "Zaire ebolavirus Mayinga strain"
+   ],
+   "acronyms": [
+    "EBOV-May"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Filoviridae",
+    "Orthoebolavirus",
+    "Orthoebolavirus zairense",
+    "Ebola virus"
+   ],
+   "current": 128952
+  },
+  "129003": {
+   "taxid": 129003,
+   "name": "Reston ebolavirus - Reston",
+   "common": [],
+   "synonyms": [
+    "Ebola virus strain Reston"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Filoviridae",
+    "Orthoebolavirus",
+    "Orthoebolavirus restonense",
+    "Reston ebolavirus"
+   ],
+   "current": 129003
+  },
+  "137716": {
+   "taxid": 137716,
+   "name": "Ideonella sp. B508-1",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Burkholderiales",
+    "Sphaerotilaceae",
+    "Ideonella",
+    "unclassified Ideonella"
+   ],
+   "current": 137716
+  },
+  "142102": {
+   "taxid": 142102,
+   "name": "Taura syndrome virus",
+   "common": [],
+   "synonyms": [
+    "Taura syndrome virus of marine penaeid shrimp"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Picornavirales",
+    "Dicistroviridae",
+    "Aparavirus",
+    "Aparavirus tauraense"
+   ],
+   "current": 142102
+  },
+  "146537": {
+   "taxid": 146537,
+   "name": "Streptomyces azureus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Kitasatosporales",
+    "Streptomycetaceae",
+    "Streptomyces"
+   ],
+   "current": 146537
+  },
+  "155892": {
+   "taxid": 155892,
+   "name": "Caulobacter vibrioides",
+   "common": [],
+   "synonyms": [
+    "Caulobacter crescentus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Caulobacterales",
+    "Caulobacteraceae",
+    "Caulobacter"
+   ],
+   "current": 155892
+  },
+  "158879": {
+   "taxid": 158879,
+   "name": "Staphylococcus aureus subsp. aureus N315",
+   "common": [],
+   "synonyms": [
+    "Staphylococcus aureus (strain N315)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Staphylococcaceae",
+    "Staphylococcus",
+    "Staphylococcus aureus"
+   ],
+   "current": 158879
+  },
+  "162145": {
+   "taxid": 162145,
+   "name": "human metapneumovirus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [
+    "HMPV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Pneumoviridae",
+    "Metapneumovirus",
+    "Metapneumovirus hominis"
+   ],
+   "current": 162145
+  },
+  "162425": {
+   "taxid": 162425,
+   "name": "Aspergillus nidulans",
+   "common": [],
+   "synonyms": [
+    "Aspergillus nidulans (Eidam) G. Winter, 1884",
+    "Aspergillus nidulellus",
+    "Emericella nidulans",
+    "Sterigmatocystis nidulans"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Pezizomycotina",
+    "leotiomyceta",
+    "Eurotiomycetes",
+    "Eurotiomycetidae",
+    "Eurotiales",
+    "Aspergillaceae",
+    "Aspergillus",
+    "Aspergillus subgen. Nidulantes"
+   ],
+   "current": 162425
+  },
+  "176299": {
+   "taxid": 176299,
+   "name": "Agrobacterium fabrum str. C58",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Hyphomicrobiales",
+    "Rhizobiaceae",
+    "Rhizobium/Agrobacterium group",
+    "Agrobacterium",
+    "Agrobacterium tumefaciens complex",
+    "Agrobacterium fabrum"
+   ],
+   "current": 176299
+  },
+  "182710": {
+   "taxid": 182710,
+   "name": "Oceanobacillus iheyensis",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Oceanobacillus"
+   ],
+   "current": 182710
+  },
+  "184922": {
+   "taxid": 184922,
+   "name": "Giardia lamblia ATCC 50803",
+   "common": [],
+   "synonyms": [
+    "Giardia intestinalis ATCC 50803"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Metamonada",
+    "Fornicata",
+    "Diplomonadida",
+    "Hexamitidae",
+    "Giardiinae",
+    "Giardia",
+    "Giardia duodenalis"
+   ],
+   "current": 184922
+  },
+  "186497": {
+   "taxid": 186497,
+   "name": "Pyrococcus furiosus DSM 3638",
+   "common": [],
+   "synonyms": [
+    "Pyrococcus furiosus str. DSM 3638",
+    "Pyrococcus furiosus strain DSM 3638"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Pyrococcus",
+    "Pyrococcus furiosus"
+   ],
+   "current": 186497
+  },
+  "188570": {
+   "taxid": 188570,
+   "name": "Rhinolophus lepidus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Laurasiatheria",
+    "Chiroptera",
+    "Yinpterochiroptera",
+    "Rhinolophoidea",
+    "Rhinolophidae",
+    "Rhinolophinae",
+    "Rhinolophus"
+   ],
+   "current": 188570
+  },
+  "190650": {
+   "taxid": 190650,
+   "name": "Caulobacter vibrioides CB15",
+   "common": [],
+   "synonyms": [
+    "Caulobacter crescentus CB15",
+    "Caulobacter vibrioides ATCC 19089"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Caulobacterales",
+    "Caulobacteraceae",
+    "Caulobacter",
+    "Caulobacter vibrioides"
+   ],
+   "current": 190650
+  },
+  "192222": {
+   "taxid": 192222,
+   "name": "Campylobacter jejuni subsp. jejuni NCTC 11168 = ATCC 700819",
+   "common": [],
+   "synonyms": [
+    "Campylobacter jejuni subsp. jejuni ATCC 700819",
+    "Campylobacter jejuni subsp. jejuni NCTC 11168",
+    "Campylobacter jejuni subsp. jejuni ATCC 700819 = NCTC 11168"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Campylobacterota",
+    "Epsilonproteobacteria",
+    "Campylobacterales",
+    "Campylobacteraceae",
+    "Campylobacter",
+    "Campylobacter jejuni",
+    "Campylobacter jejuni subsp. jejuni"
+   ],
+   "current": 192222
+  },
+  "192952": {
+   "taxid": 192952,
+   "name": "Methanosarcina mazei Go1",
+   "common": [],
+   "synonyms": [
+    "Methanosarcina mazei str. Go1",
+    "Methanosarcina mazei strain Go1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Stenosarchaea group",
+    "Methanomicrobia",
+    "Methanosarcinales",
+    "Methanosarcinaceae",
+    "Methanosarcina",
+    "Methanosarcina mazei"
+   ],
+   "current": 192952
+  },
+  "198589": {
+   "taxid": 198589,
+   "name": "Beet western yellows ST9 associated virus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "unclassified Riboviria",
+    "unclassified ssRNA viruses",
+    "unclassified ssRNA positive-strand viruses"
+   ],
+   "current": 198589
+  },
+  "208963": {
+   "taxid": 208963,
+   "name": "Pseudomonas aeruginosa UCBPP-PA14",
+   "common": [],
+   "synonyms": [
+    "Pseudomonas aeruginosa str. UCBPP-PA14"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Pseudomonas",
+    "Pseudomonas aeruginosa group",
+    "Pseudomonas aeruginosa"
+   ],
+   "current": 208963
+  },
+  "208964": {
+   "taxid": 208964,
+   "name": "Pseudomonas aeruginosa PAO1",
+   "common": [],
+   "synonyms": [
+    "Pseudomonas sp. PAO1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Pseudomonas",
+    "Pseudomonas aeruginosa group",
+    "Pseudomonas aeruginosa"
+   ],
+   "current": 208964
+  },
+  "209285": {
+   "taxid": 209285,
+   "name": "Thermochaetoides thermophila",
+   "common": [],
+   "synonyms": [
+    "Chaetomium thermophilum",
+    "Chaetomium thermophilum var. coprophilum",
+    "Chaetomium thermophilum var. thermophilum"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Pezizomycotina",
+    "leotiomyceta",
+    "sordariomyceta",
+    "Sordariomycetes",
+    "Sordariomycetidae",
+    "Sordariales",
+    "Chaetomiaceae",
+    "Thermochaetoides"
+   ],
+   "current": 209285
+  },
+  "218491": {
+   "taxid": 218491,
+   "name": "Pectobacterium atrosepticum SCRI1043",
+   "common": [],
+   "synonyms": [
+    "Erwinia carotovora subsp. atroseptica SCRI1043",
+    "Erwinia carotovora subsp. atroseptica str. SCRI1043",
+    "Pectobacterium carotovora subsp. atroseptica SCRI1043",
+    "Pectobacterium carotovora subsp. atroseptica str. SCRI1043",
+    "Pectobacterium atrosepticum str. SCRI1043",
+    "Pectobacterium atrosepticum strain SCRI1043"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Pectobacteriaceae",
+    "Pectobacterium",
+    "Pectobacterium atrosepticum"
+   ],
+   "current": 218491
+  },
+  "222523": {
+   "taxid": 222523,
+   "name": "Bacillus cereus ATCC 10987",
+   "common": [],
+   "synonyms": [
+    "Bacillus cereus str. ATCC 10987",
+    "Bacillus cereus strain ATCC 10987"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Bacillus",
+    "Bacillus cereus group",
+    "Bacillus cereus"
+   ],
+   "current": 222523
+  },
+  "224308": {
+   "taxid": 224308,
+   "name": "Bacillus subtilis subsp. subtilis str. 168",
+   "common": [],
+   "synonyms": [
+    "Bacillus subtilis 168",
+    "Bacillus subtilis subsp. subtilis 168",
+    "Bacillus subtilis subsp. subtilis str. BGSC 1A700"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Bacillus",
+    "Bacillus subtilis group",
+    "Bacillus subtilis",
+    "Bacillus subtilis subsp. subtilis"
+   ],
+   "current": 224308
+  },
+  "224324": {
+   "taxid": 224324,
+   "name": "Aquifex aeolicus VF5",
+   "common": [],
+   "synonyms": [
+    "Aquifex aeolicus str. VF5"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Aquificota",
+    "Aquificia",
+    "Aquificales",
+    "Aquificaceae",
+    "Aquifex",
+    "Aquifex aeolicus"
+   ],
+   "current": 224324
+  },
+  "230089": {
+   "taxid": 230089,
+   "name": "Photorhabdus thracensis",
+   "common": [],
+   "synonyms": [
+    "Photorhabdus luminescens subsp. thracensis",
+    "Photorhabdus temperata subsp. thracensis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Morganellaceae",
+    "Photorhabdus"
+   ],
+   "current": 230089
+  },
+  "237561": {
+   "taxid": 237561,
+   "name": "Candida albicans SC5314",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Pichiomycetes",
+    "Serinales",
+    "Debaryomycetaceae",
+    "Candida",
+    "Candida albicans"
+   ],
+   "current": 237561
+  },
+  "243273": {
+   "taxid": 243273,
+   "name": "Mycoplasmoides genitalium G37",
+   "common": [],
+   "synonyms": [
+    "Mycoplasma genitalium ATCC 33530",
+    "Mycoplasma genitalium G37",
+    "Mycoplasma genitalium str. G37",
+    "Mycoplasma genitalium strain G37"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Mycoplasmatota",
+    "Mycoplasmoidales",
+    "Mycoplasmoidaceae",
+    "Mycoplasmoides",
+    "Mycoplasmoides genitalium"
+   ],
+   "current": 243273
+  },
+  "243274": {
+   "taxid": 243274,
+   "name": "Thermotoga maritima MSB8",
+   "common": [],
+   "synonyms": [
+    "Thermotoga maritima DSM 3109",
+    "Thermotoga maritima str. MSB8",
+    "Thermotoga maritima strain MSB8"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Thermotogota",
+    "Thermotogae",
+    "Thermotogales",
+    "Thermotogaceae",
+    "Thermotoga",
+    "Thermotoga maritima"
+   ],
+   "current": 243274
+  },
+  "246196": {
+   "taxid": 246196,
+   "name": "Mycolicibacterium smegmatis MC2 155",
+   "common": [],
+   "synonyms": [
+    "Mycobacterium smegmatis MC2 155",
+    "Mycobacterium smegmatis 'MC2 155'"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Mycobacteriales",
+    "Mycobacteriaceae",
+    "Mycobacterium (subgen. Mycolicibacterium)",
+    "Mycolicibacterium smegmatis"
+   ],
+   "current": 246196
+  },
+  "256318": {
+   "taxid": 256318,
+   "name": "metagenome",
+   "common": [],
+   "synonyms": [
+    "environmental sequence",
+    "metagenome sequence"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "unclassified entries",
+    "unclassified sequences",
+    "metagenomes"
+   ],
+   "current": 256318
+  },
+  "262724": {
+   "taxid": 262724,
+   "name": "Thermus thermophilus HB27",
+   "common": [],
+   "synonyms": [
+    "Thermus thermophilus str. HB27",
+    "Thermus thermophilus strain HB27"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Deinococcota",
+    "Deinococci",
+    "Thermales",
+    "Thermaceae",
+    "Thermus",
+    "Thermus thermophilus"
+   ],
+   "current": 262724
+  },
+  "266783": {
+   "taxid": 266783,
+   "name": "Insect cell expression vector pTIE1",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "other entries",
+    "other sequences",
+    "artificial sequences",
+    "vectors",
+    "eukaryotic vectors"
+   ],
+   "current": 266783
+  },
+  "268588": {
+   "taxid": 268588,
+   "name": "Enterobacteria phage L1",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage L1",
+    "E. coli O157:H7-specific bacteriophage L1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "unclassified bacterial viruses"
+   ],
+   "current": 268588
+  },
+  "272558": {
+   "taxid": 272558,
+   "name": "Halalkalibacterium halodurans C-125",
+   "common": [],
+   "synonyms": [
+    "Alkalihalobacillus halodurans C-125",
+    "Bacillus halodurans C-125"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Bacillaceae",
+    "Halalkalibacterium (ex Joshi et al. 2022)",
+    "Halalkalibacterium halodurans"
+   ],
+   "current": 272558
+  },
+  "272563": {
+   "taxid": 272563,
+   "name": "Clostridioides difficile 630",
+   "common": [],
+   "synonyms": [
+    "Clostridium difficile 630",
+    "Peptoclostridium difficile 630",
+    "Clostridium difficile 630 (epidemic type X)",
+    "Clostridium difficile str. 630",
+    "Clostridium difficile strain 630"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Peptostreptococcales",
+    "Peptostreptococcaceae",
+    "Clostridioides",
+    "Clostridioides difficile"
+   ],
+   "current": 272563
+  },
+  "272623": {
+   "taxid": 272623,
+   "name": "Lactococcus lactis subsp. lactis Il1403",
+   "common": [],
+   "synonyms": [
+    "Lactococcus lactis subsp. lactis str. Il1403",
+    "Lactococcus lactis subsp. lactis strain Il1403"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Lactococcus",
+    "Lactococcus lactis",
+    "Lactococcus lactis subsp. lactis"
+   ],
+   "current": 272623
+  },
+  "272630": {
+   "taxid": 272630,
+   "name": "Methylorubrum extorquens AM1",
+   "common": [],
+   "synonyms": [
+    "Methylobacterium extorquens AM1",
+    "Pseudomonas sp. AM1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Alphaproteobacteria",
+    "Hyphomicrobiales",
+    "Methylobacteriaceae",
+    "Methylorubrum",
+    "Methylorubrum extorquens"
+   ],
+   "current": 272630
+  },
+  "272631": {
+   "taxid": 272631,
+   "name": "Mycobacterium leprae TN",
+   "common": [],
+   "synonyms": [
+    "Mycobacterium leprae str. TN",
+    "Mycobacterium leprae strain TN"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Actinomycetota",
+    "Actinomycetes",
+    "Mycobacteriales",
+    "Mycobacteriaceae",
+    "Mycobacterium",
+    "Mycobacterium leprae"
+   ],
+   "current": 272631
+  },
+  "272634": {
+   "taxid": 272634,
+   "name": "Mycoplasmoides pneumoniae M129",
+   "common": [],
+   "synonyms": [
+    "Mycoplasma pneumoniae ATCC 29342",
+    "Mycoplasma pneumoniae M129",
+    "Mycoplasma pneumoniae str. M129",
+    "Mycoplasma pneumoniae strain M129"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Mycoplasmatota",
+    "Mycoplasmoidales",
+    "Mycoplasmoidaceae",
+    "Mycoplasmoides",
+    "Mycoplasmoides pneumoniae"
+   ],
+   "current": 272634
+  },
+  "272844": {
+   "taxid": 272844,
+   "name": "Pyrococcus abyssi GE5",
+   "common": [],
+   "synonyms": [
+    "Pyrococcus abyssi str. Orsay",
+    "Pyrococcus abyssi str. GE5",
+    "Pyrococcus abyssi strain GE5"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Pyrococcus",
+    "Pyrococcus abyssi"
+   ],
+   "current": 272844
+  },
+  "273057": {
+   "taxid": 273057,
+   "name": "Saccharolobus solfataricus P2",
+   "common": [],
+   "synonyms": [
+    "Sulfolobus solfataricus P2"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Thermoproteati",
+    "Thermoproteota",
+    "Thermoprotei",
+    "Sulfolobales",
+    "Sulfolobaceae",
+    "Saccharolobus",
+    "Saccharolobus solfataricus"
+   ],
+   "current": 273057
+  },
+  "284590": {
+   "taxid": 284590,
+   "name": "Kluyveromyces lactis NRRL Y-1140",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Kluyveromyces",
+    "Kluyveromyces lactis"
+   ],
+   "current": 284590
+  },
+  "284812": {
+   "taxid": 284812,
+   "name": "Schizosaccharomyces pombe 972h-",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "Taphrinomycotina",
+    "Schizosaccharomycetes",
+    "Schizosaccharomycetales",
+    "Schizosaccharomycetaceae",
+    "Schizosaccharomyces",
+    "Schizosaccharomyces pombe"
+   ],
+   "current": 284812
+  },
+  "285006": {
+   "taxid": 285006,
+   "name": "Saccharomyces cerevisiae RM11-1a",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Saccharomyces",
+    "Saccharomyces cerevisiae"
+   ],
+   "current": 285006
+  },
+  "290339": {
+   "taxid": 290339,
+   "name": "Cronobacter sakazakii ATCC BAA-894",
+   "common": [],
+   "synonyms": [
+    "Enterobacter sakazakii ATCC BAA-894",
+    "Cronobacter sakazakii strain ATCC BAA-894",
+    "Cronoobacter sakazakii str. ATCC BAA-894"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Cronobacter",
+    "Cronobacter sakazakii"
+   ],
+   "current": 290339
+  },
+  "294381": {
+   "taxid": 294381,
+   "name": "Entamoeba histolytica HM-1:IMSS",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Amoebozoa",
+    "Evosea",
+    "Archamoebae",
+    "Mastigamoebida",
+    "Endamoebidae",
+    "Entamoeba",
+    "Entamoeba histolytica"
+   ],
+   "current": 294381
+  },
+  "300852": {
+   "taxid": 300852,
+   "name": "Thermus thermophilus HB8",
+   "common": [],
+   "synonyms": [
+    "Thermus thermophilus ATCC 27634",
+    "Thermus thermophilus str. HB8",
+    "Thermus thermophilus strain HB8"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Deinococcota",
+    "Deinococci",
+    "Thermales",
+    "Thermaceae",
+    "Thermus",
+    "Thermus thermophilus"
+   ],
+   "current": 300852
+  },
+  "301447": {
+   "taxid": 301447,
+   "name": "Streptococcus pyogenes serotype M1",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus",
+    "Streptococcus pyogenes"
+   ],
+   "current": 301447
+  },
+  "311400": {
+   "taxid": 311400,
+   "name": "Thermococcus kodakarensis",
+   "common": [],
+   "synonyms": [
+    "Pyrococcus kodakaraensis",
+    "Thermococcus kodakarensis corrig. Atomi et al. 2005"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Thermococcus"
+   ],
+   "current": 311400
+  },
+  "312017": {
+   "taxid": 312017,
+   "name": "Tetrahymena thermophila SB210",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Sar",
+    "Alveolata",
+    "Ciliophora",
+    "Intramacronucleata",
+    "Oligohymenophorea",
+    "Hymenostomatida",
+    "Tetrahymenina",
+    "Tetrahymenidae",
+    "Tetrahymena",
+    "Tetrahymena thermophila"
+   ],
+   "current": 312017
+  },
+  "315237": {
+   "taxid": 315237,
+   "name": "Citrobacter sp. RFL231",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Citrobacter",
+    "unclassified Citrobacter"
+   ],
+   "current": 315237
+  },
+  "318829": {
+   "taxid": 318829,
+   "name": "Pyricularia oryzae",
+   "common": [
+    "rice blast fungus"
+   ],
+   "synonyms": [
+    "Magnaporthe oryzae",
+    "Magnaporthe oryzae B.C. Couch, 2002"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Pezizomycotina",
+    "leotiomyceta",
+    "sordariomyceta",
+    "Sordariomycetes",
+    "Sordariomycetidae",
+    "Magnaporthales",
+    "Pyriculariaceae",
+    "Pyricularia"
+   ],
+   "current": 318829
+  },
+  "319224": {
+   "taxid": 319224,
+   "name": "Shewanella putrefaciens CN-32",
+   "common": [],
+   "synonyms": [
+    "Shewanella putrefaciens str. CN-32",
+    "Shewanella putrefaciens strain CN-32"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Alteromonadales",
+    "Shewanellaceae",
+    "Shewanella",
+    "Shewanella putrefaciens"
+   ],
+   "current": 319224
+  },
+  "329463": {
+   "taxid": 329463,
+   "name": "Xanthomonas campestris pv. armoraciae",
+   "common": [],
+   "synonyms": [
+    "Bacterium campestre var. armoraciae"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Lysobacterales",
+    "Lysobacteraceae",
+    "Xanthomonas",
+    "Xanthomonas campestris"
+   ],
+   "current": 329463
+  },
+  "330779": {
+   "taxid": 330779,
+   "name": "Sulfolobus acidocaldarius DSM 639",
+   "common": [],
+   "synonyms": [
+    "Sulfolobus acidocaldarius ATCC 33909",
+    "Sulfolobus acidocaldarius NCIB 11770"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Thermoproteati",
+    "Thermoproteota",
+    "Thermoprotei",
+    "Sulfolobales",
+    "Sulfolobaceae",
+    "Sulfolobus",
+    "Sulfolobus acidocaldarius"
+   ],
+   "current": 330779
+  },
+  "340184": {
+   "taxid": 340184,
+   "name": "Escherichia coli B7A",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli str. B7A",
+    "Escherichia coli strain B7A"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 340184
+  },
+  "342948": {
+   "taxid": 342948,
+   "name": "Thermococcus onnurineus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Thermococci",
+    "Thermococcales",
+    "Thermococcaceae",
+    "Thermococcus"
+   ],
+   "current": 342948
+  },
+  "347515": {
+   "taxid": 347515,
+   "name": "Leishmania major strain Friedlin",
+   "common": [],
+   "synonyms": [
+    "Leishmania major MHOM/IL/81/Friedlin"
+   ],
+   "acronyms": [
+    "LmjF"
+   ],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Discoba",
+    "Euglenozoa",
+    "Kinetoplastea",
+    "Metakinetoplastina",
+    "Trypanosomatida",
+    "Trypanosomatidae",
+    "Leishmaniinae",
+    "Leishmania",
+    "Leishmania",
+    "Leishmania major species complex",
+    "Leishmania major"
+   ],
+   "current": 347515
+  },
+  "356411": {
+   "taxid": 356411,
+   "name": "Hepatitis C virus JFH-1",
+   "common": [],
+   "synonyms": [
+    "Hepatitis C virus (isolate JFH-1)",
+    "Hepatitis C virus strain JFH-1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Kitrinoviricota",
+    "Flasuviricetes",
+    "Amarillovirales",
+    "Hepaciviridae",
+    "Orthohepacivirus",
+    "Orthohepacivirus hominis",
+    "Hepatitis C virus genotype 2",
+    "Hepatitis C virus subtype 2a"
+   ],
+   "current": 356411
+  },
+  "362948": {
+   "taxid": 362948,
+   "name": "Ligilactobacillus salivarius UCC118",
+   "common": [],
+   "synonyms": [
+    "Lactobacillus salivarius UCC118",
+    "Lactobacillus salivarius subsp. salivarius UCC118",
+    "Lactobacillus salivarius str. UCC118",
+    "Lactobacillus salivarius strain UCC118"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Lactobacillaceae",
+    "Ligilactobacillus",
+    "Ligilactobacillus salivarius"
+   ],
+   "current": 362948
+  },
+  "386891": {
+   "taxid": 386891,
+   "name": "Moraxella bovoculi",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Moraxellales",
+    "Moraxellaceae",
+    "Moraxella"
+   ],
+   "current": 386891
+  },
+  "399795": {
+   "taxid": 399795,
+   "name": "Comamonas testosteroni KF-1",
+   "common": [],
+   "synonyms": [
+    "Comamonas testosteroni str. KF-1",
+    "Comamonas testosteroni strain KF-1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Burkholderiales",
+    "Comamonadaceae",
+    "Comamonas",
+    "Comamonas testosteroni"
+   ],
+   "current": 399795
+  },
+  "401614": {
+   "taxid": 401614,
+   "name": "Francisella tularensis subsp. novicida U112",
+   "common": [],
+   "synonyms": [
+    "Francisella novicida U112"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Thiotrichales",
+    "Francisellaceae",
+    "Francisella",
+    "Francisella tularensis",
+    "Francisella tularensis subsp. novicida"
+   ],
+   "current": 401614
+  },
+  "408172": {
+   "taxid": 408172,
+   "name": "marine metagenome",
+   "common": [],
+   "synonyms": [
+    "ocean metagenome"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "unclassified entries",
+    "unclassified sequences",
+    "metagenomes",
+    "ecological metagenomes"
+   ],
+   "current": 408172
+  },
+  "408688": {
+   "taxid": 408688,
+   "name": "Dengue virus 4 Thailand/0348/1991",
+   "common": [],
+   "synonyms": [
+    "Dengue virus type 4 Thailand/0348/1991"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Kitrinoviricota",
+    "Flasuviricetes",
+    "Amarillovirales",
+    "Flaviviridae",
+    "Orthoflavivirus",
+    "Euflavivirus",
+    "Orthoflavivirus denguei",
+    "Dengue virus",
+    "dengue virus type 4"
+   ],
+   "current": 408688
+  },
+  "429344": {
+   "taxid": 429344,
+   "name": "Maribacter polysiphoniae",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "FCB group",
+    "Bacteroidota/Chlorobiota group",
+    "Bacteroidota",
+    "Flavobacteriia",
+    "Flavobacteriales",
+    "Flavobacteriaceae",
+    "Maribacter"
+   ],
+   "current": 429344
+  },
+  "437402": {
+   "taxid": 437402,
+   "name": "Influenza A virus (A/turkey/Italy/977/1999(H7N1))",
+   "common": [],
+   "synonyms": [
+    "Influenza A virus (A/turkey/Italy/977/99 (H7N1))"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Alphainfluenzavirus",
+    "Alphainfluenzavirus influenzae",
+    "Influenza A virus",
+    "H7N1 subtype"
+   ],
+   "current": 437402
+  },
+  "438033": {
+   "taxid": 438033,
+   "name": "Ruminococcus gauvreauii",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Eubacteriales",
+    "Oscillospiraceae",
+    "Ruminococcus"
+   ],
+   "current": 438033
+  },
+  "460519": {
+   "taxid": 460519,
+   "name": "Komagataella phaffii",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Pichiomycetes",
+    "Pichiales",
+    "Pichiaceae",
+    "Komagataella"
+   ],
+   "current": 460519
+  },
+  "466052": {
+   "taxid": 466052,
+   "name": "Oshimavirus P7426",
+   "common": [],
+   "synonyms": [
+    "Thermus virus P74-26"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Oshimavirus"
+   ],
+   "current": 466052
+  },
+  "469008": {
+   "taxid": 469008,
+   "name": "Escherichia coli BL21(DE3)",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli str. BL21(DE3)",
+    "Escherichia coli strain BL21(DE3)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 469008
+  },
+  "472759": {
+   "taxid": 472759,
+   "name": "Nitrosococcus halophilus Nc 4",
+   "common": [],
+   "synonyms": [
+    "Nitrosococcus halophilus str. Nc 4",
+    "Nitrosococcus halophilus strain Nc 4"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Chromatiales",
+    "Chromatiaceae",
+    "Nitrosococcus",
+    "Nitrosococcus halophilus"
+   ],
+   "current": 472759
+  },
+  "480119": {
+   "taxid": 480119,
+   "name": "Acinetobacter baumannii AB0057",
+   "common": [],
+   "synonyms": [
+    "Acinetobacter baumannii str. AB0057",
+    "Acinetobacter baumannii strain AB0057"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Moraxellales",
+    "Moraxellaceae",
+    "Acinetobacter",
+    "Acinetobacter calcoaceticus/baumannii complex",
+    "Acinetobacter baumannii"
+   ],
+   "current": 480119
+  },
+  "507522": {
+   "taxid": 507522,
+   "name": "Klebsiella variicola 342",
+   "common": [],
+   "synonyms": [
+    "Klebsiella pneumoniae 342"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Klebsiella",
+    "Klebsiella pneumoniae complex",
+    "Klebsiella variicola"
+   ],
+   "current": 507522
+  },
+  "509192": {
+   "taxid": 509192,
+   "name": "Thermoanaerobacter ethanolicus JW 200",
+   "common": [],
+   "synonyms": [
+    "Thermoanaerobacter ethanolicus str. JW 200",
+    "Thermoanaerobacter ethanolicus strain JW 200"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Thermoanaerobacterales",
+    "Thermoanaerobacteraceae",
+    "Thermoanaerobacter",
+    "Thermoanaerobacter ethanolicus"
+   ],
+   "current": 509192
+  },
+  "509193": {
+   "taxid": 509193,
+   "name": "Thermoanaerobacter brockii subsp. finnii Ako-1",
+   "common": [],
+   "synonyms": [
+    "Thermoanaerobacter brockii subsp. finnii DSM 3389",
+    "Thermoanaerobacter brockii subsp. finnii str. Ako-1",
+    "Thermoanaerobacter brockii subsp. finnii strain Ako-1"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Thermoanaerobacterales",
+    "Thermoanaerobacteraceae",
+    "Thermoanaerobacter",
+    "Thermoanaerobacter brockii",
+    "Thermoanaerobacter brockii subsp. finnii"
+   ],
+   "current": 509193
+  },
+  "511145": {
+   "taxid": 511145,
+   "name": "Escherichia coli str. K-12 substr. MG1655",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli MG1655",
+    "Escherichia coli str. K12 substr. MG1655",
+    "Escherichia coli str. MG1655",
+    "Escherichia coli strain MG1655"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli",
+    "Escherichia coli K-12"
+   ],
+   "current": 511145
+  },
+  "511693": {
+   "taxid": 511693,
+   "name": "Escherichia coli BL21",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli str. BL21",
+    "Escherichia coli strain BL21"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 511693
+  },
+  "523794": {
+   "taxid": 523794,
+   "name": "Leptotrichia buccalis C-1013-b",
+   "common": [],
+   "synonyms": [
+    "Leptotrichia buccalis DSM 1135",
+    "Leptotrichia buccalis str. C-1013-b",
+    "Leptotrichia buccalis strain C-1013-b"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Fusobacteriati",
+    "Fusobacteriota",
+    "Fusobacteriia",
+    "Fusobacteriales",
+    "Leptotrichiaceae",
+    "Leptotrichia",
+    "Leptotrichia buccalis"
+   ],
+   "current": 523794
+  },
+  "545124": {
+   "taxid": 545124,
+   "name": "Saccharomyces cerevisiae AWRI1631",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Saccharomyces",
+    "Saccharomyces cerevisiae"
+   ],
+   "current": 545124
+  },
+  "559292": {
+   "taxid": 559292,
+   "name": "Saccharomyces cerevisiae S288C",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Saccharomyces",
+    "Saccharomyces cerevisiae"
+   ],
+   "current": 559292
+  },
+  "561572": {
+   "taxid": 561572,
+   "name": "Frieseomelitta varia",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Hymenoptera",
+    "Apocrita",
+    "Aculeata",
+    "Apoidea",
+    "Anthophila",
+    "Apidae",
+    "Apinae",
+    "Meliponini",
+    "Frieseomelitta"
+   ],
+   "current": 561572
+  },
+  "575584": {
+   "taxid": 575584,
+   "name": "Acinetobacter baumannii ATCC 19606 = CIP 70.34 = JCM 6841",
+   "common": [],
+   "synonyms": [
+    "Acinetobacter baumannii ATCC 19606",
+    "Acinetobacter baumannii CIP 70.34",
+    "Acinetobacter baumannii JCM 6841"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Moraxellales",
+    "Moraxellaceae",
+    "Acinetobacter",
+    "Acinetobacter calcoaceticus/baumannii complex",
+    "Acinetobacter baumannii"
+   ],
+   "current": 575584
+  },
+  "585035": {
+   "taxid": 585035,
+   "name": "Escherichia coli S88",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli str. S88",
+    "Escherichia coli strain S88"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 585035
+  },
+  "604162": {
+   "taxid": 604162,
+   "name": "Neisseria meningitidis 8013",
+   "common": [],
+   "synonyms": [
+    "Neisseria meningitidis str. 8013",
+    "Neisseria meningitidis strain 8013"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Neisseriales",
+    "Neisseriaceae",
+    "Neisseria",
+    "Neisseria meningitidis",
+    "Neisseria meningitidis serogroup C"
+   ],
+   "current": 604162
+  },
+  "626947": {
+   "taxid": 626947,
+   "name": "Parasutterella secunda",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Betaproteobacteria",
+    "Burkholderiales",
+    "Sutterellaceae",
+    "Parasutterella"
+   ],
+   "current": 626947
+  },
+  "634468": {
+   "taxid": 634468,
+   "name": "Escherichia coli HB101",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli str. HB101",
+    "Escherichia coli strain HB101"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 634468
+  },
+  "643648": {
+   "taxid": 643648,
+   "name": "Syntrophothermus lipocalidus DSM 12680",
+   "common": [],
+   "synonyms": [
+    "Syntrophothermus lipocalidus TGB-C1",
+    "Syntrophothermus lipocalidus str. DSM 12680",
+    "Syntrophothermus lipocalidus strain DSM 12680"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Eubacteriales",
+    "Syntrophomonadaceae",
+    "Syntrophothermus",
+    "Syntrophothermus lipocalidus"
+   ],
+   "current": 643648
+  },
+  "644223": {
+   "taxid": 644223,
+   "name": "Komagataella phaffii GS115",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Pichiomycetes",
+    "Pichiales",
+    "Pichiaceae",
+    "Komagataella",
+    "Komagataella phaffii"
+   ],
+   "current": 644223
+  },
+  "668369": {
+   "taxid": 668369,
+   "name": "Escherichia coli DH5[alpha]",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli DH5alpha",
+    "Escherichia coli str. DH5[alpha]",
+    "Escherichia coli strain DH5[alpha]"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 668369
+  },
+  "679895": {
+   "taxid": 679895,
+   "name": "Escherichia coli BW25113",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli str. BW25113",
+    "Escherichia coli strain BW25113"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli",
+    "Escherichia coli K-12"
+   ],
+   "current": 679895
+  },
+  "694008": {
+   "taxid": 694008,
+   "name": "Pipistrellus bat coronavirus HKU5",
+   "common": [],
+   "synonyms": [
+    "Bat coronavirus HKU5"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Nidovirales",
+    "Cornidovirineae",
+    "Coronaviridae",
+    "Orthocoronavirinae",
+    "Betacoronavirus",
+    "Merbecovirus",
+    "Betacoronavirus pipistrelli"
+   ],
+   "current": 694008
+  },
+  "694067": {
+   "taxid": 694067,
+   "name": "Human metapneumovirus CAN97-83",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Pneumoviridae",
+    "Metapneumovirus",
+    "Metapneumovirus hominis",
+    "human metapneumovirus"
+   ],
+   "current": 694067
+  },
+  "694581": {
+   "taxid": 694581,
+   "name": "Marseillevirus marseillevirus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Megaviricetes",
+    "Pimascovirales",
+    "Marseilleviridae",
+    "Marseillevirus",
+    "Marseillevirus massiliense"
+   ],
+   "current": 694581
+  },
+  "754047": {
+   "taxid": 754047,
+   "name": "Rhodobacter phage RcNL1",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "unclassified Caudoviricetes"
+   ],
+   "current": 754047
+  },
+  "759272": {
+   "taxid": 759272,
+   "name": "Thermochaetoides thermophila DSM 1495",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Pezizomycotina",
+    "leotiomyceta",
+    "sordariomyceta",
+    "Sordariomycetes",
+    "Sordariomycetidae",
+    "Sordariales",
+    "Chaetomiaceae",
+    "Thermochaetoides",
+    "Thermochaetoides thermophila"
+   ],
+   "current": 759272
+  },
+  "767463": {
+   "taxid": 767463,
+   "name": "Streptococcus thermophilus ND03",
+   "common": [],
+   "synonyms": [
+    "Streptococcus thermophilus str. ND03",
+    "Streptococcus thermophilus strain ND03"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus",
+    "Streptococcus thermophilus"
+   ],
+   "current": 767463
+  },
+  "866768": {
+   "taxid": 866768,
+   "name": "Escherichia coli 'BL21-Gold(DE3)pLysS AG'",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli BL21-Gold(DE3)pLysS AG",
+    "Escherichia coli str. BL21-Gold(DE3)pLysS AG",
+    "Escherichia coli strain BL21-Gold(DE3)pLysS AG"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli"
+   ],
+   "current": 866768
+  },
+  "905931": {
+   "taxid": 905931,
+   "name": "in vitro transcription vector pT7-TP(deltai)",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "other entries",
+    "other sequences",
+    "artificial sequences",
+    "vectors"
+   ],
+   "current": 905931
+  },
+  "905932": {
+   "taxid": 905932,
+   "name": "in vitro transcription vector pT7-Fluc(deltai)",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "other entries",
+    "other sequences",
+    "artificial sequences",
+    "vectors"
+   ],
+   "current": 905932
+  },
+  "930945": {
+   "taxid": 930945,
+   "name": "Saccharolobus islandicus REY15A",
+   "common": [],
+   "synonyms": [
+    "Sulfolobus islandicus str. REY15A",
+    "Sulfolobus islandicus strain REY15A"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Thermoproteati",
+    "Thermoproteota",
+    "Thermoprotei",
+    "Sulfolobales",
+    "Sulfolobaceae",
+    "Saccharolobus",
+    "Saccharolobus islandicus"
+   ],
+   "current": 930945
+  },
+  "941442": {
+   "taxid": 941442,
+   "name": "Giardia duodenalis assemblage A",
+   "common": [],
+   "synonyms": [
+    "Giardia intestinalis assemblage A",
+    "Giardia lamblia (assemblage A)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Metamonada",
+    "Fornicata",
+    "Diplomonadida",
+    "Hexamitidae",
+    "Giardiinae",
+    "Giardia",
+    "Giardia duodenalis"
+   ],
+   "current": 941442
+  },
+  "980427": {
+   "taxid": 980427,
+   "name": "Deinococcus wulumuqiensis",
+   "common": [],
+   "synonyms": [
+    "Deinococcus wulumuqiensis Wang et al. 2010",
+    "Deinococcus xibeiensis"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Thermotogati",
+    "Deinococcota",
+    "Deinococci",
+    "Deinococcales",
+    "Deinococcaceae",
+    "Deinococcus"
+   ],
+   "current": 980427
+  },
+  "981350": {
+   "taxid": 981350,
+   "name": "Komagataella phaffii CBS 7435",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Pichiomycetes",
+    "Pichiales",
+    "Pichiaceae",
+    "Komagataella",
+    "Komagataella phaffii"
+   ],
+   "current": 981350
+  },
+  "992210": {
+   "taxid": 992210,
+   "name": "SFTS virus AH12",
+   "common": [],
+   "synonyms": [
+    "Phlebovirus AH12/China/2010",
+    "SFTSV AH12"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Bunyaviricetes",
+    "Hareavirales",
+    "Phenuiviridae",
+    "Bandavirus",
+    "Bandavirus dabieense",
+    "SFTS phlebovirus"
+   ],
+   "current": 992210
+  },
+  "1110693": {
+   "taxid": 1110693,
+   "name": "Escherichia coli str. K-12 substr. MDS42",
+   "common": [],
+   "synonyms": [
+    "Escherichia coli MDS42",
+    "Escherichia coli strain K-12 substrain MDS42"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli",
+    "Escherichia coli K-12"
+   ],
+   "current": 1110693
+  },
+  "1129347": {
+   "taxid": 1129347,
+   "name": "Influenza A virus (A/little yellow-shouldered bat/Guatemala/060/2010(H17N10))",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Alphainfluenzavirus",
+    "Alphainfluenzavirus influenzae",
+    "Influenza A virus",
+    "H17N10 subtype"
+   ],
+   "current": 1129347
+  },
+  "1150990": {
+   "taxid": 1150990,
+   "name": "Hafnia phage Enc34",
+   "common": [],
+   "synonyms": [
+    "Enterobacter phage Enc34"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Casjensviridae",
+    "Enchivirus",
+    "Enchivirus Enc34"
+   ],
+   "current": 1150990
+  },
+  "1175657": {
+   "taxid": 1175657,
+   "name": "Pseudomonas phage PaMx11",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Mesyanzhinovviridae",
+    "Bradleyvirinae",
+    "Abidjanvirus",
+    "Abidjanvirus PaMx11",
+    "Pseudomonas virus PaMx11"
+   ],
+   "current": 1175657
+  },
+  "1182038": {
+   "taxid": 1182038,
+   "name": "Escherichia coli-Pichia pastoris shuttle vector pPpHIS4",
+   "common": [],
+   "synonyms": [
+    "E.coli-K.pastoris shuttle vector pPpHIS4"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "other entries",
+    "other sequences",
+    "artificial sequences",
+    "vectors"
+   ],
+   "current": 1182038
+  },
+  "1247190": {
+   "taxid": 1247190,
+   "name": "Saccharomyces cerevisiae BY4741",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Fungi",
+    "Dikarya",
+    "Ascomycota",
+    "saccharomyceta",
+    "Saccharomycotina",
+    "Saccharomycetes",
+    "Saccharomycetales",
+    "Saccharomycetaceae",
+    "Saccharomyces",
+    "Saccharomyces cerevisiae"
+   ],
+   "current": 1247190
+  },
+  "1263550": {
+   "taxid": 1263550,
+   "name": "Edwardsiella piscicida",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Hafniaceae",
+    "Edwardsiella"
+   ],
+   "current": 1263550
+  },
+  "1267533": {
+   "taxid": 1267533,
+   "name": "Acidobacteriaceae bacterium KBS 83",
+   "common": [],
+   "synonyms": [
+    "Acidobacteria bacterium KBS 83"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Acidobacteriota",
+    "Terriglobia",
+    "Terriglobales",
+    "Acidobacteriaceae",
+    "unclassified Acidobacteriaceae"
+   ],
+   "current": 1267533
+  },
+  "1268061": {
+   "taxid": 1268061,
+   "name": "Streptococcus thermophilus DGCC 7710",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Lactobacillales",
+    "Streptococcaceae",
+    "Streptococcus",
+    "Streptococcus thermophilus"
+   ],
+   "current": 1268061
+  },
+  "1318616": {
+   "taxid": 1318616,
+   "name": "Influenza A virus (A/Zhejiang/DTID-ZJU01/2013(H7N9))",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Alphainfluenzavirus",
+    "Alphainfluenzavirus influenzae",
+    "Influenza A virus",
+    "H7N9 subtype"
+   ],
+   "current": 1318616
+  },
+  "1327989": {
+   "taxid": 1327989,
+   "name": "Serratia sp. FS14",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Yersiniaceae",
+    "Serratia",
+    "unclassified Serratia (in: enterobacteria)"
+   ],
+   "current": 1327989
+  },
+  "1335626": {
+   "taxid": 1335626,
+   "name": "Middle East respiratory syndrome-related coronavirus",
+   "common": [],
+   "synonyms": [
+    "MERS coronavirus",
+    "MERS virus",
+    "Middle East Respiratory Syndrome Coronavirus (MERS-CoV)",
+    "Middle East respiratory syndrome coronavirus"
+   ],
+   "acronyms": [
+    "MERS",
+    "MERS-CoV"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Nidovirales",
+    "Cornidovirineae",
+    "Coronaviridae",
+    "Orthocoronavirinae",
+    "Betacoronavirus",
+    "Merbecovirus",
+    "Betacoronavirus cameli"
+   ],
+   "current": 1335626
+  },
+  "1393122": {
+   "taxid": 1393122,
+   "name": "Thermoflavifilum thermophilum",
+   "common": [],
+   "synonyms": [
+    "Crenotalea thermophila",
+    "Thermoflavifilum thermophilum (Hanada et al. 2014) García-López et al. 2020"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "FCB group",
+    "Bacteroidota/Chlorobiota group",
+    "Bacteroidota",
+    "Chitinophagia",
+    "Chitinophagales",
+    "Chitinophagaceae",
+    "Thermoflavifilum"
+   ],
+   "current": 1393122
+  },
+  "1403831": {
+   "taxid": 1403831,
+   "name": "Escherichia coli str. K-12 substr. MC4100",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Enterobacterales",
+    "Enterobacteriaceae",
+    "Escherichia",
+    "Escherichia coli",
+    "Escherichia coli K-12"
+   ],
+   "current": 1403831
+  },
+  "1410628": {
+   "taxid": 1410628,
+   "name": "Lachnospiraceae bacterium ND2006",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Clostridia",
+    "Lachnospirales",
+    "Lachnospiraceae",
+    "unclassified Lachnospiraceae"
+   ],
+   "current": 1410628
+  },
+  "1434121": {
+   "taxid": 1434121,
+   "name": "Methanosarcina thermophila CHTI-55",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Methanobacteriati",
+    "Methanobacteriota",
+    "Stenosarchaea group",
+    "Methanomicrobia",
+    "Methanosarcinales",
+    "Methanosarcinaceae",
+    "Methanosarcina",
+    "Methanosarcina thermophila"
+   ],
+   "current": 1434121
+  },
+  "1469607": {
+   "taxid": 1469607,
+   "name": "[Scytonema hofmanni] UTEX 2349",
+   "common": [],
+   "synonyms": [
+    "Scytonema hofmanni UTEX 2349"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Cyanobacteriota/Melainabacteria group",
+    "Cyanobacteriota",
+    "Cyanophyceae",
+    "Nostocales",
+    "Tolypothrichaceae",
+    "Tolypothrix",
+    "[Scytonema hofmanni] UTEX B 1581"
+   ],
+   "current": 1469607
+  },
+  "1513237": {
+   "taxid": 1513237,
+   "name": "Cuevavirus lloviuense",
+   "common": [],
+   "synonyms": [
+    "Lloviu cuevavirus",
+    "Lloviu virus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Haploviricotina",
+    "Monjiviricetes",
+    "Mononegavirales",
+    "Filoviridae",
+    "Cuevavirus"
+   ],
+   "current": 3052148
+  },
+  "1560514": {
+   "taxid": 1560514,
+   "name": "Marseillevirus sp. 'Melbournevirus'",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Varidnaviria",
+    "Bamfordvirae",
+    "Nucleocytoviricota",
+    "Megaviricetes",
+    "Pimascovirales",
+    "Marseilleviridae",
+    "Marseillevirus",
+    "unclassified Marseillevirus"
+   ],
+   "current": 1560514
+  },
+  "1579311": {
+   "taxid": 1579311,
+   "name": "Camelidae mixed library",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Deuterostomia",
+    "Chordata",
+    "Craniata",
+    "Vertebrata",
+    "Gnathostomata",
+    "Teleostomi",
+    "Euteleostomi",
+    "Sarcopterygii",
+    "Dipnotetrapodomorpha",
+    "Tetrapoda",
+    "Amniota",
+    "Mammalia",
+    "Theria",
+    "Eutheria",
+    "Boreoeutheria",
+    "Laurasiatheria",
+    "Artiodactyla",
+    "Tylopoda",
+    "Camelidae",
+    "unclassified Camelidae"
+   ],
+   "current": 1579311
+  },
+  "1601067": {
+   "taxid": 1601067,
+   "name": "Influenza B virus (B/Memphis/13/2003)",
+   "common": [],
+   "synonyms": [
+    "Influenza B virus (B/Memphis/13/03)"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Insthoviricetes",
+    "Articulavirales",
+    "Orthomyxoviridae",
+    "Betainfluenzavirus",
+    "Betainfluenzavirus influenzae",
+    "Influenza B virus"
+   ],
+   "current": 1601067
+  },
+  "1685505": {
+   "taxid": 1685505,
+   "name": "Expression vector pET-mod",
+   "common": [],
+   "synonyms": [
+    "pET-mod expression vector"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "other entries",
+    "other sequences",
+    "artificial sequences",
+    "vectors"
+   ],
+   "current": 1685505
+  },
+  "1697053": {
+   "taxid": 1697053,
+   "name": "Thiopseudomonas alkaliphila",
+   "common": [],
+   "synonyms": [
+    "Oblitimonas alkaliphila"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "Pseudomonadota",
+    "Gammaproteobacteria",
+    "Pseudomonadales",
+    "Pseudomonadaceae",
+    "Thiopseudomonas"
+   ],
+   "current": 1697053
+  },
+  "1852835": {
+   "taxid": 1852835,
+   "name": "Candidatus Cloacimonetes bacterium ADurb.Bin088",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "FCB group",
+    "Candidatus Cloacimonadota",
+    "unclassified Candidatus Cloacimonadota"
+   ],
+   "current": 1852835
+  },
+  "1869227": {
+   "taxid": 1869227,
+   "name": "bacterium",
+   "common": [],
+   "synonyms": [
+    "Bacteria bacterium",
+    "Bacteria sp.",
+    "Bacterial sp.",
+    "Bacterium sp.",
+    "Unknown eubacteria",
+    "Unknown eubacterium",
+    "unclassified bacterium",
+    "unidentified bacteria",
+    "unidentified bacterium",
+    "unidentified eubacterium",
+    "unknown bacteria"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "unclassified Bacteria"
+   ],
+   "current": 1869227
+  },
+  "1891767": {
+   "taxid": 1891767,
+   "name": "Betapolyomavirus macacae",
+   "common": [],
+   "synonyms": [
+    "Macaca mulatta polyomavirus 1",
+    "Polyomavirus maccacae",
+    "Polyomavirus maccacae 1",
+    "Rhesus macaque polyomavirus",
+    "Simian virus 40",
+    "rhesus polyomavirus"
+   ],
+   "acronyms": [
+    "SV40"
+   ],
+   "lineage": [
+    "Viruses",
+    "Floreoviria",
+    "Shotokuvirae",
+    "Cossaviricota",
+    "Papovaviricetes",
+    "Sepolyvirales",
+    "Polyomaviridae",
+    "Betapolyomavirus"
+   ],
+   "current": 1891767
+  },
+  "1898104": {
+   "taxid": 1898104,
+   "name": "Bacteroidota bacterium",
+   "common": [],
+   "synonyms": [
+    "Bacteroidetes bacterium"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "FCB group",
+    "Bacteroidota/Chlorobiota group",
+    "Bacteroidota",
+    "unclassified Bacteroidota"
+   ],
+   "current": 1898104
+  },
+  "1980456": {
+   "taxid": 1980456,
+   "name": "Orthohantavirus andesense",
+   "common": [],
+   "synonyms": [
+    "Andes hantavirus",
+    "Andes orthohantavirus",
+    "Andes virus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Bunyaviricetes",
+    "Elliovirales",
+    "Hantaviridae",
+    "Mammantavirinae",
+    "Orthohantavirus"
+   ],
+   "current": 1980456
+  },
+  "1980471": {
+   "taxid": 1980471,
+   "name": "Orthohantavirus hantanense",
+   "common": [],
+   "synonyms": [
+    "Hantaan hantavirus",
+    "Hantaan orthohantavirus",
+    "Hantaan virus",
+    "Korean hemorrhagic fever virus"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Negarnaviricota",
+    "Polyploviricotina",
+    "Bunyaviricetes",
+    "Elliovirales",
+    "Hantaviridae",
+    "Mammantavirinae",
+    "Orthohantavirus"
+   ],
+   "current": 3052480
+  },
+  "2014529": {
+   "taxid": 2014529,
+   "name": "Nostoc sp. 'Peltigera membranacea cyanobiont' 210A",
+   "common": [],
+   "synonyms": [
+    "Nostoc sp. 'Peltigera membranacea cyanobiont' strain:210A"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Cyanobacteriota/Melainabacteria group",
+    "Cyanobacteriota",
+    "Cyanophyceae",
+    "Nostocales",
+    "Nostocaceae",
+    "Nostoc",
+    "unclassified Nostoc",
+    "Nostoc cyanobionts"
+   ],
+   "current": 2014529
+  },
+  "2056631": {
+   "taxid": 2056631,
+   "name": "Thermoproteota archaeon",
+   "common": [],
+   "synonyms": [
+    "Candidatus Korarchaeota archaeon",
+    "Candidatus Methanomethylicota archaeon",
+    "Candidatus Verstraetearchaeota archaeon",
+    "Crenarchaeota archaeon",
+    "Korarchaeota archaeon",
+    "Methanomethylicota archaeon",
+    "Verstraetearchaeota archaeon"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Archaea",
+    "Thermoproteati",
+    "Thermoproteota",
+    "unclassified Thermoproteota"
+   ],
+   "current": 2056631
+  },
+  "2065189": {
+   "taxid": 2065189,
+   "name": "Dysgonamonadaceae bacterium",
+   "common": [],
+   "synonyms": [
+    "Dysgonomonadaceae bacterium"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Pseudomonadati",
+    "FCB group",
+    "Bacteroidota/Chlorobiota group",
+    "Bacteroidota",
+    "Bacteroidia",
+    "Bacteroidales",
+    "Dysgonomonadaceae",
+    "unclassified Dysgonomonadaceae"
+   ],
+   "current": 2065189
+  },
+  "2419741": {
+   "taxid": 2419741,
+   "name": "Escherichia phage EcSzw-2",
+   "common": [],
+   "synonyms": [
+    "E.coli phage EcSzw-2"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Andersonviridae",
+    "Ounavirinae",
+    "unclassified Ounavirinae",
+    "Suspvirus",
+    "unclassified Suspvirus"
+   ],
+   "current": 2419741
+  },
+  "2449148": {
+   "taxid": 2449148,
+   "name": "Spodoptera aff. frugiperda 1 BOLD-2017",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Eukaryota",
+    "Opisthokonta",
+    "Metazoa",
+    "Eumetazoa",
+    "Bilateria",
+    "Protostomia",
+    "Ecdysozoa",
+    "Panarthropoda",
+    "Arthropoda",
+    "Mandibulata",
+    "Pancrustacea",
+    "Altocrustacea",
+    "Allotriocarida",
+    "Hexapoda",
+    "Insecta",
+    "Dicondylia",
+    "Pterygota",
+    "Neoptera",
+    "Eumetabola",
+    "Endopterygota",
+    "Aparaglossata",
+    "Panorpida",
+    "Amphiesmenoptera",
+    "Lepidoptera",
+    "Glossata",
+    "Neolepidoptera",
+    "Heteroneura",
+    "Ditrysia",
+    "Obtectomera",
+    "Noctuoidea",
+    "Noctuidae",
+    "Amphipyrinae",
+    "Spodoptera"
+   ],
+   "current": 2449148
+  },
+  "2681598": {
+   "taxid": 2681598,
+   "name": "Escherichia phage T4",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage T4",
+    "Enterobacteria phage T4",
+    "Enterobacteria phage T4 sensu lato",
+    "coliphage T4",
+    "phage T4"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Pantevenvirales",
+    "Straboviridae",
+    "Tevenvirinae",
+    "Tequatrovirus",
+    "Tequatrovirus T4"
+   ],
+   "current": 2681598
+  },
+  "2681603": {
+   "taxid": 2681603,
+   "name": "Escherichia phage Mu",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage Mu",
+    "Enterobacteria phage Mu",
+    "phage Mu"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Muvirus",
+    "Muvirus mu"
+   ],
+   "current": 2681603
+  },
+  "2681611": {
+   "taxid": 2681611,
+   "name": "Escherichia phage Lambda",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage lambda",
+    "Coliphage lambda",
+    "Enterobacteria phage lambda",
+    "Lambda phage",
+    "phage lambda"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Zimmerviridae",
+    "Jacobvirinae",
+    "Lambdavirus",
+    "Lambdavirus lambda"
+   ],
+   "current": 2681611
+  },
+  "2697049": {
+   "taxid": 2697049,
+   "name": "Severe acute respiratory syndrome coronavirus 2",
+   "common": [],
+   "synonyms": [
+    "2019-nCoV",
+    "COVID-19 virus",
+    "HCoV-19",
+    "Human coronavirus 2019",
+    "SARS-2",
+    "SARS-CoV2",
+    "SARS2"
+   ],
+   "acronyms": [
+    "SARS-CoV-2"
+   ],
+   "lineage": [
+    "Viruses",
+    "Riboviria",
+    "Orthornavirae",
+    "Pisuviricota",
+    "Pisoniviricetes",
+    "Nidovirales",
+    "Cornidovirineae",
+    "Coronaviridae",
+    "Orthocoronavirinae",
+    "Betacoronavirus",
+    "Sarbecovirus",
+    "Betacoronavirus pandemicum"
+   ],
+   "current": 2697049
+  },
+  "2853804": {
+   "taxid": 2853804,
+   "name": "DNA molecule",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "unclassified entries",
+    "unclassified sequences",
+    "miscellaneous sequences"
+   ],
+   "current": 2853804
+  },
+  "2885909": {
+   "taxid": 2885909,
+   "name": "Bordetella phage BPP-1",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Rauchvirus",
+    "Rauchvirus BPP1"
+   ],
+   "current": 2885909
+  },
+  "2911440": {
+   "taxid": 2911440,
+   "name": "Staphylococcus phage 80alpha",
+   "common": [],
+   "synonyms": [
+    "Bacteriophage 80 alpha",
+    "Staphylococcus aureus bacteriophage 80alpha"
+   ],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Duplodnaviria",
+    "Heunggongvirae",
+    "Uroviricota",
+    "Caudoviricetes",
+    "Azeredovirinae",
+    "Dubowvirus",
+    "Dubowvirus dv80alpha"
+   ],
+   "current": 2911440
+  },
+  "2921361": {
+   "taxid": 2921361,
+   "name": "Paenibacillus sp. FSL E2-0178",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "cellular organisms",
+    "Bacteria",
+    "Bacillati",
+    "Bacillota",
+    "Bacilli",
+    "Caryophanales",
+    "Paenibacillaceae",
+    "Paenibacillus",
+    "unclassified Paenibacillus"
+   ],
+   "current": 2921361
+  },
+  "3067671": {
+   "taxid": 3067671,
+   "name": "Zophobas morio black wasting virus",
+   "common": [],
+   "synonyms": [],
+   "acronyms": [],
+   "lineage": [
+    "Viruses",
+    "Floreoviria",
+    "Shotokuvirae",
+    "Cossaviricota",
+    "Quintoviricetes",
+    "Piccovirales",
+    "Parvoviridae",
+    "Densovirinae",
+    "unclassified Densovirinae"
+   ],
+   "current": 3067671
+  }
+ }
+}

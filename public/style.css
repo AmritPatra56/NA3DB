@@ -831,6 +831,24 @@ input::placeholder {
 
 /* <---------------empty state-------------> */
 
+/* Under "No entries found": close searches, each a link with its count. */
+.did_you_mean {
+    max-width: 36em;
+    margin: 0;
+    padding: 0 16px;
+    text-align: center;
+    line-height: 1.6;
+    color: var(--text);
+}
+
+.did_you_mean a,
+.landing_count a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 .empty_state,
 .loading_state,
 .error_state {
@@ -2173,6 +2191,12 @@ input::placeholder {
     cursor: pointer;
 }
 .suggest_list li:hover, .suggest_list li[aria-selected="true"] { background: var(--bg-primary); }
+/* An organism's code is its scientific name: as wide as it needs, the
+   common names beside it giving way first. */
+#source_organism_options li,
+#expression_host_options li { grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto; }
+#source_organism_options b,
+#expression_host_options b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suggest_list b { font-weight: 600; color: var(--accent); }
 .suggest_list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suggest_list small { color: var(--text-dim); }

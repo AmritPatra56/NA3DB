@@ -519,9 +519,11 @@ test("the residue list shows nucleotide modifications, not protein ones", async 
 });
 
 test("the residue filter does not find an entry by a protein modification", async () => {
-    let [mse, psu] = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], async (q) =>
-        [await matches({ nonstandard_residue: "MSE" }, q),
-         await matches({ nonstandard_residue: "PSU" }, q)]);
+    let [mse, psu] = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], async (q) => {
+        await q(`REFRESH MATERIALIZED VIEW doc`);   // the filter reads the codes there
+        return [await matches({ nonstandard_residue: "MSE" }, q),
+                await matches({ nonstandard_residue: "PSU" }, q)];
+    });
     assert.ok(!mse.includes("ZZ01"));
     assert.ok(psu.includes("ZZ01"));
 });
