@@ -1,1129 +1,555 @@
 # NA3DB
 
-**A search engine for the 3D shapes of DNA and RNA.**
+**A search engine for the 3D structures of DNA and RNA.** Live at **[na3db.org](https://na3db.org)**.
 
-**Live at [na3db.org](https://na3db.org).**
+Every entry is a real molecule whose structure was measured in a lab and
+published. NA3DB puts 1,489 of them behind one search box, so you can:
 
-Every entry here is a real molecule whose structure was measured in a
-laboratory and published. NA3DB puts 1,489 of them behind one search box:
-
-- **find** them by id, molecule, author or organism
-- **narrow** by how they were measured and what shape they take
+- **find** them by id, molecule, author, organism or ligand
+- **narrow** them by how they were measured and what shape they take
 - **see** every base pair at a glance, drawn as arcs
-- **read** any one in full, and **download** the results as a CSV
+- **read** any one in full, compare chains with the same sequence, and **download** the data
 
-**1,489 structures · 50.7 million atoms · 1,487 confal scores · 97 NtC classes**
+**1,489 structures · 50.7 million atoms · 1,487 confal scores · 96 NtC classes**
 
-The records come from the [Protein Data Bank](https://www.rcsb.org/) and the
-conformational analysis from [DNATCO](https://dnatco.datmos.org/).
+The records come from the [Protein Data Bank](https://www.rcsb.org/), the
+backbone analysis from [DNATCO](https://dnatco.datmos.org/).
 
-Under active development. See [What is not done yet](#what-is-not-done-yet).
+## Contents
 
-## What you can ask it
+**Using the website**
 
-Type one thing in the box and it searches the id, the title, the authors, the
-molecule descriptions, the source organisms and the non-standard residues all
-at once. These are the examples offered on the landing page, with what they
-find today:
+1. [Search in one minute](#1-search-in-one-minute)
+2. [Step by step](#2-step-by-step)
+3. [The structure page](#3-the-structure-page)
+4. [Reading the pictures](#4-reading-the-pictures): arcs, the sequence map, the conformation colours
+5. [The words on the screen](#5-the-words-on-the-screen)
+6. [Getting the data out](#6-getting-the-data-out)
+
+**Running your own copy**
+
+7. [Set it up in five commands](#7-set-it-up-in-five-commands)
+8. [Day to day](#8-day-to-day): run, test, load the real data, change the schema
+9. [Shipping to na3db.org](#9-shipping-to-na3dborg)
+
+**How it works inside**
+
+10. [Where everything lives](#10-where-everything-lives)
+11. [Adding a filter or a column](#11-adding-a-filter-or-a-column)
+12. [The search box](#12-the-search-box)
+13. [API reference](#13-api-reference)
+14. [Speed](#14-speed)
+15. [Not done yet](#15-not-done-yet)
+
+---
+
+# Using the website
+
+## 1. Search in one minute
+
+Type one thing in the box. It looks in the id, title, authors, molecule
+names, source organisms and modified nucleotides all at once.
 
 | you type | you get |
 | --- | --- |
 | `119D` | 1 structure, by its PDB id |
-| `tRNA` | 163 structures whose title or molecule mentions transfer RNA |
+| `tRNA` | 163 structures of transfer RNA |
 | `ribozyme` | 20 structures of RNA that acts as an enzyme |
-| `Z-DNA` | 7 structures of the left-handed form of DNA |
-| `Escherichia coli` | 189 structures taken from *E. coli* |
-| `Leonard` | 2 structures deposited by an author of that name |
-| `PSU` | 90 structures containing pseudouridine, a modified base |
+| `Z-DNA` | 7 structures of left-handed DNA |
+| `Escherichia coli` | 189 structures from *E. coli* |
+| `Leonard` | 2 structures by an author of that name |
+| `PSU` | 90 structures containing pseudouridine |
 
-And in the filter panel, the **Ligand** box finds what is bound to the
-molecule: `SAM` gives 10 structures holding S-adenosylmethionine, `MG` 507
-with a magnesium ion. It suggests codes and names as you type.
+The **Ligand** box in the filters finds what is bound: `SAM` gives 10
+structures, `MG` gives 507 with a magnesium ion.
 
-Open the filter panel and you can be exact instead: solved by X-ray, made of
-RNA, containing a modified residue, scoring above 80 for conformational
-quality. Order the results eight ways, best resolution first among them, read any single structure in full at its
-own address, and export the whole set as a CSV.
+Three things to know:
 
-Every choice you make is in the URL, so a link carries your search, your page,
-your ordering and your layout to whoever you send it to.
+- **Capitals never matter.**
+- **Punctuation is optional:** `zdna` finds `Z-DNA`.
+- **It finds text inside words:** `tRNA` also finds `tRNApro`.
 
-Nothing is behind a login, and the browser contacts no host but this one. It
-runs as a single Node process in front of a single PostgreSQL database.
+No login. Your browser talks to no site but this one.
 
-## Using it, step by step
+## 2. Step by step
 
-It works the same on a laptop and a phone.
+Works the same on a laptop and a phone.
 
-1. **Search.** Type in the box on the front page and press `Search`. The
-   number under the box tells you how many structures match before you do.
-2. **Narrow it down.** Press `Filters` and pick what you need: method,
-   polymer type, organism, ligand, confal score and more. The button at the
-   bottom says how many results you will get (`Show 50 results`), so you
-   never land on an empty page.
-3. **See what is applied.** Each filter in use shows as a chip above the
-   results, like `Experimental method: X-ray ×`. Press `×` to drop one.
-4. **Look through the results.** Three views, switched at the top:
-   - `Arcs`: a grid of base-pair pictures, one per structure
-   - `Cards` (the default): the picture on the left, the key facts on the right
-   - `Lines`: one row each
+1. **Search.** Type in the box. The number under it tells you how many
+   structures match before you press `Search`.
+2. **Narrow it down.** Press `Filters`: method, polymer type, organism,
+   ligand, confal score and more. The button at the bottom says how many you
+   will get (`Show 50 results`), so you never land on an empty page.
+3. **See what is on.** Each filter in use is a chip above the results, like
+   `Experimental method: X-ray ×`. Press `×` to drop it.
+4. **Pick a view** at the top: `Arcs` (pictures only), `Cards` (picture and
+   facts, the default) or `Lines` (one row each). Change the order with `Sort`.
+5. **Look closer.** Press any arc picture to open it full screen.
+6. **Open a structure.** Press any card or line. See [The structure page](#3-the-structure-page).
+7. **Share it.** Copy the address. Your search, filters, order, page and view
+   are all in the link, so whoever opens it sees exactly what you saw.
 
-   Change the order with `Sort`.
-5. **See the base pairs full screen.** Press any arc picture. Every pair is
-   listed beside the drawing with its Leontis–Westhof family; point at an arc
-   or a row to see that pair, pick a family to see only those, and zoom in to
-   read the sequence. See [Reading an arc picture](#reading-an-arc-picture).
-6. **Open a structure.** Press any card or line. Its page lists every
-   molecule with its sequence, the modified nucleotides, the base pairs, the
-   citations and a link to the PDB.
-7. **Take the data with you.**
-   - sequences: the `FASTA` button, for one molecule or the whole entry
-   - base pairs: the `CSV` button on the structure page
-   - the result list: the Report icon, choose your columns, `Export to CSV`
-8. **Share it.** Copy the address. Everything you chose is in the link, so
-   whoever opens it sees exactly what you saw.
+## 3. The structure page
 
-## Reading an arc picture
+`/structure/4TNA` holds everything about one entry, in four coloured groups.
 
-The molecule is drawn as a straight line, 5′ on the left and 3′ on the right.
-Each base pair is an arc joining its two bases.
+| group | section | what is there |
+| --- | --- | --- |
+| Overview | Overview | title, method, date, resolution, authors, sizes |
+| Composition | Molecules | each polymer, its chains and sequence, a copy button and a `FASTA` download |
+| | Sources | where each molecule came from: Natural, Expressed or Synthetic |
+| | Modified nucleotides | each code, its name, chain and positions |
+| | Ligands | each small molecule, linked to its RCSB page |
+| Structure | Base pairs | the arc picture, counts by kind, the pair families, a `CSV` download |
+| | Conformation | confal score and percentile, and every NtC step grouped by shape, each colour named |
+| | Sequence map | sequence, backbone shape and every base pair on one ruler |
+| | Same sequence | every other chain in NA3DB with exactly this sequence, and a side-by-side comparison |
+| References | Citations | every paper, with DOI and PubMed links |
+| | Links and downloads | RCSB, FASTA, base pairs as CSV, the report, the entry as JSON |
 
-| what you see | what it means |
+- **The sidebar** lists the sections and marks the one you are reading. On a
+  phone it becomes a row of chips under the top bar.
+- **Every section has its own link**, like `/structure/4TNA#base-pairs`, to put
+  in a paper or an email.
+- **An empty section stays in the list, greyed out.** "None recorded" is a
+  fact about the entry too.
+- **On each section's band**, `?` explains the terms and the chevron folds it.
+
+## 4. Reading the pictures
+
+### Arc picture
+
+The molecule is a straight line, 5′ on the left, 3′ on the right. Each base
+pair is an arc joining its two bases.
+
+| you see | it means |
 | --- | --- |
 | green arc | Watson–Crick pair (A–U, G–C) |
 | orange arc | G·U wobble |
-| purple arc | non-canonical pair; full screen, its Leontis–Westhof symbol sits on top |
+| purple arc | any other pair (non-canonical) |
 | nested arcs | a stem: bases pairing in a row |
 | crossing arcs | a pseudoknot or a long-range contact |
 | dark dot on the line | a modified nucleotide |
-| gaps in the line | separate strands, each named under it |
+| gap in the line | a new strand, named under it |
 
-The **Leontis–Westhof symbol** says which edges of the two bases touch:
-● Watson–Crick edge, ■ Hoogsteen edge, ▲ Sugar edge; filled for cis, open for
-trans. So ●● is `cWW`, the classic pair, and ○□ is `tWH`.
+Full screen adds every pair in a list, a chip per family (press `tWH` to see
+only those), a plain-words line for the pair under your pointer, and zoom.
+Close enough, the letters appear.
 
-The full-screen viewer adds:
+### Sequence map
 
-- **counts** above the drawing: pairs, Watson–Crick, G·U, non-canonical (and
-  how many families), nucleotides (and how many modified), strands
-- **every pair in a list** beside it: number, both bases, family, type
-- **family chips**: press `tWH` to see only those pairs, on the drawing and in
-  the list
-- **point at an arc or a row** and the panel under the drawing says which pair
-  it is in words: "trans Watson–Crick / Hoogsteen · non-canonical · spans 6 nt"
-- **zoom** with the buttons or the wheel; close enough and the sequence
-  letters appear, modified ones white on dark
+One ruler, one column per nucleotide. From top to bottom:
 
-The picture shows the first model of the entry. Where the PDB file holds a
-crystal symmetry copy, its bases are marked `′`.
+1. **Bars:** the backbone shape (NtC step) to the next nucleotide. Colour is
+   the shape, height is the confal score.
+2. **seq:** the sequence. Lower case is a modified nucleotide.
+3. **Bracket rows:** the base pairs, **one row per Leontis–Westhof family**.
 
-## Contents
+```
+seq   G C U G A c G U A A C A G C
+WC    ( ( ( . . . . . . . . ) ) )     G–C and A–U
+cWW   . . . ( . . . ) . . . . . .     other cis Watson–Crick, here a G·U wobble
+tHS   . . . . ( . [ . . ) . ] . .     [ ] crosses ( )
+tHS   . . . . . . . . . ( . . . )     A10's second tHS pair, so a second row
+```
 
-**For users**
+How to read it:
 
-- [What you can ask it](#what-you-can-ask-it)
-- [Using it, step by step](#using-it-step-by-step)
-- [Reading an arc picture](#reading-an-arc-picture) — colours, symbols and the full-screen viewer
-- [The words on the screen](#the-words-on-the-screen) — confal, NtC, resolution and the rest, in plain terms
+- **The row name** is c or t (cis or trans), then the edge of the left
+  nucleotide, then the edge of the right one: **W** Watson–Crick,
+  **H** Hoogsteen, **S** sugar. So `tHS` is a trans pair, Hoogsteen edge on
+  the left, sugar edge on the right.
+- **Order of rows:** `WC` first (canonical G–C and A–U), then `cWW` (other cis
+  Watson–Crick pairs, such as G·U), then the other families. A family with no
+  pairs in the entry gets no row.
+- **`(` and its matching `)`** are the two nucleotides of one pair.
+- **A pair that crosses another** in the same row takes `[ ]`, then `{ }`, then `< >`.
+- **A nucleotide pairs once per row.** A second pair of the same family goes
+  to an extra row of that name at the bottom, its name in italics.
+- **A dot** means no pair of that kind. In the downloaded text, `&` separates strands.
 
-**For developers** — running your own copy, and how it works inside
+The page has the same guide under **How to read the map**, with a picture.
 
-- [Requirements](#requirements)
-- [Setting it up](#setting-it-up) — [quick start](#quick-start), [the real data](#loading-the-real-data), [schema changes](#changing-the-schema)
-- [Two databases](#two-databases) — why `npm test` reads a different one
-- [Running it day to day](#running-it-day-to-day)
-- [Tests](#tests)
-- [How it is organised](#how-it-is-organised) — [adding a filter](#adding-a-filter-or-a-column), [the search box](#the-one-search-box), [seven tables](#one-entry-comes-from-seven-tables)
-- [Pages](#pages) — [what a result looks like](#what-a-result-looks-like), [the controls](#the-controls-over-the-results)
-- [API](#api)
-- [Performance](#performance) — [beyond this size](#beyond-this-size)
-- [What is not done yet](#what-is-not-done-yet)
+### Conformation colours
 
-Using the website needs nothing more than the four user sections. The rest
-is for running your own copy: [Quick start](#quick-start) has it running in
-five commands.
+Every step between two neighbouring nucleotides gets an NtC class (like
+`AA00`), and every NtC class belongs to one of 15 shape groups (CANA). The
+colours are NA3DB's own, chosen to stay readable for colour-blind readers.
 
-## The words on the screen
+- **Colour is the family:** blue A-form, orange B-form, green Z-form, pink
+  intercalated, black opened, yellow syn.
+- **A paler shade, stripes or dots** mark a variant of that family.
+- **Two halves** mark a transition, read 5′ to 3′ (`A-B` is A then B).
+- **An empty box** is a step with no class.
 
-Two sources, each with its own vocabulary. You need these to read a result:
+The Conformation section lists the steps by family, each colour with its
+name, and the full key is under **How the colours work**. Class meanings follow
+[Černý et al. 2020](https://doi.org/10.1093/nar/gkaa383).
+
+### Same sequence
+
+Every chain in NA3DB with exactly this sequence, letter for letter (plain A,
+C, G, T or U only). Pick any two to compare their base pairs, the backbone
+shape of each step and the chemistry of each nucleotide, position by
+position. A nucleotide one of them does not model is never counted as a
+difference.
+
+## 5. The words on the screen
 
 | word | what it means |
 | --- | --- |
-| **PDB id** | The four-character name a structure was published under, like `4TNA`. It is the permanent, citable handle for that structure. |
-| **Resolution** | How much detail the measurement resolved, in ångström. **Lower is better**: 1.5 Å separates individual atoms, 3.5 Å shows little more than the overall shape. Blank for methods that do not produce one. |
-| **Experimental method** | How the shape was measured. X-ray diffraction is the most common here; NMR and electron microscopy are the others you will meet often. |
-| **Polymer type** | What the entry is made of: `DNA`, `RNA`, `DNA/RNA` (both, or a hybrid strand), or one of those with a protein, such as `Protein/DNA`. Worked out from the chains it contains rather than stored as a field. Links made before DNA and RNA were split still work: `Nucleic acid` means all three nucleic acid types, and `Protein/NA` all three protein mixes. |
-| **Non-standard residue** | A building block that is not one of the four usual bases, nearly always a chemical modification of one. `PSU` is pseudouridine, the most common. |
-| **NtC class** | A name for the shape of one step between two neighbouring residues, one of 97, such as `AA00`. It is a vocabulary of known conformations: rather than list angles, you say which shape the step matches. |
-| **Confal score** | 0 to 96, how closely a whole structure's steps match those known shapes. High means conventional geometry; low means unusual, which may be a real finding or a modelling problem. |
-| **Ligand** | A small molecule bound to the structure, such as an ion (`MG`), a cofactor (`SAM`) or a drug. Named by its three-letter PDB code. Water is left out. |
-| **Base pair** | Two bases held together by hydrogen bonds. `cWW` is the familiar Watson–Crick edge-to-edge pairing; the page counts Watson–Crick (A–U, G–C), G·U wobble and non-canonical pairs separately, judging modified bases by the base they came from. |
-| **Leontis–Westhof family** | The standard name for how two bases pair: which edge of each base touches (**W**atson–Crick, **H**oogsteen, **S**ugar) and whether the bonds are **c**is or **t**rans. `cWW` is the familiar pair; there are twelve families in all, and every one of them occurs in this database. |
-| **Arc diagram** | A picture of all the base pairs of a structure at once: the sequence as a line, each pair as an arc. See [Reading an arc picture](#reading-an-arc-picture). |
-| **FASTA** | The standard text format for sequences, one `>` header line per molecule. Any alignment or sequence tool reads it. |
+| **PDB id** | The four-character name a structure was published under, like `4TNA`. Permanent and citable. |
+| **Resolution** | How much detail was measured, in ångström. **Lower is better**: 1.5 Å shows single atoms, 3.5 Å little more than the shape. |
+| **Experimental method** | How the shape was measured: X-ray diffraction, NMR or electron microscopy. |
+| **Polymer type** | What the entry is made of: `DNA`, `RNA`, `DNA/RNA`, or one of those with a protein, such as `Protein/RNA`. |
+| **Modified nucleotide** | A building block that is not one of the usual bases, nearly always a chemical change to one. `PSU` (pseudouridine) is the most common. |
+| **Ligand** | A small molecule bound to the structure: an ion (`MG`), a cofactor (`SAM`) or a drug. Water is left out. |
+| **Base pair** | Two bases held together by hydrogen bonds. |
+| **Leontis–Westhof family** | How two bases pair: which edge of each touches (**W**atson–Crick, **H**oogsteen, **S**ugar) and whether it is **c**is or **t**rans. `cWW` is the classic pair. Twelve families in all. |
+| **NtC class** | The shape of one step between two neighbouring nucleotides, one of 96, such as `AA00`. From DNATCO. |
+| **CANA class** | A group of similar NtC classes, one of 15, such as `AAA` (A-form). Each has its own colour. |
+| **Confal score** | 0 to 100, how closely the steps match known shapes. High means usual geometry; low means unusual, a real finding or a modelling problem. |
+| **FASTA** | The standard text format for sequences. Any sequence tool reads it. |
 
-NtC class and confal score come from DNATCO, which analyses published structures and releases
-the conformational assignment. Everything else is in the PDB entry itself.
+## 6. Getting the data out
+
+| what | where |
+| --- | --- |
+| sequences | `FASTA` button, for one molecule or the whole entry |
+| base pairs | `CSV` button in Base pairs |
+| sequence map | `Download notation` in Sequence map |
+| a list of results | the Report icon, pick your columns, `Export to CSV` |
+| anything, by script | the [API](#13-api-reference) |
+
+From Python:
+
+```python
+import pandas as pd
+pairs = pd.read_csv("https://na3db.org/api/entries/1EHZ/base_pairs?format=csv")
+```
 
 ---
 
-# For developers
+# Running your own copy
 
-Everything below is about running NA3DB yourself and changing it. To use the
-website, the sections above are all you need.
+## 7. Set it up in five commands
 
-## Requirements
+You need **Node 24+** and **PostgreSQL 16+**. Everything else comes from npm
+(Express, EJS and `pg`).
 
-- **Node 24 or newer**: the code uses `import.meta.dirname` and `import.meta.main`
-- **PostgreSQL 16 or newer**
-
-Everything else comes from npm: Express, EJS and `pg`. Three dependencies.
-
-## Setting it up
-
-### Quick start
-
-This gets a working NA3DB with the 120-entry sample data. It needs no
-structure files, so it works on a fresh clone.
+This gives a working copy with 120 sample entries. No structure files needed.
 
 ```bash
-# 1. PostgreSQL, and a role and two databases owned by it
+# 1. PostgreSQL, one role, two databases it owns
 sudo apt install -y postgresql postgresql-client
 sudo -u postgres psql -c "CREATE ROLE na3db LOGIN PASSWORD 'pick_a_password'"
 sudo -u postgres psql -c "CREATE DATABASE na3db      OWNER na3db"
 sudo -u postgres psql -c "CREATE DATABASE na3db_test OWNER na3db"
 
-# 2. Config. Edit .env and put your password in DB_PASSWORD,
-#    then edit .env.test and change DB_NAME to na3db_test
+# 2. Config: put your password in .env as DB_PASSWORD,
+#    then in .env.test set DB_NAME=na3db_test
 cp .env.example .env
 cp .env .env.test
 
-# 3. Build the schema in both
+# 3. Build the tables in both
 npm install
 node --env-file-if-exists=.env      db/migrate.mjs
 node --env-file-if-exists=.env.test db/migrate.mjs
 
-# 4. Load the sample data into both (psql asks for the password each time)
+# 4. Load the sample data into both
 psql -h localhost -U na3db -d na3db      -f db/seed.sql
 psql -h localhost -U na3db -d na3db_test -f db/seed.sql
 
-# 5. Check and run
+# 5. Test, then run
 npm test
 npm run dev
 ```
 
 Open <http://localhost:4000>. You should see **Entries (120)**.
 
-If `npm test` fails with `no password supplied`, `.env.test` is missing or has
-no `DB_PASSWORD`. If a page is blank, check that `DB_NAME` in `.env` is `na3db`
-and not `na3db_test`.
+**If something goes wrong:**
 
-To load the real 1,489 structures instead, see
-[Loading the real data](#loading-the-real-data).
+| you see | fix |
+| --- | --- |
+| `npm test` says `no password supplied` | `.env.test` is missing or has no `DB_PASSWORD` |
+| `permission denied for schema public` | the role does not own the database (step 1) |
+| a blank page | `DB_NAME` in `.env` must be `na3db`, not `na3db_test` |
+| filters work but the search box finds nothing | the search index is stale: `psql -d na3db -c "REFRESH MATERIALIZED VIEW doc"` |
 
-### What each step is for
+`.env` and `.env.test` hold the password, so git ignores them. Only
+`.env.example` is committed.
 
-**The two databases are not optional.** `na3db` is what the application reads.
-`na3db_test` is what `npm test` reads, and it must hold the 120-entry seed and
-nothing else, because every expected number in the suite is counted from those
-120. See [Two databases](#two-databases).
+### Why two databases
 
-**The role must own both databases**, or applying the schema fails with
-`permission denied for schema public`.
+```
+na3db        the website    npm run dev / npm start   reads .env       the real data
+na3db_test   the tests      npm test                  reads .env.test  the 120 sample entries, never changed
+```
 
-*On your own machine you can name the role after your Linux username, and
-`psql -d na3db` will then connect with no password. The application still
-connects over TCP with a password, so set one anyway.*
+Every number the tests expect is counted from those 120 entries. Point the
+tests at the real data and most of them fail, because they would be
+measuring something else. The two files differ in one line, `DB_NAME`.
 
-**The config files hold the password, so they are not committed.**
-`.gitignore` has `.env*` with `!.env.example`, so the template is tracked and
-nothing holding a real password is. They have to exist before step 3, because
-that is where `migrate.mjs` reads the user and password from.
+## 8. Day to day
 
-**The schema and the data are loaded separately.** `migrate.mjs` applies every
-file in `db/migrations/` that has not run yet, each in a transaction, recording
-it in `schema_migrations`. Running it twice does nothing. The data is loaded by
-hand because it is data rather than structure, which is also why `db/seed.sql`
-is not a migration.
+**Run.** `npm run dev` restarts on every change; `npm start` runs once. Port
+4000 by default, or `PORT=5000 npm run dev`. A value set in the shell wins
+over `.env`.
 
-**Loading data is also what fills the search document.** `doc` is a
-materialized view, so it is created when the schema is and holds whatever the
-tables held at that moment, which on a new database is nothing. Load data
-after that and the filters would work while the search box found nothing, on
-every page, with no error. Both loaders close that themselves: `db/seed.sql`
-ends by rebuilding it, and `load_cif.py` rebuilds it when a run finishes. If
-it is ever stale anyway, `npm test` fails with the command to run.
+**Test.** `npm test`: 447 tests, about six seconds, using Node's own
+`node --test`, no framework. They run the real SQL against `na3db_test`.
+
+| file | checks |
+| --- | --- |
+| `search.test.js` | filtering, paging, ordering, validation, indexes |
+| `server.test.js` | every route, status codes, formats, private files stay private, no em dash on the page |
+| `contents.test.js` | what each section of the structure page shows, the NtC grouping |
+| `equivalence.test.js` | 150+ filter combinations, checked against an older independent implementation |
+| `errors.test.js` | 503 vs 500, HTML vs JSON, nothing leaks |
+| `arcs.test.js` | the arc picture: strands, pairs, families, numbers |
+| `seqmap.test.js` | the sequence map: steps and bracket rows on one ruler |
+| `sameseq.test.js` | the chain comparison, on made-up chains |
+| `landing.test.js` | the count-as-you-type under the front-page box |
+
+**Load the real data.** The 1,489 structures come from DNATCO CIF files, which
+are not in this repository.
+
+```bash
+python3 db/load_cif.py --cif /path/to/1dn8.cif            # one file first, prints a check
+python3 db/load_cif.py --cif-dir /path/to/dnatco_files    # all of them, about 90 minutes
+python3 db/load_cif.py --reload --cif /path/to/6wlo.cif   # redo one finished file
+```
+
+It writes to `na3db` only, never `na3db_test`. **If a run stops, run it
+again:** finished files are skipped, half-loaded ones are redone. Use
+`--reload` to redo a finished file on purpose; running it plain would add its
+rows twice.
+
+**Change the schema.** Add the next numbered file to `db/migrations/`, like
+`015_what_it_does.sql`, then run:
+
+```bash
+node --env-file-if-exists=.env db/migrate.mjs
+```
+
+It applies only what has not run yet, each in a transaction. **Never edit a
+migration that has already run**: the databases will not see the edit. Add a
+new one instead. Three-digit numbers, so they sort in order.
+
+## 9. Shipping to na3db.org
+
+1. Commit on the feature branch, fast-forward `main` to it, push both.
+2. On the server, run:
+
+   ```bash
+   /opt/na3db/main/app/deploy/update.sh
+   ```
+
+   It pulls `main`, builds a new image, restarts the app and checks
+   `/api/health`. The database is not touched. If the new version does not
+   answer, it prints the two commands that bring the previous one back.
 
 | file | what it does |
 | --- | --- |
-| `db/migrate.mjs` | Applies any migration that has not run yet. Safe to run twice. |
-| `db/migrations/*.sql` | The schema, one file per change, applied in filename order. |
-| `db/seed.sql` | Committed. 120 entries across 10 tables, for development and tests. Rebuilds `doc` when it finishes. |
-| `db/make_seed.mjs` | Regenerates `db/seed.sql` from `entries.json`. Only needed if `entries.json` changes. |
+| `deploy/update.sh` | the update above |
+| `deploy/backup.sh` | a nightly database dump, keeping the last 7 days |
+| `deploy/na3db.org.nginx` | the web server in front of the app |
+| `Containerfile` | how the app image is built |
 
-### Loading the real data
+Passwords live only on the server, never in git.
 
-The 1,489 structures come from DNATCO CIF files, which are not in this
-repository. With a copy of them:
+---
 
-```bash
-python3 db/load_cif.py --cif-dir /path/to/dnatco_extended_1500
-```
+# How it works inside
 
-About 90 minutes for the full set. It reads the same `.env` the application
-does, so it writes to `na3db` and never touches `na3db_test`.
+## 10. Where everything lives
 
-Try one file first. It prints a 21-point check of what it wrote:
+**One rule: everything in `public/` is downloaded by every visitor; everything
+outside it stays on the server.** A second rule follows: **the server decides,
+the browser draws.** What counts as a match, the order, the page size: all in
+`search.js`, none in the browser.
 
-```bash
-python3 db/load_cif.py --cif /path/to/1dn8.cif
-```
-
-**An interrupted run is repaired by running it again.** A structure is recorded
-in `loaded_entries` only once its file has finished, so anything in `entry`
-without a record is partial. The loader deletes and redoes those, and skips
-everything already done.
-
-That matters because re-running a file does *not* repair it on its own: the
-tables with a generated id (`atom_site`, `citation_author`, `entity_poly_seq`)
-have nothing to conflict on, so the rows would simply go in twice. To redo a
-finished file deliberately, use `--reload`, which deletes the entry first:
-
-```bash
-python3 db/load_cif.py --reload --cif /path/to/6wlo.cif
-```
-
-Once the real data is in, reload the seed into `na3db_test` only, not into
-`na3db`.
-
-### Changing the schema
-
-Add a file to `db/migrations/` with the next number and a name that says what
-it does, then run the runner:
-
-```bash
-# db/migrations/003_widen_auth_comp_id.sql
-ALTER TABLE pdbx_poly_seq_scheme ALTER COLUMN auth_comp_id TYPE VARCHAR(20);
-```
-
-```bash
-node --env-file-if-exists=.env db/migrate.mjs
-```
-
-It applies only what has not run, inside a transaction, and records it in
-`schema_migrations`. Running it twice does nothing.
-
-**Never edit a migration that has already run.** It has been applied on your
-machine and on the server; editing the file changes neither of those, and
-leaves your repository quietly disagreeing with both databases. Migrations are
-append-only, to change something, add another one.
-
-Three digits in the number, not one: `9_x.sql` sorts after `10_x.sql`
-alphabetically, and alphabetical order is how the runner decides what to do first.
-
-### Starting over
-
-Nothing here is precious. To wipe the data and reload:
-
-```bash
-psql -d na3db -c "TRUNCATE entry, chem_comp CASCADE;"
-psql -d na3db -f db/seed.sql
-```
-
-To wipe everything including the schema, then rebuild it:
-
-```bash
-psql -d na3db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-node --env-file-if-exists=.env db/migrate.mjs
-```
-
-That second command is why the schema lives in migrations: once real data is
-loaded, wiping is no longer an option, and the only way to change the shape of
-the database is to add to it.
-
-## Two databases
-
-```
-na3db        the application    npm start · npm run dev    reads .env
-             1,489 real structures from DNATCO CIF files
-
-na3db_test   the tests          npm test                   reads .env.test
-             the 120-entry seed, fixed forever
-```
-
-Same PostgreSQL server, same schema, different data. They differ in exactly one
-line of configuration:
-
-```
-.env       DB_NAME=na3db
-.env.test  DB_NAME=na3db_test
-```
-
-`db.js` reads `process.env.DB_NAME` and has no opinion about what is in it,
-which is why no code changes to move between them, and why there is one
-codebase rather than a copy of the project per environment.
-
-**Why the split exists.** Every expected number in the test suite traces back
-to the 120 seeded entries:
-
-```js
-[{}, 120]
-[{ entry_id: "tna" }, 2]
-[{ polymer_type: "RNA" }, 60]
-```
-
-They are a yardstick, not arbitrary values. `na3db` now holds 1,489 real
-structures and almost none of the seeded 120, only two overlap, so a test
-suite pointed at it would be measuring nothing. That is why the tests read a
-database the loader never touches.
-
-You can see it work. Add a row to the application's database and the suite is
-unaffected; point the suite at that same database and most of it goes red:
-
-```bash
-psql -d na3db -c "INSERT INTO entry (id) VALUES ('MARKER');"
-npm test                  # 149 pass, reads na3db_test
-DB_NAME=na3db npm test    # 71 fail, a shell variable wins over the file
-psql -d na3db -c "DELETE FROM entry WHERE id = 'MARKER';"
-```
-
-That last command is also how you run the suite against the real data
-deliberately, once there is any.
-
-## Running it day to day
-
-`npm run dev` restarts the server whenever a server file changes. `npm start`
-runs it once without watching, which is what a server should do.
-
-The port defaults to 4000. Set it in the shell or in `.env`:
-
-```bash
-PORT=5000 npm run dev
-```
-
-A value already set in the shell wins over the file, which is how a container
-or a hosting platform passes real values in.
-
-## Tests
-
-```bash
-npm test
-```
-
-**413 tests, about three seconds, no test framework installed**: `node --test`
-ships with Node. They check the real SQL rather than a pretend version of it,
-so they need a running PostgreSQL, specifically `na3db_test`, which holds the
-120 seeded entries and is never touched by the loaders. See
-[Two databases](#two-databases).
-
-| file | covers |
-| --- | --- |
-| `search.test.js` | Filtering, paging, validation, ordering, and that the indexes exist. |
-| `server.test.js` | Routes, status codes, response formats, which files must not be downloadable, that no SQL reaches `/api/fields`, and that the generated form carries a control for every filter. |
-| `equivalence.test.js` | 150+ filter combinations checked against the JavaScript implementation this replaced. |
-| `errors.test.js` | 503 versus 500, HTML versus JSON, and that nothing leaks. |
-| `arcs.test.js` | The arc layout: strand order, pair ends, families, the card numbers. |
-| `landing.test.js` | The count-as-you-type logic, run against stubbed browser globals: the debounce, the wording, and that a slow reply arriving late is thrown away. |
-
-`equivalence.test.js` is the unusual one. Instead of hand-written expected
-answers, it runs every filter through **two** implementations and demands they
-agree: the SQL in `search.js`, and `search.reference.mjs`, which is the
-JavaScript this project used before PostgreSQL, still reading `entries.json`.
-
-That is called differential testing, and it is what makes it possible to cover
-150+ combinations rather than a dozen, including 60 generated from a fixed
-seed, so any failure is reproducible. It found four bugs a hand-written suite
-would have missed, among them that `%` and `_` were being treated as wildcards
-in a search box documented as "contains".
-
-`server.test.js` checks that `server.js`, `search.js`, `db.js`, `entries.json`,
-`package.json`, `.env` and the raw templates all return 404. One careless
-change to the `express.static` line would serve the whole project directory,
-including the file holding the database password, with no error and no visible
-difference.
-
-**A green suite proves less than it looks.** Every group here was checked by
-deliberately breaking the code it covers and confirming the right tests failed.
-Several tests that looked fine turned out to prove nothing until that was done:
-one test file was empty and still reported `pass 1`.
-
-## How it is organised
-
-There are four folders and one rule.
-
-**Everything inside `public/` is downloaded by every visitor. Everything
-outside it can only be read by the server.** That is why the browser's files
-live in a folder of their own, and the server code, the templates and the data
-do not.
-
-Server side, at the root:
+**Server**, at the root:
 
 | file | job |
 | --- | --- |
-| `server.js` | The only file that knows about HTTP. Routes, port, static files, rendering, error handling. No filtering logic. Exports the app; only listens when run directly, so tests can import it. |
-| `filters.js` | The registry. Every question the search can answer and every column it can return, as data: labels, categories, pill options, and the SQL for each. The one file a new field is added to. |
-| `search.js` | The SQL engine. Turns the registry into `WHERE` clauses and `SELECT` lists, runs them, pages the results. Knows nothing about HTTP or the screen. |
-| `detail.js` | The display engine. Turns one entry into the labelled rows a result card and the structure page both draw. |
-| `db.js` | The only file that opens a database connection. A pool, one `query()` function, and the `DatabaseUnavailable` error. |
-| `entries.json` | 120 PDB records. No longer read by the running app, it is the source for the seed and the yardstick for the tests. |
-| `search.reference.mjs` | The JavaScript filtering this project used before SQL. Kept only so the tests can check the SQL agrees with it. |
-| `*.test.js` | The tests. Outside `public/`, like everything else the browser has no business reading. `landing.test.js` is the odd one: it runs `public/landing.js` against stubbed browser globals, so the count logic is covered without a browser. |
+| `server.js` | every route. The only file that knows about HTTP. |
+| `filters.js` | every filter and column, as data. The one file a new field goes in. |
+| `search.js` | turns filters into SQL, runs it, pages the results |
+| `detail.js` | turns one entry into what the cards and the structure page show: rows, arcs, the sequence map, the NtC groups |
+| `sameseq.js` | finds chains with the same sequence and compares two of them |
+| `db.js` | the only file that opens a database connection |
+| `entries.json`, `search.reference.mjs` | the old 120-entry data and the old search, kept only so the tests can check the SQL agrees |
 
-The database, in `db/`:
-
-| file | job |
-| --- | --- |
-| `migrate.mjs` | Applies any migration that has not run yet, each in a transaction, recording it in `schema_migrations`. Safe to run twice. |
-| `migrations/001_init.sql` | The schema. 39 tables, 47 foreign keys, 40 indexes. |
-| `migrations/002_indexes.sql` | The indexes the search needs, beyond the keys. |
-| `migrations/003_entry_id_unique_ignoring_case.sql` | Makes a PDB id unique ignoring case, so `4TNA` and `4tna` cannot both exist. |
-| `migrations/004_speed_up_monomer_flag.sql` | A partial index over the non-standard residue codes. |
-| `migrations/005_track_loaded_entries.sql` | Records which structures finished loading, so an interrupted run can be repeated safely. |
-| `migrations/006_store_monomer_flag.sql` | Stores `entry.has_nonstandard_residue` instead of working it out per query. |
-| `migrations/007_search_document.sql` | The `doc` materialized view: one row per entry holding all of its searchable text, with trigram indexes. |
-| `migrations/008_separate_fields_in_the_document.sql` | Rebuilds `doc` with a newline between every field, so one search cannot match across two of them. |
-| `migrations/009_strip_cif_text_block_markers.sql` | Repairs two titles that kept CIF's `;...;` markers, and rebuilds `doc`. |
-| `load_cif.py` | Parses DNATCO CIF files into all 39 tables. Rebuilds `doc` when it finishes. Reads the same `.env` as the app; falls back to an embedded PostgreSQL when `DB_HOST` is unset. |
-| `make_seed.mjs` | Turns `entries.json` into SQL across 10 tables. |
-| `seed.sql` | Generated by the above. Test data only, deliberately **not** a migration, because it is data rather than structure. Ends by rebuilding `doc`, since loading data is what fills it. |
-
-Page templates, in `views/`:
+**Database**, in `db/`:
 
 | file | job |
 | --- | --- |
-| `landing.ejs` | The landing page at `/`. A plain GET form, so the box works before any script runs. |
-| `search.ejs` | Structure of the search page at `/search`. |
-| `report.ejs` | Structure of the report page. |
-| `structure.ejs` | One structure's own page, at `/structure/<id>`. |
-| `error.ejs` | Shown for any address that matches nothing. |
-| `includes/rail.ejs` | The sidebar. Written once, included by every page. |
-| `includes/arc_viewer.ejs` | The full-screen viewer's dialog, filled by `arc_viewer.js`. |
-| `includes/footer.ejs` | The landing page's footer: how to cite, help, contact, and who supports NA3DB. |
+| `migrations/*.sql` | the schema, one file per change, applied in number order (001 to 014) |
+| `migrate.mjs` | applies what has not run yet. Safe to run twice. |
+| `load_cif.py` | reads DNATCO CIF files into 39 tables |
+| `seed.sql` | the 120 sample entries, for development and tests. Made by `make_seed.mjs`. |
 
-These are rendered by the server and only the resulting HTML is sent. The
-templates themselves are never downloadable, which is why `views/` sits outside
-`public/`, put it inside and `/search.ejs` would serve the source instead of
-the page.
+**Pages**, in `views/` (built on the server, never downloadable):
 
-Each route tells the rail which icon to highlight by passing a `page` value, so
-the one shared copy still knows where it is:
+| file | page |
+| --- | --- |
+| `landing.ejs` | the front page, `/` |
+| `search.ejs` | results and filters, `/search` |
+| `report.ejs` | choose columns and export, `/report` |
+| `structure.ejs` | one structure, `/structure/<id>` |
+| `error.ejs` | not found, and errors |
+| `includes/` | shared pieces: the sidebar, the footer, the full-screen arc viewer, the map guide |
 
-```js
-res.render("report", { page: "report" });
-```
-
-Browser side, in `public/`:
+**Browser**, in `public/`:
 
 | file | job |
 | --- | --- |
-| `style.css` | Every visual decision. |
-| `shared.js` | HTML escaping, and conversion between a query string and a filters object. Takes the filter names from the registry the server injects. |
-| `api.js` | The browser's only door to the server. Nothing in the browser contacts any other host. |
-| `app.js` | The search page. Reads the form, draws the arcs, cards or lines, runs the layout and panel controls. Decides nothing about the data. |
-| `arc_viewer.js` | The full-screen arc viewer: drawing, zoom, the pair list, family chips. Opens from any `[data-arc-open]` button, on the search page or a structure page. |
-| `report.js` | The report page. Field selection and CSV building. |
-| `landing.js` | The count under the landing box. An addition, never a dependency: the form works without it. |
+| `style.css` | every visual decision |
+| `app.js` | the search page |
+| `landing.js` | the count under the front-page box |
+| `report.js` | the report page |
+| `arc_viewer.js` | the full-screen arc picture |
+| `seqmap.js` | the sequence map |
+| `sameseq.js` | the Same sequence comparison |
+| `cana.js` | the 15 CANA colours and names, shared by the server and the browser |
+| `api.js`, `shared.js` | talking to the server, and small helpers |
 
-There is no HTML in `public/`. The split is exact: `public/` is what the
-browser downloads, `views/` is what the server builds.
+## 11. Adding a filter or a column
 
-The second rule follows from the first: **the browser draws, the server
-decides.** The frontend does not know that a confal score is a number, that
-pill filters mean "any one of these", how many rows fit on a page, or what
-order results come in. All of that is in `search.js`.
+One object in `filters.js`. Nothing else changes: the form grows an input,
+the search understands it, the API lists it.
 
-That rule is what made the move to PostgreSQL possible without touching the
-browser at all. `search.js` was rewritten from array filtering to SQL, about
-sixty lines of JavaScript were deleted, and `app.js`, `api.js`, `report.js` and
-every template were left exactly as they were.
-
-### Adding a filter or a column
-
-Every searchable question and every returnable column lives in `filters.js`.
-Adding one is one object in that file; nothing else is edited.
-
-A filter object:
+A filter:
 
 ```js
 {
-    key:   "journal",              // the name in the URL and the form
+    key:   "journal",              // its name in the URL
     label: "Journal",              // what the reader sees
-    group: "Demographics",         // which category box it sits in
+    group: "Demographics",         // which box it sits in
     kind:  "text",                 // text, range or pills
     where: `AND EXISTS (SELECT 1 FROM citation c
                         WHERE c.entry_id = e.id AND c.journal_abbrev ILIKE ?)`
 }
 ```
 
-That is enough for the form to grow an input, the search to understand the
-parameter, and `GET /api/fields` to advertise it. `kind` decides how the value
-is read and drawn: `text` is a contains-search, `range` is one end of a pair
-(joined by `pair_with`), `pills` is a set of buttons listed in `options`. A
-filter whose SQL takes no parameter uses `clause`, a function returning the
-finished clause, instead of `where`.
-
-A column object:
+A column:
 
 ```js
 {
-    key:    "journal_name",        // the SQL alias and the JSON property
+    key:    "journal_name",
     label:  "Journal",
     group:  "Citation",
-    scope:  "detail",              // entry = every result, detail = one entry
+    scope:  "detail",              // entry = fetched with every result, detail = one entry only
+    show:   ["page", "card"],      // where it appears; [] = nowhere, absent = page only
     select: `(SELECT c.journal_abbrev FROM citation c
               WHERE c.entry_id = e.id AND c.id = 'primary')`
 }
 ```
 
-That gives a CSV column and a row on the structure page. Where a column is
-displayed is one field:
+**The SQL never reaches the browser.** The API sends only fields picked by
+name, and a test fails if `where`, `clause` or `select` ever leaks.
 
-```js
-show: ["page", "card"]    // the structure page and a result card
-show: []                  // fetched, shown nowhere
-                          // absent means ["page"] alone
-```
+Values never enter the SQL as text: every one is a numbered parameter, so
+typing `' OR '1'='1` just searches for that string.
 
-`scope` and `show` answer different questions. `scope` is about cost, which
-query fetches it; `show` is about placement. `pdb_id` is `scope: "entry"` and
-`show: []`: fetched with every result because the links are built from it,
-displayed nowhere because the heading already says it.
+## 12. The search box
 
-`decimals`, `unit` and `thousands` format the value, and `fallback` names
-another column to use when this one is empty.
+All searchable text sits in one materialized view, `doc`, one row per entry,
+with trigram indexes. That took the box from 28 ms to 7 ms.
 
-**A card also shows whatever was searched on.** Three columns are not on a card
-by default, so a filter can name the column that explains a match:
+- **Each field is kept apart by a newline**, so `rna hall` cannot match a title
+  ending in RNA plus an author named Hall.
+- **Only punctuation is dropped, never spaces.** Dropping spaces turned
+  `ATP-dependent RNA` into a false hit for `tRNA`.
+- **The id and molecule names stay literal**, because punctuation means
+  something there (`11,19-DIMETHYL` must not match `119D`).
 
-```js
-{ key: "assigned_ntc", answered_by: "assigned_ntc", ... }
-{ key: "confal_min",   answered_by: "confal_score", ... }
-```
+`doc` is a copy, so it must be rebuilt after loading data. `seed.sql` and
+`load_cif.py` both do it; if it is ever stale, `npm test` fails and prints the
+command.
 
-Search by NtC class and every card gains an Assigned NtC row, placed in
-registry order rather than appended. Without it a search on a field the card
-does not show leaves the reader taking the match on trust.
+## 13. API reference
 
-Columns and filters are two lists because they overlap without containing each
-other: `title` is shown and not searched, `confal_score` has two filters
-pointing at it, and three columns are named differently from their filter.
-
-Three smaller lists live beside those two, and are reached the same way:
-
-| list | holds |
-| --- | --- |
-| `GROUPS` | the category boxes, in the order they appear down the panel |
-| `SORTS` | the eight orders the results can be put in |
-| `MATCH_MODES` | whether the search means Contains or Excludes |
-| `EXAMPLES` | the chips under the landing box, each naming a different kind of thing |
-
-A filter marked `prominent: true` is drawn across the top of the page instead of
-inside the panel. That is how the one search box gets there, and `q` is the only
-filter using it today.
-
-**The SQL never reaches the browser.** `public_registry()` picks the safe
-fields by name rather than stripping the unsafe ones, so a field added later
-stays on the server unless it is deliberately listed. `server.test.js` walks
-every filter and every column in the response and fails if one carries a field
-that is not on the allowed list, or carries `where`, `clause` or `select`.
-
-### The one search box
-
-Type anything and it looks in six places at once:
-
-| it searches | example |
-| --- | --- |
-| the entry id | `119D` |
-| the title | `ribozyme` |
-| the authors | `Leonard` |
-| the molecule descriptions | `tRNA` |
-| the source organisms | `Escherichia coli` |
-| the non-standard residues, by code or chemical name | `PSU`, `pseudouridine` |
-
-It understands three things about what you type.
-
-**Capitals do not matter**, anywhere, and never have.
-
-**Punctuation is optional in prose.** `zdna` finds `Z-DNA`, because the title,
-the authors and the organisms are matched against a copy with punctuation
-dropped from both sides. The id and the molecule descriptions stay literal,
-because punctuation means something in them: `119D` is a name, and a
-description is often a chemical name like `11,19-DIMETHYL...`, which would
-otherwise flatten to `1119dimethyl` and answer a search for `119D`.
-
-**It is a "contains" search, including inside a word.** `nard` finds five
-structures by the authors Leonard, Pinard, Bernardin and Renard. That is the
-same property that lets `tRNA` find `tRNApro` and `tRNAminiDCG`, which a
-word-based search misses, so it is kept deliberately. Ranking the whole-word
-matches above the fragments is the fix, and is not built yet.
-
-#### How it is built
-
-The text lives in five tables, so the box was once five correlated subqueries
-run for every entry, and residues were not reachable at all: searching
-`entity_poly_seq` costs **1,708 ms** against 3.8 million rows. `doc` gathers
-everything into one row per entry, which took the box from **28 ms to 7 ms**
-with every answer unchanged, and brought residues down to **1 ms**.
-
-| doc column | gathered from |
-| --- | --- |
-| `id` | `entry` |
-| `title` | `struct` |
-| `entities` | `entity` |
-| `authors` | `citation_author` |
-| `organisms` | `entity_src_gen` |
-| `residues` | `entity_poly_seq` joined to `chem_comp`, non-standard only |
-| `prose` | title, authors and organisms, normalised |
-
-It is a **materialized view**, not columns on `entry`, so the loader cannot
-forget to fill one in and no row can be half-written. The price is that it
-holds a copy, which can go stale: `load_cif.py` rebuilds it when a run
-finishes, and three tests fail if it has drifted. By hand:
-
-```bash
-psql -d na3db -c "REFRESH MATERIALIZED VIEW CONCURRENTLY doc"
-```
-
-#### Three decisions worth knowing
-
-**Every field is separated by a newline.** Join them with a space and the
-joins themselves become searchable: `rna hall` found two structures whose
-title ends in RNA and whose author is named Hall, with the phrase in no
-single field. 1,484 of 1,489 entries could produce a match like it. A newline
-is a wall nothing a search survives, because the normalised needle keeps only
-`[a-z0-9 ]` and `like_contains` strips newlines, so a crafted `?q=%0A` cannot
-breach it either. Repeated values are joined the same way, so two authors are
-never one run of text.
-
-**Spaces survive normalisation; only punctuation goes.** Dropping spaces too
-looks like the same idea and is not: a space stops separating words, so
-`ATP-dependent RNA` becomes `dependentrna` and answers a search for `tRNA`.
-That turned 163 tRNA hits into 209, and all 46 extras were wrong. `A DNA`
-colliding with `A-DNA` is the sharper case, since both are things people
-type. `search.test.js` pins `9IBC` and `1BDN` against exactly that.
-
-**Residues match loosely, code and chemical name alike.** Not as a whole
-code, because a whole-code match is a *subset* of a loose one, so pairing the
-two adds nothing — and loose is what makes the names reachable. Of nineteen
-ordinary searches, seven move:
-
-| search | before | after |
-| --- | --- | --- |
-| `PSU` | 1 | 90 |
-| `uridine` | 24 | 155 |
-| `phosphate` | 256 | 503 |
-| `5M` | 21 | 108 |
-
-Six are chemistry words finding chemistry. The seventh is `5M`, and those
-really are `5MU` and `5MC` structures. Only non-standard residues are in the
-column at all, so a standard base is not a code in there — though it can
-still appear inside a longer one, which is why `DG` finds the two `DDG`
-structures.
-
-A search with nothing alphanumeric in it, such as `%`, finds nothing: the
-stripped value would be empty, and an empty `LIKE` pattern would match every
-row, so it is replaced by one that cannot match.
-
-**Two things the test suite cannot reach.** Every entry in the 120-entry seed
-has one molecule description, one author and one organism, and no
-`chem_comp.name` at all, because `db/seed.sql` is generated from
-`entries.json`. So the chemical-name search and the repeated-value case are
-verified only against the real `na3db`. Two tests assert that flatness
-deliberately, and fail with instructions if the seed ever gains either.
-
-### One entry comes from seven tables
-
-The flat shape the browser receives is assembled by the database:
-
-| what you see | where it lives |
-| --- | --- |
-| `pdb_id` | `entry.id`: unique ignoring case, so `4TNA` and `4tna` cannot both exist |
-| `title` | `struct.title` |
-| `author` | `citation_author.name` |
-| `method` | `exptl.method` |
-| `resolution` | `reflns.d_resolution_high` |
-| `deposition_date` | `pdbx_database_status.recvd_initial_deposition_date` |
-| `entity_name` | `entity.pdbx_description` |
-| `source_organism` | `entity_src_gen.pdbx_gene_src_scientific_name` |
-| `polymer_type` | **computed** from every `entity_poly.type` the entry has |
-| `monomer_flag` | **computed**: does any residue have `chem_comp.mon_nstd_flag = 'n'`? |
-| `nonstandard_residue` | **aggregated** from `entity_poly_seq` joined to `chem_comp` |
-| `confal_score` | `ndb_struct_ntc_overall`: 0 to 96, absent for 2 structures |
-| `assigned_ntc` | `ndb_struct_ntc_step_summary`: one of 97 classes, e.g. `AA00` |
-
-The last five are not columns anywhere. `polymer_type` in particular has to be
-worked out from what the entry contains, and the order of the tests matters: a
-structure with both a protein chain and a nucleic acid is `Protein/DNA`,
-`Protein/RNA` or `Protein/DNA/RNA`, and must be checked for that **before** it
-is checked for being a nucleic acid, or every complex is mislabelled. A hybrid
-strand counts as both DNA and RNA.
-
-Values never reach the SQL as text. Every filter goes in as a numbered
-parameter, so a visitor typing `' OR '1'='1` ends up as a harmless string:
-
-```js
-query("SELECT ... WHERE e.id ILIKE $1", ["%' OR '1'='1%"])
-```
-
-## Pages
-
-| address | page |
-| --- | --- |
-| `GET /` | The landing page: one search box, a line of examples, and a link to the filters. |
-| `GET /search` | Structure query: the filter panel, the results, and the controls over them. |
-| `GET /report` | Report. Reads its filters from its own query string, so a link carries the search with it. Arriving with no search goes to `/search`. |
-| `GET /structure/:id` | One structure, by its PDB id. |
-| anything else | The not-found page, with status 404. |
-
-`/` with a query string is a link saved before the split, so it is redirected
-with a `301` to `/search` carrying the same query rather than being dropped on
-the landing page.
-
-Filters travel in the query string, so `/report?entry_id=tna` reports on exactly
-what `/search?entry_id=tna` found. The rail links rewrite themselves to carry
-the current search across, and the structure page, which runs no script of its
-own, has them built on the server from the id it is showing.
-
-Everything about how the results are shown travels too: the page, the order,
-the layout, how many a page holds, whether the search means Contains or
-Excludes.
-So reloading or sharing a link lands on exactly what the sender was looking at.
-
-A report covers a search, so the Report icon is not offered on the landing page
-and `/report` turns away anything that is not one. A display parameter is not a
-search: `/report?view=lines` goes to `/search` like a bare `/report` does.
-
-**The filter panel opens by itself when it is the thing you need.** A plain
-search from the box shows results alone; a search using any filter, or arriving
-with no query at all, opens the panel. The `Filters` button overrides either
-way, and writes its choice into the URL.
-
-### What a result looks like
-
-Three layouts, chosen with `Arcs | Cards | Lines` and remembered in the URL
-(`?view=arcs`, `?view=lines`; Cards, the default, leaves it out). Switching between them
-redraws what the browser already holds, so it makes no request: the reply
-behind the current page carries every field all three views need.
-
-An **arc tile** is the entry's arc picture (`/structure/:id/arcs.svg`), its id
-and its title. Pressing the picture opens the full-screen viewer.
-
-A **card** is one a row: the arc picture on the left; on the right the id,
-polymer type and title, a row of facts (method, deposited, nucleotides, base
-pairs, modified, strands), and below them the other fields with links to RCSB
-and the full page. The numbers come from `arc_summary()` in `detail.js` and
-travel in `/api/entries` as `arcs`. The fields are those
-`show: [..., "card"]` names, drawn from the same registry the structure page
-reads, so the two cannot describe one entry differently. A field you searched
-on joins the card even if it is not normally there, so a result never has to be
-taken on trust.
-
-The card steps down at 1099, 759 and 489px of results width. The steps follow
-the results area rather than the window (container queries), because a media
-query cannot see the filter panel: with it open at 1366px the results have
-856px.
-
-A **line** is the id, date, resolution, title and method. Clicking either opens
-that structure's page.
-
-### On a phone
-
-Below 640px wide the same pages rearrange rather than shrink:
-
-- the side rail becomes a bar across the top
-- the filters open as a full-screen sheet; `Show N results` closes it onto the
-  results, and a filtered link opens on the results, not the sheet
-- cards turn compact, about 380px tall: id and method on one line, the title
-  in two, a short arc picture, four numbers (nt, pairs, WC, modified), the
-  first author and paper on one line, the modified residues as chips, and
-  `Open entry`, `RCSB ↗` and `More ▾`. `More` unfolds every field; a field you
-  searched on stays visible
-- arc tiles go two a row
-- the full-screen viewer stacks: drawing on top, families and the pair list
-  below
-- tables on the structure page scroll sideways in their own box
-- on the report, the table comes first, `Fields` folds the column list open
-  above it, and `Export to CSV` stays pinned to the bottom of the screen
-
-Tablets (641–1023px) keep the side rail and stack the filters above the
-results.
-
-### The structure page
-
-`/structure/4TNA` is in four groups, each with its own colour (the same colours as the filter panel):
-
-| group | section | what is there |
-| --- | --- | --- |
-| Overview | Overview | title, method, date, resolution, authors, sizes |
-| Composition | Molecules | each polymer with its chains, length and modelled residues; the sequence with gaps and modified bases marked, a copy button and a `FASTA` download |
-| | Modified nucleotides | each code, its name, chain and positions; long lists show six rows and a `Show all` button |
-| | Ligands | each small molecule, linked to its RCSB page |
-| | Sources | where each molecule came from: Natural, Expressed or Synthetic |
-| 3D structure | Base pairs | the arc picture across the full width (press it for full screen), counts by kind, the pair families, and the non-canonical pairs in the first model, with a `CSV` download |
-| | Conformation | confal score, its percentile, the NtC steps and classes |
-| References | Citations | every paper, with DOI and PubMed links |
-| | Links and downloads | RCSB, FASTA, base pairs as CSV, the report, the entry as JSON |
-
-- **The sidebar** lists every section and marks the one you are reading. On a phone or tablet it is a row of chips under the top bar.
-- **Each section has its own address**, such as `/structure/4TNA#base-pairs`, to put in a paper or an email.
-- **A section with nothing in it** stays in the list, greyed out: "none recorded" is a fact about the entry.
-- **On each section's band:** `?` explains the terms, the chevron folds the section.
-
-### The controls over the results
-
-| control | what it does |
-| --- | --- |
-| `Contains \| Excludes` | whether the search finds those entries or every other one. Inverts the whole search, box and filters together, so the two halves always add up to the database |
-| `Show _n_ per page` | any whole number, capped at 200 |
-| `Sort by` | eight orders, two each for deposition date, resolution, confal score and entry id |
-| `Arcs \| Cards \| Lines` | the layout |
-| `Filters` | the panel. Shows how many filters are on, as in `Filters · 2` |
-| filter chips | one per filter in use, above the results. `×` removes it and searches again |
-| `Show N results` | the panel's search button, counting as you pick filters |
-
-`/structure/4TNA` is built on the server, so the whole record is in the HTML
-before any script runs, and an id that does not exist returns a genuine **404**
-rather than a 200 page that says "not found". That distinction matters for a
-database whose links are meant to be cited: a link checker, a crawler or a
-journal's reference validator only sees the status code. Ids are matched
-case-insensitively, so `/structure/4tna` works too.
-
-An unknown address under `/api` returns JSON; any other unknown address returns
-the HTML page. Browsers and `api.js` each get the format they can use.
-
-## API
-
-Twelve endpoints. All return JSON unless noted.
+All JSON unless noted. Filters go in the query string, the same as on the website.
 
 | endpoint | returns |
 | --- | --- |
-| `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` with `"down"`. Runs `SELECT 1`: it tests the connection, never the data. |
-| `GET /api/stats` | `{"total":1489}`. Counted fresh on every request. |
-| `GET /api/fields` | The filters and columns this API understands, so a client can discover them instead of hard-coding them. Labels, categories, kinds and pill options; never the SQL. |
-| `GET /api/entries` | One page of matching entries, plus the counts needed to draw pagination. Each result carries the rows its card draws and its arc numbers (`arcs`, null when nothing is drawn). Takes `page`, `sort`, `per_page` and `match`. |
-| `GET /api/count` | How many entries a search would return, and nothing else. 6-45 ms, which is what lets the landing page count as you type. |
-| `GET /api/entries/:id` | One entry, by its PDB id. 404 if there is no such entry. |
-| `GET /api/export` | Every matching entry, for the report. Capped at 5000 rows. Takes `sort` and `match` too, so a downloaded file matches what was on screen. |
-| `GET /api/entries/:id/base_pairs` | Every base pair of the entry's first model: `{entry, model, total, counts, pairs}`, each pair with its chains, residues, family and kind (`wc`, `gu`, `nc`). `?format=csv` returns a CSV file instead. |
-| `GET /api/entries/:id/arcs` | What the arc picture is drawn from: `{strands, pairs}`. Each strand has its name, start, length, sequence and modified positions; each pair is `[i, j, kind, label, family, base_1, base_2]`, `i < j`. Cached on the server for an hour. |
-| `GET /structure/:id/arcs.svg` | The small arc picture, as SVG. The browser keeps it for an hour. |
-| `GET /api/ligands` | Every ligand code with its name and how many entries hold it. What the Ligand box suggests from. |
-| `GET /structure/:id/fasta` | Plain-text FASTA of every sequenced molecule in the entry, as a download. `?only=na` keeps the nucleic acids. |
-| `GET /structure/:id/fasta/:entity` | One molecule's FASTA, by its entity id. |
+| `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` |
+| `GET /api/stats` | `{"total":1489}` |
+| `GET /api/fields` | every filter and column the API understands (never the SQL) |
+| `GET /api/count` | how many entries a search finds |
+| `GET /api/entries` | one page of results. Takes `page`, `sort`, `per_page`, `match` |
+| `GET /api/entries/:id` | one entry, or `404` |
+| `GET /api/export` | every match, up to 5,000, for the report |
+| `GET /api/entries/:id/base_pairs` | every base pair of the first model. `?format=csv` for a file |
+| `GET /api/entries/:id/arcs` | what the arc picture is drawn from |
+| `GET /api/entries/:id/sequence_map` | what the sequence map is drawn from |
+| `GET /api/entries/:id/same_sequence` | the chains sharing a sequence with this entry |
+| `GET /api/same_sequence/compare` | two chains compared, given as `ENTRY:CHAIN` |
+| `GET /api/ligands` | every ligand code, its name and how many entries hold it |
+| `GET /structure/:id/arcs.svg` | the small arc picture, as SVG |
+| `GET /structure/:id/fasta` | FASTA of every molecule. `?only=na` for nucleic acids only |
+| `GET /structure/:id/fasta/:entity` | FASTA of one molecule |
 
-The two are different questions, and they fail differently. `/api/entries`
-narrows a list, so matching nothing is a successful `200` with an empty
-`results`. `/api/entries/4TNA` names one thing, so an unknown id is a `404`.
+Filter parameters:
 
-`/api/entries` returns:
-
-```json
-{
-  "results": [ ... ],
-  "total": 163,
-  "page": 1,
-  "pages": 9,
-  "page_size": 20
-}
-```
-
-Each result carries its raw fields **and** the rows a card draws, never one
-instead of the other: `resolution` stays the number `2.2` while `card` has it
-as `"2.20 Å"`. The formatting lives in `detail.js` and cannot cross JSON, so
-the finished list is built on the server rather than in the browser.
-
-`/api/export` returns `results`, `total`, and `truncated`, which says whether
-the cap was reached.
-
-Both accept the same filter parameters. Anything omitted means no filtering on
-that field. Any unknown parameter is ignored.
-
-| parameter | matching |
+| parameter | matches |
 | --- | --- |
-| `entry_id` | contains, case-insensitive |
-| `author_name` | contains, case-insensitive |
-| `entity_name` | contains, case-insensitive |
-| `source_organism` | contains, case-insensitive |
-| `nonstandard_residue` | contains, case-insensitive |
-| `ligand` | the exact code (`SAM`), or a name fragment of 5 letters or more (`adenosyl`) |
-| `expression_host` | contains, case-insensitive |
+| `q` | the one search box |
+| `entry_id`, `author_name`, `entity_name`, `source_organism`, `nonstandard_residue`, `expression_host`, `assigned_ntc` | contains, any case |
+| `ligand` | the exact code (`SAM`), or 5+ letters of the name |
 | `taxonomy_id` | exact number |
-| `source_kind` | one of, comma-separated: `Natural`, `Expressed`, `Synthetic`, `Not recorded` |
-| `assigned_ntc` | contains, case-insensitive |
-| `confal_min`, `confal_max` | numeric range |
-| `experimental_method` | one of, comma-separated |
-| `polymer_type` | one of, comma-separated |
-| `monomer_flag` | one of, comma-separated |
-| `page` | whole number, 1 or more. `/api/entries` only. |
-| `match` | `contains` or `excludes`. `excludes` inverts the whole search, so the two halves always add up to the database. Anything else is read as `contains`. |
+| `confal_min`, `confal_max` | a range |
+| `experimental_method`, `polymer_type`, `monomer_flag`, `source_kind` | one of, comma-separated |
+| `match` | `contains` (default) or `excludes`, which flips the whole search |
 
 Examples:
 
 ```
-/api/entries?entry_id=tna
+/api/entries?q=tRNA
 /api/entries?polymer_type=RNA&page=2
 /api/entries/4TNA
-/api/export?source_organism=sacch
 /api/entries?ligand=SAM
 /api/entries/1EHZ/base_pairs?format=csv
 /structure/1EHZ/fasta?only=na
 ```
 
-From Python:
+Searching for a list and finding nothing is a `200` with no results. Asking
+for one entry that does not exist is a `404`. A question that makes no sense
+(an impossible range) is a `400`. The database being down is a `503`; a bug
+here is a `500`. Error messages never show the host, port or query.
 
-```python
-import pandas as pd
-pairs = pd.read_csv("http://localhost:4000/api/entries/1EHZ/base_pairs?format=csv")
-```
+## 14. Speed
 
-A query that cannot be answered returns 400 with a readable message, for
-example an impossible score range or a page number that is not a number. An
-unknown path under `/api` returns 404 as JSON.
-
-Two kinds of failure are told apart, because they need different responses:
-
-| status | means | example |
-| --- | --- | --- |
-| `503` | the database is unreachable or refusing work, try again | PostgreSQL restarting |
-| `500` | a fault in this code | a query naming a table that does not exist |
-
-A browser gets the styled error page for either; a request under `/api` gets
-JSON. The message is always generic, the host, the port and the failing query
-go to the server log, never to the client.
-
-## Performance
-
-Measured on the real 1,489 structures, warm:
+On the real 1,489 structures, warm:
 
 | | |
 | --- | --- |
 | one entry by id | 4 ms |
-| first page, no filters | 11 ms |
-| `entry_id` contains | 5 ms |
-| author contains | 5 ms |
-| organism contains | 10 ms |
-| `nonstandard_residue` | 16 ms |
-| `polymer_type` | 17 ms |
-| `monomer_flag` | 8 ms |
-| `confal` range | 7 ms |
-| `assigned_ntc` | 36 ms |
-| last page (`OFFSET 1480`) | 11 ms |
-| export, every row (the report page) | 1,045 ms |
+| first page | 11 ms |
+| any single filter | 5 to 36 ms |
+| last page | 11 ms |
+| export, every row | about 1 s |
 
-Everything the search page does is under 40 ms. The export is honest work: it
-genuinely builds all thirteen columns for all 1,489 rows, and nothing is
-discarded.
+Comfortable up to about 20,000 entries. Past that, three things need work:
+store `polymer_type` as a column, page by key instead of offset, and cap the
+total count. All three are in `search.js` and the schema; the browser would
+not change.
 
-Four things were slow when the real data landed, and each needed a different
-answer. They are worth reading together, because the obvious fix was wrong
-three times out of four.
+The database takes 9.6 GB, 7.6 GB of it atom coordinates.
 
-**`monomer_flag`, 748 ms.** The clause was built like `polymer_type`:
+## 15. Not done yet
 
-```sql
-AND (CASE WHEN EXISTS (...) THEN 'Non-Standard' ELSE 'Standard' END) = ANY($1)
-```
-
-Wrapping a subquery in a `CASE` forces PostgreSQL to evaluate it for *every*
-row, because it has to produce a value to compare. A bare `EXISTS` stops at the
-first match. That took it to 232 ms. Getting the rest meant storing the answer:
-`entry.has_nonstandard_residue`, written by the loader and read as a column, at
-**4 ms**. See `db/migrations/006`.
-
-**`nonstandard_residue`, 385 ms.** The subquery joined `chem_comp`, and because
-it also mentioned `e.id` the whole thing was correlated, PostgreSQL re-ran the
-`chem_comp` scan once per entry. An index made it *worse*; rewriting as
-`IN (...)` changed nothing. The fix was to make that part uncorrelated:
-
-```sql
-AND eps.mon_id = ANY (ARRAY(SELECT cc.id FROM chem_comp cc WHERE ...))
-```
-
-`ARRAY(SELECT ...)` mentions nothing outside itself, so it becomes an InitPlan
-and runs exactly once. **16 ms.**
-
-**The last page, 1,747 ms.** Not the `OFFSET`: that costs 1 ms on its own. The
-cost was that all thirteen columns, several of them subqueries, were computed
-for every row up to the offset and then thrown away. The ids are now found
-first and the columns built for those ten. **11 ms**, and numbered pages are
-kept, keyset pagination was not needed.
-
-That change also exposed a correctness bug. The joins to `citation_author` and
-`entity_src_gen` could return an entry more than once: 18 entries have several
-`entity_src_gen` rows for entity 1, usually the same organism recorded twice.
-1,489 entries were coming back as 1,512 rows while the total still said 1,489.
-Both are scalar subqueries now, which can only ever return one row.
-
-**The detail panel, 400–800 ms and sometimes nothing.** This is now history:
-the panel was retired once a result card showed the same rows. It fetched each
-structure from `data.rcsb.org`. It now reads this database, which is faster and
-shows more, every author rather than the first, plus the confal percentile and
-NtC classes that RCSB does not have.
-
-### Beyond this size
-
-The same queries against synthetic copies at three sizes:
-
-| | 1,440 | 15,000 | 200,040 |
-| --- | --- | --- | --- |
-| one entry by id | 6 ms | 6 ms | 6 ms |
-| first page | 18 ms | 46 ms | 198 ms |
-| `polymer_type` | 97 ms | 91 ms | 1.78 s |
-| last page | 112 ms | 214 ms | 4.85 s |
-
-Comfortable to roughly 20,000 entries. Past that, three things need work, each
-measured on a 200,000-entry copy:
-
-- **The computed filters.** `polymer_type` and `monomer_flag` are worked out per
-  row. Storing them as columns on `entry`, written once by the loader, takes a
-  filter from **828 ms to 27 ms**.
-- **Deep pagination**, as above.
-- **The count on every search.** Counting all matches is linear. Capping it
-  ("1000+") or using PostgreSQL's estimate for large results is the usual fix.
-
-All three live in `search.js` and the schema, the browser is unaffected.
-
-Disk: 1,489 structures occupy **9.6 GB**, of which `atom_site` is 7.6 GB. At
-200,000 structures that would be roughly 200 GB, which is why the production
-host needs real storage rather than a default volume.
-
-## What is not done yet
-
-- **Most electron-microscopy structures show no resolution.** 441 of 497 EM
-  entries are blank because the loader reads only the X-ray fields; 496 of
-  their CIF files do have `_em_3d_reconstruction.resolution`.
-- **Two structures have no confal score.** `2JJA` and `363D`: DNATCO produced
-  no overall analysis for them. Expected, not a bug.
-- **`entry.has_nonstandard_residue` is derived.** It is written by the loader
-  rather than computed per query, so it could drift from the rows it came from.
-  `search.test.js` checks the two still agree, which makes a drift a test
-  failure rather than a wrong answer.
-- **No automated backups.** `pg_dump -Fc` takes about four minutes and produces
-  1.2 GB from a 9.6 GB database. Nothing runs it on a schedule yet, and no
-  restore has been tested.
-- **`public/app.js` is 850 lines doing eight jobs**, reading the form, drawing
-  the arcs, cards or lines, pagination, the layout and panel controls, the live
-  count, the filter chips, the ligand suggestions, and history.
-  It works, and it is the next file that will want splitting.
-- **Results are not ranked.** Every match counts the same, so a structure
-  whose *title* says ribozyme sits beside one that merely has an author named
-  Pinard when you search `nard`. A contains-search is right for this data —
-  it is what finds `tRNApro` where a word search would not — but the fix is
-  to score whole-word matches above fragments rather than to stop matching
-  fragments. PostgreSQL's full-text index does the word-aware half, measured
-  at 0 ms, and `pg_trgm` is already installed.
-- **Typos find nothing.** `ribozime` returns none of the 20 ribozyme
-  structures. `pg_trgm` can do it at a word-similarity threshold of 0.5,
-  measured, but the window is narrow: 0.4 returns 226 results for the same
-  query. It belongs behind a no-results fallback rather than in the search
-  itself.
-- **Some entity names have a space missing.** `DNA-directedRNA polymerase`
-  appears in 47 rows, so a search for the spaced form misses them. It is in the
-  source data rather than the loader, but it is worth a look.
-- **No 3D viewer.** Planned, and the atom coordinates are loaded. It needs
-  `Cross-Origin-Opener-Policy: same-origin` and
-  `Cross-Origin-Embedder-Policy: require-corp` on every response, including
-  worker scripts, so the reverse proxy has to be able to set those.
-- **The arc numbers are worked out on first request.** About 18 ms an entry,
-  then cached for an hour, so the first search through 100 ribosomes takes
-  about 4 s and the next 0.2 s. Warming the cache at start-up would remove that.
+- **Most electron-microscopy entries show no resolution.** 441 of 497 are
+  blank: the loader reads only the X-ray fields, though the CIF files have it.
+- **Two structures have no confal score** (`2JJA`, `363D`). DNATCO gave none. Expected.
+- **Results are not ranked.** A whole-word match and a fragment count the same.
+- **Typos find nothing.** `ribozime` returns none of the 20 ribozymes.
+- **Some molecule names miss a space** (`DNA-directedRNA polymerase`, 47 rows),
+  as in the source data.
+- **No 3D viewer yet.** The atom coordinates are loaded.
+- **The first arc picture of an entry takes about 18 ms to work out**, then it
+  is cached for an hour.
+- **`public/app.js` is about 850 lines doing eight jobs.** It is the next file
+  to split.
