@@ -1098,6 +1098,9 @@ export async function same_sequence_members(members, q = query) {
                   count(DISTINCT s.seq_id)::int AS length
              FROM pdbx_poly_seq_scheme s
              JOIN unnest($1::text[], $2::text[]) AS m(entry, entity) ON s.entry_id = m.entry AND s.entity_id = m.entity
+            -- Says the same as the join, but lets Postgres use the entry_id
+            -- index instead of reading all 4.7 million rows (1.4 s).
+            WHERE s.entry_id = ANY($1)
             GROUP BY s.entry_id, s.entity_id, s.asym_id
             ORDER BY s.entry_id, length(s.asym_id), s.asym_id`,
           [members.map((m) => m.entry), members.map((m) => m.entity)])
@@ -1148,16 +1151,26 @@ export async function chain_tracks(chains, q = query) {
                        WHEN least(base_1, base_2) || greatest(base_1, base_2) = 'GU' THEN 'gu'
                        ELSE 'nc' END AS kind
              FROM p`, [entries, labels]),
+        // The chains' steps are gathered first, through the entry_id index.
+        // Left to plan the whole join, Postgres guessed the same-chain filter
+        // keeps 26 of a million steps and scanned the table once per chain:
+        // the tRNA group of 5UYM (53 chains) ran past the 15 s limit. 0.35 s
+        // now, with identical rows for all 328 groups the old query answered.
         q(`WITH m AS (SELECT t.entry_id, min(coalesce(t.pdb_model_number, 1)) AS first_model
-                        FROM ndb_struct_ntc_step t WHERE t.entry_id = ANY($1) GROUP BY t.entry_id)
+                        FROM ndb_struct_ntc_step t WHERE t.entry_id = ANY($1) GROUP BY t.entry_id),
+              t AS MATERIALIZED (
+                SELECT t.id, t.entry_id, t.pdb_model_number, t.label_asym_id_1, t.label_seq_id_1, t.label_seq_id_2,
+                       t.label_alt_id_1, t.label_alt_id_2
+                  FROM ndb_struct_ntc_step t
+                  ${wanted} ON t.entry_id = w.entry AND t.label_asym_id_1 = w.label
+                 WHERE t.entry_id = ANY($1)
+                   AND t.label_asym_id_2 = t.label_asym_id_1 AND t.label_seq_id_2 = t.label_seq_id_1 + 1)
            SELECT DISTINCT ON (t.entry_id, t.label_asym_id_1, t.label_seq_id_1)
                   t.entry_id AS entry, t.label_asym_id_1 AS label, t.label_seq_id_1 AS pos_1, t.label_seq_id_2 AS pos_2,
                   s.assigned_ntc AS ntc, s.assigned_cana AS cana, s.confal_score AS confal
-             FROM ndb_struct_ntc_step t
-             ${wanted} ON t.entry_id = w.entry AND t.label_asym_id_1 = w.label
+             FROM t
              JOIN m ON m.entry_id = t.entry_id AND coalesce(t.pdb_model_number, 1) = m.first_model
              JOIN ndb_struct_ntc_step_summary s ON s.entry_id = t.entry_id AND s.step_id = t.id
-            WHERE t.label_asym_id_2 = t.label_asym_id_1 AND t.label_seq_id_2 = t.label_seq_id_1 + 1
             ORDER BY t.entry_id, t.label_asym_id_1, t.label_seq_id_1,
                      coalesce(t.label_alt_id_1, ''), coalesce(t.label_alt_id_2, ''), t.id`, [entries, labels])
     ]);
