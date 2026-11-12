@@ -7,7 +7,7 @@
 // NCBI PubMed does the same (ESpell); RCSB, PDBe and UniProt offer nothing.
 
 import { query } from "./db.js";
-import { clean_text, singular, count_entries, organism_suggestions } from "./search.js";
+import { clean_text, singular, count_entries, organism_suggestions, ligand_suggestions, nonstandard_suggestions } from "./search.js";
 import { taxa_named, name_key } from "./taxonomy.js";
 
 // Every word of every entry's searchable text, with how many entries hold it.
@@ -247,11 +247,20 @@ async function box_names(q) {
                     }
                 }
                 let ids = (await q(`SELECT id FROM doc ORDER BY id`)).rows.map((r) => r.id);
+                let chemical = (r) => ({ code: r.code, name: r.code, also: r.name ?? "", held: r.entries });
                 names = {
                     signature: sig, ids,
                     authors:   [...by.authors.values()].map((n) => ({ name: n.name, held: n.ids.size })),
-                    molecules: [...by.molecules.values()].map((n) => ({ name: n.name, held: n.ids.size }))
+                    residues:  (await nonstandard_suggestions(q)).map(chemical),
+                    ligands:   (await ligand_suggestions(q)).map(chemical)
                 };
+                // A ligand is also an entity, named the same: offered once,
+                // as the ligand. A sequence written out as a name,
+                // "RNA(5'-R(*AP*UP*(PSU)P*...)-3')", is nothing anyone types.
+                let chemicals = new Set([...names.residues, ...names.ligands].map((r) => r.also.toLowerCase()));
+                names.molecules = [...by.molecules.values()]
+                    .filter((n) => !chemicals.has(n.name.toLowerCase()) && !n.name.includes("*"))
+                    .map((n) => ({ name: n.name, held: n.ids.size }));
             }
             names_checked = Date.now();
             return names;
@@ -263,7 +272,7 @@ async function box_names(q) {
 }
 
 const LONGEST_NAME = 60;
-export const BOX_MIN_LENGTH = 3;
+export const BOX_MIN_LENGTH = 2;
 const PER_GROUP = 3;
 // Tried per group before counting, so filters that zero some still leave three.
 const TRIED = 6;
@@ -312,6 +321,31 @@ function best(rows, rank, limit) {
         .slice(0, limit);
 }
 
+// How a typed word is closest to a name: the fewest slips to one of its
+// words, whole or as far as typed (westo is one slip from westh-of). null
+// past the slips a word that long may have.
+function near(name, text) {
+    let cap = slips(text), found = null;
+    for (const word of name.toLowerCase().split(/[^a-z0-9]+/)) {
+        if (word.length < MIN_LENGTH) continue;
+        let d = Math.min(distance(text, word, cap), distance(text, word.slice(0, text.length), cap));
+        if (d <= cap && (found === null || d < found)) found = d;
+    }
+    return found;
+}
+
+// A modified residue or ligand by its code, or a word of its name.
+function chemical_rank(r, lower) {
+    let code = r.code.toLowerCase();
+    if (code === lower) return -1;
+    if (code.startsWith(lower)) return 0;
+    return word_start(r.also ?? "", lower) === null ? null : 1;
+}
+
+// The boxes a pick fills, and where a group sits in the list.
+const FILTER_OF = { residues: "nonstandard_residue", ligands: "ligand" };
+const ORDER = ["authors", "organisms", "residues", "ligands", "molecules"];
+
 export async function box_suggestions(query_params, q = query) {
     let text = clean_text(String(query_params.q ?? ""));
     // A quote means the reader is writing the exact phrase themselves.
@@ -319,8 +353,13 @@ export async function box_suggestions(query_params, q = query) {
     let lower = text.toLowerCase();
 
     let held = await box_names(q);
+    // Two letters name too much, except a code typed whole: MG, ZN, NA.
+    if (text.length < 3) {
+        let code = (r) => (r.code.toLowerCase() === lower ? 0 : null);
+        let rows = { residues: held.residues, ligands: held.ligands };
+        return { text, groups: await counted_groups(query_params, rows, { residues: code, ligands: code }) };
+    }
     let person = as_person(lower);
-    let rank = (r) => word_start(r.name, lower) ?? (person && is_person(r.name, person) ? 0 : null);
 
     let organisms = (await organism_suggestions("source_organisms")).map((o) => ({
         name: o.code, also: o.name, held: o.entries
@@ -339,29 +378,56 @@ export async function box_suggestions(query_params, q = query) {
                                   || c.split(" ").at(-1).startsWith(lower)) ? 1 : null;
     };
 
-    let candidates = {
-        authors:   best(held.authors, rank, TRIED),
-        organisms: best(organisms, organism_rank, TRIED),
-        molecules: best(held.molecules, (r) => word_start(r.name, lower), TRIED)
+    let ranks = {
+        authors:   (r) => word_start(r.name, lower) ?? (person && is_person(r.name, person) ? 0 : null),
+        organisms: organism_rank,
+        residues:  (r) => chemical_rank(r, lower),
+        ligands:   (r) => chemical_rank(r, lower),
+        molecules: (r) => word_start(r.name, lower)
     };
+    let rows = { authors: held.authors, organisms, residues: held.residues, ligands: held.ligands, molecules: held.molecules };
 
-    // Counted as the search the pick runs: the name quoted, every other
-    // filter as it is. In parallel; each count is a few milliseconds.
-    let counted = await Promise.all(Object.entries(candidates).map(async ([kind, rows]) => {
-        let totals = await Promise.all(rows.map((r) => count_entries({ ...query_params, q: `"${r.name}"` })));
-        let items = rows.map((r, i) => ({ value: `"${r.name}"`, label: r.name, ...(r.also ? { also: r.also } : {}), total: totals[i] }))
-            .filter((item) => item.total > 0)
-            .slice(0, PER_GROUP);
-        return { kind, items };
-    }));
+    let groups = await counted_groups(query_params, rows, ranks);
+
+    // Nothing starts with it: a slip, perhaps. One word of four letters or
+    // more, the same slips "Did you mean" allows; westof offers Westhof, E.
+    let near_miss = false;
+    if (groups.length === 0 && /^[a-z0-9]+$/.test(lower) && lower.length >= MIN_LENGTH) {
+        let close = (name, also) => {
+            let d = [near(name, lower), also ? near(also, lower) : null].filter((x) => x !== null);
+            return d.length ? Math.min(...d) : null;
+        };
+        groups = await counted_groups(query_params, rows, Object.fromEntries(ORDER.map((kind) =>
+            [kind, (r) => close(r.code ?? r.name, r.also)])));
+        near_miss = groups.length > 0;
+    }
 
     // An id opens its entry, so it is not counted: it is one entry.
-    let groups = [];
     if (/^[0-9][a-z0-9]{2,3}$/i.test(text)) {
         let upper = text.toUpperCase();
         let ids = held.ids.filter((id) => id.startsWith(upper)).slice(0, IDS_SHOWN);
-        if (ids.length) groups.push({ kind: "entries", items: ids.map((id) => ({ value: id, label: id, href: `/structure/${id}` })) });
+        if (ids.length) groups.unshift({ kind: "entries", items: ids.map((id) => ({ value: id, label: id, href: `/structure/${id}` })) });
     }
-    groups.push(...counted.filter((g) => g.items.length));
-    return { text, groups };
+    return { text, groups, ...(near_miss ? { near: true } : {}) };
+}
+
+// Each group's best few, counted as the search the pick runs: a name quoted
+// in the box, or a residue or ligand code in its own filter, every other
+// filter as it is. In parallel; each count is a few milliseconds.
+async function counted_groups(query_params, rows, ranks) {
+    let groups = await Promise.all(ORDER.filter((kind) => rows[kind]).map(async (kind) => {
+        let tried = best(rows[kind], ranks[kind], TRIED);
+        let filter = FILTER_OF[kind];
+        let asks = tried.map((r) => (filter
+            ? { ...query_params, q: "", [filter]: r.code }
+            : { ...query_params, q: `"${r.name}"` }));
+        let totals = await Promise.all(asks.map((a) => count_entries(a)));
+        let items = tried.map((r, i) => ({
+            ...(filter ? { filter, value: r.code, label: r.code } : { value: `"${r.name}"`, label: r.name }),
+            ...(r.also ? { also: r.also } : {}),
+            total: totals[i]
+        })).filter((item) => item.total > 0).slice(0, PER_GROUP);
+        return { kind, items };
+    }));
+    return groups.filter((g) => g.items.length);
 }

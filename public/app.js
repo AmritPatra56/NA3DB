@@ -757,7 +757,9 @@ if (typeof box_suggest === "function") box_suggest(top_box, {
         if (current_match) params.set("match", current_match);
         return params;
     },
-    picked() {
+    picked(item) {
+        // A residue or ligand code goes in its own filter, the box emptied.
+        if (item.filter) document.getElementById(item.filter).value = item.value;
         box_readout.textContent = "";
         run_search(1);
     }

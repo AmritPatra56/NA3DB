@@ -69,7 +69,12 @@ test("Excludes offers nothing: finding nothing there is not a typo", async () =>
 const offers = async (params) => (await box_suggestions(params)).groups;
 
 // Typed texts the test data answers: authors, organisms, molecules, an id.
-const TYPED = ["gra", "seraj", "west", "mouse", "human", "coli", "trna", "rna", "ribo", "hiv", "dna"];
+const TYPED = ["gra", "seraj", "west", "mouse", "human", "coli", "trna", "rna", "ribo", "hiv", "dna",
+               "psu", "5mc", "omg", "pseudouridine", "methyl", "grsas"];
+
+// The search a pick runs: a code in its own filter, the box emptied, or the
+// quoted name in the box.
+const picked = (extra, item) => (item.filter ? { ...extra, q: "", [item.filter]: item.value } : { ...extra, q: item.value });
 
 test("every offered count is what searching the offer returns, with other filters kept", async () => {
     let tried = 0;
@@ -77,7 +82,7 @@ test("every offered count is what searching the offer returns, with other filter
         for (const q of TYPED) {
             for (const group of await offers({ ...extra, q })) {
                 for (const item of group.items.filter((i) => !i.href)) {
-                    let found = await search_entries({ ...extra, q: item.value });
+                    let found = await search_entries(picked(extra, item));
                     assert.equal(item.total, found.total, `${q} -> ${item.value} ${JSON.stringify(extra)}`);
                     assert.ok(item.total > 0, `${item.value} offered with 0`);
                     tried++;
@@ -145,4 +150,27 @@ test("nothing is offered under three letters, or once a quote is typed", async (
     assert.deepEqual(await offers({ q: "\"west" }), []);
     assert.deepEqual(await offers({ q: "“west”" }), []);
     assert.deepEqual(await offers({}), []);
+});
+
+test("a modified residue is offered by code or name, and picking it fills its filter", async () => {
+    // By name only where chem_comp holds one; the test seed holds none.
+    let named = (await query(`SELECT name FROM chem_comp WHERE id = 'PSU'`)).rows[0]?.name;
+    for (const q of named ? ["psu", "PSU", "pseudouridine"] : ["psu", "PSU"]) {
+        let residues = (await offers({ q })).find((g) => g.kind === "residues");
+        let psu = residues?.items.find((i) => i.label === "PSU");
+        assert.ok(psu, `${q} did not offer PSU`);
+        assert.equal(psu.filter, "nonstandard_residue");
+        assert.equal(psu.total, (await search_entries({ nonstandard_residue: "PSU" })).total);
+    }
+    // Two letters offer only a code typed whole.
+    assert.deepEqual(await offers({ q: "ps" }), []);
+});
+
+test("a slip offers close spellings, marked as such, and only when nothing starts with the text", async () => {
+    let reply = await box_suggestions({ q: "grsas" });
+    assert.equal(reply.near, true);
+    assert.deepEqual(reply.groups.find((g) => g.kind === "authors").items.map((i) => i.label), ["Grass, L.M."]);
+    assert.equal((await box_suggestions({ q: "gras" })).near, undefined);
+    // Three letters are too few to guess at: tna is one slip from many words.
+    assert.deepEqual(await offers({ q: "xqz" }), []);
 });

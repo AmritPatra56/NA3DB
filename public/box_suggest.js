@@ -8,14 +8,17 @@
 //
 // An addition: without it the box and its form work as before.
 
-const BOX_SUGGEST_MIN = 3;
+// Two letters only find a code typed whole (MG, ZN); the server decides.
+const BOX_SUGGEST_MIN = 2;
 // Short enough to keep up, long enough that a typed word is one request.
 const BOX_SUGGEST_SETTLE_MS = 150;
-const BOX_GROUP_LABELS = { entries: "Entries", authors: "Authors", organisms: "Organisms", molecules: "Molecules" };
+const BOX_GROUP_LABELS = { entries: "Entries", authors: "Authors", organisms: "Organisms",
+                           residues: "Modified residues", ligands: "Ligands", molecules: "Molecules" };
 
 // input: the box. params(): the other filters, as URLSearchParams, so counts
-// are what the search will show. picked(): runs the search once the box holds
-// the pick.
+// are what the search will show. picked(item): runs the search once the box
+// holds the pick; an item with .filter is a residue or ligand code, which
+// belongs in that filter instead of the box.
 function box_suggest(input, { params = () => new URLSearchParams(), picked }) {
     let list = document.createElement("ul");
     list.id = `${input.id || input.name}_box_options`;
@@ -68,6 +71,14 @@ function box_suggest(input, { params = () => new URLSearchParams(), picked }) {
         items = [];
         let text = reply.text.toLowerCase();
         let rows = [];
+        // Nothing started with the text, so these are close spellings.
+        if (reply.near) {
+            let note = document.createElement("li");
+            note.setAttribute("role", "presentation");
+            note.className = "box_suggest_near";
+            note.textContent = `Nothing starts with “${reply.text}”. Close spellings:`;
+            rows.push(note);
+        }
         for (const group of reply.groups) {
             let head = document.createElement("li");
             head.setAttribute("role", "presentation");
@@ -101,7 +112,7 @@ function box_suggest(input, { params = () => new URLSearchParams(), picked }) {
             let foot = document.createElement("li");
             foot.setAttribute("role", "presentation");
             foot.className = "box_suggest_foot";
-            foot.textContent = "Picking a name searches it exactly. Enter searches what you typed.";
+            foot.textContent = "Picking one searches exactly that. Enter searches what you typed.";
             rows.push(foot);
         }
         list.replaceChildren(...rows);
@@ -139,9 +150,10 @@ function box_suggest(input, { params = () => new URLSearchParams(), picked }) {
             location.href = item.href;
             return;
         }
-        input.value = item.value;
-        wanted = item.value;
-        picked();
+        if (item.filter) input.value = "";
+        else input.value = item.value;
+        wanted = input.value;
+        picked(item);
     }
 
     function soon() {
