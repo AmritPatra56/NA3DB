@@ -463,13 +463,11 @@ const ENTRY_COLUMNS = columns_sql("entry");
 const DETAIL_COLUMNS = columns_sql("detail");
 
 // The tables those expressions read, and the aliases they use. LEFT JOIN, not
-// JOIN: 3 entries have no resolution row and 52 no organism row.
+// JOIN: an entry can lack any of these rows (52 have no organism row).
 const ENTRY_JOINS = `
     FROM entry e
     LEFT JOIN struct s                ON s.entry_id   = e.id
     LEFT JOIN exptl ex                ON ex.entry_id  = e.id
-    LEFT JOIN reflns rf               ON rf.entry_id  = e.id
-    LEFT JOIN refine rfn              ON rfn.entry_id = e.id
     LEFT JOIN pdbx_database_status ds ON ds.entry_id  = e.id
 
     LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id
@@ -1087,8 +1085,6 @@ export async function same_sequence_members(members, q = query) {
                   ${RESOLUTION_SQL} AS resolution
              FROM entry e
              LEFT JOIN struct s ON s.entry_id = e.id
-             LEFT JOIN reflns rf  ON rf.entry_id  = e.id
-             LEFT JOIN refine rfn ON rfn.entry_id = e.id
             WHERE e.id = ANY($1)`, [entries]),
         q(`SELECT s.entry_id AS entry, s.entity_id AS entity, s.asym_id AS label, min(s.pdb_strand_id) AS auth,
                   count(DISTINCT s.seq_id) FILTER (WHERE s.auth_mon_id IS NOT NULL AND s.auth_mon_id NOT IN ('?', ''))::int AS seen,

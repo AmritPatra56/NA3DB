@@ -778,7 +778,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D2
 INSERT INTO entry (id) VALUES ('10WP');
 INSERT INTO struct (entry_id, title) VALUES ('10WP', 'MPXV replisome bound to forked DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('10WP', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('10WP', 6.5);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('10WP', '1', '1', 6.5, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('10WP', '2026-02-11');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '10WP');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('10WP', 'primary', 'Yu, Z.', 1);
@@ -791,7 +791,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '10W
 INSERT INTO entry (id) VALUES ('11HE');
 INSERT INTO struct (entry_id, title) VALUES ('11HE', 'Rabbit 60S ribosomal subunit with eEF2 domain IV closed');
 INSERT INTO exptl (entry_id, method) VALUES ('11HE', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11HE', 2.86);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11HE', '1', '1', 2.86, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11HE', '2026-02-24');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11HE');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11HE', 'primary', 'Seraj, Z.', 1);
@@ -804,7 +804,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11H
 INSERT INTO entry (id) VALUES ('11HG');
 INSERT INTO struct (entry_id, title) VALUES ('11HG', 'Rabbit 80S with eEF2,CCDC124,and LARP1,40S-head-swiveled');
 INSERT INTO exptl (entry_id, method) VALUES ('11HG', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11HG', 2.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11HG', '1', '1', 2.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11HG', '2026-02-24');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11HG');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11HG', 'primary', 'Seraj, Z.', 1);
@@ -817,7 +817,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11H
 INSERT INTO entry (id) VALUES ('11HV');
 INSERT INTO struct (entry_id, title) VALUES ('11HV', 'Rabbit 60S ribosomal subunit with eEF2 domain IV open');
 INSERT INTO exptl (entry_id, method) VALUES ('11HV', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11HV', 2.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11HV', '1', '1', 2.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11HV', '2026-02-25');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11HV');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11HV', 'primary', 'Seraj, Z.', 1);
@@ -830,7 +830,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11H
 INSERT INTO entry (id) VALUES ('11IQ');
 INSERT INTO struct (entry_id, title) VALUES ('11IQ', 'Rabbit 80S with eEF2,eIF5A and SERBP1');
 INSERT INTO exptl (entry_id, method) VALUES ('11IQ', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11IQ', 2.4);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11IQ', '1', '1', 2.4, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11IQ', '2026-02-26');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11IQ');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11IQ', 'primary', 'Seraj, Z.', 1);
@@ -843,7 +843,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11I
 INSERT INTO entry (id) VALUES ('11JJ');
 INSERT INTO struct (entry_id, title) VALUES ('11JJ', 'Rabbit 80S with eEF2,IFRD2 and LARP1,40S-head-swiveled');
 INSERT INTO exptl (entry_id, method) VALUES ('11JJ', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11JJ', 2.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11JJ', '1', '1', 2.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11JJ', '2026-02-27');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11JJ');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11JJ', 'primary', 'Seraj, Z.', 1);
@@ -856,7 +856,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11J
 INSERT INTO entry (id) VALUES ('11KH');
 INSERT INTO struct (entry_id, title) VALUES ('11KH', 'Rabbit 80S with IFRD2 and LARP1, 40S head-swiveled');
 INSERT INTO exptl (entry_id, method) VALUES ('11KH', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11KH', 3.1);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11KH', '1', '1', 3.1, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11KH', '2026-02-28');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11KH');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11KH', 'primary', 'Seraj, Z.', 1);
@@ -869,7 +869,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11K
 INSERT INTO entry (id) VALUES ('11WZ');
 INSERT INTO struct (entry_id, title) VALUES ('11WZ', 'MPXV polymerase-E5 primase core complex');
 INSERT INTO exptl (entry_id, method) VALUES ('11WZ', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11WZ', 3.8);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11WZ', '1', '1', 3.8, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11WZ', '2026-03-16');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11WZ');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11WZ', 'primary', 'Yu, Z.', 1);
@@ -882,7 +882,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11W
 INSERT INTO entry (id) VALUES ('23VU');
 INSERT INTO struct (entry_id, title) VALUES ('23VU', 'Cryo-EM structure of the UnCas12m4a-crRNA-tgDNA ternary complex in the TS-cleaving state');
 INSERT INTO exptl (entry_id, method) VALUES ('23VU', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('23VU', 2.69);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('23VU', '1', '1', 2.69, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('23VU', '2026-02-21');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '23VU');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('23VU', 'primary', 'Morinaga, H.', 1);
@@ -895,7 +895,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '23V
 INSERT INTO entry (id) VALUES ('23VV');
 INSERT INTO struct (entry_id, title) VALUES ('23VV', 'Cryo-EM structure of the UnCas12m4a-crRNA-tgDNA ternary complex in the NTS-cleaving state');
 INSERT INTO exptl (entry_id, method) VALUES ('23VV', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('23VV', 2.84);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('23VV', '1', '1', 2.84, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('23VV', '2026-02-21');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '23VV');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('23VV', 'primary', 'Morinaga, H.', 1);
@@ -909,7 +909,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '23V
 INSERT INTO entry (id) VALUES ('23VW');
 INSERT INTO struct (entry_id, title) VALUES ('23VW', 'Cryo-EM structure of the TfCas12m3-crRNA-tgDNA ternary complex');
 INSERT INTO exptl (entry_id, method) VALUES ('23VW', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('23VW', 2.39);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('23VW', '1', '1', 2.39, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('23VW', '2026-02-21');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '23VW');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('23VW', 'primary', 'Morinaga, H.', 1);
@@ -948,7 +948,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '30L
 INSERT INTO entry (id) VALUES ('36BT');
 INSERT INTO struct (entry_id, title) VALUES ('36BT', 'HIV-1 reverse transcriptase in complex with DNAddG Aptamer and unincorporated ISL-triphosphate');
 INSERT INTO exptl (entry_id, method) VALUES ('36BT', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('36BT', 1.85);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('36BT', '1', '1', 1.85, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('36BT', '2026-05-29');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '36BT');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('36BT', 'primary', 'Hecksel, C.W.', 1);
@@ -963,7 +963,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36B
 INSERT INTO entry (id) VALUES ('36CP');
 INSERT INTO struct (entry_id, title) VALUES ('36CP', 'HIV-1 reverse transcriptase in complex with DNA Aptamer and Incorporated dATP');
 INSERT INTO exptl (entry_id, method) VALUES ('36CP', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('36CP', 1.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('36CP', '1', '1', 1.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('36CP', '2026-06-01');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '36CP');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('36CP', 'primary', 'Hecksel, C.W.', 1);
@@ -977,7 +977,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36C
 INSERT INTO entry (id) VALUES ('36CW');
 INSERT INTO struct (entry_id, title) VALUES ('36CW', 'HIV-1 reverse transcriptase (F227C) in complex with DNAddG Aptamer and unincorporated ISL-triphosphate');
 INSERT INTO exptl (entry_id, method) VALUES ('36CW', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('36CW', 1.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('36CW', '1', '1', 1.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('36CW', '2026-06-01');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '36CW');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('36CW', 'primary', 'Hecksel, C.W.', 1);
@@ -992,7 +992,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36C
 INSERT INTO entry (id) VALUES ('36DK');
 INSERT INTO struct (entry_id, title) VALUES ('36DK', 'HIV-1 reverse transcriptase (F227C) in complex with DNA Aptamer and Incorporated dATP');
 INSERT INTO exptl (entry_id, method) VALUES ('36DK', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('36DK', 2.1);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('36DK', '1', '1', 2.1, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('36DK', '2026-06-02');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '36DK');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('36DK', 'primary', 'Hecksel, C.W.', 1);
@@ -1006,7 +1006,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36D
 INSERT INTO entry (id) VALUES ('36DN');
 INSERT INTO struct (entry_id, title) VALUES ('36DN', 'HIV-1 reverse transcriptase (F227C) in complex with DNAddG Aptamer');
 INSERT INTO exptl (entry_id, method) VALUES ('36DN', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('36DN', 2.2);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('36DN', '1', '1', 2.2, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('36DN', '2026-06-02');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '36DN');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('36DN', 'primary', 'Hecksel, C.W.', 1);
@@ -1020,7 +1020,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36D
 INSERT INTO entry (id) VALUES ('9E16');
 INSERT INTO struct (entry_id, title) VALUES ('9E16', 'Cryo-EM structure of the ribosome-tunnel occluding hibernation factor bound to the Mycobacterium tuberculosis C- 70S ribosome carrying an E-tRNA');
 INSERT INTO exptl (entry_id, method) VALUES ('9E16', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9E16', 2.7);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9E16', '1', '1', 2.7, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9E16', '2024-10-21');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9E16');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9E16', 'primary', 'Majumdar, S.', 1);
@@ -1033,7 +1033,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9E1
 INSERT INTO entry (id) VALUES ('9E1S');
 INSERT INTO struct (entry_id, title) VALUES ('9E1S', 'Cryo-EM structure of the ribosome-tunnel occluding hibernation factor bound to the Mycobacterium tuberculosis C- 50S ribosomal subunit');
 INSERT INTO exptl (entry_id, method) VALUES ('9E1S', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9E1S', 2.39);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9E1S', '1', '1', 2.39, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9E1S', '2024-10-21');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9E1S');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9E1S', 'primary', 'Majumdar, S.', 1);
@@ -1046,7 +1046,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9E1
 INSERT INTO entry (id) VALUES ('9EBB');
 INSERT INTO struct (entry_id, title) VALUES ('9EBB', 'Cryo-EM structure of the MPY and ribosome-tunnel occluding hibernation factors bound to the Mycobacterium tuberculosis C- 70S ribosome');
 INSERT INTO exptl (entry_id, method) VALUES ('9EBB', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9EBB', 2.7);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9EBB', '1', '1', 2.7, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9EBB', '2024-11-12');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9EBB');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9EBB', 'primary', 'Majumdar, S.', 1);
@@ -1059,7 +1059,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9EB
 INSERT INTO entry (id) VALUES ('9EC3');
 INSERT INTO struct (entry_id, title) VALUES ('9EC3', 'Cryo-EM structure of the ribosome-tunnel occluding hibernation factor bound to the Mycobacterium tuberculosis C- 70S ribosome carrying fMet-tRNA(fMet) and deacylated tRNA at ribosome P and E sites.');
 INSERT INTO exptl (entry_id, method) VALUES ('9EC3', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9EC3', 3.29);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9EC3', '1', '1', 3.29, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9EC3', '2024-11-13');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9EC3');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9EC3', 'primary', 'Majumdar, S.', 1);
@@ -1072,7 +1072,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9EC
 INSERT INTO entry (id) VALUES ('9IF7');
 INSERT INTO struct (entry_id, title) VALUES ('9IF7', 'Cryo-EM structure of the kinetoplastid trans-spliceosome activated for catalytic step II (C* complex)');
 INSERT INTO exptl (entry_id, method) VALUES ('9IF7', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9IF7', 2.7);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9IF7', '1', '1', 2.7, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9IF7', '2025-02-17');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9IF7');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9IF7', 'primary', 'Nadenoen, T.', 1);
@@ -1085,7 +1085,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9IF
 INSERT INTO entry (id) VALUES ('9IF8');
 INSERT INTO struct (entry_id, title) VALUES ('9IF8', 'Cryo-EM structure of the kinetoplastid post-catalytic trans-spliceosome (P complex)');
 INSERT INTO exptl (entry_id, method) VALUES ('9IF8', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9IF8', 2.8);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9IF8', '1', '1', 2.8, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9IF8', '2025-02-17');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9IF8');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9IF8', 'primary', 'Nadenoen, T.', 1);
@@ -1098,7 +1098,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9IF
 INSERT INTO entry (id) VALUES ('9NSP');
 INSERT INTO struct (entry_id, title) VALUES ('9NSP', 'MPXV replisome bound to ssDNA');
 INSERT INTO exptl (entry_id, method) VALUES ('9NSP', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9NSP', 4.1);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9NSP', '1', '1', 4.1, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9NSP', '2025-03-17');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9NSP');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9NSP', 'primary', 'Yu, Z.', 1);
@@ -1111,7 +1111,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9NS
 INSERT INTO entry (id) VALUES ('9SPJ');
 INSERT INTO struct (entry_id, title) VALUES ('9SPJ', 'CryoEM structure of the vacant Candida auris 80S ribosome');
 INSERT INTO exptl (entry_id, method) VALUES ('9SPJ', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9SPJ', 2.13);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9SPJ', '1', '1', 2.13, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9SPJ', '2025-09-17');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9SPJ');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9SPJ', 'primary', 'Atamas, A.', 1);
@@ -1124,7 +1124,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9SP
 INSERT INTO entry (id) VALUES ('9SUM');
 INSERT INTO struct (entry_id, title) VALUES ('9SUM', 'CryoEM structure of Candida auris 80S ribosome in complex with Cycloheximide and Geneticin G418');
 INSERT INTO exptl (entry_id, method) VALUES ('9SUM', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9SUM', 1.99);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9SUM', '1', '1', 1.99, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9SUM', '2025-09-29');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9SUM');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9SUM', 'primary', 'Atamas, A.', 1);
@@ -1137,7 +1137,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9SU
 INSERT INTO entry (id) VALUES ('9T7T');
 INSERT INTO struct (entry_id, title) VALUES ('9T7T', 'CryoEM structure of Candida auris 80S ribosome in complex with Blasticidin S');
 INSERT INTO exptl (entry_id, method) VALUES ('9T7T', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9T7T', 2.8);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9T7T', '1', '1', 2.8, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9T7T', '2025-11-11');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9T7T');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9T7T', 'primary', 'Atamas, A.', 1);
@@ -1215,7 +1215,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TW
 INSERT INTO entry (id) VALUES ('9Y7B');
 INSERT INTO struct (entry_id, title) VALUES ('9Y7B', 'Composite map of IF-3a transposase complex with paired transposon ends');
 INSERT INTO exptl (entry_id, method) VALUES ('9Y7B', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Y7B', 3.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Y7B', '1', '1', 3.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Y7B', '2025-09-09');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Y7B');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Y7B', 'primary', 'Miller, D.J.', 1);
@@ -1228,7 +1228,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Y7
 INSERT INTO entry (id) VALUES ('9ZP4');
 INSERT INTO struct (entry_id, title) VALUES ('9ZP4', 'E. coli RNA polymerase elongation complex containing the unnatural dZ:PTP base pair in a trigger-loop-closed conformation');
 INSERT INTO exptl (entry_id, method) VALUES ('9ZP4', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9ZP4', 2.42);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9ZP4', '1', '1', 2.42, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9ZP4', '2025-12-16');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9ZP4');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9ZP4', 'primary', 'Li, Q.', 1);
@@ -1241,7 +1241,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9ZP
 INSERT INTO entry (id) VALUES ('10RR');
 INSERT INTO struct (entry_id, title) VALUES ('10RR', 'Human RNase PNK bound to AMPPNP ligand + rCAA in PNK active site');
 INSERT INTO exptl (entry_id, method) VALUES ('10RR', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('10RR', 3.5);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('10RR', '1', '1', 3.5, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('10RR', '2026-02-04');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '10RR');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('10RR', 'primary', 'Gordon, J.', 1);
@@ -1254,7 +1254,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '10R
 INSERT INTO entry (id) VALUES ('11FS');
 INSERT INTO struct (entry_id, title) VALUES ('11FS', 'Effector complex from type IV-C CRISPR-Cas system');
 INSERT INTO exptl (entry_id, method) VALUES ('11FS', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11FS', 3.2);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11FS', '1', '1', 3.2, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11FS', '2026-02-21');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11FS');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11FS', 'primary', 'Pittman, C.', 1);
@@ -1267,7 +1267,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11F
 INSERT INTO entry (id) VALUES ('11HC');
 INSERT INTO struct (entry_id, title) VALUES ('11HC', 'Effector complex from type IV-C CRISPR-Cas system');
 INSERT INTO exptl (entry_id, method) VALUES ('11HC', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11HC', 3.37);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11HC', '1', '1', 3.37, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11HC', '2026-02-23');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11HC');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11HC', 'primary', 'Pittman, C.', 1);
@@ -1280,7 +1280,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11H
 INSERT INTO entry (id) VALUES ('11HD');
 INSERT INTO struct (entry_id, title) VALUES ('11HD', 'Effector complex from type IV-C CRISPR-Cas system');
 INSERT INTO exptl (entry_id, method) VALUES ('11HD', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('11HD', 3.21);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('11HD', '1', '1', 3.21, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('11HD', '2026-02-23');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '11HD');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('11HD', 'primary', 'Pittman, C.', 1);
@@ -1306,7 +1306,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '21C
 INSERT INTO entry (id) VALUES ('23WQ');
 INSERT INTO struct (entry_id, title) VALUES ('23WQ', 'Cryo-EM structure of EcBPAN-guide RNA-target DNA complex');
 INSERT INTO exptl (entry_id, method) VALUES ('23WQ', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('23WQ', 3.27);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('23WQ', '1', '1', 3.27, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('23WQ', '2026-02-23');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '23WQ');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('23WQ', 'primary', 'Liu, M.', 1);
@@ -1319,7 +1319,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '23W
 INSERT INTO entry (id) VALUES ('24YW');
 INSERT INTO struct (entry_id, title) VALUES ('24YW', 'Xanthomonas citri pv. glycines 50S subunit');
 INSERT INTO exptl (entry_id, method) VALUES ('24YW', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('24YW', 3);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('24YW', '1', '1', 3, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('24YW', '2026-03-25');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '24YW');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('24YW', 'primary', 'Sengupta, S.', 1);
@@ -1332,7 +1332,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '24Y
 INSERT INTO entry (id) VALUES ('25QK');
 INSERT INTO struct (entry_id, title) VALUES ('25QK', 'Cryo-EM structure of TasH-tigRNA-MM1 dsDNA complex');
 INSERT INTO exptl (entry_id, method) VALUES ('25QK', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('25QK', 3.04);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('25QK', '1', '1', 3.04, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('25QK', '2026-04-14');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '25QK');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('25QK', 'primary', 'Zhang, H.', 1);
@@ -1345,7 +1345,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '25Q
 INSERT INTO entry (id) VALUES ('25QL');
 INSERT INTO struct (entry_id, title) VALUES ('25QL', 'Cryo-EM structure of TasH-tigRNA-MM5 dsDNA complex');
 INSERT INTO exptl (entry_id, method) VALUES ('25QL', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('25QL', 3.02);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('25QL', '1', '1', 3.02, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('25QL', '2026-04-14');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '25QL');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('25QL', 'primary', 'Zhang, H.', 1);
@@ -1358,7 +1358,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '25Q
 INSERT INTO entry (id) VALUES ('30GF');
 INSERT INTO struct (entry_id, title) VALUES ('30GF', 'Structural characterisation of chromatin remodelling intermediates supports linker DNA dependent product inhibition as a mechanism for nucleosome spacing.');
 INSERT INTO exptl (entry_id, method) VALUES ('30GF', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('30GF', 4.8);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('30GF', '1', '1', 4.8, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('30GF', '2026-04-23');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '30GF');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('30GF', 'primary', 'Sundaramoorthy, R.', 1);
@@ -1371,7 +1371,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '30G
 INSERT INTO entry (id) VALUES ('9IBC');
 INSERT INTO struct (entry_id, title) VALUES ('9IBC', 'Kinetoplastid ATP-dependent RNA helicase PRP22/DHX8 in closed conformation bound to pre-mRNA');
 INSERT INTO exptl (entry_id, method) VALUES ('9IBC', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9IBC', 3.51);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9IBC', '1', '1', 3.51, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9IBC', '2025-02-12');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9IBC');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9IBC', 'primary', 'Nadenoen, T.', 1);
@@ -1384,7 +1384,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9IB
 INSERT INTO entry (id) VALUES ('9Q3Q');
 INSERT INTO struct (entry_id, title) VALUES ('9Q3Q', 'Cryo-EM structure of translating Escherichia coli 70S ribosome bound to mRNA, P-site QKF-peptidyl-tRNAPhe, glycyl-tRNAGly in A/T conformation, EF-Tu-GDP, and bottromycin at 2.01A resolution');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q3Q', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Q3Q', 2.01);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Q3Q', '1', '1', 2.01, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Q3Q', '2025-08-19');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Q3Q');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Q3Q', 'primary', 'Travin, D.Y.', 1);
@@ -1404,7 +1404,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q3
 INSERT INTO entry (id) VALUES ('9Q3R');
 INSERT INTO struct (entry_id, title) VALUES ('9Q3R', 'Cryo-EM structure of the Escherichia coli 70S ribosome bound to mRNA, P-site fMet-tRNAfMet, glycyl-tRNAGly in A/T conformation, EF-Tu-GDPCP, and bottromycin at 1.99A resolution');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q3R', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Q3R', 1.99);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Q3R', '1', '1', 1.99, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Q3R', '2025-08-19');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Q3R');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Q3R', 'primary', 'Travin, D.Y.', 1);
@@ -1424,7 +1424,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q3
 INSERT INTO entry (id) VALUES ('9Q40');
 INSERT INTO struct (entry_id, title) VALUES ('9Q40', 'Pseudomonas aeruginosa 50S ribosome bound to RsfS (L1 stalk in ''mid'' conformation)');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q40', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Q40', 2.29);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Q40', '1', '1', 2.29, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Q40', '2025-08-19');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Q40');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Q40', 'primary', 'Findlay, J.L.', 1);
@@ -1447,7 +1447,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entry (id) VALUES ('9Q42');
 INSERT INTO struct (entry_id, title) VALUES ('9Q42', 'Pseudomonas aeruginosa 50S ribosome bound to RsfS (L1 stalk ''in'' conformation)');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q42', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Q42', 2.29);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Q42', '1', '1', 2.29, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Q42', '2025-08-19');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Q42');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Q42', 'primary', 'Findlay, J.L.', 1);
@@ -1470,7 +1470,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entry (id) VALUES ('9Q43');
 INSERT INTO struct (entry_id, title) VALUES ('9Q43', 'Pseudomonas aeruginosa 50S ribosome bound to RsfS (L1 stalk in ''out'' conformation)');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q43', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Q43', 2.29);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Q43', '1', '1', 2.29, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Q43', '2025-08-19');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Q43');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Q43', 'primary', 'Findlay, J.L.', 1);
@@ -1493,7 +1493,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entry (id) VALUES ('9Q44');
 INSERT INTO struct (entry_id, title) VALUES ('9Q44', 'Pseudomonas aeruginosa 50S ribosome bound to RsfS (L1 stalk in ''out'' conformation and missing uL1 and tRNA)');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q44', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9Q44', 2.29);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9Q44', '1', '1', 2.29, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9Q44', '2025-08-19');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9Q44');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9Q44', 'primary', 'Findlay, J.L.', 1);
@@ -1516,7 +1516,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entry (id) VALUES ('9TGD');
 INSERT INTO struct (entry_id, title) VALUES ('9TGD', 'DDK-salt stripped phosphorylated MCM2-7 DH');
 INSERT INTO exptl (entry_id, method) VALUES ('9TGD', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TGD', 3.3);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TGD', '1', '1', 3.3, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TGD', '2025-12-01');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TGD');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TGD', 'primary', 'Saleh, A.', 1);
@@ -1529,7 +1529,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TG
 INSERT INTO entry (id) VALUES ('9TH8');
 INSERT INTO struct (entry_id, title) VALUES ('9TH8', 'Cryo-EM structure of MCM2-7 DH bound to Sld3-Sld7, Cdc45 and DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('9TH8', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TH8', 2.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TH8', '1', '1', 2.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TH8', '2025-12-03');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TH8');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TH8', 'primary', 'Saleh, A.', 1);
@@ -1542,7 +1542,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TH
 INSERT INTO entry (id) VALUES ('9TU7');
 INSERT INTO struct (entry_id, title) VALUES ('9TU7', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - monomer');
 INSERT INTO exptl (entry_id, method) VALUES ('9TU7', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TU7', 2.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TU7', '1', '1', 2.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TU7', '2026-01-08');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TU7');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TU7', 'primary', 'Grass, L.M.', 1);
@@ -1555,7 +1555,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TU
 INSERT INTO entry (id) VALUES ('9TU8');
 INSERT INTO struct (entry_id, title) VALUES ('9TU8', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 1');
 INSERT INTO exptl (entry_id, method) VALUES ('9TU8', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TU8', 3.9);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TU8', '1', '1', 3.9, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TU8', '2026-01-08');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TU8');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TU8', 'primary', 'Grass, L.M.', 1);
@@ -1568,7 +1568,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TU
 INSERT INTO entry (id) VALUES ('9TU9');
 INSERT INTO struct (entry_id, title) VALUES ('9TU9', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 2');
 INSERT INTO exptl (entry_id, method) VALUES ('9TU9', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TU9', 3.6);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TU9', '1', '1', 3.6, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TU9', '2026-01-08');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TU9');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TU9', 'primary', 'Grass, L.M.', 1);
@@ -1581,7 +1581,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TU
 INSERT INTO entry (id) VALUES ('9TUA');
 INSERT INTO struct (entry_id, title) VALUES ('9TUA', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 3');
 INSERT INTO exptl (entry_id, method) VALUES ('9TUA', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TUA', 3.7);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TUA', '1', '1', 3.7, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TUA', '2026-01-08');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TUA');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TUA', 'primary', 'Grass, L.M.', 1);
@@ -1594,7 +1594,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TU
 INSERT INTO entry (id) VALUES ('9TUB');
 INSERT INTO struct (entry_id, title) VALUES ('9TUB', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 4');
 INSERT INTO exptl (entry_id, method) VALUES ('9TUB', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TUB', 3.8);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TUB', '1', '1', 3.8, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TUB', '2026-01-08');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TUB');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TUB', 'primary', 'Grass, L.M.', 1);
@@ -1607,7 +1607,7 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TU
 INSERT INTO entry (id) VALUES ('9TUC');
 INSERT INTO struct (entry_id, title) VALUES ('9TUC', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 5');
 INSERT INTO exptl (entry_id, method) VALUES ('9TUC', 'ELECTRON MICROSCOPY');
-INSERT INTO reflns (entry_id, d_resolution_high) VALUES ('9TUC', 4.1);
+INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method) VALUES ('9TUC', '1', '1', 4.1, 'FSC 0.143 CUT-OFF');
 INSERT INTO pdbx_database_status (entry_id, recvd_initial_deposition_date) VALUES ('9TUC', '2026-01-08');
 INSERT INTO citation (id, entry_id) VALUES ('primary', '9TUC');
 INSERT INTO citation_author (entry_id, citation_id, name, ordinal) VALUES ('9TUC', 'primary', 'Grass, L.M.', 1);

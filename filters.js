@@ -68,14 +68,22 @@ const ENTITY_NAME_SQL = `(
 // A pill option is {value, label}; a bare string means the two are the same.
 const option = (o) => (typeof o === "string" ? { value: o, label: o } : o);
 
-// The resolution the PDB reports: the one the model was refined to, and the
-// data's limit only when no refinement records one. 56 EM entries have it in
-// refine alone. Both tables hold at most one row per entry.
-export const RESOLUTION_SQL = "COALESCE(rfn.ls_d_res_high, rf.d_resolution_high)";
-
-// The same value for the entry e, with no join needed: for a filter's WHERE.
-const RESOLUTION_OF_ENTRY =
-    `COALESCE((SELECT rfn.ls_d_res_high FROM refine rfn WHERE rfn.entry_id = e.id),
+// The resolution of the entry e, picked as RCSB's resolution_combined does
+// (https://data.rcsb.org/rest/v1/schema/entry):
+//   EM           em_3d_reconstruction.resolution, the best FSC 0.143 value if
+//                there is one, else the best value (migration 015). Only EM
+//                entries have these rows. refine is not read for them: 441 of
+//                497 leave it empty, and the other 56 repeat the same number.
+//   diffraction  refine.ls_d_res_high, the resolution the model was refined
+//                to; reflns.d_resolution_high only when refine has none.
+//   NMR          none of the three, so NULL.
+// Scalar subqueries on e.id, so the cards, the sort and the range filter all
+// use this one expression and need no join. Each table is keyed on entry_id.
+export const RESOLUTION_SQL =
+    `COALESCE((SELECT COALESCE(min(em.resolution) FILTER (WHERE em.resolution_method = 'FSC 0.143 CUT-OFF'),
+                               min(em.resolution))
+                 FROM em_3d_reconstruction em WHERE em.entry_id = e.id),
+              (SELECT rfn.ls_d_res_high FROM refine rfn WHERE rfn.entry_id = e.id),
               (SELECT rf.d_resolution_high FROM reflns rf WHERE rf.entry_id = e.id))`;
 
 // The methods that measure a resolution: diffraction and electron microscopy.
@@ -272,7 +280,7 @@ export const FILTERS = [
                             WHERE x.entry_id = e.id AND x.method = ANY(?))`
     },
 
-    // The resolution as the cards show it (RESOLUTION_OF_ENTRY), between two
+    // The resolution as the cards show it (RESOLUTION_SQL), between two
     // values in Å, both ends included. The form shows it only once a method
     // that reports a resolution is picked (`revealed_by`); NMR has none, so an
     // NMR entry never passes a resolution range.
@@ -280,12 +288,12 @@ export const FILTERS = [
         key: "resolution_min", label: "Resolution (Å)", group: "Demographics", kind: "range",
         answered_by: "resolution", placeholder: "from, e.g. 2.0", pair_with: "resolution_max",
         revealed_by: { key: "experimental_method", values: RESOLUTION_METHODS },
-        where: `AND ${RESOLUTION_OF_ENTRY} >= ?`
+        where: `AND ${RESOLUTION_SQL} >= ?`
     },
     {
         key: "resolution_max", label: "Resolution (Å)", group: "Demographics", kind: "range",
         answered_by: "resolution", placeholder: "to, e.g. 3.0",
-        where: `AND ${RESOLUTION_OF_ENTRY} <= ?`
+        where: `AND ${RESOLUTION_SQL} <= ?`
     },
 
     // Two filters, one control: pair_with tells the form to draw them together.
@@ -467,10 +475,8 @@ export const PILL_FILTERS = of_kind("pills");
 // column is already unique and needs no tiebreaker.
 //
 // NULLS LAST in both directions, because a missing value is not a small one:
-// 629 structures have no resolution, and they belong at the end either way.
+// the 127 NMR structures have no resolution, and they belong at the end either way.
 // RESOLUTION_SQL is near the top, beside the resolution filter.
-const RESOLUTION_JOIN = `LEFT JOIN reflns rf  ON rf.entry_id  = e.id
-                         LEFT JOIN refine rfn ON rfn.entry_id = e.id`;
 
 export const SORTS = [
     // Ranked by how well an entry answers the search box (search.js,
@@ -491,12 +497,12 @@ export const SORTS = [
     },
     {
         key: "resolution_asc", label: "Resolution, best first",
-        join: RESOLUTION_JOIN,
+        join: "",
         sql: `${RESOLUTION_SQL} ASC NULLS LAST`
     },
     {
         key: "resolution_desc", label: "Resolution, worst first",
-        join: RESOLUTION_JOIN,
+        join: "",
         sql: `${RESOLUTION_SQL} DESC NULLS LAST`
     },
     {

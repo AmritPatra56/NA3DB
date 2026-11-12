@@ -10,7 +10,7 @@ import { find_entry, export_entries, search_entries, query_problem,
 import { SORTS, DEFAULT_SORT, sort_by,
          columns_answering, columns_for,
          PAGE_SIZE_SUGGESTIONS, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE,
-         page_size_from, MATCH_MODES, DEFAULT_MATCH, match_mode } from "./filters.js";
+         page_size_from, MATCH_MODES, DEFAULT_MATCH, match_mode, RESOLUTION_SQL } from "./filters.js";
 import { query, transaction, close as close_db } from "./db.js";
 
 // search.js now holds database connections. Without this, npm test never exits.
@@ -1133,9 +1133,7 @@ test("an NtC value too long to be a class finds nothing, and Excludes everything
 // range, both ends included. Checked against the column the cards read, so
 // the filter and the card can never disagree about an entry.
 test("a resolution range finds exactly the entries the card puts inside it", async () => {
-    let shown = (await query(`SELECT e.id, COALESCE(rfn.ls_d_res_high, rf.d_resolution_high) AS r
-                                FROM entry e LEFT JOIN reflns rf ON rf.entry_id = e.id
-                                LEFT JOIN refine rfn ON rfn.entry_id = e.id`)).rows;
+    let shown = (await query(`SELECT e.id, ${RESOLUTION_SQL} AS r FROM entry e`)).rows;
     let ids = async (params) => (await export_entries(params)).results.map((e) => e.pdb_id).sort();
     let held = shown.filter((x) => x.r !== null).map((x) => x.r).sort((a, b) => a - b);
     assert.ok(held.length > 2, "the seed holds entries with a resolution");
@@ -1152,10 +1150,22 @@ test("a resolution range finds exactly the entries the card puts inside it", asy
     }
 });
 
+// The card's resolution is the one the source data gives, whatever table the
+// method keeps it in: em_3d_reconstruction for EM, reflns for X-ray, none for NMR.
+test("every entry shows the resolution entries.json gives it", async () => {
+    let got = new Map((await query(`SELECT e.id, ${RESOLUTION_SQL} AS r FROM entry e`)).rows
+                      .map((x) => [x.id, x.r]));
+    assert.equal(got.size, entries.length);
+    for (const e of entries) {
+        let r = got.get(e.pdb_id);
+        if (e.resolution === null) assert.equal(r, null, e.pdb_id);
+        else assert.ok(Math.abs(r - e.resolution) < 1e-6, `${e.pdb_id}: ${r} vs ${e.resolution}`);
+    }
+    assert.ok(entries.some((e) => e.method === "ELECTRON MICROSCOPY" && e.resolution !== null));
+});
+
 test("a resolution range never lets in an entry with no resolution", async () => {
-    let none = (await query(`SELECT e.id FROM entry e LEFT JOIN reflns rf ON rf.entry_id = e.id
-                               LEFT JOIN refine rfn ON rfn.entry_id = e.id
-                              WHERE COALESCE(rfn.ls_d_res_high, rf.d_resolution_high) IS NULL`)).rows.map((x) => x.id);
+    let none = (await query(`SELECT e.id FROM entry e WHERE ${RESOLUTION_SQL} IS NULL`)).rows.map((x) => x.id);
     let found = (await export_entries({ resolution_min: "0", resolution_max: "1000" })).results.map((e) => e.pdb_id);
     assert.ok(none.length > 0);
     assert.ok(none.every((id) => !found.includes(id)));

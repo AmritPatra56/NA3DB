@@ -123,6 +123,28 @@ class Sources(unittest.TestCase):
                           for r in rows}, {("Escherichia coli", 562)})
 
 
+class EmReconstruction(unittest.TestCase):
+    def em(self, entry):
+        return [(r["id"], r["image_processing_id"], r["resolution"], r["resolution_method"],
+                 r["num_particles"], r["symmetry_type"])
+                for r in load(lc.load_em_3d_reconstruction, entry)]
+
+    def test_3jcs_resolution_missing_from_refine(self):
+        self.assertEqual(self.em("3JCS"), [("1", "1", 2.8, "FSC 0.143 CUT-OFF", 107134, "POINT")])
+
+    def test_2go5_null_particles_other_method(self):
+        self.assertEqual(self.em("2GO5"), [("1", "1", 7.4, "FSC 0.5 CUT-OFF", None, "POINT")])
+
+    def test_6wdr_two_reconstructions(self):
+        self.assertEqual(self.em("6WDR"), [("1", "1", 3.7, "FSC 0.143 CUT-OFF", 90692, "POINT"),
+                                          ("2", "2", 3.7, "FSC 0.143 CUT-OFF", 90692, "POINT")])
+
+    def test_xray_entry_has_none(self):
+        cur = Rows()
+        self.assertEqual(lc.load_em_3d_reconstruction(cur, "1B23", cif("1B23")), 0)
+        self.assertFalse(hasattr(cur, "rows"))
+
+
 class ParentBases(unittest.TestCase):
     def test_1ob5_modified_bases_name_their_parent(self):
         cur = Rows()

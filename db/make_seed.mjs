@@ -45,7 +45,12 @@ for (const e of entries) {
     body.push(`INSERT INTO struct (entry_id, title) VALUES (${id}, ${q(e.title)});`);
     body.push(`INSERT INTO exptl (entry_id, method) VALUES (${id}, ${q(e.method)});`);
 
-    if (e.resolution !== null) {
+    // Where the PDB keeps it: an EM map's resolution in em_3d_reconstruction
+    // (migration 015), a diffraction limit in reflns.
+    if (e.resolution !== null && e.method === "ELECTRON MICROSCOPY") {
+        body.push(`INSERT INTO em_3d_reconstruction (entry_id, id, image_processing_id, resolution, resolution_method)`
+                + ` VALUES (${id}, '1', '1', ${e.resolution}, 'FSC 0.143 CUT-OFF');`);
+    } else if (e.resolution !== null) {
         body.push(`INSERT INTO reflns (entry_id, d_resolution_high) VALUES (${id}, ${e.resolution});`);
     }
 

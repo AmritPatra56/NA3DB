@@ -156,7 +156,7 @@ ALL_TABLES = [
     "struct_conf_type", "struct_conf",
     "struct_sheet", "struct_sheet_order", "struct_sheet_range", "pdbx_struct_sheet_hbond",
     # T6
-    "exptl", "cell", "symmetry", "reflns", "diffrn", "refine",
+    "exptl", "cell", "symmetry", "reflns", "diffrn", "refine", "em_3d_reconstruction",
     # T7
     "chem_comp",
     # T8
@@ -775,6 +775,21 @@ def load_diffrn(cur, eid, text, sv):
         (id,entry_id,ambient_temp) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING""",
         [(r.get("id"), eid, _float(r.get("ambient_temp"))) for r in rp])
 
+def load_em_3d_reconstruction(cur, eid, text):
+    """EM map resolution. Not in refine or reflns for most EM entries (migration 015).
+
+    No ON CONFLICT: a repeated key would mean a malformed file, and it should
+    fail loudly in its savepoint rather than drop a row unseen.
+    """
+    rp = [r for r in _parse_loop(text, "em_3d_reconstruction")
+          if r.get("id") and r.get("image_processing_id")]
+    return _many(cur, """INSERT INTO em_3d_reconstruction
+        (entry_id,id,image_processing_id,resolution,resolution_method,num_particles,symmetry_type)
+        VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+        [(eid, r["id"], r["image_processing_id"], _float(r.get("resolution")),
+          r.get("resolution_method"), _int(r.get("num_particles")), r.get("symmetry_type"))
+         for r in rp])
+
 def load_refine(cur, eid, text, sv):
     r = (_parse_loop(text, "refine") or [{}])[0]
     g = r.get
@@ -1120,6 +1135,7 @@ def process_cif(cur, conn, filepath: str) -> dict:
     S["reflns"]   = run_table(cur, "reflns",   load_reflns,   cur, eid, text, sv)
     S["diffrn"]   = run_table(cur, "diffrn",   load_diffrn,   cur, eid, text, sv)
     S["refine"]   = run_table(cur, "refine",   load_refine,   cur, eid, text, sv)
+    S["em_3d_reconstruction"] = run_table(cur, "em_3d_reconstruction", load_em_3d_reconstruction, cur, eid, text)
 
     # T7
     S["chem_comp"] = run_table(cur, "chem_comp", load_chem_comp, cur, text)
@@ -1163,6 +1179,7 @@ def verify(conn, eid):
         ("space group",          "SELECT space_group_name_h_m FROM symmetry WHERE entry_id=%s"),
         ("cell a-axis",          "SELECT length_a FROM cell WHERE entry_id=%s"),
         ("refine R-work",        "SELECT ls_r_factor_r_work FROM refine WHERE entry_id=%s"),
+        ("EM resolution",        "SELECT MIN(resolution) FROM em_3d_reconstruction WHERE entry_id=%s"),
         ("entity count",         "SELECT COUNT(*) FROM entity WHERE entry_id=%s"),
         ("entity_poly count",    "SELECT COUNT(*) FROM entity_poly WHERE entry_id=%s"),
         ("struct_asym count",    "SELECT COUNT(*) FROM struct_asym WHERE entry_id=%s"),
