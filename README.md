@@ -125,9 +125,9 @@ pair is an arc joining its two bases.
 
 | you see | it means |
 | --- | --- |
-| green arc | Watson–Crick pair (A–U, G–C) |
-| orange arc | G·U wobble |
-| purple arc | any other pair (non-canonical) |
+| green arc | cWW Watson–Crick pair (A–U or A–T, G–C) |
+| orange arc | cWW G–U wobble |
+| purple arc | any other pair (Others) |
 | nested arcs | a stem: bases pairing in a row |
 | crossing arcs | a pseudoknot or a long-range contact |
 | dark dot on the line | a modified nucleotide |

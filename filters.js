@@ -340,6 +340,7 @@ export const FILTERS = [
         key: "source_organism", label: "Source organism",
         group: "Structure Components", kind: "text", suggest: "source_organisms",
         placeholder: "e.g. mouse or Mus musculus",
+        common_name_is_taxon: true,
         // Or any taxon the text names (taxonomy.js): mouse, E. coli, yeast.
         // IN, not = ANY(ARRAY(...)): the ids are hashed once per search instead
         // of scanned per entry: 12 ms rather than 185 for Bacteria.
@@ -393,18 +394,31 @@ export const FILTERS = [
     // Same answer as reading the residues for all 225 inputs tried.
     {
         key: "nonstandard_residue", label: "Non-standard residue",
-        group: "Structure Components", kind: "text",
+        group: "Structure Components", kind: "text", suggest: "nonstandard_residues",
+        placeholder: "e.g. PSU or pseudouridine",
+        // A code is matched whole, so MA6 finds MA6 and not every code holding
+        // MA; a name loosely, from three letters up, but only when the text is
+        // not itself a code: PHA is one residue, not the 315 entries with
+        // "pha" in a name. So a picked suggestion finds what its count says.
+        // ? is %value%, so its length is the typed length plus two.
         where: `AND EXISTS (SELECT 1 FROM doc d
                             WHERE d.id = e.id
                               AND string_to_array(d.residue_codes, ', ') && ARRAY(
                                   SELECT cc.id::text FROM chem_comp cc
                                   WHERE cc.mon_nstd_flag = 'n'
-                                    AND (cc.id ILIKE ? OR cc.name ILIKE ?)))`
+                                    AND (   upper(cc.id) = upper(substr(?, 2, length(?) - 2))
+                                         OR (length(?) >= 5 AND cc.name ILIKE ?
+                                             AND NOT EXISTS (SELECT 1 FROM chem_comp c2
+                                                             WHERE c2.mon_nstd_flag = 'n'
+                                                               AND upper(c2.id) = upper(substr(?, 2, length(?) - 2)))))))`
     },
 
     // A code is matched whole, since one or two letters would otherwise find
     // half the database: K is potassium, not every name holding a k. A name
     // is matched loosely, from three letters up, so adenosyl finds SAM and SAH.
+    // Not when the text is itself a code: MET is methionine, not the 142
+    // entries with "met" in a ligand's name, so a picked suggestion finds
+    // what its count says.
     // ? is %value%, so its length is the typed length plus two.
     {
         key: "ligand", label: "Ligand", answered_by: "ligands",
@@ -416,7 +430,9 @@ export const FILTERS = [
                                   SELECT cc.id FROM chem_comp cc
                                   WHERE cc.id <> 'HOH'
                                     AND (   upper(cc.id) = upper(substr(?, 2, length(?) - 2))
-                                         OR (length(?) >= 5 AND cc.name ILIKE ?)))))`
+                                         OR (length(?) >= 5 AND cc.name ILIKE ?
+                                             AND NOT EXISTS (SELECT 1 FROM chem_comp c2
+                                                             WHERE upper(c2.id) = upper(substr(?, 2, length(?) - 2))))))))`
     },
 
     // See TOPICS. Both ? are the one array of patterns.

@@ -56,7 +56,7 @@ test("every token in use is defined, and every token defined is used", () => {
 // either made a token or added on purpose.
 const THEME_FREE = new Set([
     "#378add", "#1d9e75", "#ba7517",                        // group hues
-    "#5dcaa5", "#04342c", "#e0a030", "#412402", "#7f77dd", "#eeedfe", "#cecbf6", "#26215c", // pair badges
+    "#5dcaa5", "#04342c", "#e0a030", "#412402", "#7f77dd", "#eeedfe", "#cecbf6", "#26215c", "#0f7a58", // pair badges
     "#f43f5e", "#dc2626", "#f59e0b", "#17845f",             // marks, gaps, a green button's hover
     "#fff", "#475569", "#94a3b8"                            // text on filled badges, the A and B badges
 ]);
@@ -99,7 +99,7 @@ test("dark-theme text is readable: at least 4.5:1 against its ground", () => {
 });
 
 // Lines and marks that carry meaning need 3:1 (WCAG 1.4.11).
-const GRAPHICS = ["pair-wc", "pair-gu", "pair-nc", "pair-mod", "strand", "ntc-opn", "ntc-nan-line", "ntc-edge", "text-dim"];
+const GRAPHICS = ["pair-wc", "pair-gu", "pair-nc", "pair-mod", "strand", "ntc-nan-line", "ntc-edge", "text-dim"];
 test("dark-theme base pairs, NtC marks and hints stand out: at least 3:1", () => {
     for (const name of GRAPHICS) {
         let ratio = contrast(DARK[name], DARK["bg-secondary"]);
@@ -107,15 +107,21 @@ test("dark-theme base pairs, NtC marks and hints stand out: at least 3:1", () =>
     }
 });
 
-// The NtC colours are the same in both themes, so a figure means the same.
-// The one that falls under 3:1 on the dark ground gets the outline.
-test("NtC class colours are theme-free; a dim one is outlined in the dark", async () => {
-    let { CANA } = await import("./public/cana.js");
-    let fills = Object.values(CANA).flatMap((c) => c.fill);
-    for (const f of fills) assert.match(f, /^(#[0-9A-Fa-f]{6}|var\(--ntc-(opn|nan)\))$/, f);
-    let dim = fills.filter((f) => f.startsWith("#") && contrast(f.toLowerCase(), DARK["bg-secondary"]) < 3);
-    assert.ok(dim.length > 0 && LIGHT["ntc-edge"] === "transparent" && contrast(DARK["ntc-edge"], DARK["bg-secondary"]) >= 3,
-              "dim NtC colours need the dark outline");
+// The NtC colours are DNATCO's, the same in both themes, so a figure means
+// what it means in DNATCO. Any that falls under 3:1 on a theme's ground gets
+// the outline there: the pale A, B and N on light, the deep BII on dark.
+test("NtC colours are DNATCO's exact palette; a dim one is outlined", async () => {
+    let { NTC_CLASS_COLOURS, ntc_classes } = await import("./public/cana.js");
+    assert.deepEqual(NTC_CLASS_COLOURS, { A: "#FFC1C1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
+                                          IC: "#FA5CFB", OPN: "#E90000", SYN: "#FFFF01", N: "#F2F2F2" });
+    assert.deepEqual([ntc_classes("AB01"), ntc_classes("BA08"), ntc_classes("BB07"), ntc_classes("OP1S"),
+                      ntc_classes("NANT"), ntc_classes(null)],
+                     [["A", "B"], ["BII", "A"], ["BII", "BII"], ["OPN", "SYN"], ["N", "N"], ["N", "N"]]);
+    let fills = Object.values(NTC_CLASS_COLOURS).map((f) => f.toLowerCase());
+    for (const [theme, ground] of [[LIGHT, LIGHT["bg-secondary"]], [DARK, DARK["bg-secondary"]]]) {
+        let dim = fills.filter((f) => contrast(f, ground) < 3);
+        assert.ok(dim.length > 0 && contrast(theme["ntc-edge"], ground) >= 3, "dim NtC colours need the outline");
+    }
     assert.match(CSS, /\.ntc_bar \{ stroke: var\(--ntc-edge\);/);
 });
 

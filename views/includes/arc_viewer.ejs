@@ -1,13 +1,12 @@
-<%# The arc picture full screen, filled by /arc_viewer.js when a [data-arc-open]
+<%# The arc picture expanded in the page, filled by /arc_viewer.js when a [data-arc-open]
     button is pressed on the structure page. Every
     pair is on screen: counts above the drawing, the pointed pair under it, and
     the whole list, by Leontis–Westhof family, beside it. %>
-<dialog id="arc_viewer" class="arc_viewer" aria-label="Arc picture, full screen">
+<dialog id="arc_viewer" class="arc_viewer" aria-label="Arc picture, expanded">
     <div class="av_box">
         <div class="av_top">
             <strong class="av_id"></strong>
             <span class="av_title"></span>
-            <button type="button" class="av_close">Close ✕</button>
         </div>
         <div class="av_main">
             <div class="av_stage">
@@ -18,7 +17,7 @@
                     <button type="button" class="av_fit">Fit</button>
                     <span>drag to move · wheel or buttons to zoom</span>
                 </div>
-                <svg class="av_svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Arc diagram, full screen"></svg>
+                <svg class="av_svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Arc diagram, expanded"></svg>
                 <div class="av_info" aria-live="polite"></div>
             </div>
             <div class="av_side">

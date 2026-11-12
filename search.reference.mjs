@@ -50,7 +50,12 @@ function matches(entry, f) {
     if (!text_matches(entry.assigned_ntc, f.assigned_ntc)) return false;
     if (!text_matches(entry.entity_name, f.entity_name)) return false;
     if (!text_matches(seeded_organism(entry), f.source_organism)) return false;
-    if (!text_matches(entry.nonstandard_residue, f.nonstandard_residue)) return false;
+    // A residue code is matched whole, as the Ligand box does; the seed's
+    // chem_comp names are empty, so no name can match here.
+    if (f.nonstandard_residue !== "") {
+        let codes = (entry.nonstandard_residue ?? "").split(",").map((c) => c.trim().toUpperCase());
+        if (!codes.includes(f.nonstandard_residue.trim().toUpperCase())) return false;
+    }
 
     if (!pill_matches(entry.method, f.experimental_method)) return false;
     if (!pill_matches(entry.polymer_type, expand_polymer_types(f.polymer_type))) return false;

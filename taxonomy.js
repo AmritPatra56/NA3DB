@@ -74,6 +74,15 @@ export function taxa_named(text) {
     return found;
 }
 
+// True when the text is one of a taxon's common names or acronyms, whole:
+// "human", "mouse", "HIV". Such a word means the taxon, not every organism
+// whose written name contains it, so "human" leaves out Human adenovirus 2.
+export function is_common_name(text) {
+    let key = name_key(text ?? "");
+    if (key.length < MIN_LENGTH) return false;
+    return NAMES.some((t) => t.common.includes(key) || t.acronyms.includes(key));
+}
+
 // A taxon's names for display: the scientific name and the common ones.
 export function taxon(taxid) {
     let t = taxa[taxid];

@@ -5,7 +5,7 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
-import { find_entry, export_entries, search_entries, query_problem,
+import { find_entry, export_entries, search_entries, query_problem, nonstandard_suggestions, ligand_suggestions,
          build_where, search_units } from "./search.js";
 import { SORTS, DEFAULT_SORT, sort_by,
          columns_answering, columns_for,
@@ -1169,4 +1169,34 @@ test("a resolution range never lets in an entry with no resolution", async () =>
     let found = (await export_entries({ resolution_min: "0", resolution_max: "1000" })).results.map((e) => e.pdb_id);
     assert.ok(none.length > 0);
     assert.ok(none.every((id) => !found.includes(id)));
+});
+
+// The Non-standard residue box suggests each code with how many entries hold
+// it; picking the code must find exactly that many, and a code is whole.
+test("every suggested non-standard residue finds as many entries as it says", async () => {
+    let rows = await nonstandard_suggestions();
+    assert.ok(rows.length > 0);
+    for (const r of rows) {
+        let total = (await search_entries({ nonstandard_residue: r.code })).total;
+        assert.equal(total, r.entries, `${r.code}: suggestion says ${r.entries}, filter finds ${total}`);
+    }
+    assert.equal((await search_entries({ nonstandard_residue: rows[0].code.slice(0, -1) })).total, 0,
+                 "part of a code finds nothing");
+});
+
+// A common name means its taxon, not every organism written with the word:
+// "human" must not bring in Human adenovirus 2.
+test("a typed common name searches its taxon alone; a scientific name keeps the text match", () => {
+    let human = build_where({ source_organism: "human" });
+    assert.ok(human.values.includes(null), "the text branch is switched off");
+    assert.ok(human.values.some((v) => Array.isArray(v) && v.includes(9606)));
+    let sci = build_where({ source_organism: "Homo sapiens" });
+    assert.ok(sci.values.includes("%Homo sapiens%"));
+});
+
+test("every suggested ligand finds as many entries as it says", async () => {
+    for (const r of await ligand_suggestions()) {
+        let total = (await search_entries({ ligand: r.code })).total;
+        assert.equal(total, r.entries, `${r.code}: suggestion says ${r.entries}, filter finds ${total}`);
+    }
 });

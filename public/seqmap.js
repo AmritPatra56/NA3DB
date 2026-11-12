@@ -1,10 +1,11 @@
 // The sequence map on a structure page: one ruler for the chosen strands, with
-// the sequence, the NtC step between each two nucleotides (coloured by CANA
-// class, as tall as its confal score) and the base pairs in layered
+// the sequence, the NtC step between each two nucleotides (in DNATCO's
+// colours, as tall as its confal score) and the base pairs in layered
 // dot-bracket rows. Hover or tap a column for its pairs and steps.
 
-import { CANA, CANA_GROUPS, CANA_NAMES } from "./cana.js";
-export { CANA, CANA_GROUPS, CANA_NAMES };
+import { NTC_CLASS_COLOURS, NTC_CLASS_NAMES, CANA_NAMES, ntc_classes, ntc_fill } from "./cana.js";
+import { expand } from "./expand.js";
+export { NTC_CLASS_COLOURS, NTC_CLASS_NAMES, CANA_NAMES, ntc_classes, ntc_fill };
 
 const W = 14;                       // one column, as the section draws it
 const W_MIN = 0.5, W_MAX = 28;      // the zoom buttons' range; Fit may go narrower
@@ -33,57 +34,48 @@ export const el = (name, attrs = {}, parent) => {
 export const html = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const flip = (f) => f[0] + f[2] + f[1];
 
-// Stripes and dots for the variants, one pattern per colour.
-export function patterns(svg) {
-    let defs = el("defs", {}, svg);
-    for (const c of Object.values(CANA)) {
-        if (!c.look) continue;
-        let p = el("pattern", { id: `sm_${c.look}_${c.fill[0].slice(1)}`, width: 4, height: 4,
-                                patternUnits: "userSpaceOnUse",
-                                ...(c.look === "stripe" ? { patternTransform: "rotate(45)" } : {}) }, defs);
-        el("rect", { width: 4, height: 4, fill: c.fill[0] }, p);
-        if (c.look === "stripe") el("rect", { width: 1.5, height: 4, fill: "var(--ntc-gap)" }, p);
-        else el("circle", { cx: 2, cy: 2, r: 0.9, fill: "var(--ntc-gap)" }, p);
-    }
-}
-const paint = (c) => (c.look ? `url(#sm_${c.look}_${c.fill[0].slice(1)})` : c.fill[0]);
-
-// A hairline round a bar wide enough to keep its colour inside it: on the
-// dark ground the deep A-form blue needs it (--ntc-edge is transparent in
-// light).
+// A hairline round a bar wide enough to keep its colour inside it: DNATCO's
+// pale A, B and N would melt into the light ground, BII into the dark.
 const edge = (w) => (w >= 4 ? { class: "ntc_bar" } : {});
 
-// One NtC bar centred between its two nucleotides.
-export function bar(g, x, w, h, bottom, code) {
-    let c = CANA[code] ?? CANA.NAN;
-    if (code === "NAN" || !CANA[code]) {
+// One NtC bar centred between its two nucleotides, in DNATCO's colours: the
+// 5′ half and the 3′ half each in its class's colour. A step with no NtC is
+// a low box in DNATCO's pale grey N.
+export function bar(g, x, w, h, bottom, ntc) {
+    if (!ntc || ntc === "NANT") {
         el("rect", { x: x - w / 2 + 0.5, y: bottom - 10.5, width: w - 1, height: 10, rx: 1.5,
-                     fill: "var(--ntc-nan)", stroke: "var(--ntc-nan-line)", "stroke-width": 1 }, g);
+                     fill: NTC_CLASS_COLOURS.N, stroke: "var(--ntc-nan-line)", "stroke-width": 1 }, g);
         return;
     }
-    if (c.fill.length === 2) {
-        el("rect", { x: x - w / 2, y: bottom - h, width: w / 2, height: h, fill: c.fill[0], ...edge(w / 2) }, g);
-        el("rect", { x, y: bottom - h, width: w / 2, height: h, fill: c.fill[1], ...edge(w / 2) }, g);
+    let [a, b] = ntc_fill(ntc);
+    if (a !== b) {
+        el("rect", { x: x - w / 2, y: bottom - h, width: w / 2, height: h, fill: a, ...edge(w / 2) }, g);
+        el("rect", { x, y: bottom - h, width: w / 2, height: h, fill: b, ...edge(w / 2) }, g);
     } else {
-        el("rect", { x: x - w / 2, y: bottom - h, width: w, height: h, fill: paint(c), ...edge(w) }, g);
+        el("rect", { x: x - w / 2, y: bottom - h, width: w, height: h, fill: a, ...edge(w) }, g);
     }
 }
 
-export function swatch(code) {
+export function swatch(ntc) {
     let svg = el("svg", { width: 12, height: 14, viewBox: "0 0 12 14", "aria-hidden": "true" });
-    patterns(svg);
-    bar(svg, 6, 10, 13, 14, code);
+    bar(svg, 6, 10, 13, 14, ntc);
     return svg.outerHTML;
 }
 
+// The legend: DNATCO's classes that the shown steps use, either half.
+export function class_key(ntcs) {
+    let used = new Set(ntcs.flatMap((n) => ntc_classes(n)));
+    return Object.keys(NTC_CLASS_COLOURS).filter((c) => used.has(c)).map((c) =>
+        `<span><i class="ntc_class_swatch" style="background:${NTC_CLASS_COLOURS[c]}"></i>${c} ${NTC_CLASS_NAMES[c]}</span>`).join("");
+}
+export const KEY_NOTE = `<span class="seqmap_key_note">A two-colour bar is the step's 5′ half and 3′ half. Colours: <a href="https://github.com/molstar/molstar/blob/master/packages/extensions/dnatco/src/color.ts" target="_blank" rel="noopener">DNATCO</a>.</span>`;
+
 const row_y = (k) => Y_ROWS + k * ROW + ROW / 2;
 const key_html = (map) => {
-    let used = [...new Set(map.steps.map((s) => (CANA[s.cana] ? s.cana : "NAN")))];
     return `
-        <span class="seqmap_key_title">NtC step, by CANA class <em>(bar height: confal)</em></span>
-        ${CANA_GROUPS.map(([name, codes]) => codes.some((c) => used.includes(c))
-            ? `<span class="seqmap_group"><b>${name}</b>${codes.filter((c) => used.includes(c))
-                  .map((c) => `<span>${swatch(c)}${c} ${CANA_NAMES[c]}</span>`).join("")}</span>` : "").join("")}
+        <span class="seqmap_key_title">NtC step, in DNATCO's colours <em>(bar height: confal)</em></span>
+        <span class="seqmap_group">${class_key(map.steps.map((s) => s.ntc))}</span>
+        ${KEY_NOTE}
         <span class="seqmap_key_title">Pairs</span>
         <span class="seqmap_group"><span><i style="background:${ROW_COLOUR.WC}"></i>WC: Watson–Crick</span><span><i style="background:${ROW_COLOUR.cWW}"></i>cWW: other cis W–W</span><span><i style="background:${OTHER_ROW}"></i>other families</span><span><b class="seqmap_mod">a</b>lower case: modified</span>${map.names.length > 1 ? `<span><b class="seqmap_cross">•</b>under a bracket: partner on another strand</span>` : ""}</span>`;
 };
@@ -140,7 +132,6 @@ function draw_map(box, w) {
     });
 
     let svg = scroll.querySelector(".seqmap_svg");
-    patterns(svg);
     let hover = el("g", { class: "seqmap_hover" }, svg);
 
     // Ruler: author numbers every ten, or every 50 or 500 as the columns
@@ -192,7 +183,7 @@ function draw_map(box, w) {
     for (const s of map.steps) {
         let h = 4 + (NTC - 6) * Math.max(0, Math.min(100, s.confal ?? 0)) / 100;
         let x = (s.i + 1) * w;
-        if (s.ntc || bw >= 6) bar(bars, x, bw, h, Y_NTC + NTC, s.ntc ? s.cana : "NAN");
+        if (s.ntc || bw >= 6) bar(bars, x, bw, h, Y_NTC + NTC, s.ntc);
         else el("rect", { x: x - bw / 2, y: Y_NTC + NTC - 3, width: bw, height: 3, class: "seqmap_nan_thin" }, bars);
     }
 
@@ -225,7 +216,7 @@ function draw_map(box, w) {
     let st = box.state;
     let family_words = (f) => `${f[0] === "c" ? "cis" : "trans"} ${EDGE[f[1]]}–${EDGE[f[2]]}`;
     let step_words = (s, a, b) => !s ? "" : s.ntc
-        ? `<span class="seqmap_step">step ${html(res(a))}→${html(res(b))}: <b>${html(s.ntc)}</b> ${swatch(s.cana)} ${html(s.cana)} · confal ${s.confal ?? "–"}</span>`
+        ? `<span class="seqmap_step">step ${html(res(a))}→${html(res(b))}: ${swatch(s.ntc)} <b>${html(s.ntc)}</b> ${html(s.cana)} · confal ${s.confal ?? "–"}</span>`
         : `<span class="seqmap_step">step ${html(res(a))}→${html(res(b))}: no NtC class${s.closest ? ` (closest ${html(s.closest)})` : ""}</span>`;
     let band = Math.max(w, 2);
 
@@ -281,14 +272,14 @@ function jumps(box) {
     });
 }
 
-// The map in its section: strand chips, a download, and full screen.
+// The map in its section: strand chips, a download, and Expand.
 function draw(box, map) {
     box.state = { map, p: prepare(map), w: W, pinned: null };
     box.innerHTML = `
         <div class="seqmap_tools">
             <div class="seqmap_chips" role="group" aria-label="Strands on the ruler"></div>
             <span class="seqmap_buttons">
-                <button type="button" class="seqmap_full" title="Open full screen, with every strand and an overview">⤢ Full screen</button>
+                <button type="button" class="seqmap_full" aria-expanded="false" title="Expand here, with every strand and an overview">⤢ Expand</button>
                 <a class="seqmap_file" href="${file_url(map)}" download title="The rows as text, in layered dot-bracket notation">Download notation</a>
             </span>
         </div>
@@ -315,7 +306,7 @@ function draw(box, map) {
         });
         chips.append(b);
     }
-    box.querySelector(".seqmap_full").addEventListener("click", () => open_full(map));
+    box.querySelector(".seqmap_full").addEventListener("click", (event) => open_full(map, event.currentTarget));
     draw_map(box, W);
     jumps(box);
 }
@@ -338,7 +329,7 @@ async function load(box, keys = []) {
     }
 }
 
-// ---- Full screen -------------------------------------------------------------
+// ---- Expanded -------------------------------------------------------------
 // Every strand can go on the ruler; an overview of the whole ruler on top
 // shows where the view is, and the columns zoom from letters down to a
 // fraction of a pixel, so a ribosome fits on one screen.
@@ -348,7 +339,7 @@ let dialog = null;
 function make_dialog() {
     dialog = document.createElement("dialog");
     dialog.className = "arc_viewer seqmap_dialog";
-    dialog.setAttribute("aria-label", "Sequence map, full screen");
+    dialog.setAttribute("aria-label", "Sequence map, expanded");
     dialog.innerHTML = `
         <div class="av_box">
             <div class="av_top">
@@ -361,7 +352,6 @@ function make_dialog() {
                     <button type="button" data-zoom="read" title="Columns wide enough to read">Letters</button>
                 </span>
                 <a class="seqmap_file smd_file" download>Download notation</a>
-                <button type="button" class="smd_close">Close ✕</button>
             </div>
             <div class="smd_main">
                 <aside class="smd_side">
@@ -386,8 +376,6 @@ function make_dialog() {
     document.body.append(dialog);
 
     let box = dialog.querySelector(".smd_map");
-    dialog.querySelector(".smd_close").addEventListener("click", () => dialog.close());
-    dialog.addEventListener("close", () => { document.documentElement.style.overflow = ""; });
     jumps(box);
 
     dialog.querySelector(".smd_zoom").addEventListener("click", (event) => {
@@ -482,8 +470,7 @@ function overview(box) {
     });
     let g = el("g", {}, over);
     for (const s of map.steps) {
-        let c = CANA[s.ntc ? s.cana : "NAN"] ?? CANA.NAN;
-        if (s.ntc) el("rect", { x: s.i + 0.5, y: 16, width: 1, height: 12, fill: c.fill[0] }, g);
+        if (s.ntc) el("rect", { x: s.i + 0.5, y: 16, width: 1, height: 12, fill: ntc_fill(s.ntc)[0] }, g);
     }
     el("rect", { class: "smd_view", x: 0, y: 0.5, width: 0, height: 29 }, over);
     let names = dialog.querySelector(".smd_names") ?? Object.assign(document.createElement("div"), { className: "smd_names" });
@@ -528,12 +515,11 @@ async function full_load(keys) {
     }
 }
 
-function open_full(map) {
+function open_full(map, button) {
     if (!dialog) make_dialog();
+    if (!expand(dialog, button.closest(".seqmap"), button)) return;
     let box = dialog.querySelector(".smd_map");
     box.state = null;
-    document.documentElement.style.overflow = "hidden";
-    dialog.showModal();
     full_draw(map);
 }
 

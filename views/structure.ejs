@@ -21,10 +21,10 @@
         "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine). One row per kind in each chain, with every position it occupies, in the authors' numbering.",
         "ligands": "Small molecules bound in the structure: ions, cofactors, drugs and sugars. Count is how many copies the entry holds. Each code links to its page at RCSB. Water is left out.",
         "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxonomy ID its number in NCBI Taxonomy, Produced in the host it was made in when expressed.",
-        "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). A cWW pair of G–C or A–U counts as Watson–Crick, G–U as a wobble, everything else as non-canonical. A modified base counts as the base it came from.",
-        "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (colour is its CANA class, height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
+        "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). Pairs fall in four groups: cis Watson–Crick (cWW) A–U (A–T in DNA), cWW G–C, cWW G–U, and Others, which holds every other pair and is broken down by family. A modified base counts as the base it came from.",
+        "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (its NtC in DNATCO's colours, 5′ half and 3′ half; height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
         "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
-        "conformation": "Each step from one nucleotide to the next gets an NtC class from DNATCO, such as AA00. Similar classes form a CANA class, such as AAA (A-form); the list groups them by family, each with its colour, and How the colours work has the key. The confal score (0 to 100) says how well the steps fit their classes; the percentile ranks it against other structures. Steps DNATCO could not class (NANT) are counted last.",
+        "conformation": "Each step from one nucleotide to the next gets an NtC class from DNATCO, such as AA00. Similar classes form a CANA class, such as AAA (A-form), and the list groups them that way. Each NtC is drawn in DNATCO's colours, one for each half of the step; How the colours work has the key. The confal score (0 to 100) says how well the steps fit their classes; the percentile ranks it against other structures. Steps DNATCO could not class (NANT) are counted last.",
         "citations": "The papers that describe this structure, the primary one first.",
         "links": "This entry elsewhere, and its data as files."
     };
@@ -93,19 +93,18 @@
                                 <details class="guide">
                                     <summary>How the colours work</summary>
                                     <div class="guide_body">
-                                        <p>Colour is the family: blue A, orange B, green Z, pink intercalated, black opened, yellow syn. A paler shade, stripes or dots mark a variant. Two halves mark a transition, read 5′ to 3′. An empty box is a step with no class.</p>
-                                        <div class="cana_key"><% for (const k of t.key) { %><span><i class="cana_swatch" style="background:<%= k.background %>"></i><code><%= k.cana %></code><%= k.name %></span><% } %></div>
-                                        <p class="guide_source">Classes and their meaning: <a target="_blank" rel="noopener" href="https://doi.org/10.1093/nar/gkaa383">DNATCO, Černý et al. 2020, NAR 48:6367</a>. Colours: NA3DB's own, chosen to stay apart for colour-blind readers.</p>
+                                        <p>The colours are DNATCO's. Each NtC is drawn in two halves, its 5′ side and its 3′ side, and each half takes the colour of its conformer class: AB01 is A then B, BB07 is BII on both sides. A low pale grey box (N) is a step DNATCO could not class.</p>
+                                        <div class="cana_key"><% for (const k of t.key) { %><span><i class="cana_swatch" style="background:<%= k.background %>"></i><code><%= k.code %></code><%= k.name %></span><% } %></div>
+                                        <p class="guide_source">Classes and their meaning: <a target="_blank" rel="noopener" href="https://doi.org/10.1093/nar/gkaa383">DNATCO, Černý et al. 2020, NAR 48:6367</a>. Colours: <a target="_blank" rel="noopener" href="https://github.com/molstar/molstar/blob/master/packages/extensions/dnatco/src/color.ts">DNATCO's colouring in Mol*</a>.</p>
                                     </div>
                                 </details>
                             <% for (const f of t.families) { %>
                                 <div class="ntc_family_name"><%= f.name %> · <%= fmt(f.n) %> <%= f.n === 1 ? "step" : "steps" %></div>
                                 <% for (const c of f.classes) { %>
                                     <div class="ntc_line">
-                                        <i class="cana_swatch" style="background:<%= c.background %>"></i>
                                         <span class="ntc_name"><b><%= c.name %></b> <code><%= c.cana %></code></span>
                                         <span class="ntc_count"><%= fmt(c.n) %></span>
-                                        <span class="ntc_chips"><% for (const x of c.ntcs) { %><span class="ntc_chip" title="<%= x.ntc %>: <%= fmt(x.n) %> <%= x.n === 1 ? "step" : "steps" %>"><%= x.ntc %> ×<%= fmt(x.n) %></span><% } %></span>
+                                        <span class="ntc_chips"><% for (const x of c.ntcs) { %><span class="ntc_chip" title="<%= x.ntc %>: <%= fmt(x.n) %> <%= x.n === 1 ? "step" : "steps" %>"><i class="cana_swatch" style="background:<%= x.background %>"></i><%= x.ntc %> ×<%= fmt(x.n) %></span><% } %></span>
                                     </div>
                                 <% } %>
                             <% } %>
@@ -124,7 +123,7 @@
 
                         <% if (s.id === "base-pairs" && arcs) { const a = arcs; const strands = a.chains.length; const labelled = strands <= 8; %>
                             <figure class="arc_picture">
-                                <button type="button" class="arc_zoom" data-arc-open="<%= entry.pdb_id %>" title="Open full screen">
+                                <button type="button" class="arc_zoom" data-arc-open="<%= entry.pdb_id %>" title="Expand">
                                 <svg viewBox="0 0 <%= a.width %> <%= a.height %>" role="img" aria-label="Arc diagram: <%= a.counts.drawn %> base pairs drawn as arcs over <%= strands === 1 ? "one strand" : strands + " strands" %> (<%= a.chains.map((c) => c.name).join(", ") %>), <%= a.counts.nucleotides.toLocaleString("en-GB") %> nucleotides">
                                     <% for (const c of a.chains) { %><line class="arc_strand<%= c.symmetry ? " arc_copy" : "" %>" x1="<%= c.x1 %>" y1="<%= a.base %>" x2="<%= c.x2 %>" y2="<%= a.base %>"/><% } %>
                                     <g class="arc_lines" stroke-width="<%= a.stroke %>">
@@ -142,8 +141,8 @@
                                 </svg>
                                 </button>
                                 <figcaption>
-                                    <span><%= strands === 1 ? "1 strand" : strands + " strands" %> · <%= a.counts.nucleotides.toLocaleString("en-GB") %> nt<% if (a.each) { %> · hover an arc for its pair<% } %><button type="button" class="arc_full" data-arc-open="<%= entry.pdb_id %>">⤢ Full screen</button></span>
-                                    <span class="arc_key"><% for (const [kind, label] of [["wc", "Watson–Crick"], ["gu", "G·U wobble"], ["nc", "non-canonical"]]) { if (a.paths[kind]) { %><span><i class="arc_<%= kind %>"></i><%= label %></span><% } } %><% if (a.counts.modified) { %><span><i class="arc_mod"></i>modified</span><% } %></span>
+                                    <span><%= strands === 1 ? "1 strand" : strands + " strands" %> · <%= a.counts.nucleotides.toLocaleString("en-GB") %> nt<% if (a.each) { %> · hover an arc for its pair<% } %><button type="button" class="arc_full" data-arc-open="<%= entry.pdb_id %>" aria-expanded="false">⤢ Expand</button></span>
+                                    <span class="arc_key"><% for (const [kind, label] of [["wc", "cWW Watson–Crick"], ["gu", "cWW G–U"], ["nc", "Others"]]) { if (a.paths[kind]) { %><span><i class="arc_<%= kind %>"></i><%= label %></span><% } } %><% if (a.counts.modified) { %><span><i class="arc_mod"></i>modified</span><% } %></span>
                                     <% if (a.counts.copies) { %><span class="arc_note">′ marks a symmetry copy from the crystal</span><% } %>
                                 </figcaption>
                             </figure>
@@ -160,17 +159,17 @@
                             </div>
                         <% } %>
                         <% if (s.id === "base-pairs" && base_pairs) { const bp = base_pairs; %>
-                            <div class="jump_to">Jump to: <a href="#bp-counts">Counts</a><% if (bp.families.length) { %> · <a href="#bp-families">Families</a><% } %><% if (bp.noncanonical.length) { %> · <a href="#bp-all">Non-canonical pairs</a><% } %></div>
+                            <div class="jump_to">Jump to: <a href="#bp-counts">Counts</a><% if (bp.families.length) { %> · <a href="#bp-families">Families</a><% } %><% if (bp.noncanonical.length) { %> · <a href="#bp-all">Other pairs</a><% } %></div>
                         <div class="source_legend pair_head">
                             <span><%= bp.total.toLocaleString("en-GB") %> <%= bp.total === 1 ? "pair" : "pairs" %>, Leontis–Westhof classes from DNATCO</span>
                         </div>
                         <div id="bp-counts" class="pair_bar" role="img" aria-label="<%= bp.bar.map((b) => `${b.n} ${b.label}`).join(', ') %>">
-                            <% for (const b of bp.bar) { if (!b.n) continue; %><span class="pair_<%= b.kind %>" style="flex:<%= b.n %>"><% if (b.percent >= 15) { %><%= b.n.toLocaleString("en-GB") %> <%= b.label %><% } %></span><% } %>
+                            <% for (const b of bp.bar) { if (!b.n) continue; %><span class="pair_<%= b.kind %>" style="flex:<%= b.n %>"><% if (b.percent >= 15) { %><%= b.n.toLocaleString("en-GB") %><span class="pair_bar_label"><%= b.label %></span><% } %></span><% } %>
                         </div>
                         <div class="pair_legend"><% for (const b of bp.bar) { %><span><i class="pair_<%= b.kind %>"></i><%= b.label %> <%= b.n.toLocaleString("en-GB") %></span><% } %></div>
                         <% if (bp.families.length) { %>
-                            <div id="bp-families" class="pair_caption">Non-canonical, by Leontis–Westhof family</div>
-                            <div class="pair_families"><% for (const f of bp.families) { %><span title="<%= f.name %>"><%= f.family %> <%= f.n.toLocaleString("en-GB") %><% if (f.mismatch) { %> <span class="molecule_sub">mismatch</span><% } %></span><% } %></div>
+                            <div id="bp-families" class="pair_caption">Others, by Leontis–Westhof family</div>
+                            <div class="pair_families"><% for (const f of bp.families) { %><span title="<%= f.name %>"><%= f.family %> <%= f.n.toLocaleString("en-GB") %></span><% } %></div>
                         <% } %>
                         <% if (bp.sentence) { %>
                             <p class="pair_chains"><%= bp.sentence %></p>
@@ -184,7 +183,7 @@
                         <% } %>
                         <% if (bp.noncanonical.length) { %>
                             <details id="bp-all" class="pair_list">
-                                <summary>Show the <%= bp.noncanonical.length.toLocaleString("en-GB") %> non-canonical pairs</summary>
+                                <summary>Show the <%= bp.noncanonical.length.toLocaleString("en-GB") %> other pairs</summary>
                                 <div class="molecule_scroll">
                                 <table class="molecule_table">
                                     <tr><th>Chain</th><th>Pair</th><th>Family</th></tr>

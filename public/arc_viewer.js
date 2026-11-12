@@ -1,11 +1,13 @@
-// arc_viewer.js - the arc picture full screen. Fetches the entry's pairs as
+import { expand } from "/expand.js";
+
+// arc_viewer.js - the arc picture, expanded in the page. Fetches the entry's pairs as
 // numbers (/api/entries/:id/arcs) when opened and draws them at screen size.
 // Every pair is on screen without a click: counts above the drawing, the
 // pointed or picked pair under it, the whole list beside it. Leontis–Westhof
-// symbols mark the non-canonical arcs; a family chip shows only that family.
+// symbols mark the arcs of the Others; a family chip shows only that family.
 
 const NS = "http://www.w3.org/2000/svg";
-const KIND = { wc: "Watson–Crick", gu: "G·U wobble", nc: "non-canonical" };
+const KIND = { wc: "cWW Watson–Crick", gu: "cWW G–U", nc: "Others" };
 const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "Sugar" };
 const TOP = 14, PAD = 22, GAP = 24;
 // The drawing is as many units as the screen has pixels, so text is the same
@@ -255,8 +257,8 @@ function summary(d) {
     let nt = d.strands.reduce((n, s) => n + s.length, 0);
     let mod = d.strands.reduce((n, s) => n + s.modified.length, 0);
     let strands = d.strands.length;
-    let items = [["Base pairs", num(d.pairs.length)], ["Watson–Crick", num(count.wc)], ["G·U wobble", num(count.gu)],
-                 ["Non-canonical", `${num(count.nc)}${count.nc ? ` <small>${families.size} ${families.size === 1 ? "family" : "families"}</small>` : ""}`],
+    let items = [["Base pairs", num(d.pairs.length)], ["cWW Watson–Crick", num(count.wc)], ["cWW G–U", num(count.gu)],
+                 ["Others", `${num(count.nc)}${count.nc ? ` <small>${families.size} ${families.size === 1 ? "family" : "families"}</small>` : ""}`],
                  ["Nucleotides", `${num(nt)}${mod ? ` <small>${num(mod)} modified</small>` : ""}`],
                  ["Strands", `${num(strands)} <small>${esc(d.strands.slice(0, 6).map((s) => s.name).join(", "))}${strands > 6 ? "…" : ""}</small>`]];
     dialog.querySelector(".av_summary").innerHTML = items.map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join("");
@@ -276,9 +278,10 @@ function lists(d) {
         + `<td><i class="av_sw arc_${kind}"></i>${KIND[kind]}</td></tr>`).join("");
 }
 
-async function open(id) {
-    dialog.showModal();
-    document.documentElement.style.overflow = "hidden";
+async function open(id, button) {
+    let figure = button.closest("figure");
+    let trigger = figure?.querySelector(".arc_full") ?? button;
+    if (!expand(dialog, figure ?? button, trigger)) return;
     info.innerHTML = "<span>Loading…</span>";
     let d = cache.get(id);
     dialog.querySelector(".av_id").textContent = id;
@@ -311,10 +314,6 @@ async function open(id) {
     paint();
 }
 
-function close() {
-    if (dialog.open) dialog.close();
-}
-dialog.addEventListener("close", () => { document.documentElement.style.overflow = ""; });
 
 let drag = null;
 svg.addEventListener("pointerdown", (ev) => {
@@ -354,10 +353,6 @@ fams.addEventListener("click", (ev) => {
 dialog.querySelector(".av_in").onclick = () => V && zoom(1.6);
 dialog.querySelector(".av_out").onclick = () => V && zoom(1 / 1.6);
 dialog.querySelector(".av_fit").onclick = () => { if (V) { V.s = 1; V.tx = 0; draw(); paint(); } };
-dialog.querySelector(".av_close").onclick = close;
-dialog.querySelector(".av_table").onclick = close;
-// A click on the dimmed backdrop lands on the dialog itself.
-dialog.addEventListener("click", (ev) => { if (ev.target === dialog) close(); });
 
 // A turned phone or a resized window: draw again for the new size.
 window.addEventListener("resize", () => {
@@ -367,5 +362,5 @@ window.addEventListener("resize", () => {
 // One listener for every open button on the page.
 document.addEventListener("click", (ev) => {
     let b = ev.target.closest("[data-arc-open]");
-    if (b) open(b.dataset.arcOpen);
+    if (b) open(b.dataset.arcOpen, b);
 });

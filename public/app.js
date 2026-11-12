@@ -851,15 +851,26 @@ document.querySelectorAll("input[data-suggest]").forEach((input) => {
     }
 
     function draw() {
+        // Best match first, as UniProt's taxonomy suggester does: "human"
+        // puts Homo sapiens (common name human) above Human adenovirus 2.
+        // Within a rank, the server's order (most entries first) stands.
         let text = input.value.trim().toLowerCase();
-        let starts = all.filter((s) => s.code.toLowerCase().startsWith(text));
-        // From three letters, anywhere in the code or the name: musculus
-        // finds Mus musculus, mouse finds it by its common name.
-        let named = text.length >= 3
-            ? all.filter((s) => !starts.includes(s) &&
-                                `${s.code} ${s.name ?? ""}`.toLowerCase().includes(text))
-            : [];
-        shown = [...starts, ...named].slice(0, SUGGESTIONS_SHOWN);
+        function rank(s) {
+            let code = s.code.toLowerCase();
+            let names = (s.name ?? "").toLowerCase().split(/,\s*/).filter(Boolean);
+            if (code === text || names.includes(text)) return 0;
+            if (code.startsWith(text)) return 1;
+            if (text.length < 3) return null;
+            let words = `${code} ${names.join(" ")}`.split(/[^a-z0-9']+/);
+            if (words.some((w) => w.startsWith(text))) return 2;
+            // From three letters, anywhere: musculus finds Mus musculus.
+            return `${code} ${s.name ?? ""}`.toLowerCase().includes(text) ? 3 : null;
+        }
+        shown = all.map((s, i) => [rank(s), i, s])
+                   .filter(([r]) => r !== null)
+                   .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+                   .slice(0, SUGGESTIONS_SHOWN)
+                   .map(([, , s]) => s);
 
         list.replaceChildren(...shown.map((s, i) => {
             let li = document.createElement("li");
@@ -870,6 +881,8 @@ document.querySelectorAll("input[data-suggest]").forEach((input) => {
             code.textContent = s.code;
             let name = document.createElement("span");
             name.textContent = s.name ?? "";
+            // A modified nucleotide's parent base, before its long name.
+            if (s.parent) name.prepend(Object.assign(document.createElement("em"), { textContent: `from ${s.parent} · ` }));
             let count = document.createElement("small");
             count.textContent = s.entries;
             li.append(code, name, count);

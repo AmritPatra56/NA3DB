@@ -3,7 +3,7 @@
 
 import { query } from "./db.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
-import { taxa_named, taxon } from "./taxonomy.js";
+import { taxa_named, taxon, is_common_name } from "./taxonomy.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
          page_size_from, match_mode, RESOLUTION_SQL, BROWSE } from "./filters.js";
 
@@ -249,8 +249,10 @@ export function build_where(query_params) {
             continue;
         }
 
-        add(filter.where, rule.param(value),
-            rule.normalised && rule.normalised(value), value);
+        // A common name searches its taxon alone: the text branch gets NULL,
+        // which ILIKE never matches.
+        let text_param = filter.common_name_is_taxon && is_common_name(value) ? null : rule.param(value);
+        add(filter.where, text_param, rule.normalised && rule.normalised(value), value);
     }
 
     // Nothing was asked, so there is nothing to invert either: excluding
@@ -674,7 +676,9 @@ export async function entry_base_pairs(id, q = query) {
          b AS (
              SELECT p.*,
                     translate(regexp_replace(COALESCE(c1.parent_comp_id, p.comp_id_1), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_1,
-                    translate(regexp_replace(COALESCE(c2.parent_comp_id, p.comp_id_2), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_2
+                    translate(regexp_replace(COALESCE(c2.parent_comp_id, p.comp_id_2), '^D(?=[ACGTU]$)', ''), 'T', 'U') AS base_2,
+                    regexp_replace(COALESCE(c1.parent_comp_id, p.comp_id_1), '^D(?=[ACGTU]$)', '') AS letter_1,
+                    regexp_replace(COALESCE(c2.parent_comp_id, p.comp_id_2), '^D(?=[ACGTU]$)', '') AS letter_2
                FROM p
                LEFT JOIN chem_comp c1 ON c1.id = p.comp_id_1
                LEFT JOIN chem_comp c2 ON c2.id = p.comp_id_2
@@ -695,7 +699,10 @@ export async function entry_base_pairs(id, q = query) {
                 CASE WHEN lw_family <> 'cWW' THEN 'nc'
                      WHEN least(base_1, base_2) || greatest(base_1, base_2) IN ('CG', 'AU') THEN 'wc'
                      WHEN least(base_1, base_2) || greatest(base_1, base_2) = 'GU' THEN 'gu'
-                     ELSE 'nc' END AS kind
+                     ELSE 'nc' END AS kind,
+                -- The two bases in order, T kept apart from U ('AT', 'AU',
+                -- 'CG', 'GU'), so the section can say A–T for DNA.
+                least(letter_1, letter_2) || greatest(letter_1, letter_2) AS bases
            FROM b
           ORDER BY length(auth_asym_id_1), auth_asym_id_1, seq_id_1, seq_id_2`,
         [as_text(id).trim()]
@@ -915,6 +922,21 @@ export async function ligand_suggestions(q = query) {
           WHERE n.comp_id <> 'HOH'
           GROUP BY n.comp_id, cc.name
           ORDER BY entries DESC, n.comp_id`);
+    return result.rows;
+}
+
+// Every non-standard nucleotide in the database, most common first, for the
+// Non-standard residue box's suggestions, with the base it is modified from.
+// Counted from doc.residue_codes, the list the filter itself reads, so the
+// number beside a code is what picking it finds.
+export async function nonstandard_suggestions(q = query) {
+    let result = await q(
+        `SELECT cc.id AS code, cc.name, cc.parent_comp_id AS parent, count(*)::int AS entries
+           FROM doc d
+           CROSS JOIN LATERAL unnest(string_to_array(d.residue_codes, ', ')) AS r(code)
+           JOIN chem_comp cc ON cc.id = r.code AND cc.mon_nstd_flag = 'n'
+          GROUP BY cc.id, cc.name, cc.parent_comp_id
+          ORDER BY entries DESC, cc.id`);
     return result.rows;
 }
 
@@ -1198,7 +1220,7 @@ export async function same_sequence(id, q = query) {
             let a = about.get(c.entry) ?? {};
             let summary = null;
             if (c !== ref) {
-                let s = compare_chains({ name: chain_title(ref), ...ref_tracks }, { name: chain_title(c), ...t }).summary;
+                let s = compare_chains({ name: chain_title(ref), ...ref_tracks }, { name: chain_title(c), ...t }, { picture: false }).summary;
                 summary = { verdict: s.verdict, headline: s.headline, differences: s.differences };
             }
             return { id: chain_id(c), entry: c.entry, label: c.label, auth: c.auth, name: chain_title(c),

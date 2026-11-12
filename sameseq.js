@@ -66,8 +66,9 @@ const step_words = (s) => `${s.cana} (${s.ntc}, confal ${Math.round(s.confal)})`
 // picture needs to draw both: steps above and below, and the pairs of both in
 // one set of dot-bracket rows, each pair marked "=" (in both), "a" or "b"
 // (only in that chain) or "n" (only in one, and the other chain does not
-// model one of its two nucleotides, so it cannot be compared).
-export function compare_chains(a, b) {
+// model one of its two nucleotides, so it cannot be compared). picture:
+// false skips the rows, for callers that only read the summary.
+export function compare_chains(a, b, { picture = true } = {}) {
     let positions = a.residues.map((r) => Number(r.pos)).sort((x, y) => x - y);
     let other = b.residues.map((r) => Number(r.pos)).sort((x, y) => x - y);
     if (positions.length !== other.length || positions.some((p, k) => p !== other[k])) {
@@ -115,7 +116,7 @@ export function compare_chains(a, b) {
         placed.push({ i: u.i, j: u.j, family: u.family, who,
                       row: u.family === "cWW" ? (u.kind === "wc" ? "WC" : "cWW") : u.family });
     }
-    let rows = layer_rows(placed, n).map((r) => ({
+    let rows = !picture ? [] : layer_rows(placed, n).map((r) => ({
         name: r.name, family: r.family, overflow: !!r.overflow, text: r.text,
         pairs: r.pairs.map((p) => [p.i, p.j, p.who])
     }));

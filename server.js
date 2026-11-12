@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
          count_entries, entry_citations, entry_contents, entry_base_pairs, entry_sequence_tracks,
-         entry_residues, ligand_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
+         entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { did_you_mean } from "./suggest.js";
@@ -256,6 +256,11 @@ app.get("/api/expression_hosts", async (req, res) => {
 // The ligands the Ligand box can suggest, with how many entries hold each.
 app.get("/api/ligands", async (req, res) => {
     res.json(await ligand_suggestions());
+});
+
+// The non-standard nucleotides the Non-standard residue box can suggest.
+app.get("/api/nonstandard_residues", async (req, res) => {
+    res.json(await nonstandard_suggestions());
 });
 
 // One page of entries, narrowed by whatever filters were passed.

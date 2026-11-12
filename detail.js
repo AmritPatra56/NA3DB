@@ -4,7 +4,7 @@
 // detail panel and the structure page cannot format the same field differently.
 
 import { columns_for } from "./filters.js";
-import { CANA, CANA_NAMES } from "./public/cana.js";
+import { CANA_NAMES, NTC_CLASS_COLOURS, NTC_CLASS_NAMES, ntc_background } from "./public/cana.js";
 
 // One value as display text, or null when there is nothing to show.
 // The locale is pinned: toLocaleString() with none uses the viewer's machine,
@@ -308,12 +308,14 @@ function modified_row(m) {
 }
 
 // --- the Base pairs section of the structure page ----------------------
-// One bar (Watson–Crick / G·U wobble / non-canonical), the Leontis–Westhof
-// families of the non-canonical pairs, which chains pair with which, and the
-// non-canonical pairs themselves. Pairs come from entry_base_pairs.
+// One bar of four groups (cWW A–U, cWW G–C, cWW G–U, Others), the
+// Leontis–Westhof families of the Others, which chains pair with which, and
+// the Others themselves. Pairs come from entry_base_pairs.
 
 export const PAIR_LINKS_SHOWN = 5;
-const PAIR_KINDS = [["wc", "Watson–Crick"], ["gu", "G·U wobble"], ["nc", "non-canonical"]];
+const PAIR_GROUPS = [["au", "cWW A–U"], ["gc", "cWW G–C"], ["gu", "cWW G–U"], ["nc", "Others"]];
+// A–U for RNA, A–T for DNA, A–U/T when an entry has both kinds of pair.
+const au_label = (a_with) => "cWW A–" + (a_with.has("T") ? (a_with.has("U") ? "U/T" : "T") : "U");
 const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "sugar" };
 
 const by_chain = (a, b) => a.length - b.length || a.localeCompare(b);
@@ -341,11 +343,14 @@ function self_paired(links) {
 export function base_pair_section(pairs) {
     if (!pairs.length) return null;
 
-    let counts = { wc: 0, gu: 0, nc: 0 };
+    let counts = { au: 0, gc: 0, gu: 0, nc: 0 };
+    let a_with = new Set();
     let families = new Map();
     let links = new Map();
     for (const p of pairs) {
-        counts[p.kind]++;
+        let group = p.kind !== "wc" ? p.kind : p.bases === "CG" ? "gc" : "au";
+        counts[group]++;
+        if (group === "au") a_with.add(p.bases.includes("T") ? "T" : "U");
         if (p.kind === "nc") families.set(p.family, (families.get(p.family) ?? 0) + 1);
         let [a, b] = [p.chain_1, p.chain_2].sort(by_chain);
         let link = links.get(`${a} ${b}`) ?? { a, b, n: 0 };
@@ -356,10 +361,9 @@ export function base_pair_section(pairs) {
     let link_list = [...links.values()].sort((x, y) => y.n - x.n || by_chain(x.a, y.a) || by_chain(x.b, y.b));
     return {
         total: pairs.length,
-        bar: PAIR_KINDS.map(([kind, label]) => ({ kind, label, n: counts[kind],
-                                                  percent: 100 * counts[kind] / pairs.length })),
-        families: [...families].map(([family, n]) => ({ family, n, name: family_name(family),
-                                                        mismatch: family === "cWW" }))
+        bar: PAIR_GROUPS.map(([kind, label]) => ({ kind, n: counts[kind], percent: 100 * counts[kind] / pairs.length,
+                                                   label: kind === "au" ? au_label(a_with) : label })),
+        families: [...families].map(([family, n]) => ({ family, n, name: family_name(family) }))
                                .sort((x, y) => y.n - x.n || x.family.localeCompare(y.family)),
         sentence: self_paired(link_list),
         links: link_list.map((l) => ({ ...l, text: `${l.a === l.b ? `${l.a} with itself` : `${l.a} with ${l.b}`}: `
@@ -706,8 +710,9 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
 // so each colour sits beside its name. A-form, B-form and transitions are a
 // family each; the few-member classes share "Other shapes"; steps with no
 // class (NtC code NANT) come last, apart, as they are not a shape. Within a family the commonest class leads, and within
-// a class the commonest NtC. `background` is CSS drawing the same swatch as
-// the sequence map's bar; `key` is every class, for the colour fold-out.
+// a class the commonest NtC. Each NtC carries `background`, CSS drawing the
+// same two halves as the sequence map's bar in DNATCO's colours; `key` is
+// DNATCO's nine conformer classes, for the colour fold-out.
 const NTC_FAMILIES = [
     ["A-form family", ["AAA", "AAw", "AAu"]],
     ["B-form family", ["BBB", "BBw", "miB", "BB2"]],
@@ -719,34 +724,24 @@ const NTC_FAMILIES = [
 export function ntc_section(classes) {
     let by_cana = new Map();
     for (const c of classes) {
-        let cana = c.ntc === "NANT" || !CANA[c.cana] ? "NAN" : c.cana;
+        let cana = c.ntc === "NANT" || !CANA_NAMES[c.cana] ? "NAN" : c.cana;
         if (!by_cana.has(cana)) by_cana.set(cana, []);
-        by_cana.get(cana).push({ ntc: c.ntc, n: Number(c.n) });
+        by_cana.get(cana).push({ ntc: c.ntc, n: Number(c.n), background: ntc_background(c.ntc) });
     }
     let by_count = (x, y) => y.n - x.n || x.ntc.localeCompare(y.ntc);
     let families = [];
     for (const [name, codes] of NTC_FAMILIES) {
         let list = codes.filter((code) => by_cana.has(code)).map((code) => {
             let ntcs = by_cana.get(code).sort(by_count);
-            return { cana: code, name: CANA_NAMES[code], background: cana_background(code),
-                     n: ntcs.reduce((t, c) => t + c.n, 0), ntcs };
+            return { cana: code, name: CANA_NAMES[code], n: ntcs.reduce((t, c) => t + c.n, 0), ntcs };
         });
         list.sort((x, y) => y.n - x.n);
         if (list.length) families.push({ name, n: list.reduce((t, c) => t + c.n, 0), classes: list });
     }
     let unassigned = by_cana.get("NAN")?.reduce((t, c) => t + c.n, 0) ?? 0;
     let assigned = families.reduce((t, f) => t + f.n, 0) - unassigned;
-    let key = Object.keys(CANA).map((code) => ({ cana: code, name: CANA_NAMES[code], background: cana_background(code) }));
+    let key = Object.entries(NTC_CLASS_COLOURS).map(([code, colour]) => ({ code, name: NTC_CLASS_NAMES[code], background: colour }));
     return { families, assigned, unassigned, key };
-}
-
-export function cana_background(code) {
-    let c = CANA[code] ?? CANA.NAN;
-    let [a, b] = c.fill;
-    if (b) return `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
-    if (c.look === "stripe") return `repeating-linear-gradient(45deg, ${a} 0 2.5px, var(--ntc-gap) 2.5px 4px)`;
-    if (c.look === "dot") return `radial-gradient(circle, var(--ntc-gap) 0.9px, transparent 1.1px) 0 0 / 4px 4px, ${a}`;
-    return a;
 }
 
 // ---- Sequence map ----------------------------------------------------------
@@ -772,14 +767,20 @@ export function nucleotide_letter(r) {
 }
 
 // One dot-bracket line: brackets of a deeper kind for a pair that crosses one
-// already drawn in the same row.
-function bracket_line(width, seps, pairs) {
+// already drawn in the same row. Pairs come in by their first base, and the
+// pairs of one level never cross, so the ones still open there are nested:
+// p crosses one of them exactly when the innermost closes before p does.
+// One stack of open pairs per level keeps this linear, not quadratic.
+export function bracket_line(width, seps, pairs) {
     let chars = Array.from({ length: width }, (_, i) => (seps.has(i) ? LBN_SEP : "."));
-    let drawn = [];
+    let open = [];
     for (const p of [...pairs].sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
         let level = 0;
-        while (drawn.some(([q, l]) => l === level && crosses(p, q))) level++;
-        drawn.push([p, level]);
+        for (;; level++) {
+            let stack = open[level] ??= [];
+            while (stack.length && stack.at(-1)[1] <= p[0]) stack.pop();
+            if (!stack.length || !crosses(p, stack.at(-1))) { stack.push(p); break; }
+        }
         let kind = LBN_BRACKETS[Math.min(level, LBN_BRACKETS.length - 1)];
         chars[p[0]] = kind[0];
         chars[p[1]] = kind[1];

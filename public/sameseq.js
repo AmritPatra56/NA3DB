@@ -4,7 +4,8 @@
 // chain B's below, then the base pairs of both in dot-bracket rows, every
 // difference numbered on the picture and said in words underneath.
 
-import { CANA, CANA_GROUPS, CANA_NAMES, ROW_COLOUR, OTHER_ROW, el, html, patterns, bar, swatch } from "./seqmap.js";
+import { expand, collapse } from "./expand.js";
+import { ROW_COLOUR, OTHER_ROW, el, html, bar, swatch, class_key, KEY_NOTE } from "./seqmap.js";
 
 const W = 14, W_FULL = 20;           // one column, in the section and full screen
 const MARK = 17, RULER = 14, BAR = 26, SEQ = 20, GAP = 8, ROW = 16;
@@ -79,7 +80,7 @@ function draw_group(box, group, k, many) {
                 <button type="button" class="ss_swap" title="Swap A and B" aria-label="Swap A and B">⇄</button>
                 <label class="ss_pick"><span class="ss_ab ss_ab_b">B</span><select data-side="b" aria-label="Chain B"></select></label>
                 <button type="button" class="ss_run">Compare</button>
-                <button type="button" class="ss_full" hidden>⤢ Full screen</button>
+                <button type="button" class="ss_full" aria-expanded="false" hidden>⤢ Expand</button>
             </div>
             <div class="ss_panel" hidden></div>
         </div>`;
@@ -117,7 +118,7 @@ function draw_group(box, group, k, many) {
         if (st.open) run(st);
     });
     wrap.querySelector(".ss_run").addEventListener("click", () => run(st));
-    wrap.querySelector(".ss_full").addEventListener("click", () => open_full(st));
+    wrap.querySelector(".ss_full").addEventListener("click", (event) => open_full(st, event.currentTarget));
 }
 
 function fill_selects(st) {
@@ -179,7 +180,7 @@ function draw_panel(st) {
         <details class="ss_how">
             <summary>How to read the picture</summary>
             <ul>
-                <li><b>Backbone:</b> A's steps stand up from the sequence, B's hang down. Colour is the shape (CANA class), height is how sure (confal).</li>
+                <li><b>Backbone:</b> A's steps stand up from the sequence, B's hang down. Colour is the shape, in DNATCO's NtC colours (5′ half, 3′ half), height is how sure (confal).</li>
                 <li><b>Base pairs:</b> the pairs of both chains in dot-bracket rows, in the colours of the sequence map.
                     <span class="ss_swatch ss_only_a">( )</span> only in A, <span class="ss_swatch ss_only_b">( )</span> only in B,
                     <span class="ss_swatch ss_na">( )</span> cannot be compared, one of its nucleotides is not modelled in the other chain.</li>
@@ -261,7 +262,6 @@ function draw_chart(st) {
     d.rows.forEach((r, k) => label(row_y(k) + 4, r.overflow ? `${r.name} +` : r.name, r.overflow ? "seqmap_over" : "", ROW_COLOUR[r.name] ?? OTHER_ROW));
 
     let svg = scroll.querySelector(".ss_svg");
-    patterns(svg);
     st.hl = el("g", { class: "ss_hl" }, svg);
 
     // Ruler: A's author numbers every ten, where B numbers the same.
@@ -278,10 +278,10 @@ function draw_chart(st) {
     let h_of = (c) => 4 + (BAR - 6) * Math.max(0, Math.min(100, c ?? 0)) / 100;
     let ups = el("g", {}, svg);
     el("line", { x1: 0, x2: width, y1: y_a + 0.5, y2: y_a + 0.5, class: "seqmap_base" }, ups);
-    for (const [i, cana, confal, ntc] of d.steps.a) bar(ups, (i + 1) * w, bw, h_of(confal), y_a, ntc ? cana : "NAN");
+    for (const [i, cana, confal, ntc] of d.steps.a) bar(ups, (i + 1) * w, bw, h_of(confal), y_a, ntc);
     let downs = el("g", { transform: `translate(0 ${y_b}) scale(1 -1)` }, svg);
     el("line", { x1: 0, x2: width, y1: -0.5, y2: -0.5, class: "seqmap_base" }, downs);
-    for (const [i, cana, confal, ntc] of d.steps.b) bar(downs, (i + 1) * w, bw, h_of(confal), 0, ntc ? cana : "NAN");
+    for (const [i, cana, confal, ntc] of d.steps.b) bar(downs, (i + 1) * w, bw, h_of(confal), 0, ntc);
 
     // Sequence: modified nucleotides in lower case; a nucleotide one chain
     // does not model is faint, with a mark under it on that side.
@@ -331,11 +331,10 @@ function draw_chart(st) {
         if (g) select(st, Number(g.dataset.n), false);
     });
 
-    let used = [...new Set([...d.steps.a, ...d.steps.b].map(([, cana, , ntc]) => (ntc && CANA[cana] ? cana : "NAN")))];
     st.compare.querySelector(".ss_key").innerHTML = `
-        <span class="seqmap_key_title">Backbone shape, by CANA class</span>
-        ${CANA_GROUPS.map(([name, codes]) => codes.some((c) => used.includes(c))
-            ? `<span class="seqmap_group"><b>${name}</b>${codes.filter((c) => used.includes(c)).map((c) => `<span>${swatch(c)}${c} ${CANA_NAMES[c]}</span>`).join("")}</span>` : "").join("")}
+        <span class="seqmap_key_title">Backbone shape, in DNATCO's NtC colours</span>
+        <span class="seqmap_group">${class_key([...d.steps.a, ...d.steps.b].map((s) => s[3]))}</span>
+        ${KEY_NOTE}
         <span class="seqmap_key_title">Pairs</span>
         <span class="seqmap_group"><span><i style="background:${ROW_COLOUR.WC}"></i>WC: Watson–Crick</span><span><i style="background:${ROW_COLOUR.cWW}"></i>cWW: other cis W–W</span><span><i style="background:${OTHER_ROW}"></i>other families</span><span><i class="ss_only_a"></i>only in A</span><span><i class="ss_only_b"></i>only in B</span></span>`;
     hover_setup(st, svg, height);
@@ -361,10 +360,10 @@ function hover_setup(st, svg, height) {
     for (const x of d.diffs) for (const i of x.cols) if (!at[i].includes(x.n)) at[i].push(x.n);
     let name = (i) => `${d.cols[i][0].toUpperCase()}${d.cols[i][1] === d.cols[i][2] ? d.cols[i][1] : i + 1}`;
     let step_text = (s) => !s ? `<span class="ss_dim">no step</span>`
-        : s[3] ? `${swatch(s[1])} <b>${html(s[3])}</b> ${html(s[1])} · confal ${s[2] === null ? "?" : Math.round(s[2])}`
-        : `${swatch("NAN")} <span class="ss_dim">no NtC class</span>`;
+        : s[3] ? `${swatch(s[3])} <b>${html(s[3])}</b> ${html(s[1])} · confal ${s[2] === null ? "?" : Math.round(s[2])}`
+        : `${swatch(null)} <span class="ss_dim">no NtC class</span>`;
     let hov = el("g", { class: "ss_hover" }, svg);
-    svg.insertBefore(hov, svg.firstChild.nextSibling);
+    svg.insertBefore(hov, svg.firstChild);
     let info = st.compare.querySelector(".ss_info");
     let pinned = null;
     st.show = (i) => show(i);
@@ -444,37 +443,39 @@ function select(st, n, from_list, scroll = true) {
     }
 }
 
-// ---- Full screen -------------------------------------------------------------------
+// ---- Expanded -------------------------------------------------------------------
 
 let dialog = null;
-function open_full(st) {
+function open_full(st, button) {
     if (!dialog) {
         dialog = document.createElement("dialog");
         dialog.className = "arc_viewer ss_dialog";
-        dialog.setAttribute("aria-label", "Compare two chains, full screen");
+        dialog.setAttribute("aria-label", "Compare two chains, expanded");
         dialog.innerHTML = `
             <div class="av_box">
                 <div class="av_top">
                     <strong>Compare</strong>
                     <span class="av_title">Same sequence, two chains</span>
-                    <button type="button" class="smd_close">Close ✕</button>
                 </div>
                 <div class="ss_dialog_body"></div>
             </div>`;
         document.body.append(dialog);
-        dialog.querySelector(".smd_close").addEventListener("click", () => dialog.close());
         dialog.addEventListener("close", () => {
-            document.documentElement.style.overflow = "";
             let back = dialog.state;
             back.wrap.append(back.compare);
             back.w = W;
             if (back.data) draw_chart(back);
         });
     }
+    // Another comparison is open: put it back first, then open this one.
+    if (dialog.open && dialog.state !== st) {
+        dialog.addEventListener("close", () => open_full(st, button), { once: true });
+        collapse();
+        return;
+    }
+    if (!expand(dialog, st.wrap, button)) return;
     dialog.state = st;
     dialog.querySelector(".ss_dialog_body").append(st.compare);
-    document.documentElement.style.overflow = "hidden";
-    dialog.showModal();
     st.w = W_FULL;
     if (st.data) draw_chart(st);
 }
@@ -506,14 +507,12 @@ for (const box of document.querySelectorAll(".sameseq")) {
     seen.observe(box);
 }
 
-// The comparison's guide points to the sequence map's: open it there, out of
-// full screen if the comparison is in it.
+// The comparison's guide points to the sequence map's: open it there.
 document.addEventListener("click", (event) => {
     let link = event.target.closest(".ss_guide_link");
     let guide = link && document.getElementById("sequence-map-guide");
     if (!guide) return;
     event.preventDefault();
-    link.closest("dialog")?.close();
     guide.open = true;
     guide.scrollIntoView({ behavior: "smooth", block: "start" });
 });

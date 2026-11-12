@@ -8,7 +8,7 @@ import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citations, find_entry, search_entries, build_where,
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
-import { detail_rows, molecule_groups, structure_sections, ntc_section, cana_background, PAGE_GROUPS, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
+import { detail_rows, molecule_groups, structure_sections, ntc_section, PAGE_GROUPS, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
          MODIFIED_ROWS_SHOWN,
          SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of, base_pair_export, base_pairs_csv,
          entry_fasta, fasta_choices } from "./detail.js";
@@ -1141,19 +1141,29 @@ test("an entry with no pairs has no section", async () => {
     assert.equal(base_pair_section(await with_pairs([])), null);
 });
 
-const pair = (c1, c2, kind, family = kind === "nc" ? "tWH" : "cWW") =>
-    ({ chain_1: c1, chain_2: c2, kind, family, res_1: "G1", res_2: "C2" });
+const pair = (c1, c2, kind, family = kind === "nc" ? "tWH" : "cWW", bases = kind === "gu" ? "GU" : "CG") =>
+    ({ chain_1: c1, chain_2: c2, kind, family, bases, res_1: "G1", res_2: "C2" });
 
-test("the bar counts the three kinds and the chips only the non-canonical families", () => {
-    let s = base_pair_section([pair("B", "B", "wc"), pair("B", "B", "wc"), pair("B", "B", "gu"),
-                               pair("B", "B", "nc", "tSS"), pair("B", "B", "nc", "cWW"),
-                               pair("B", "B", "nc", "cWW")]);
-    assert.equal(s.total, 6);
-    assert.deepEqual(s.bar.map((b) => [b.kind, b.n]), [["wc", 2], ["gu", 1], ["nc", 3]]);
-    assert.deepEqual(s.families.map((f) => [f.family, f.n, f.mismatch]), [["cWW", 2, true], ["tSS", 1, false]]);
+test("the bar counts four groups and the chips only the families of the Others", () => {
+    let s = base_pair_section([pair("B", "B", "wc", "cWW", "AU"), pair("B", "B", "wc"), pair("B", "B", "wc"),
+                               pair("B", "B", "gu"), pair("B", "B", "nc", "tSS", "AG"),
+                               pair("B", "B", "nc", "cWW", "AG"), pair("B", "B", "nc", "cWW", "AC")]);
+    assert.equal(s.total, 7);
+    assert.deepEqual(s.bar.map((b) => [b.kind, b.label, b.n]),
+                     [["au", "cWW A–U", 1], ["gc", "cWW G–C", 2], ["gu", "cWW G–U", 1], ["nc", "Others", 3]]);
+    assert.deepEqual(s.families.map((f) => [f.family, f.n]), [["cWW", 2], ["tSS", 1]]);
+    assert.ok(s.families.every((f) => !("mismatch" in f)));
     assert.equal(s.families[1].name, "trans sugar / sugar");
-    assert.equal(s.families.reduce((n, f) => n + f.n, 0), s.bar[2].n);
+    assert.equal(s.families.reduce((n, f) => n + f.n, 0), s.bar[3].n);
     assert.equal(s.noncanonical.length, 3);
+});
+
+test("A–U says A–T for DNA and A–U/T when an entry has both", () => {
+    let label = (...bases) => base_pair_section(bases.map((b) => pair("A", "A", "wc", "cWW", b))).bar[0].label;
+    assert.equal(label("AU"), "cWW A–U");
+    assert.equal(label("AT", "CG"), "cWW A–T");
+    assert.equal(label("AT", "AU"), "cWW A–U/T");
+    assert.equal(label("CG"), "cWW A–U");
 });
 
 test("copies that each fold on themselves read as one sentence", () => {
@@ -1410,10 +1420,13 @@ test("NtC steps are counted by CANA class, each class named, no class last and a
                      "a class we do not know is shown as no class, not dropped");
     assert.equal(t.assigned, 72);
     assert.equal(t.unassigned, 5);
-    assert.equal(t.key.length, 15, "the fold-out shows every class");
-    assert.ok(t.key.every((k) => k.name && k.background));
-    assert.equal(cana_background("AAA"), "#0072B2");
-    assert.match(cana_background("A-B"), /linear-gradient\(90deg, #0072B2 50%, #E69F00 50%\)/);
+    assert.deepEqual(t.key.map((k) => k.code), ["A", "B", "BII", "miB", "Z", "IC", "OPN", "SYN", "N"],
+                     "the fold-out shows DNATCO's nine classes");
+    assert.ok(t.key.every((k) => k.name && /^#[0-9A-F]{6}$/.test(k.background)));
+    let chip = (ntc) => t.families.flatMap((f) => f.classes).flatMap((c) => c.ntcs).find((x) => x.ntc === ntc);
+    assert.equal(chip("AA00").background, "#FFC1C1", "each NtC carries its DNATCO colour");
+    assert.equal(chip("ZZ01").background, "#01F60E");
+    assert.equal(chip("NANT").background, "#F2F2F2");
     assert.deepEqual(ntc_section([]).families, []);
 });
 
