@@ -5,7 +5,7 @@ import { search_entries, export_entries, find_entry, query_problem,
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
-import { did_you_mean } from "./suggest.js";
+import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
@@ -254,6 +254,17 @@ app.get("/api/ligands", async (req, res) => {
 // The non-standard nucleotides the Non-standard residue box can suggest.
 app.get("/api/nonstandard_residues", async (req, res) => {
     res.json(await nonstandard_suggestions());
+});
+
+// What the search box can offer as you type: authors, organisms, molecules
+// and ids the database holds, each with the count picking it returns.
+app.get("/api/box_suggestions", async (req, res) => {
+    let problem = query_problem(req.query);
+    if (problem) {
+        res.status(400).json({ error: problem });
+        return;
+    }
+    res.json(await box_suggestions(req.query));
 });
 
 // One page of entries, narrowed by whatever filters were passed.
@@ -520,6 +531,7 @@ if (import.meta.main) {
 
     let server = app.listen(port, () => {
         console.log(`app is running on port ${port}`);
+        warm_box_names();
     });
 
     // In a container node is process 1, which ignores SIGTERM unless told

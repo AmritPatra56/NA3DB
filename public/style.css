@@ -2352,6 +2352,64 @@ input::placeholder {
 .suggest_list small { color: var(--text-dim); }
 .suggest_list em { font-style: normal; color: var(--text-muted); }
 
+/* Names under the main search box, grouped, each with its count. Placed by
+   box_suggest.js exactly under the box. */
+.landing_search, .top_search_box { position: relative; }
+.box_suggest {
+    position: absolute;
+    z-index: 30;
+    margin: 0;
+    padding: 4px 0;
+    max-height: min(420px, 60vh);
+    overflow-y: auto;
+    list-style: none;
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    box-shadow: 0 8px 24px rgb(var(--shadow-rgb) / 0.12);
+    font-size: 13px;
+}
+.box_suggest_group {
+    padding: 8px 12px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.box_suggest li[role="option"] {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+.box_suggest li[role="option"]:hover,
+.box_suggest li[aria-selected="true"] { background: var(--bg-primary); }
+.box_suggest li[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--accent); }
+.box_suggest_name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.box_suggest_name mark { background: none; color: inherit; font-weight: 700; }
+.box_suggest_also { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 12px; }
+.box_suggest small {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.box_suggest_foot {
+    margin-top: 4px;
+    padding: 6px 12px 4px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+}
+/* A finger needs a taller row than a pointer. */
+@media (hover: none) {
+    .box_suggest li[role="option"] { min-height: 44px; align-items: center; }
+}
+
 /* The base-pair count with its CSV download at the far end. */
 .pair_head { display: flex; align-items: center; gap: 8px; }
 .pair_csv { margin-left: auto; }
@@ -2521,6 +2579,36 @@ input::placeholder {
     .page_arrow { min-width: 40px; min-height: 40px; font-size: 14px; }
 }
 
+/* <---------------------how the box was read---------------------> */
+
+.search_note {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.note_tag {
+    display: inline-block;
+    margin-right: 4px;
+    padding: 0 8px;
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background-color: var(--accent-tint);
+    border: 1px solid var(--accent-line);
+}
+
+@media (max-width: 1023px) {
+    .search_note { padding: 8px 16px; }
+}
+
 /* <---------------------filters in use---------------------------> */
 
 .active_filters {
@@ -2579,36 +2667,6 @@ input::placeholder {
 
     .sequence_copy, .sequence_fasta, .entry_fasta > summary,
     a.entry_fasta, .pair_csv { min-height: 36px; padding-inline: 10px; }
-/* <---------------------how the box was read---------------------> */
-
-.search_note {
-    flex-shrink: 0;
-    margin: 0;
-    padding: 8px 24px;
-    border-bottom: 1px solid var(--border);
-
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--text-muted);
-}
-
-.note_tag {
-    display: inline-block;
-    margin-right: 4px;
-    padding: 0 8px;
-    border-radius: 999px;
-
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--accent-ink);
-    background-color: var(--accent-tint);
-    border: 1px solid var(--accent-line);
-}
-
-@media (max-width: 1023px) {
-    .search_note { padding: 8px 16px; }
-}
-
 
     .molecule_group summary,
     .sequence summary,

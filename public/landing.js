@@ -61,6 +61,10 @@ async function count(term) {
     }
 }
 
+// Names the database holds, under the box. A pick is searched at once. Only
+// if box_suggest.js loaded: the count works without it.
+if (typeof box_suggest === "function") box_suggest(box, { picked: () => box.form.requestSubmit() });
+
 box.addEventListener("input", function () {
     let term = box.value.trim();
 

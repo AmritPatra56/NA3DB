@@ -748,6 +748,21 @@ top_box.addEventListener("input", function () {
     count_soon();
 });
 
+// Names under the box as you type, counted with every other filter in use.
+// A pick fills the box with the quoted name and searches.
+if (typeof box_suggest === "function") box_suggest(top_box, {
+    params() {
+        let params = filters_to_params(read_filters());
+        params.delete("q");
+        if (current_match) params.set("match", current_match);
+        return params;
+    },
+    picked() {
+        box_readout.textContent = "";
+        run_search(1);
+    }
+});
+
 // A suggestion keeps every other filter: it changes the one box and searches.
 box_readout.addEventListener("click", function (e) {
     let pick = e.target.closest("button[data-value]");

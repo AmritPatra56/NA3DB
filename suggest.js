@@ -197,3 +197,171 @@ async function search_box_offers(query_params, q) {
         .slice(0, MAX_OFFERED)
         .map(({ q, total }) => ({ field: "q", value: q, total }));
 }
+
+// ---------------------------------------------------------------------------
+// Suggestions under the search box, as you type: the authors, organisms and
+// molecules the database holds whose name has a word starting with the text,
+// and entries whose id starts with it. RCSB, PDBe, UniProt and NAKB all do
+// this; the rules here are the ones that keep it honest:
+//   - only names that exist, written exactly as stored ("Berman, D."), never
+//     merged or expanded: nobody can tell whether Chen, S. is Chen, S.J.
+//   - each with the count picking it returns, counted by count_entries with
+//     the filters in use, so the number is the search; 0 is never offered
+//   - picking fills the box with the name in quotes, an exact phrase; Enter
+//     without picking still runs what was typed
+
+// Lines of the doc view: one author, organism or molecule per line, with the
+// entries holding each. Case-folded, keeping the commonest spelling.
+const NAME_LINES = `
+    SELECT 'authors' AS kind, trim(x) AS name, array_agg(DISTINCT id) AS ids
+      FROM doc, unnest(string_to_array(authors, E'\\n')) x WHERE trim(x) <> '' GROUP BY 2
+    UNION ALL
+    SELECT 'molecules', trim(x), array_agg(DISTINCT id)
+      FROM doc, unnest(string_to_array(entities, E'\\n')) x WHERE trim(x) <> '' GROUP BY 2`;
+
+let names = null;
+let names_checked = 0;
+let names_pending = null;
+
+// Read once at start-up, so the first person to type does not wait ~1 s.
+export const warm_box_names = (q = query) => box_names(q).catch(() => {});
+
+async function box_names(q) {
+    if (names && Date.now() - names_checked < CHECK_MS) return names;
+    names_pending ??= (async () => {
+        try {
+            let sig = (await q(SIGNATURE)).rows[0].s;
+            if (!names || names.signature !== sig) {
+                let by = { authors: new Map(), molecules: new Map() };
+                for (const r of (await q(NAME_LINES)).rows) {
+                    // A quote cannot sit inside a quoted phrase, and a long
+                    // systematic name ("[[[(2R,3S,4R,5R)-5-(6-aminopurin-...")
+                    // is nothing anyone types.
+                    if (r.name.includes("\"") || r.name.length > LONGEST_NAME) continue;
+                    let key = r.name.toLowerCase();
+                    let seen = by[r.kind].get(key);
+                    if (!seen) by[r.kind].set(key, { name: r.name, ids: new Set(r.ids), best: r.ids.length });
+                    else {
+                        r.ids.forEach((id) => seen.ids.add(id));
+                        if (r.ids.length > seen.best) Object.assign(seen, { name: r.name, best: r.ids.length });
+                    }
+                }
+                let ids = (await q(`SELECT id FROM doc ORDER BY id`)).rows.map((r) => r.id);
+                names = {
+                    signature: sig, ids,
+                    authors:   [...by.authors.values()].map((n) => ({ name: n.name, held: n.ids.size })),
+                    molecules: [...by.molecules.values()].map((n) => ({ name: n.name, held: n.ids.size }))
+                };
+            }
+            names_checked = Date.now();
+            return names;
+        } finally {
+            names_pending = null;
+        }
+    })();
+    return names_pending;
+}
+
+const LONGEST_NAME = 60;
+export const BOX_MIN_LENGTH = 3;
+const PER_GROUP = 3;
+// Tried per group before counting, so filters that zero some still leave three.
+const TRIED = 6;
+const IDS_SHOWN = 4;
+
+// 0 when the name starts with the text, 1 when a later word does, else null.
+// Words split on anything not a letter or digit, so "west" finds
+// Patterson-West, J. after Westhof, E.
+export function word_start(name, text) {
+    let lower = name.toLowerCase();
+    if (lower.startsWith(text)) return 0;
+    let at = lower.indexOf(text);
+    while (at > 0) {
+        if (!/[a-z0-9]/.test(lower[at - 1])) return 1;
+        at = lower.indexOf(text, at + 1);
+    }
+    return null;
+}
+
+// "Jiri Sponer", "H. M. Berman": a typed person, as the stored names it can
+// be. Family name whole, initials in order from the first.
+function as_person(text) {
+    let words = text.split(/\s+/).filter(Boolean);
+    if (words.length < 2 || words.length > 3 || !words.every((w) => /^[a-z][a-z'-]*\.?$/.test(w))) return null;
+    let family = words.at(-1);
+    if (family.endsWith(".") || family.length < 2) return null;
+    return { family, initials: words.slice(0, -1).map((w) => w[0]).join("") };
+}
+
+function is_person(name, person) {
+    let [family, given = ""] = name.toLowerCase().split(/,\s*/);
+    return family === person.family && given.replace(/[^a-z]/g, "").startsWith(person.initials);
+}
+
+// The best few, one per spelling: tRNA-fMet and tRNA(fMet) are one offer.
+function best(rows, rank, limit) {
+    let seen = new Set();
+    return rows.map((r) => [rank(r), r])
+        .filter(([k]) => k !== null)
+        .sort(([ka, a], [kb, b]) => ka - kb || b.held - a.held || a.name.localeCompare(b.name))
+        .map(([, r]) => r)
+        .filter((r) => {
+            let key = r.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+            return !seen.has(key) && seen.add(key);
+        })
+        .slice(0, limit);
+}
+
+export async function box_suggestions(query_params, q = query) {
+    let text = clean_text(String(query_params.q ?? ""));
+    // A quote means the reader is writing the exact phrase themselves.
+    if (text.length < BOX_MIN_LENGTH || text.includes("\"")) return { text, groups: [] };
+    let lower = text.toLowerCase();
+
+    let held = await box_names(q);
+    let person = as_person(lower);
+    let rank = (r) => word_start(r.name, lower) ?? (person && is_person(r.name, person) ? 0 : null);
+
+    let organisms = (await organism_suggestions("source_organisms")).map((o) => ({
+        name: o.code, also: o.name, held: o.entries
+    }));
+    // Mouse finds Mus musculus by its common name, as taxonomy.js reads one:
+    // by its last word, where English puts the thing named, so mouse finds
+    // "house mouse" but not Arabidopsis, the "mouse-ear cress".
+    let organism_rank = (o) => {
+        let common = (o.also ?? "").toLowerCase().split(/,\s*/).filter(Boolean);
+        // Named whole, by either name, first: human is Homo sapiens before
+        // it is Human immunodeficiency virus.
+        if (o.name.toLowerCase() === lower || common.includes(lower)) return -1;
+        let own = word_start(o.name, lower);
+        if (own !== null) return own;
+        return common.some((c) => c.startsWith(lower) && !/[ -]/.test(c.slice(lower.length).trimEnd())
+                                  || c.split(" ").at(-1).startsWith(lower)) ? 1 : null;
+    };
+
+    let candidates = {
+        authors:   best(held.authors, rank, TRIED),
+        organisms: best(organisms, organism_rank, TRIED),
+        molecules: best(held.molecules, (r) => word_start(r.name, lower), TRIED)
+    };
+
+    // Counted as the search the pick runs: the name quoted, every other
+    // filter as it is. In parallel; each count is a few milliseconds.
+    let counted = await Promise.all(Object.entries(candidates).map(async ([kind, rows]) => {
+        let totals = await Promise.all(rows.map((r) => count_entries({ ...query_params, q: `"${r.name}"` })));
+        let items = rows.map((r, i) => ({ value: `"${r.name}"`, label: r.name, ...(r.also ? { also: r.also } : {}), total: totals[i] }))
+            .filter((item) => item.total > 0)
+            .slice(0, PER_GROUP);
+        return { kind, items };
+    }));
+
+    // An id opens its entry, so it is not counted: it is one entry.
+    let groups = [];
+    if (/^[0-9][a-z0-9]{2,3}$/i.test(text)) {
+        let upper = text.toUpperCase();
+        let ids = held.ids.filter((id) => id.startsWith(upper)).slice(0, IDS_SHOWN);
+        if (ids.length) groups.push({ kind: "entries", items: ids.map((id) => ({ value: id, label: id, href: `/structure/${id}` })) });
+    }
+    groups.push(...counted.filter((g) => g.items.length));
+    return { text, groups };
+}

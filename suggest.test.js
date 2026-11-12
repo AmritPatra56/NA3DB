@@ -4,7 +4,9 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { close } from "./db.js";
 import { count_entries } from "./search.js";
-import { did_you_mean, distance, closest } from "./suggest.js";
+import { did_you_mean, distance, closest, box_suggestions, word_start } from "./suggest.js";
+import { search_entries } from "./search.js";
+import { query } from "./db.js";
 
 after(() => close());
 
@@ -59,4 +61,88 @@ test("nothing is offered for a word that is found, nonsense, or an empty box", a
 
 test("Excludes offers nothing: finding nothing there is not a typo", async () => {
     assert.deepEqual(await did_you_mean({ q: "ribozome", match: "excludes" }), []);
+});
+
+
+// --- suggestions under the search box ---------------------------------------
+
+const offers = async (params) => (await box_suggestions(params)).groups;
+
+// Typed texts the test data answers: authors, organisms, molecules, an id.
+const TYPED = ["gra", "seraj", "west", "mouse", "human", "coli", "trna", "rna", "ribo", "hiv", "dna"];
+
+test("every offered count is what searching the offer returns, with other filters kept", async () => {
+    let tried = 0;
+    for (const extra of [{}, { polymer_type: "RNA" }, { match: "excludes" }]) {
+        for (const q of TYPED) {
+            for (const group of await offers({ ...extra, q })) {
+                for (const item of group.items.filter((i) => !i.href)) {
+                    let found = await search_entries({ ...extra, q: item.value });
+                    assert.equal(item.total, found.total, `${q} -> ${item.value} ${JSON.stringify(extra)}`);
+                    assert.ok(item.total > 0, `${item.value} offered with 0`);
+                    tried++;
+                }
+            }
+        }
+    }
+    assert.ok(tried > 20, `only ${tried} offers checked`);
+});
+
+test("offers are names the database holds, quoted as typed into the box, at most three a group", async () => {
+    let lines = (await query(`SELECT string_agg(authors || E'\\n' || entities, E'\\n') AS t FROM doc`)).rows[0].t
+        .split("\n").map((l) => l.trim().toLowerCase());
+    let held = new Set(lines);
+    for (const q of TYPED) {
+        for (const group of await offers({ q })) {
+            assert.ok(group.items.length <= (group.kind === "entries" ? 4 : 3));
+            for (const item of group.items) {
+                if (group.kind === "authors" || group.kind === "molecules") {
+                    assert.ok(held.has(item.label.toLowerCase()), `${item.label} is not stored`);
+                    assert.equal(item.value, `"${item.label}"`);
+                }
+            }
+        }
+    }
+});
+
+test("a word is matched where it starts: berman is not Lieberman", async () => {
+    assert.equal(word_start("Westhof, E.", "west"), 0);
+    assert.equal(word_start("Patterson-West, J.", "west"), 1);
+    assert.equal(word_start("Lieberman, P.", "berman"), null);
+    assert.equal(word_start("tRNA", "rna"), null);
+    for (const q of ["gra", "west", "rna"]) {
+        for (const group of await offers({ q })) {
+            for (const item of group.items) {
+                let words = `${item.label} ${item.also ?? ""}`.toLowerCase().split(/[^a-z0-9]+/);
+                assert.ok(words.some((w) => w.startsWith(q)), `${q} offered ${item.label}`);
+            }
+        }
+    }
+});
+
+test("a common name offers its organism, read the way the search reads it", async () => {
+    let organisms = async (q) => (await offers({ q })).find((g) => g.kind === "organisms")?.items.map((i) => i.label) ?? [];
+    // Named whole, it comes first: human is Homo sapiens before any virus.
+    assert.equal((await organisms("human"))[0], "Homo sapiens");
+    // "mouse-ear cress" is Arabidopsis, which mouse does not mean.
+    assert.ok(!(await organisms("mouse")).includes("Arabidopsis thaliana"));
+});
+
+test("a typed person offers the stored name: Lukas Grass is Grass, L.M.", async () => {
+    let authors = (await offers({ q: "Lukas Grass" })).find((g) => g.kind === "authors");
+    assert.deepEqual(authors.items.map((i) => i.label), ["Grass, L.M."]);
+    assert.deepEqual(await offers({ q: "Zoe Grass" }), []);
+});
+
+test("an id offers the entries it starts, as links", async () => {
+    let id = (await query(`SELECT id FROM doc ORDER BY id LIMIT 1`)).rows[0].id;
+    let entries = (await offers({ q: id.slice(0, 3) })).find((g) => g.kind === "entries");
+    assert.ok(entries.items.some((i) => i.label === id && i.href === `/structure/${id}`));
+});
+
+test("nothing is offered under three letters, or once a quote is typed", async () => {
+    assert.deepEqual(await offers({ q: "tr" }), []);
+    assert.deepEqual(await offers({ q: "\"west" }), []);
+    assert.deepEqual(await offers({ q: "“west”" }), []);
+    assert.deepEqual(await offers({}), []);
 });
