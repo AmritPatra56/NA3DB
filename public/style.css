@@ -588,12 +588,6 @@ body {
     padding: 10px 0 2px 12px;
     border-left: 2px solid var(--ok-line);
 }
-.range_note {
-    margin: 6px 0 0;
-    font-size: 11px;
-    line-height: 1.5;
-    color: var(--text-dim);
-}
 
 
 /* <------------------range row-------------> */
@@ -1302,7 +1296,7 @@ input::placeholder {
 /* Browse: three cards, one question each. The bar is the row's count against
    the largest in its card, so the cards compare within themselves only. */
 .browse_lead {
-    margin-top: 40px;
+    margin-top: 16px;
     font-size: 15px;
     color: var(--text-muted);
 }
@@ -1416,12 +1410,15 @@ input::placeholder {
    the right would push the box left by half its own width. */
 .top_search {
     flex-shrink: 0;
-    height: 72px;
-    padding: 0 24px;
+    min-height: 72px;
+    padding: 8px 24px;
     border-bottom: 1px solid var(--border);
 
     display: grid;
     grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 4px;
+    align-content: center;
     align-items: center;
 }
 
@@ -1433,19 +1430,21 @@ input::placeholder {
     gap: 8px;
 }
 
-/* Under the box, in the strip of bar below it, so nothing moves when it fills. */
+/* Its own row under the box, kept even while empty, so the bar does not grow
+   or shift when the count appears. */
 .top_search_count {
     grid-column: 2;
-    grid-row: 1;
-    align-self: end;
-    margin: 0 0 3px;
+    grid-row: 2;
+    min-height: 16px;
+    margin: 0;
+    line-height: 16px;
 
     font-size: 12px;
     font-weight: 600;
     color: var(--accent);
 }
 
-.top_search_count:empty { display: none; }
+.top_search_count:empty { visibility: hidden; }
 
 .link_button {
     padding: 0;
@@ -1462,6 +1461,7 @@ input::placeholder {
    stays on the centre line. */
 .match_switch {
     grid-column: 1;
+    grid-row: 1 / span 2;
     justify-self: start;
 
     display: flex;
@@ -1555,6 +1555,7 @@ input::placeholder {
    step further in, not the thing most visitors came to do. */
 .filters_toggle {
     grid-column: 3;
+    grid-row: 1 / span 2;
     justify-self: end;
 
     padding: 10px 16px;
@@ -2281,7 +2282,8 @@ input::placeholder {
     }
 
     .top_search_box { grid-column: 1 / -1; grid-row: 1; }
-    .top_search_count { grid-column: 1 / -1; grid-row: 2; align-self: auto; margin: 0; }
+    .top_search_count { grid-column: 1 / -1; grid-row: 2; }
+    .top_search_count:empty { display: none; }
     .match_switch   { grid-column: 1; grid-row: 3; }
     .filters_toggle { grid-column: 2; grid-row: 3; }
 
@@ -2521,7 +2523,7 @@ input::placeholder {
 
     .landing_advanced { display: inline-block; padding: 10px 4px; }
 
-    .browse_lead { margin-top: 28px; }
+    .browse_lead { margin-top: 12px; }
     .browse { grid-template-columns: 1fr; }
     .browse_card a { padding: 9px 0 10px; font-size: 15px; }
 
