@@ -25,7 +25,7 @@
         "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (its NtC in DNATCO's colours, 5′ half and 3′ half; height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
         "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
         "conformation": "Each step from one nucleotide to the next gets an NtC class from DNATCO, such as AA00. Similar classes form a CANA class, such as AAA (A-form), and the list groups them that way. Each NtC is drawn in DNATCO's colours, one for each half of the step; How the colours work has the key. The confal score (0 to 100) says how well the steps fit their classes; the percentile ranks it against other structures. Steps DNATCO could not class (NANT) are counted last.",
-        "citations": "The papers that describe this structure, the primary one first.",
+        "citations": "The paper the depositors name for this structure, the one to cite. Save reference gives a file for EndNote, Zotero, Mendeley (.ris) or LaTeX (.bib); Copy gives it as one line of text. Taken from the publisher's record (Crossref) and PubMed, checked against each other and the PDB: full author names, journal, issue, pages, abstract and keywords. An entry not yet in a paper is saved as unpublished work, linked to its PDB entry.",
         "links": "This entry elsewhere, and its data as files."
     };
 %>
@@ -85,7 +85,11 @@
                         <% for (const row of s.rows ?? []) { %>
                             <div class="detail_field<%= row.key === "title" ? " structure_lead" : "" %>">
                                 <div class="detail_label"><%= row.label %></div>
+                                <% if (row.key === "published" && locals.citation) { %>
+                                <div class="detail_value published_value"><span><%= row.value %></span><%- include("includes/cite_save.ejs", { where: "top", dl }) %></div>
+                                <% } else { %>
                                 <div class="detail_value"><%= row.value %></div>
+                                <% } %>
                             </div>
                         <% } %>
                         <% if (s.id === "conformation" && s.ntc?.families.length) { const t = s.ntc; const fmt = (n) => n.toLocaleString("en-GB"); %>
@@ -226,21 +230,33 @@
                         </div>
                         <% } %>
 
-                        <% if (s.id === "citations") { %>
-                        <% for (const c of citations) { %>
+                        <% if (s.id === "citations" && locals.citation) { const c = citation; %>
                             <div class="citation">
-                                <% if (c.primary) { %><span class="citation_primary">Primary</span><% } %>
                                 <% if (c.title) { %><div class="citation_title"><%= c.title %></div><% } %>
-                                <% if (c.authors.length) { %><div class="citation_authors"><%= c.authors.join(", ") %></div><% } %>
+                                <% if (c.authors.length) { %><div class="citation_authors"><%= c.authors.map(full_name).join(", ") %></div><% } %>
                                 <div class="citation_source">
+                                    <% if (cite_unpublished) { %>Not yet published.<% } else if (c.type === "preprint") { %>
+                                    <i><%= c.journal %></i> preprint<% if (c.year) { %> (<%= c.year %>)<% } %>
+                                    <% } else { %>
+                                    <% if (c.type === "chapter" && c.book_title) { %>In <i><%= c.book_title %></i>.<% } %>
                                     <% if (c.journal) { %><i><%= c.journal %></i><% } %>
-                                    <%= [c.volume, c.pages].filter(Boolean).join(", ") %>
+                                    <%= [c.volume && c.volume + (c.issue ? `(${c.issue})` : ""), c.pages].filter(Boolean).join(", ") %>
                                     <% if (c.year) { %>(<%= c.year %>)<% } %>
+                                    <% } %>
                                 </div>
-                                <% if (c.doi_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.doi_url %>">DOI <%= c.doi %></a><% } %>
-                                <% if (c.pubmed_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.pubmed_url %>">PubMed <%= c.pubmed %></a><% } %>
+                                <% if (c.abstract) { %>
+                                <details class="citation_abstract">
+                                    <summary>Abstract</summary>
+                                    <p><%= c.abstract %></p>
+                                </details>
+                                <% } %>
+                                <div class="citation_actions">
+                                    <%- include("includes/cite_save.ejs", { where: "section", dl }) %>
+                                    <button type="button" class="sequence_copy cite_copy" data-text="<%= cite_text %>" title="Copy the citation as text" aria-label="Copy the citation as text"><svg class="icon_copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><svg class="icon_done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Copy</button>
+                                    <% if (c.doi_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.doi_url %>">DOI <%= c.doi %></a><% } %>
+                                    <% if (c.pubmed_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.pubmed_url %>">PubMed <%= c.pubmed %></a><% } %>
+                                </div>
                             </div>
-                        <% } %>
                         <% } %>
 
                         <% if (s.id === "links") { %>
@@ -272,12 +288,14 @@
     <% if (sections.some((s) => s.id === "sequence-map" && !s.empty)) { %><script type="module" src="/seqmap.js"></script><% } %>
     <% if (sections.some((s) => s.id === "same-sequence" && !s.empty)) { %><script type="module" src="/sameseq.js"></script><% } %>
     <script>
-        // Copies the letters only: no line numbers, no block spaces.
+        // A sequence: the letters only, no line numbers, no block spaces.
+        // The citation: the one line it carries.
         document.addEventListener("click", async (event) => {
             let button = event.target.closest(".sequence_copy");
             if (!button) return;
-            let text = [...button.closest(".sequence").querySelectorAll(".sequence_text")]
+            let text = button.dataset.text ?? [...button.closest(".sequence").querySelectorAll(".sequence_text")]
                 .map((t) => t.textContent).join("").replace(/\s/g, "");
+            let title = (button.dataset.title ??= button.title);
             try {
                 await navigator.clipboard.writeText(text);
             } catch {
@@ -291,7 +309,7 @@
             }
             button.classList.add("copied");
             button.title = "Copied";
-            setTimeout(() => { button.classList.remove("copied"); button.title = "Copy sequence"; }, 1500);
+            setTimeout(() => { button.classList.remove("copied"); button.title = title; }, 1500);
         });
 
         // A long table shows its first rows; the button reveals or hides the rest.
@@ -304,10 +322,12 @@
             button.textContent = more.hidden ? button.dataset.more : button.dataset.less;
         });
 
-        // The FASTA menu closes once a file is picked or the click lands elsewhere.
+        // A download menu (FASTA, Save reference) closes once a file is
+        // picked or the click lands elsewhere.
         document.addEventListener("click", (event) => {
-            let menu = document.querySelector("details.entry_fasta[open]");
-            if (menu && (!menu.contains(event.target) || event.target.closest("a"))) menu.open = false;
+            for (const menu of document.querySelectorAll("details.entry_fasta[open]")) {
+                if (!menu.contains(event.target) || event.target.closest("a")) menu.open = false;
+            }
         });
 
         // A band's chevron folds its section; arriving at a folded section by

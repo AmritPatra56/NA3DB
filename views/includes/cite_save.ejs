@@ -1,0 +1,9 @@
+<%# Save the primary citation for a reference manager. Two places use it:
+    beside Published at the top, and in the Citation section. %>
+<details class="entry_fasta cite_save<%= locals.where ? " cite_save_" + where : "" %>">
+    <summary title="Save the citation for a reference manager"><%- dl %>Save reference</summary>
+    <div class="entry_fasta_menu">
+        <a href="/structure/<%= entry.pdb_id %>/citation?format=ris" download>EndNote, Zotero, Mendeley <span>.ris</span></a>
+        <a href="/structure/<%= entry.pdb_id %>/citation?format=bib" download>BibTeX, LaTeX <span>.bib</span></a>
+    </div>
+</details>

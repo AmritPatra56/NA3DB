@@ -1,10 +1,11 @@
 import express from "express";
 import path from "node:path";
 import { search_entries, export_entries, find_entry, query_problem,
-         count_entries, entry_citations, entry_contents, entry_base_pairs, entry_sequence_tracks,
+         count_entries, entry_citation, entry_contents, entry_base_pairs, entry_sequence_tracks,
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
+import { citation_ris, citation_bibtex, citation_text, unpublished, short_name, full_name } from "./cite.js";
 import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
 import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES } from "./filters.js";
@@ -182,12 +183,13 @@ app.get("/structure/:id", async (req, res) => {
     let [contents, residues, pairs, same_entries, ntc_classes] = await Promise.all([
         entry_contents(entry.pdb_id), entry_residues(entry.pdb_id), entry_base_pairs(entry.pdb_id),
         same_sequence_count(entry.pdb_id), entry_ntc_classes(entry.pdb_id)]);
+    let citation = await entry_citation(entry.pdb_id);
     let page = {
         same_entries,
         ntc_classes,
         entry,
-        rows: detail_rows(entry),
-        citations: await entry_citations(entry.pdb_id),
+        rows: cited_rows(detail_rows(entry), citation),
+        citation,
         molecules: molecule_groups(contents, residues),
         base_pairs: base_pair_section(pairs),
         arcs: pair_arcs(contents.entities, residues, pairs),
@@ -200,16 +202,54 @@ app.get("/structure/:id", async (req, res) => {
         ...page,
         page: "search",
         sections: structure_sections(page),
+        cite_text: page.citation && citation_text(entry.pdb_id, page.citation),
+        cite_unpublished: page.citation && unpublished(page.citation),
+        full_name,
         PAGE_GROUPS,
         rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
     });
 });
+
+// Published and Authors at the top say what the Citation section says: from
+// the checked reference, when there is one, not the PDB's copy (which has 35
+// papers as "To be published" that are out, and some authors out of order).
+export function cited_rows(rows, c) {
+    if (c?.source !== "reference") return rows;
+    let published = [c.type === "preprint" ? `${c.journal} preprint` : c.journal_abbrev ?? c.journal, c.year]
+        .filter(Boolean).join(" ");
+    return rows.map((row) =>
+        row.key === "published" ? { ...row, value: published }
+        : row.key === "all_authors" && c.authors.length ? { ...row, value: c.authors.map(short_name).join(", ") }
+        : row);
+}
 
 // FASTA has no registered media type; plain text is what tools expect.
 // attachment() guesses one from the extension, so the type is set after it.
 function send_fasta(res, filename, fasta) {
     res.attachment(filename).set("Content-Type", "text/plain; charset=utf-8").send(fasta);
 }
+
+// The primary citation as a file for a reference manager: ?format=ris for
+// EndNote, Zotero and Mendeley, ?format=bib for BibTeX. See cite.js.
+const CITATION_FORMATS = {
+    ris: { build: citation_ris,    type: "application/x-research-info-systems; charset=utf-8" },
+    bib: { build: citation_bibtex, type: "application/x-bibtex; charset=utf-8" }
+};
+app.get("/structure/:id/citation", async (req, res) => {
+    let format = CITATION_FORMATS[req.query.format];
+    if (!format) {
+        res.status(400).type("text").send("format must be ris or bib\n");
+        return;
+    }
+    let entry = await find_entry(req.params.id);
+    let citation = entry && await entry_citation(entry.pdb_id);
+    if (!citation) {
+        res.status(404).type("text").send(`No citation for ${req.params.id}\n`);
+        return;
+    }
+    res.attachment(`${entry.pdb_id}.${req.query.format}`).set("Content-Type", format.type)
+       .send(format.build(entry.pdb_id, citation));
+});
 
 // Every sequenced molecule in the entry; ?only=na keeps the nucleic acids.
 app.get("/structure/:id/fasta", async (req, res) => {
@@ -327,7 +367,7 @@ app.get("/api/entries/:id", async (req, res) => {
     let contents = await entry_contents(entry.pdb_id);
     res.json({ ...entry, rows: detail_rows(entry),
                entities: contents.entities, modified_nucleotides: contents.modified,
-               citations: await entry_citations(entry.pdb_id) });
+               citation: await entry_citation(entry.pdb_id) });
 });
 
 // Every base pair of one entry, first model, as the page lists them.

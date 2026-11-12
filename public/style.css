@@ -819,14 +819,31 @@ input::placeholder {
     font-weight: 600;
 }
 
-/* Every citation on the structure page, primary first. */
-.citations_heading {
-    margin: 24px 0 4px;
-    font-size: 11px;
-    font-weight: normal;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--text-dim);
+/* Published, with Save reference beside it. */
+.published_value { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.published_value .cite_save { margin-left: 0; }
+/* On a phone the button sits mid-row, so its menu would run off the right
+   edge: it opens from the row's left instead. */
+@media (max-width: 640px) {
+    .published_value { position: relative; }
+    .published_value .cite_save { position: static; }
+}
+
+/* The primary citation, and what to do with it. */
+.citation_actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.citation_actions .cite_save { margin-left: 0; }
+.citation_actions .cite_save .entry_fasta_menu,
+.published_value .cite_save .entry_fasta_menu { left: 0; right: auto; }
+.citation_actions .detail_link { margin-top: 0; }
+.cite_copy { flex: none; white-space: nowrap; }
+.cite_copy svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .citation {
@@ -838,20 +855,6 @@ input::placeholder {
     overflow-wrap: anywhere;
 }
 
-.citation .detail_link {
-    margin-top: 6px;
-}
-
-.citation_primary {
-    display: inline-block;
-    margin-bottom: 4px;
-    padding: 0 6px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    font-size: 11px;
-    color: var(--text-dim);
-}
-
 .citation_title {
     font-weight: 600;
 }
@@ -860,6 +863,10 @@ input::placeholder {
 .citation_source {
     color: var(--text-dim);
 }
+
+.citation_abstract { margin-top: 6px; }
+.citation_abstract summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.citation_abstract p { margin: 6px 0 0; white-space: pre-line; }
 
 /* <---------------empty state-------------> */
 

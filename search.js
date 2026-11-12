@@ -1,7 +1,9 @@
 // search.js - turns a set of filters into SQL and runs it.
 // Server only. It never touches HTTP and never touches the screen.
 
+import { readFileSync } from "node:fs";
 import { query } from "./db.js";
+import { clean_title, pdb_author } from "./cite.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
 import { taxa_named, taxa_exactly_named, taxon, is_common_name } from "./taxonomy.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
@@ -985,9 +987,6 @@ export function missing_runs(missing) {
     return runs.map(({ from_seq, to_seq, ...run }) => run);
 }
 
-// Every citation of one structure, the primary first, then the related ones
-// by id as a number. 129 entries have more than one; the cards show only the
-// primary. Whitespace is collapsed because CIF wraps long titles.
 // How many of an entry's steps DNATCO assigned to each NtC class. One row in
 // the step summary is one step: their count is ndb_struct_ntc_overall's
 // num_steps in every entry.
@@ -1002,11 +1001,18 @@ export async function entry_ntc_classes(id, q = query) {
     return result.rows;
 }
 
-export async function entry_citations(id, q = query) {
+// The checked reference for each entry that has one: db/build_citations.mjs
+// writes it from Crossref and PubMed.
+let references = null;
+
+// The primary citation of one structure, or null. Only the primary: it is
+// the paper the depositors name for the structure, and the one to cite. 129
+// entries also list related papers; those stay in the CIF, not on the page.
+// From citations.json when the entry is there, the PDB's citation otherwise.
+
+export async function entry_citation(id, q = query) {
     let result = await q(
-        `SELECT c.id, c.id = 'primary' AS primary,
-                regexp_replace(trim(c.title), '\\s+', ' ', 'g') AS title,
-                c.journal_abbrev AS journal, c.journal_volume AS volume,
+        `SELECT c.title, c.journal_abbrev AS journal, c.journal_volume AS volume,
                 c.page_first, c.page_last, c.year,
                 c.pdbx_database_id_doi AS doi, c.pdbx_database_id_pubmed AS pubmed,
                 COALESCE((SELECT json_agg(ca.name ORDER BY ca.ordinal, ca.id)
@@ -1014,17 +1020,29 @@ export async function entry_citations(id, q = query) {
                            WHERE ca.entry_id = c.entry_id AND ca.citation_id = c.id),
                          '[]') AS authors
            FROM citation c
-          WHERE UPPER(c.entry_id) = UPPER($1)
-          ORDER BY c.id <> 'primary', length(c.id), c.id`,
+          WHERE UPPER(c.entry_id) = UPPER($1) AND c.id = 'primary'`,
         [as_text(id).trim()]
     );
-
-    return result.rows.map((c) => ({
-        ...c,
-        pages:      [c.page_first, c.page_last].filter(Boolean).join("-") || null,
-        doi_url:    c.doi ? "https://doi.org/" + c.doi : null,
-        pubmed_url: c.pubmed ? "https://pubmed.ncbi.nlm.nih.gov/" + c.pubmed + "/" : null
-    }));
+    let c = result.rows[0];
+    if (!c) return null;
+    references ??= JSON.parse(readFileSync(new URL("./citations.json", import.meta.url), "utf8")).entries;
+    let r = references[as_text(id).trim().toUpperCase()];
+    // The PDB's own citation, in the reference's shape. A PMID of -1 is the
+    // PDB's way of saying none.
+    let pubmed = c.pubmed > 0 ? String(c.pubmed) : null;
+    let cited = r ? { ...r, source: "reference" } : {
+        type: "article", source: "pdb",
+        title: clean_title(c.title), authors: c.authors.map(pdb_author),
+        journal: c.journal, journal_abbrev: c.journal, volume: c.volume, issue: null,
+        page_first: c.page_first, page_last: c.page_last, year: c.year,
+        doi: c.doi, pubmed, abstract: null, keywords: null
+    };
+    return {
+        ...cited,
+        pages:      [cited.page_first, cited.page_last].filter(Boolean).join("-") || null,
+        doi_url:    cited.doi ? "https://doi.org/" + cited.doi : null,
+        pubmed_url: cited.pubmed ? "https://pubmed.ncbi.nlm.nih.gov/" + cited.pubmed + "/" : null
+    };
 }
 
 export function query_problem(query) {

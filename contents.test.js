@@ -5,7 +5,7 @@
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
-import { entry_contents, entry_citations, find_entry, search_entries, build_where,
+import { entry_contents, entry_citation, find_entry, search_entries, build_where,
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
 import { detail_rows, molecule_groups, structure_sections, ntc_section, PAGE_GROUPS, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
@@ -706,31 +706,60 @@ async function with_citations(work) {
     });
 }
 
-test("every citation is listed, the primary first, then by id as a number", async () => {
-    let c = await with_citations((q) => entry_citations("zz01", q));
-    assert.deepEqual(c.map((x) => x.id), ["primary", "1", "10"]);
-    assert.deepEqual(c.map((x) => x.primary), [true, false, false]);
+test("only the primary citation is given, not the related papers", async () => {
+    let c = await with_citations((q) => entry_citation("zz01", q));
+    assert.equal(c.title, "The structure");
+    assert.equal(c.journal, "Nucleic Acids Res.");
 });
 
-test("a citation's authors keep their order", async () => {
-    let c = await with_citations((q) => entry_citations("ZZ01", q));
-    assert.deepEqual(c[0].authors, ["First, A.", "Second, B."]);
-    assert.deepEqual(c[2].authors, []);
+test("the primary citation's authors keep their order, not the related paper's", async () => {
+    let c = await with_citations((q) => entry_citation("ZZ01", q));
+    assert.deepEqual(c.authors, [{ family: "First", given: "A." }, { family: "Second", given: "B." }]);
 });
 
-test("a citation carries its title, pages and working links", async () => {
-    let c = await with_citations((q) => entry_citations("ZZ01", q));
-    assert.equal(c[1].title, "Manganese binding sites");
-    assert.equal(c[1].pages, "1-12");
-    assert.equal(c[1].doi_url, "https://doi.org/10.1006/jmbi.1996.0408");
-    assert.equal(c[1].pubmed_url, "https://pubmed.ncbi.nlm.nih.gov/8893856/");
-    assert.equal(c[0].pages, "1969");
-    assert.equal(c[0].doi_url, null);
-    assert.equal(c[2].pages, null);
+test("an entry with no checked reference has the PDB's citation, marked as such", async () => {
+    let c = await with_citations((q) => entry_citation("ZZ01", q));
+    assert.equal(c.source, "pdb");
+    assert.equal(c.journal_abbrev, "Nucleic Acids Res.");
+    assert.equal(c.abstract, null);
 });
 
-test("an entry with no citation lists none", async () => {
-    assert.deepEqual(await with_fixture((q) => entry_citations("ZZ01", q)), []);
+test("an entry in citations.json has the checked reference, not the PDB's copy", async () => {
+    // 1DN8 is in the seed; its reference comes from Crossref and PubMed.
+    let c = await entry_citation("1dn8");
+    assert.equal(c.source, "reference");
+    assert.ok(c.authors.every((a) => a.family || a.name), "authors are names, not strings");
+    assert.ok(c.journal && c.year && c.doi, "journal, year and DOI filled in");
+    assert.equal(c.doi_url, "https://doi.org/" + c.doi);
+});
+
+test("a PMID of -1 is the PDB's way of saying none", async () => {
+    let c = await with_fixture(async (q) => {
+        await q(`INSERT INTO citation (id, entry_id, title, pdbx_database_id_pubmed) VALUES ('primary', 'ZZ01', 'T', -1)`);
+        return entry_citation("ZZ01", q);
+    });
+    assert.equal(c.pubmed, null);
+    assert.equal(c.pubmed_url, null);
+});
+
+test("the primary citation carries its pages and working links", async () => {
+    let c = await with_citations((q) => entry_citation("ZZ01", q));
+    assert.equal(c.pages, "1969");
+    assert.equal(c.doi_url, null);
+    assert.equal(c.pubmed_url, "https://pubmed.ncbi.nlm.nih.gov/10756198/");
+});
+
+test("an HTML code in a title is shown as its symbol", async () => {
+    let c = await with_fixture(async (q) => {
+        await q(`INSERT INTO citation (id, entry_id, title) VALUES
+                 ('primary', 'ZZ01', E'&#65279;Tautomeric G&#8226;U pairs in\n  ORC&#183;DNA')`);
+        return entry_citation("ZZ01", q);
+    });
+    assert.equal(c.title, "Tautomeric G•U pairs in ORC·DNA");
+});
+
+test("an entry with no citation has none", async () => {
+    assert.equal(await with_fixture((q) => entry_citation("ZZ01", q)), null);
 });
 
 // --- the search document, nucleotides only (micro-goal 1.12) ------------
@@ -1380,7 +1409,7 @@ const no_contents = { groups: [], summary: "", sources: null, fasta: { all: 0, n
 
 test("a section with nothing in it is listed as empty, not dropped", () => {
     let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
-                                        base_pairs: null, citations: [] });
+                                        base_pairs: null, citation: null });
     let by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
 
     assert.equal(sections.length, 11, "every section stays in the list");
@@ -1396,7 +1425,7 @@ test("a row the page shows another way is left out; the rest go where they belon
                 { key: "monomer_flag" }, { key: "confal_score" }, { key: "assigned_ntc" },
                 { key: "ntc_classes" }, { key: "atom_count" }];
     let sections = structure_sections({ entry: {}, rows, molecules: no_contents,
-                                        base_pairs: null, citations: [] });
+                                        base_pairs: null, citation: null });
     let keys = (id) => (sections.find((s) => s.id === id).rows ?? []).map((r) => r.key);
 
     assert.deepEqual(keys("overview"), ["title", "atom_count"]);
@@ -1432,7 +1461,7 @@ test("NtC steps are counted by CANA class, each class named, no class last and a
 
 test("the page groups its sections as the filter panel does", () => {
     let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
-                                        base_pairs: null, citations: [] });
+                                        base_pairs: null, citation: null });
     assert.deepEqual(sections.map((s) => s.id),
                      ["overview", "molecules", "sources", "modified-nucleotides", "ligands", "base-pairs",
                       "conformation", "sequence-map", "same-sequence", "citations", "links"]);

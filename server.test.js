@@ -6,10 +6,11 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS } from "./filters.js";
 import { NAKB_TOPICS, topic_ids } from "./nakb.js";
 import { once } from "node:events";
-import app from "./server.js";
+import app, { cited_rows } from "./server.js";
 import { close as close_db, query } from "./db.js";
-import { find_entry, entry_contents, entry_residues } from "./search.js";
+import { find_entry, entry_contents, entry_residues, entry_citation } from "./search.js";
 import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE } from "./detail.js";
+import { full_name } from "./cite.js";
 
 let base;
 let server;
@@ -855,6 +856,82 @@ test("an unknown topic matches nothing", async () => {
 });
 
 // The footer links before its pages are written; each must still answer.
+// --- the citation, to save or copy ---------------------------------------
+// The seed's 4TNA has a primary citation of one author and nothing else: it
+// is not in citations.json, so it is the PDB's. 1DN8 is.
+
+test("the citation downloads as RIS for EndNote and Zotero, named after the entry", async () => {
+    let res = await fetch(base + "/structure/4tna/citation?format=ris");
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "application/x-research-info-systems; charset=utf-8");
+    assert.match(res.headers.get("content-disposition"), /^attachment; filename="4TNA\.ris"$/);
+    let body = await res.text();
+    assert.match(body, /^TY  - JOUR\r\n/);
+    assert.match(body, /\r\nAU  - Hingerty, B\.E\.\r\n/);
+    assert.match(body, /\r\nER  - \r\n$/);
+});
+
+test("the citation downloads as BibTeX", async () => {
+    let res = await fetch(base + "/structure/4TNA/citation?format=bib");
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "application/x-bibtex; charset=utf-8");
+    assert.match(res.headers.get("content-disposition"), /filename="4TNA\.bib"/);
+    assert.match(await res.text(), /^@article\{PDB4TNA,\n  author    = \{Hingerty, B\. E\.\},/);
+});
+
+test("a citation in an unknown format is a 400, and an unknown entry a 404", async () => {
+    assert.equal((await fetch(base + "/structure/4TNA/citation?format=xml")).status, 400);
+    assert.equal((await fetch(base + "/structure/4TNA/citation")).status, 400);
+    assert.equal((await fetch(base + "/structure/ZZZZ/citation?format=ris")).status, 404);
+});
+
+test("the Citation section holds one citation, to save or copy", async () => {
+    let html = await (await fetch(base + "/structure/4TNA")).text();
+    let from = html.indexOf('<section id="citations"'), to = html.indexOf("</section>", from);
+    let part = html.slice(from, to);
+    assert.match(part, />Citation</);
+    assert.equal(part.match(/class="citation"/g)?.length, 1);
+    assert.ok(part.includes('href="/structure/4TNA/citation?format=ris" download'));
+    assert.ok(part.includes('href="/structure/4TNA/citation?format=bib" download'));
+    assert.ok(part.includes('data-text="Hingerty, B.E."'), "Copy carries the citation as text");
+});
+
+test("Published and Authors at the top follow a checked reference, and only that", () => {
+    let rows = [{ key: "published", value: "Nucleic Acids Res. 2020" }, { key: "all_authors", value: "Yu, H." },
+                { key: "method", value: "X-RAY DIFFRACTION" }];
+    let ref = { source: "reference", type: "article", journal: "Nucleic Acids Research", journal_abbrev: "Nucleic Acids Res",
+                year: 2021, authors: [{ family: "Yu", given: "Hao" }, { name: "MCSG" }] };
+    assert.deepEqual(cited_rows(rows, ref).map((r) => r.value), ["Nucleic Acids Res 2021", "Yu, H., MCSG", "X-RAY DIFFRACTION"]);
+    assert.equal(cited_rows(rows, { ...ref, type: "preprint", journal: "bioRxiv" })[0].value, "bioRxiv preprint 2021");
+    assert.deepEqual(cited_rows(rows, { ...ref, source: "pdb" }), rows);
+    assert.deepEqual(cited_rows(rows, null), rows);
+});
+
+test("a checked reference gives full names, the issue and the abstract, and fills the top rows", async () => {
+    let c = await entry_citation("1DN8");
+    let html = await (await fetch(base + "/structure/1DN8")).text();
+    let from = html.indexOf('<section id="citations"'), to = html.indexOf("</section>", from);
+    let part = html.slice(from, to);
+    let first = c.authors[0];
+    assert.ok(part.includes(`${first.given} ${first.family}`), "full name in the section");
+    if (c.abstract) assert.match(part, /<summary>Abstract<\/summary>/);
+    let ris = await (await fetch(base + "/structure/1DN8/citation?format=ris")).text();
+    assert.match(ris, new RegExp(`\r\nT2  - ${c.journal}\r\n`));
+    assert.match(ris, new RegExp(`\r\nDO  - ${c.doi.replace(/[.()]/g, "\\$&")}\r\n`));
+});
+
+test("Save reference sits beside Published at the top of the page", async () => {
+    // The seed has no journals, so Published is given here.
+    let entry = { ...(await find_entry("4TNA")), published: "Nature 2020" };
+    let page = { entry, rows: detail_rows(entry), citation: { source: "pdb", title: "T", authors: [{ family: "A", given: "B." }], journal: "Nature", year: 2020 },
+                 molecules: { groups: [], fasta: {} }, base_pairs: null, arcs: null, nucleic_chains: 0, same_entries: 0 };
+    let html = await render("structure", { ...page, page: "search", sections: structure_sections(page),
+                                           PAGE_GROUPS, rail_query: "", cite_text: "A, B. T.", cite_unpublished: false, full_name });
+    let row = html.slice(html.indexOf("published_value"), html.indexOf("</details>", html.indexOf("published_value")));
+    assert.ok(row.includes("Nature 2020"));
+    assert.ok(row.includes('href="/structure/4TNA/citation?format=ris"'));
+});
+
 test("every footer link answers", async () => {
     for (const path of ["/cite", "/help", "/contact"]) {
         assert.equal((await fetch(base + path)).status, 200, path);
@@ -939,7 +1016,7 @@ const render = (view, locals) =>
 async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0) {
     let entry = await find_entry("4TNA");
     let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
-    let page = { entry, rows: detail_rows(entry), citations: [],
+    let page = { entry, rows: detail_rows(entry), citation: null,
                  molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains,
                  same_entries };
     return render("structure", { ...page, page: "search", sections: structure_sections(page),

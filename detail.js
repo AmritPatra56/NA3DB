@@ -665,7 +665,7 @@ const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
 // Every section in page order, with what it holds. A section with nothing in
 // it stays listed, marked empty: "none recorded" is a fact about the entry,
 // and a missing heading would read as a field we never had.
-export function structure_sections({ entry, rows, molecules, base_pairs, citations, nucleic_chains = 0,
+export function structure_sections({ entry, rows, molecules, base_pairs, citation, nucleic_chains = 0,
                                     same_entries = 0, ntc_classes = [] }) {
     let group_of = new Map(columns_for("page").map((c) => [c.key, c.group]));
     let rows_in = { overview: [], conformation: [] };
@@ -694,8 +694,9 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
           ntc: ntc_section(ntc_classes), count: steps === null ? 0 : Number(steps) },
         { id: "sequence-map", title: "Sequence map", group: "structure", count: nucleic_chains },
         { id: "same-sequence", title: "Same sequence", group: "structure", count: same_entries },
-        { id: "citations", title: "Citations", group: "references",
-          count: citations.length },
+        // The id stays "citations" so old #citations links still land here.
+        { id: "citations", title: "Citation", group: "references",
+          count: citation ? 1 : 0 },
         { id: "links", title: "Links and downloads", group: "references" }
     ];
 
