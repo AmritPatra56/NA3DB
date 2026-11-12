@@ -82,11 +82,12 @@ Works the same on a laptop and a phone.
    will get (`Show 50 results`), so you never land on an empty page.
 3. **See what is on.** Each filter in use is a chip above the results, like
    `Experimental method: X-ray ×`. Press `×` to drop it.
-4. **Pick a view** at the top: `Arcs` (pictures only), `Cards` (picture and
-   facts, the default) or `Lines` (one row each). Change the order with `Sort`.
-5. **Look closer.** Press any arc picture to open it full screen.
-6. **Open a structure.** Press any card or line. See [The structure page](#3-the-structure-page).
-7. **Share it.** Copy the address. Your search, filters, order, page and view
+4. **Pick a view** at the top: `Grid` (small tiles), `Cards` (the facts, the
+   default) or `Lines` (one row each). Change the order with `Sort`. The empty
+   frame on each card and tile is kept for a picture of the 3D structure.
+5. **Open a structure.** Press anywhere on a card, tile or line. The arc picture
+   of its base pairs, with a full-screen view, is on the structure page. See [The structure page](#3-the-structure-page).
+6. **Share it.** Copy the address. Your search, filters, order, page and view
    are all in the link, so whoever opens it sees exactly what you saw.
 
 ## 3. The structure page

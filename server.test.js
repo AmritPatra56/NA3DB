@@ -3,7 +3,7 @@
 
 import test, { before, after } from "node:test";
 import assert from "node:assert";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, EXAMPLES, BROWSE, TOPICS } from "./filters.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, TOPICS } from "./filters.js";
 import { once } from "node:events";
 import app from "./server.js";
 import { close as close_db, query } from "./db.js";
@@ -230,46 +230,12 @@ test("the landing page links to the filter panel", async () => {
     let html = await (await fetch(base + "/")).text();
     // ?panel=open: a phone hides the panel unless the link asks for it.
     assert.match(html, /landing_advanced" href="\/search\?panel=open"/);
+    assert.match(html, /panel=open">Full search</);
 });
 
-test("every example is a link, labelled by what kind of thing it is", async () => {
+test("the landing page has no 'Try' line of examples", async () => {
     let html = await (await fetch(base + "/")).text();
-    let reg  = await (await fetch(base + "/api/fields")).json();
-
-    assert.equal(reg.examples.length, EXAMPLES.length);
-
-    for (const example of reg.examples) {
-        assert.ok(html.includes(`href="${example.url}"`),
-                  `no chip linking to ${example.url}`);
-        assert.ok(html.includes(example.kind),
-                  `${example.term} is not labelled by kind`);
-    }
-
-    // Each one shows a different kind of thing, which is what makes the line
-    // teach rather than just list.
-    let kinds = reg.examples.map((e) => e.kind);
-    assert.equal(new Set(kinds).size, kinds.length, "two examples share a kind");
-});
-
-// The examples are picked for the real database, and na3db_test holds 120
-// different entries, so not every one can match here. What this does catch is
-// a broken q filter or an example that is not a searchable string at all.
-test("the examples are answerable, and some of them match", async () => {
-    let reg = await (await fetch(base + "/api/fields")).json();
-    let matched = 0;
-
-    for (const example of reg.examples) {
-        // The chip's own URL, asked of the API rather than the page.
-        let res  = await fetch(base + "/api/entries" + example.url.slice("/search".length));
-        let body = await res.json();
-
-        assert.equal(res.status, 200, `the example "${example.term}" is not a valid search`);
-        assert.equal(typeof body.total, "number");
-
-        if (body.total > 0) matched++;
-    }
-
-    assert.ok(matched > 0, "not one example matches anything, so the box is broken");
+    assert.ok(!html.includes("landing_examples"));
 });
 
 // Every link made before the split carried the search on /. Those have to keep
@@ -348,8 +314,8 @@ test("/api/fields describes every filter and column", async () => {
     // Checked across every filter rather than the first one, so adding a UI
     // field to one of them cannot quietly change what this proves: the keys
     // are drawn from the allowed set, and nothing carrying SQL is among them.
-    const FILTER_FIELDS = ["key", "label", "group", "kind", "prominent",
-                           "options", "any", "placeholder", "pair_with", "suggest"];
+    const FILTER_FIELDS = ["key", "label", "group", "kind", "prominent", "options", "any", "first",
+                           "placeholder", "pair_with", "revealed_by", "suggest"];
     const COLUMN_FIELDS = ["key", "label", "group", "scope", "show"];
 
     for (const filter of body.filters) {
@@ -383,7 +349,7 @@ test("the search page carries the registry and not the SQL", async () => {
 // Decided on the server so the page arrives in the right state, with no flash
 // of filters appearing and then collapsing.
 const PANEL_CASES = [
-    ["/search",                                   true,  "the Advanced search link"],
+    ["/search",                                   true,  "the Full search link"],
     ["/search?q=tRNA",                            false, "a search from the box"],
     ["/search?q=tRNA&page=3&sort=confal_desc",    false, "...paged and sorted"],
     ["/search?entry_id=tna",                      true,  "an old bookmark using a filter"],
@@ -474,12 +440,42 @@ test("the form has a control for every filter in the registry", async () => {
 
 // confal_min and confal_max are two filters and ONE control. pair_with is
 // what tells the template that; without it the form grows two stray boxes.
-test("the form draws one range control, not two", async () => {
+test("the form draws one range control per pair, not one per end", async () => {
     let html = await (await fetch(base + "/search")).text();
 
-    assert.equal((html.match(/range_row/g) || []).length, 1);
+    assert.equal((html.match(/class="range_row"/g) || []).length,
+                 FILTERS.filter((f) => f.kind === "range" && f.pair_with).length);
     assert.ok(html.includes('placeholder="min"'));
     assert.ok(html.includes('placeholder="max"'));
+});
+
+// The resolution range waits under the method pills until X-ray, EM or another
+// method that measures one is picked, and starts hidden so it never flashes.
+test("the resolution range is drawn hidden, revealed by a method that has one", async () => {
+    let html = await (await fetch(base + "/search")).text();
+    let field = html.match(/<div class="field revealed_field"[^>]*>/)[0];
+
+    assert.match(field, /data-revealed-by="experimental_method"/);
+    assert.match(field, /X-RAY DIFFRACTION\|ELECTRON MICROSCOPY/);
+    assert.ok(!field.includes("SOLUTION NMR"), "NMR measures no resolution");
+    assert.match(field, / hidden>$/);
+    assert.ok(html.indexOf('data-name="experimental_method"') < html.indexOf("revealed_field"),
+              "the range sits under the method pills");
+});
+
+test("the method pills show four, the rest behind a More button", async () => {
+    let html = await (await fetch(base + "/search")).text();
+    let group = html.slice(html.indexOf('data-name="experimental_method"'));
+    group = group.slice(0, group.indexOf("</div>"));
+    let method = FILTERS.find((f) => f.key === "experimental_method");
+
+    assert.equal((group.match(/class="pill pill_extra"[^>]* hidden>/g) || []).length, method.options.length - 4);
+    assert.match(group, /class="pill_more" aria-expanded="false"/);
+
+    // A link that picks a hidden method arrives with them unfolded.
+    let picked = await (await fetch(base + "/search?experimental_method=FIBER%20DIFFRACTION")).text();
+    assert.match(picked, /class="pill_more" aria-expanded="true"/);
+    assert.ok(!/class="pill pill_extra"[^>]* hidden>/.test(picked));
 });
 
 // One category box per group, each with the slug that colours its dot.
@@ -532,17 +528,18 @@ test("a column can be fetched without being displayed", async () => {
 // Both views draw the same reply, so switching is a redraw rather than a new
 // request. The server renders the pressed state so the right button is lit on
 // arrival instead of correcting itself after the script runs.
-test("the page offers all three layouts, Arcs first, Cards pressed by default", async () => {
+test("the page offers all three layouts, Grid first, Cards pressed by default", async () => {
     for (const [url, pressed] of [["/search", "cards"],
                                   ["/search?view=cards", "cards"],
                                   ["/search?view=lines", "lines"],
-                                  ["/search?view=arcs", "arcs"],
+                                  ["/search?view=grid", "grid"],
+                                  ["/search?view=arcs", "grid"],
                                   ["/search?view=nonsense", "cards"]]) {
         let html = await (await fetch(base + url)).text();
 
-        assert.match(html, /data-view="arcs"[\s\S]*data-view="cards"[\s\S]*data-view="lines"/, `${url}: order`);
+        assert.match(html, /data-view="grid"[\s\S]*data-view="cards"[\s\S]*data-view="lines"/, `${url}: order`);
 
-        for (const view of ["arcs", "cards", "lines"]) {
+        for (const view of ["grid", "cards", "lines"]) {
             let button = html.match(
                 new RegExp(`data-view="${view}"\\s+aria-pressed="(true|false)"`));
 
@@ -1013,13 +1010,21 @@ test("each search result carries its card's arc numbers, null when nothing is dr
     assert.equal(entry.arcs, null, "the seed has no pairs");
 });
 
-test("the search page offers an Arcs view, and its tiles can open the viewer", async () => {
-    let html = await (await fetch(base + "/search?view=arcs")).text();
-
-    assert.match(html, /data-view="arcs"\s+aria-pressed="true">Arcs</);
-    assert.match(html, /<dialog id="arc_viewer"/);
-    assert.match(html, /<script type="module" src="\/arc_viewer.js"><\/script>/);
+test("the search page offers a Grid view, and an old Arcs link lands on it", async () => {
+    for (const view of ["grid", "arcs"]) {
+        let html = await (await fetch(base + "/search?view=" + view)).text();
+        assert.match(html, /data-view="grid"\s+aria-pressed="true">Grid</);
+        assert.ok(!html.includes("arc_viewer"), "the arc picture lives on the structure page only");
+    }
     assert.match(await (await fetch(base + "/search?view=bogus")).text(), /data-view="cards"\s+aria-pressed="true"/);
+});
+
+test("every page has the footer, with Help and Contact", async () => {
+    for (const path of ["/", "/search", "/report", "/structure/4TNA", "/structure/ZZZZ"]) {
+        let html = await (await fetch(base + path)).text();
+        assert.match(html, /<footer class="site_footer">/, path);
+        assert.ok(html.includes('href="/help"') && html.includes('href="/contact"'), path);
+    }
 });
 
 test("the sequence map API: a 404 for an entry with no nucleic-acid chain, and for an unknown one", async () => {

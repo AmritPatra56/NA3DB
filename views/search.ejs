@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NA3DB</title>
+    <title>NA3DB · Full search</title>
     <link rel="icon" href="/assets/favicon.ico">
     <link rel="stylesheet" href="/style.css">
 <%- include("includes/theme.ejs") %>
@@ -34,6 +34,9 @@
                     <button type="submit" form="query_form">Search</button>
                 <% } %>
                 </div>
+<%# As on the front page: how many the box would find, as you type. Counted
+    with every filter in use, so it is what pressing Search will show. %>
+                <p class="top_search_count" aria-live="polite"></p>
                 <button type="button" class="filters_toggle"
                         aria-expanded="<%= panel_open %>">Filters</button>
             </div>
@@ -44,7 +47,7 @@
             <div class="workspace_body">
         <form class="query_panel <%= panel_open ? "" : "hidden" %>" id="query_form">
             <div class="query_panel_header">
-                <h1>Structure query</h1>
+                <h1>Full search</h1>
 <%# Only drawn on a phone, where the panel covers the whole screen. %>
                 <button type="button" class="panel_close" aria-label="Close filters">&times;</button>
             </div>
@@ -93,15 +96,23 @@
                         <% } else if (f.kind === "range") { %>
                         <% const hi = mine.find((x) => x.key === f.pair_with); %>
                         <% drawn.add(hi.key); %>
-                        <div class="field">
-                            <div class="group_label"><%= f.label %></div>
-                            <div class="range_row">
-                                <input type="number" id="<%= f.key %>" name="<%= f.key %>"
+                        <%# A range revealed by a pill group sits under it, indented, and
+                            is shown by app.js once one of those pills is on. Drawn
+                            hidden so a page without a method never flashes it. %>
+                        <% const by = f.revealed_by; %>
+                        <div class="field<%= by ? " revealed_field" : "" %>"<% if (by) { %>
+                             data-revealed-by="<%= by.key %>" data-values="<%= by.values.join("|") %>" hidden<% } %>>
+                            <div class="group_label" id="<%= f.key %>_label"><%= f.label %></div>
+                            <div class="range_row" role="group" aria-labelledby="<%= f.key %>_label">
+                                <input type="number" id="<%= f.key %>" name="<%= f.key %>" step="any" min="0"
+                                       inputmode="decimal" aria-label="<%= f.label %>, lowest"
                                        placeholder="<%= f.placeholder %>">
                                 <span class="range_dash"></span>
-                                <input type="number" id="<%= hi.key %>" name="<%= hi.key %>"
+                                <input type="number" id="<%= hi.key %>" name="<%= hi.key %>" step="any" min="0"
+                                       inputmode="decimal" aria-label="<%= f.label %>, highest"
                                        placeholder="<%= hi.placeholder %>">
                             </div>
+                            <% if (by) { %><p class="range_note">Both ends included. Entries with no resolution, such as NMR, are left out once a value is set.</p><% } %>
                         </div>
 
                         <% } else { %>
@@ -112,9 +123,17 @@
                                 <button type="button" class="pill selected" data-value="any">Any</button>
                                 <% } %>
                                 <% const n = counts[f.key]; %>
-                                <% for (const o of f.options) { %>
-                                <% if (n && !n[o.value] && !selected.includes(o.value)) continue; %>
-                                <button type="button" class="pill" data-value="<%= o.value %>"><%= o.label %><% if (n) { %> <span class="pill_count"><%= (n[o.value] ?? 0).toLocaleString("en-GB") %></span><% } %></button>
+                                <% const shown = f.options.filter((o) => !(n && !n[o.value] && !selected.includes(o.value))); %>
+                                <%# `first` options always; the rest behind a button,
+                                    unfolded when one of them is already picked. %>
+                                <% const extra = f.first ? shown.slice(f.first) : []; %>
+                                <% const unfold = extra.some((o) => selected.includes(o.value)); %>
+                                <% shown.forEach((o, i) => { %>
+                                <button type="button" class="pill<%= i >= (f.first ?? Infinity) ? " pill_extra" : "" %>" data-value="<%= o.value %>"<%= i >= (f.first ?? Infinity) && !unfold ? " hidden" : "" %>><%= o.label %><% if (n) { %> <span class="pill_count"><%= (n[o.value] ?? 0).toLocaleString("en-GB") %></span><% } %></button>
+                                <% }) %>
+                                <% if (extra.length) { %>
+                                <button type="button" class="pill_more" aria-expanded="<%= unfold %>"
+                                        data-more="<%= extra.length %> more" data-less="Fewer"><%= unfold ? "Fewer" : `${extra.length} more` %></button>
                                 <% } %>
                             </div>
                         </div>
@@ -160,8 +179,8 @@
 <%# Three renderings of the same reply. Switching redraws from what the browser
     already has, so it never asks the server again. %>
                     <div class="view_switch" role="group" aria-label="Result layout">
-                        <button type="button" data-view="arcs"
-                                aria-pressed="<%= view === "arcs" %>">Arcs</button>
+                        <button type="button" data-view="grid"
+                                aria-pressed="<%= view === "grid" %>">Grid</button>
                         <button type="button" data-view="cards"
                                 aria-pressed="<%= view === "cards" %>">Cards</button>
                         <button type="button" data-view="lines"
@@ -209,6 +228,6 @@
     <script src="/api.js"></script>
     <script src="/shared.js"></script>
     <script src="/app.js"></script>
-    <%- include("includes/arc_viewer.ejs") %>
+    <%- include("includes/footer.ejs") %>
 </body>
 </html>

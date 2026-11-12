@@ -20,7 +20,7 @@
         "molecules": "Each polymer once, with the chains that are copies of it. Modelled is how many of its residues have coordinates, out of the full sequence; missing ones are in the sequence but not in the model. Numbering is the authors' own residue numbers, which can skip or start above 1. Link is the molecule in UniProt or another sequence database.",
         "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine). One row per kind in each chain, with every position it occupies, in the authors' numbering.",
         "ligands": "Small molecules bound in the structure: ions, cofactors, drugs and sugars. Count is how many copies the entry holds. Each code links to its page at RCSB. Water is left out.",
-        "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxon its NCBI taxonomy number, Produced in the host it was made in when expressed.",
+        "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxonomy ID its number in NCBI Taxonomy, Produced in the host it was made in when expressed.",
         "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). A cWW pair of G–C or A–U counts as Watson–Crick, G–U as a wobble, everything else as non-canonical. A modified base counts as the base it came from.",
         "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (colour is its CANA class, height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
         "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
@@ -205,7 +205,7 @@
                         <table class="molecule_table source_table">
                             <% if (src.notes) { %><colgroup><col style="width:20%"><col style="width:9%"><col style="width:10%"><col style="width:23%"><col style="width:8%"><col style="width:16%"><col style="width:14%"></colgroup>
                             <% } else { %><colgroup><col style="width:24%"><col style="width:10%"><col style="width:11%"><col style="width:27%"><col style="width:9%"><col style="width:19%"></colgroup><% } %>
-                            <tr><th>Molecule</th><th>Chains</th><th>Obtained</th><th>Organism</th><th>Taxon</th><th>Produced in</th><% if (src.notes) { %><th>Notes</th><% } %></tr>
+                            <tr><th>Molecule</th><th>Chains</th><th>Obtained</th><th>Organism</th><th>Taxonomy ID</th><th>Produced in</th><% if (src.notes) { %><th>Notes</th><% } %></tr>
                             <% for (const r of src.rows) { const n = r.segments.length; %>
                                 <% r.segments.forEach((seg, i) => { %>
                                     <tr<% if (i < n - 1) { %> class="segment_continues"<% } %>>
@@ -377,5 +377,6 @@
         addEventListener("resize", follow);
         follow();
     </script>
+    <%- include("includes/footer.ejs") %>
 </body>
 </html>

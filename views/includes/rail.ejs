@@ -10,7 +10,7 @@
 <%# rail_query is for the pages that load no script of their own: the structure
     page cannot run sync_rail_links, so its links are built here. %>
         <% const carry = typeof rail_query === "undefined" ? "" : rail_query; %>
-        <a href="/search<%= carry %>" class="rail-item <%= page === "search" ? "active" : "" %>" data-page="/search" title="Structure query">
+        <a href="/search<%= carry %>" class="rail-item <%= page === "search" ? "active" : "" %>" data-page="/search" title="Full search" aria-label="Full search">
             <img src="/assets/search.svg" alt="Search">
         </a>
         <a href="#" class="rail-item" title="Questions">

@@ -41,8 +41,9 @@ test("every token in use is defined, and every token defined is used", () => {
     let scripts = ["public/cana.js", "public/seqmap.js", "public/arc_viewer.js", "detail.js",
                    "views/includes/map_guide.ejs"].map(read).join("\n");
     let used = new Set([...(rest + scripts).matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]));
-    // Set and read inside a rule (the category dot, a section's colours), not themes.
-    let local = new Set(["dot", "sec", "tint", "ink", "share"]);
+    // Set and read inside a rule (the category dot, a section's colours), not
+    // themes; footer-h is a size, the same in both.
+    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h"]);
     for (const name of used) {
         if (!local.has(name)) assert.ok(name in LIGHT, `--${name} is used but never defined`);
     }

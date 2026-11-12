@@ -893,19 +893,16 @@ export function query_problem(query) {
         return "page must be a whole number of 1 or more";
     }
 
-    let min = as_text(query.confal_min);
-    let max = as_text(query.confal_max);
+    // Every range: each end a number, and the low end no higher than the top.
+    for (const lo of FILTERS.filter((f) => f.kind === "range" && f.pair_with)) {
+        let min = as_text(query[lo.key]);
+        let max = as_text(query[lo.pair_with]);
 
-    if (min !== "" && Number.isNaN(Number(min))) {
-        return "confal_min must be a number";
-    }
-
-    if (max !== "" && Number.isNaN(Number(max))) {
-        return "confal_max must be a number";
-    }
-
-    if (min !== "" && max !== "" && Number(min) > Number(max)) {
-        return "confal_min cannot be higher than confal_max";
+        if (min !== "" && !Number.isFinite(Number(min))) return `${lo.key} must be a number`;
+        if (max !== "" && !Number.isFinite(Number(max))) return `${lo.pair_with} must be a number`;
+        if (min !== "" && max !== "" && Number(min) > Number(max)) {
+            return `${lo.key} cannot be higher than ${lo.pair_with}`;
+        }
     }
 
     return null;

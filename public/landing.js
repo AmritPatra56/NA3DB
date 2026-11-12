@@ -20,8 +20,8 @@ let timer = null;
 // is thrown away, or a slow early search would overwrite a fast later one.
 let wanted = "";
 
-// Written, never hidden: the line is always in the flow, so the examples below
-// it do not jump down the moment a number appears.
+// Written, never hidden: the line is always in the flow, so what is below
+// it does not jump down the moment a number appears.
 function show(text) {
     readout.textContent = text;
 }

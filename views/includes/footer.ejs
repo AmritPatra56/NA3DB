@@ -1,12 +1,12 @@
 <% const first_year = 2026, this_year = new Date().getFullYear(); %>
 <footer class="site_footer">
-    <span>&copy; <%= first_year === this_year ? first_year : `${first_year} – ${this_year}` %> NA3DB Team</span>
+    <span class="site_footer_copy">&copy; <%= first_year === this_year ? first_year : `${first_year} – ${this_year}` %> NA3DB Team</span>
     <nav class="site_footer_links" aria-label="About NA3DB">
         <a href="/cite">How to cite</a>
         <a href="/help">Help</a>
         <a href="/contact">Contact</a>
     </nav>
-    <span class="site_footer_support">Supported by
+    <span class="site_footer_support"><span class="site_footer_support_label">Supported by</span>
         <a class="support_tile" href="https://www.ibt.cas.cz/" target="_blank" rel="noopener" title="Institute of Biotechnology of the Czech Academy of Sciences">
             <img src="/assets/logo_ibt.svg" alt="IBT">
         </a>

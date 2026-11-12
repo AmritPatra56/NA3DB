@@ -28,16 +28,6 @@
 
                 <p class="landing_count"></p>
 
-                <p class="landing_examples">
-                    <span class="landing_examples_label">Try</span>
-                    <% for (const example of registry.examples) { %>
-                        <a href="<%= example.url %>">
-                            <strong><%= example.term %></strong>
-                            <span><%= example.kind %></span>
-                        </a>
-                    <% } %>
-                </p>
-
                 <%# Three ways in for someone with no term in mind. Every row
                     is a filter link; its number and bar come from the same
                     query (search.js browse_counts). %>
@@ -60,7 +50,7 @@
                     <% } %>
                 </div>
 
-                <a class="landing_advanced" href="/search?panel=open">Advanced search</a>
+                <a class="landing_advanced" href="/search?panel=open">Full search</a>
 
                 <%# Both from the database, so the line moves with every load. %>
                 <p class="landing_stats">
@@ -69,9 +59,9 @@
                 </p>
             </div>
         </div>
-        <%- include("includes/footer.ejs") %>
         </div>
     </div>
+    <%- include("includes/footer.ejs") %>
 
     <%# An addition, not a dependency: the form above is a plain GET and works
         with or without this. %>

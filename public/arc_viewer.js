@@ -364,8 +364,7 @@ window.addEventListener("resize", () => {
     if (dialog.open && V) build(V.d);
 });
 
-// One listener for every open button, including the Arcs view's tiles, which
-// are drawn after this script runs.
+// One listener for every open button on the page.
 document.addEventListener("click", (ev) => {
     let b = ev.target.closest("[data-arc-open]");
     if (b) open(b.dataset.arcOpen);

@@ -68,6 +68,20 @@ const ENTITY_NAME_SQL = `(
 // A pill option is {value, label}; a bare string means the two are the same.
 const option = (o) => (typeof o === "string" ? { value: o, label: o } : o);
 
+// The resolution the PDB reports: the one the model was refined to, and the
+// data's limit only when no refinement records one. 56 EM entries have it in
+// refine alone. Both tables hold at most one row per entry.
+export const RESOLUTION_SQL = "COALESCE(rfn.ls_d_res_high, rf.d_resolution_high)";
+
+// The same value for the entry e, with no join needed: for a filter's WHERE.
+const RESOLUTION_OF_ENTRY =
+    `COALESCE((SELECT rfn.ls_d_res_high FROM refine rfn WHERE rfn.entry_id = e.id),
+              (SELECT rf.d_resolution_high FROM reflns rf WHERE rf.entry_id = e.id))`;
+
+// The methods that measure a resolution: diffraction and electron microscopy.
+const RESOLUTION_METHODS = ["X-RAY DIFFRACTION", "ELECTRON MICROSCOPY", "NEUTRON DIFFRACTION",
+                            "ELECTRON CRYSTALLOGRAPHY", "POWDER DIFFRACTION", "FIBER DIFFRACTION"];
+
 // The category boxes, in the order they appear down the form. A filter lands
 // in a box by its `group`. slug colours the dot (style.css); note is optional.
 export const GROUPS = [
@@ -80,21 +94,6 @@ export const GROUPS = [
     { name: "Structure Components", slug: "components" }
 ];
 
-
-// What to put in the box, shown under it on the landing page. Each one is a
-// different KIND of thing, so reading the line once tells you what the box
-// accepts. `kind` is the label beside it, not a category in the data.
-export const EXAMPLES = [
-    { term: "119D",             kind: "an entry id" },
-    { term: "Escherichia coli", kind: "an organism" },
-    { term: "Leonard",          kind: "an author" },
-
-    // Residues are not in the box: searching them means scanning 3.8M rows in
-    // entity_poly_seq, which cost 348-643 ms inside the box's OR against 6-45
-    // without it. This one goes to the filter that owns them, which also opens
-    // the panel and shows where that filter lives.
-    { term: "PSU", kind: "a residue", filter: "nonstandard_residue" }
-];
 
 // The molecules offered on the landing page and as pills in the panel. An
 // entry is one when its own title or one of its molecule names says so, in
@@ -147,13 +146,6 @@ export const BROWSE = [
         browse_row("NMR", "experimental_method", ["SOLUTION NMR", "SOLID-STATE NMR"])
     ] }
 ];
-
-// Where an example sends you. Everything goes through the box unless it names
-// a filter of its own.
-export function example_url(example) {
-    return "/search?" + (example.filter || "q") + "=" + encodeURIComponent(example.term);
-}
-
 
 // One object per searchable question. `kind` decides how the value is read and
 // drawn; `where` is SQL with ? for the value; `clause` is the escape hatch for
@@ -255,14 +247,17 @@ export const FILTERS = [
 
     // = ANY(?) takes the whole array as one parameter, however many pills are
     // on. IN (...) would need a changing number of placeholders.
+    //
+    // `first`: how many options are always shown. The rest wait behind a
+    // "more" button, since 99.9% of entries use the first four.
     {
         key: "experimental_method", label: "Experimental method",
-        group: "Demographics", kind: "pills", any: true,
+        group: "Demographics", kind: "pills", any: true, first: 4,
         options: [
             { value: "X-RAY DIFFRACTION",        label: "X-ray" },
             { value: "ELECTRON MICROSCOPY",      label: "EM" },
-            { value: "SOLID-STATE NMR",          label: "Solid NMR" },
             { value: "SOLUTION NMR",             label: "NMR" },
+            { value: "SOLID-STATE NMR",          label: "Solid NMR" },
             { value: "NEUTRON DIFFRACTION",      label: "Neutron" },
             { value: "ELECTRON CRYSTALLOGRAPHY", label: "Electron cryst." },
             { value: "POWDER DIFFRACTION",       label: "Powder" },
@@ -275,6 +270,22 @@ export const FILTERS = [
         ].map(option),
         where: `AND EXISTS (SELECT 1 FROM exptl x
                             WHERE x.entry_id = e.id AND x.method = ANY(?))`
+    },
+
+    // The resolution as the cards show it (RESOLUTION_OF_ENTRY), between two
+    // values in Å, both ends included. The form shows it only once a method
+    // that reports a resolution is picked (`revealed_by`); NMR has none, so an
+    // NMR entry never passes a resolution range.
+    {
+        key: "resolution_min", label: "Resolution (Å)", group: "Demographics", kind: "range",
+        answered_by: "resolution", placeholder: "from, e.g. 2.0", pair_with: "resolution_max",
+        revealed_by: { key: "experimental_method", values: RESOLUTION_METHODS },
+        where: `AND ${RESOLUTION_OF_ENTRY} >= ?`
+    },
+    {
+        key: "resolution_max", label: "Resolution (Å)", group: "Demographics", kind: "range",
+        answered_by: "resolution", placeholder: "to, e.g. 3.0",
+        where: `AND ${RESOLUTION_OF_ENTRY} <= ?`
     },
 
     // Two filters, one control: pair_with tells the form to draw them together.
@@ -457,10 +468,7 @@ export const PILL_FILTERS = of_kind("pills");
 //
 // NULLS LAST in both directions, because a missing value is not a small one:
 // 629 structures have no resolution, and they belong at the end either way.
-// The resolution the PDB reports: the one the model was refined to, and the
-// data's limit only when no refinement records one. 56 EM entries have it in
-// refine alone. Both tables hold at most one row per entry.
-export const RESOLUTION_SQL = "COALESCE(rfn.ls_d_res_high, rf.d_resolution_high)";
+// RESOLUTION_SQL is near the top, beside the resolution filter.
 const RESOLUTION_JOIN = `LEFT JOIN reflns rf  ON rf.entry_id  = e.id
                          LEFT JOIN refine rfn ON rfn.entry_id = e.id`;
 
@@ -864,11 +872,6 @@ export function columns_answering(query) {
 export function public_registry() {
     return {
         groups: GROUPS,
-        // The URL is worked out here, so the page never has to know which
-        // filter an example uses.
-        examples: EXAMPLES.map((e) =>
-            ({ term: e.term, kind: e.kind, url: example_url(e) })),
-
         sorts: SORTS.map(({ key, label }) => ({ key, label })),
         default_sort: DEFAULT_SORT.key,
 
@@ -879,10 +882,10 @@ export function public_registry() {
         default_page_size: DEFAULT_PAGE_SIZE,
         max_page_size: MAX_PAGE_SIZE,
 
-        filters: FILTERS.map(({ key, label, group, kind, prominent,
-                               options, any, placeholder, pair_with, suggest }) =>
-            ({ key, label, group, kind, prominent,
-               options, any, placeholder, pair_with, suggest })),
+        filters: FILTERS.map(({ key, label, group, kind, prominent, options, any, first,
+                               placeholder, pair_with, revealed_by, suggest }) =>
+            ({ key, label, group, kind, prominent, options, any, first,
+               placeholder, pair_with, revealed_by, suggest })),
 
         columns: COLUMNS.map(({ key, label, group, scope, show }) =>
             ({ key, label, group, scope, show })),

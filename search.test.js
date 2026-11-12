@@ -230,7 +230,10 @@ const bad_queries = [
     [{ page: "2.9" },                      /whole number/],
     [{ confal_min: "x" },                  /confal_min must be a number/],
     [{ confal_max: "y" },                  /confal_max must be a number/],
-    [{ confal_min: "9", confal_max: "2" }, /cannot be higher/]
+    [{ confal_min: "9", confal_max: "2" }, /cannot be higher/],
+    [{ resolution_min: "2.0A" },             /resolution_min must be a number/],
+    [{ resolution_max: "Infinity" },         /resolution_max must be a number/],
+    [{ resolution_min: "3", resolution_max: "2" }, /resolution_min cannot be higher than resolution_max/]
 ];
 
 for (const [query, expected] of bad_queries) {
@@ -1122,4 +1125,38 @@ test("an NtC value too long to be a class finds nothing, and Excludes everything
     let all = (await ids_for({})).length;
     assert.deepEqual(await ids_for({ assigned_ntc: "x".repeat(5000) }), []);
     assert.equal((await ids_for({ assigned_ntc: "x".repeat(5000), match: "excludes" })).length, all);
+});
+
+
+// --- the resolution range ---------------------------------------------------
+// Exactly the entries whose resolution, as the card shows it, lies in the
+// range, both ends included. Checked against the column the cards read, so
+// the filter and the card can never disagree about an entry.
+test("a resolution range finds exactly the entries the card puts inside it", async () => {
+    let shown = (await query(`SELECT e.id, COALESCE(rfn.ls_d_res_high, rf.d_resolution_high) AS r
+                                FROM entry e LEFT JOIN reflns rf ON rf.entry_id = e.id
+                                LEFT JOIN refine rfn ON rfn.entry_id = e.id`)).rows;
+    let ids = async (params) => (await export_entries(params)).results.map((e) => e.pdb_id).sort();
+    let held = shown.filter((x) => x.r !== null).map((x) => x.r).sort((a, b) => a - b);
+    assert.ok(held.length > 2, "the seed holds entries with a resolution");
+
+    // One end on a value an entry has, so "included" is tested, not assumed.
+    let lo = held[Math.floor(held.length / 4)], hi = held[Math.floor(held.length * 3 / 4)];
+    for (const [params, keep] of [
+        [{ resolution_min: String(lo), resolution_max: String(hi) }, (r) => r >= lo && r <= hi],
+        [{ resolution_min: String(lo) },                             (r) => r >= lo],
+        [{ resolution_max: String(hi) },                             (r) => r <= hi]
+    ]) {
+        let want = shown.filter((x) => x.r !== null && keep(x.r)).map((x) => x.id).sort();
+        assert.deepEqual(await ids(params), want, JSON.stringify(params));
+    }
+});
+
+test("a resolution range never lets in an entry with no resolution", async () => {
+    let none = (await query(`SELECT e.id FROM entry e LEFT JOIN reflns rf ON rf.entry_id = e.id
+                               LEFT JOIN refine rfn ON rfn.entry_id = e.id
+                              WHERE COALESCE(rfn.ls_d_res_high, rf.d_resolution_high) IS NULL`)).rows.map((x) => x.id);
+    let found = (await export_entries({ resolution_min: "0", resolution_max: "1000" })).results.map((e) => e.pdb_id);
+    assert.ok(none.length > 0);
+    assert.ok(none.every((id) => !found.includes(id)));
 });

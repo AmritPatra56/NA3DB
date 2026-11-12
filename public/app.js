@@ -35,8 +35,46 @@ pill_fields.forEach(function (field) {
             if (any_pill) any_pill.classList.remove("selected");
             e.target.classList.toggle("selected");
         }
+        sync_revealed(false, this.dataset.name);
     });
 });
+
+// "N more" in a long pill group: the rest of its options, and back.
+function unfold_pills(field, open) {
+    let more = field.querySelector(".pill_more");
+    if (!more) return;
+    field.querySelectorAll(".pill_extra").forEach((pill) => { pill.hidden = !open; });
+    more.setAttribute("aria-expanded", String(open));
+    more.textContent = open ? more.dataset.less : more.dataset.more;
+}
+
+document.querySelectorAll(".pill_more").forEach(function (more) {
+    more.addEventListener("click", function () {
+        let field = more.closest(".pill_field");
+        let open = more.getAttribute("aria-expanded") !== "true";
+        // A picked option is never hidden: folding keeps it in view.
+        unfold_pills(field, open || Boolean(field.querySelector(".pill_extra.selected")));
+    });
+});
+
+// A field shown only while a pill it depends on is on: the resolution range,
+// once X-ray, EM or another method that measures one is picked. Hidden, its
+// boxes are emptied, so a filter nobody can see never narrows the search.
+// keep_filled: on loading a link, a range already in it stays in view.
+// only: the pill group that changed; other revealed fields are left alone.
+function sync_revealed(keep_filled, only = null) {
+    document.querySelectorAll(".revealed_field").forEach(function (field) {
+        if (only && field.dataset.revealedBy !== only) return;
+        let wanted = field.dataset.values.split("|");
+        let picked = read_pills(field.dataset.revealedBy).some((v) => wanted.includes(v));
+        let inputs = field.querySelectorAll("input");
+        let filled = Array.from(inputs).some((i) => i.value.trim() !== "");
+        let show = picked || (keep_filled && filled);
+
+        field.hidden = !show;
+        if (!show) inputs.forEach((i) => { i.value = ""; });
+    });
+}
 
 
 
@@ -100,6 +138,11 @@ function params_to_form(params) {
             document.getElementById(key).value = value === null ? "" : value;
         }
     });
+
+    document.querySelectorAll(".pill_field").forEach(function (field) {
+        if (field.querySelector(".pill_extra.selected")) unfold_pills(field, true);
+    });
+    sync_revealed(true);
 }
 
 // Pressing Search: stop the browser reloading the page, then run the search.
@@ -141,9 +184,10 @@ let method_labels = {
 const CARD_HEAD = new Set(["title", "method", "deposition_date", "resolution", "polymer_type"]);
 const fmt = (v) => Number(v).toLocaleString("en-GB");
 
-// One result as a card: the arc picture on the left; on the right the id and
-// title, a row of the numbers a reader compares first, then a row of every
-// other field and the links.
+// One result as a card: a blank picture slot on the left, kept for a snapshot
+// of the 3D structure; on the right the id and title, a row of the numbers a
+// reader compares first, then a row of every other field. The whole card opens
+// the structure page; the id is also a real link, for a new tab or a keyboard.
 function card_html(entry) {
     let id = escape_html(entry.pdb_id);
     let url_id = encodeURIComponent(entry.pdb_id);
@@ -157,7 +201,7 @@ function card_html(entry) {
         ["Nucleotides", a ? fmt(a.nucleotides) : null],
         ["Base pairs", a ? `${fmt(a.pairs)} <small>(${fmt(a.wc)} WC)</small>` : "None annotated"],
         ["Modified", a ? fmt(a.modified) : null],
-        ["Strands drawn", a ? fmt(a.strands) : null]
+        ["Strands", a ? fmt(a.strands) : null]
     ].filter(([, value]) => value);
 
     // The phone card's short forms: first author, paper, organisms on one
@@ -184,23 +228,11 @@ function card_html(entry) {
         `;
     }).join("");
 
-    // The picture opens full screen (arc_viewer.js); the rest of the card
-    // opens the structure page.
     return `
         <article class="result_card" data-id="${id}">
-            <figure class="card_picture">
-                <button type="button" class="card_zoom" data-arc-open="${id}"
-                        title="Open the arc picture full screen"${a ? "" : " disabled"}>
-                    <img src="/structure/${url_id}/arcs.svg" alt="Base pairs of ${id} drawn as arcs"
-                         loading="lazy" width="300" height="150">
-                </button>
-                ${a ? `<figcaption>
-                    <span>${a.strands === 1 ? "1 strand" : fmt(a.strands) + " strands"} · ${fmt(a.nucleotides)} nt · ${fmt(a.pairs)} pairs</span>
-                    <button type="button" class="arc_full" data-arc-open="${id}">⤢ Full screen</button>
-                </figcaption>` : ""}
-            </figure>
+            <div class="card_picture" aria-hidden="true"></div>
             <div class="card_head">
-                <h3 class="card_id">${id}${entry.polymer_type ? ` <span class="card_badge">${escape_html(entry.polymer_type)}</span>` : ""}</h3>
+                <h3 class="card_id"><a href="/structure/${url_id}">${id}</a>${entry.polymer_type ? ` <span class="card_badge">${escape_html(entry.polymer_type)}</span>` : ""}</h3>
                 <p class="card_title">${escape_html(entry.title)}</p>
                 <p class="card_when">${escape_html(when)}</p>
             </div>
@@ -210,18 +242,10 @@ function card_html(entry) {
                 ${brief.length ? `<p class="card_cite">${escape_html(brief.join(" · "))}</p>` : ""}
                 ${chips ? `<p class="card_chips">${chips}</p>` : ""}
                 <div class="card_actions">
-                    <a class="card_open" href="/structure/${url_id}">Open entry</a>
-                    <a class="card_rcsb" target="_blank" rel="noopener" href="https://www.rcsb.org/structure/${id}">RCSB ↗</a>
                     <button type="button" class="card_more" aria-expanded="false">More ▾</button>
                 </div>
             </div>
-            <div class="card_rest">${rows}
-                <div class="card_links">
-                    <a class="detail_link" target="_blank" rel="noopener"
-                       href="https://www.rcsb.org/structure/${id}">View on rcsb.org</a>
-                    <a class="detail_link" href="/structure/${url_id}">Open full page</a>
-                </div>
-            </div>
+            <div class="card_rest">${rows}</div>
         </article>
     `;
 }
@@ -248,10 +272,9 @@ function row_html(entry) {
     `;
 }
 
-// One result as a tile in the Arcs view: the entry's base pairs drawn as
-// arcs, then its id, title and one line of facts. The picture is an image the
-// browser fetches only as the tile scrolls into view; pressing it opens the
-// picture full screen (arc_viewer.js), the text opens the structure page.
+// One result as a tile in the Grid view: a blank picture slot, kept for a
+// snapshot of the 3D structure, then its id, title and one line of facts. The
+// whole tile is one link to the structure page.
 function tile_html(entry) {
     let id = escape_html(entry.pdb_id);
     let url_id = encodeURIComponent(entry.pdb_id);
@@ -261,28 +284,26 @@ function tile_html(entry) {
         .filter(Boolean).map(escape_html).join(" · ");
 
     return `
-        <article class="arc_tile" data-id="${id}">
-            <button type="button" class="arc_tile_picture" data-arc-open="${id}"
-                    title="Open the arc picture full screen">
-                <img src="/structure/${url_id}/arcs.svg" alt="Base pairs of ${id} drawn as arcs"
-                     loading="lazy" width="300" height="150">
-            </button>
-            <a class="arc_tile_text" href="/structure/${url_id}">
+        <a class="grid_tile" data-id="${id}" href="/structure/${url_id}">
+            <span class="grid_tile_picture" aria-hidden="true"></span>
+            <span class="grid_tile_text">
                 <b>${id}</b>
-                <span class="arc_tile_title">${escape_html(entry.title)}</span>
-                <span class="arc_tile_facts">${facts}</span>
-            </a>
-        </article>
+                <span class="grid_tile_title">${escape_html(entry.title)}</span>
+                <span class="grid_tile_facts">${facts}</span>
+            </span>
+        </a>
     `;
 }
 
 // Cards is the default: the picture and the facts side by side.
-// "arcs" and "lines" are the only other accepted values, so a stale or
-// hand-edited URL falls back rather than drawing nothing.
-const VIEWS = { cards: card_html, lines: row_html, arcs: tile_html };
+// "grid" and "lines" are the only other accepted values, so a stale or
+// hand-edited URL falls back rather than drawing nothing. "arcs" is the
+// Grid's old name, kept for links made before the rename.
+const VIEWS = { cards: card_html, lines: row_html, grid: tile_html };
 
 function view_from_url() {
     let view = new URLSearchParams(location.search).get("view");
+    if (view === "arcs") return "grid";
     return Object.hasOwn(VIEWS, view) ? view : "cards";
 }
 
@@ -292,7 +313,7 @@ let current_view = view_from_url();
 function render_results(list) {
     let container = document.querySelector(".results_list");
     container.classList.toggle("as_cards", current_view === "cards");
-    container.classList.toggle("as_arcs", current_view === "arcs");
+    container.classList.toggle("as_grid", current_view === "grid");
     container.innerHTML = list.map(VIEWS[current_view]).join("");
 }
 
@@ -549,6 +570,8 @@ async function run_search(page = 1) {
         show_page();
         count_wanted = "";
         paint_count(current_reply.total);
+        // The results header has the number now.
+        box_readout.textContent = "";
         paint_chips(filters);
     } catch (err) {
         show_error(err.message);
@@ -562,8 +585,7 @@ async function run_search(page = 1) {
 let results_list = document.querySelector(".results_list");
 
 results_list.addEventListener("click", function (e) {
-    // A link inside a card is its own destination, and its picture opens the
-    // full-screen viewer instead.
+    // A link inside a card is its own destination; More only unfolds the card.
     let more = e.target.closest(".card_more");
     if (more) {
         let open = more.closest(".result_card").classList.toggle("show_more");
@@ -571,7 +593,7 @@ results_list.addEventListener("click", function (e) {
         more.textContent = open ? "Less ▴" : "More ▾";
         return;
     }
-    if (e.target.closest("a, [data-arc-open]")) return;
+    if (e.target.closest("a")) return;
 
     let result = e.target.closest(".result_card, .result_row");
     if (!result) return;
@@ -647,10 +669,15 @@ async function refresh_count() {
         let res = await fetch("/api/count?" + asked);
         if (!res.ok) throw new Error();
         let data = await res.json();
-        if (count_wanted === asked) paint_count(data.total);
+        if (count_wanted !== asked) return;
+        paint_count(data.total);
+        paint_box_count(data);
     } catch {
         // The button still searches; only the number is lost.
-        if (count_wanted === asked) search_button.textContent = "Search";
+        if (count_wanted === asked) {
+            search_button.textContent = "Search";
+            box_readout.textContent = "";
+        }
     }
 }
 
@@ -662,6 +689,59 @@ function count_soon() {
 // "click" for the pills, "input" for the boxes. A pill's own listener runs
 // first, so the selection has changed by the time this reads it.
 query_form.addEventListener("input", count_soon);
+
+
+// The count under the top box, as on the front page. The box belongs to the
+// form through form="query_form" but sits outside it, so its typing never
+// reaches the form's listener above.
+const BOX_MIN_LENGTH = 2;
+let top_box = document.querySelector(".top_search_box input");
+let box_readout = document.querySelector(".top_search_count");
+
+function box_show_none(suggestions) {
+    box_readout.textContent = "no structures match";
+    if (suggestions.length === 0) return;
+
+    box_readout.append(". Did you mean ");
+    suggestions.forEach(function (s, i) {
+        if (i > 0) box_readout.append(i === suggestions.length - 1 ? " or " : ", ");
+        let link = document.createElement("button");
+        link.type = "button";
+        link.className = "link_button";
+        link.dataset.field = s.field;
+        link.dataset.value = s.value;
+        link.textContent = s.value;
+        box_readout.append(link, ` (${s.total.toLocaleString("en-GB")})`);
+    });
+    box_readout.append("?");
+}
+
+// Called with every count the panel asks for, so the line under the box
+// follows the filters too: picking X-ray changes it as it changes the button.
+function paint_box_count(data) {
+    if (top_box.value.trim().length < BOX_MIN_LENGTH) {
+        box_readout.textContent = "";
+        return;
+    }
+    if (data.total === 0)      box_show_none(data.suggestions || []);
+    else if (data.total === 1) box_readout.textContent = "1 structure";
+    else                       box_readout.textContent = data.total.toLocaleString("en-GB") + " structures";
+}
+
+top_box.addEventListener("input", function () {
+    if (top_box.value.trim().length < BOX_MIN_LENGTH) box_readout.textContent = "";
+    count_soon();
+});
+
+// A suggestion keeps every other filter: it changes the one box and searches.
+box_readout.addEventListener("click", function (e) {
+    let pick = e.target.closest("button[data-value]");
+    if (!pick) return;
+    let input = document.getElementById(pick.dataset.field);
+    if (input) input.value = pick.dataset.value;
+    box_readout.textContent = "";
+    run_search(1);
+});
 query_form.addEventListener("click", function (e) {
     if (e.target.closest(".pill")) count_soon();
 });
@@ -875,6 +955,7 @@ chips_bar.addEventListener("click", function (e) {
     if (PILL_FILTERS.includes(key)) {
         let left = read_pills(key).filter((v) => v !== value);
         select_pills(key, left.length ? left : ["any"]);
+        sync_revealed(false, key);
     } else {
         document.getElementById(key).value = "";
     }
