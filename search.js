@@ -3,7 +3,7 @@
 
 import { query } from "./db.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
-import { taxa_named, taxon, is_common_name } from "./taxonomy.js";
+import { taxa_named, taxa_exactly_named, taxon, is_common_name } from "./taxonomy.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
          page_size_from, match_mode, RESOLUTION_SQL, BROWSE } from "./filters.js";
 
@@ -31,8 +31,11 @@ const SPELLED_RE = new RegExp(`[${Object.keys(SPELLED).join("")}]`, "giu");
 // Sponer, Cerny), so accents are folded; dropping the accented letter instead
 // made Cerny "ern" and found 140 wrong entries. Spaces are trimmed and runs of
 // them made one, so "ribosome " and a phone's trailing space find the same.
+// Curly double quotes become straight ones: phones and Macs type “HIV domain”
+// for "HIV domain", and the quotes are what ask for an exact phrase.
 export function clean_text(value) {
     return value
+        .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB\u2033\u301D\u301E\uFF02]/g, "\"")
         .normalize("NFD").replace(/\p{M}/gu, "")
         .replace(SPELLED_RE, (ch) => {
             let lower = ch.toLowerCase(), spelled = SPELLED[lower];
@@ -131,15 +134,20 @@ const MAX_UNITS = 12;
 //   ribosomes        [[ribosome]]            a plural finds the singular
 //   families         [[families], [family]]  when the singular is not a prefix
 //   "z dna"          [[z dna, zdna, z-dna]]  a lone letter joins the next word
-//   "\"yeast tRNA\"" [[yeast tRNA]]          quotes keep a phrase whole
+//   "\"yeast tRNA\"" [[yeast tRNA]] exact     quotes keep a phrase whole
+//
+// A quoted unit is marked exact (is_exact): whole words, in that order, with
+// none of the loosening below. A quote left open runs to the end, which is
+// what someone typing "HIV domain and nothing after it means.
 //
 // A lone letter matches nearly everything, which is why it joins the next
 // word: Z DNA is how people type Z-DNA. Not a or i, which are words.
 export function search_units(text) {
     let units = [];
+    if ((text.match(/"/g) ?? []).length % 2 === 1) text += "\"";
     let rest = text.replace(/"([^"]*)"/g, (_, phrase) => {
         phrase = phrase.trim();
-        if (phrase) units.push([phrase]);
+        if (phrase) units.push(Object.defineProperty([phrase], "exact", { value: true }));
         return " ";
     });
     let words = rest.replaceAll("\"", " ")
@@ -162,6 +170,51 @@ export function search_units(text) {
     }
 
     return units.length > MAX_UNITS ? [[text]] : units;
+}
+
+export const is_exact = (unit) => unit.exact === true;
+
+// Regular-expression metacharacters escaped, for PostgreSQL's ~*. The value
+// travels as a parameter, so this is about meaning, not injection.
+const regex_literal = (text) => text.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+
+// A phrase as whole words, in order, inside one field. A space and a hyphen
+// both separate words, so "Z DNA" finds Z-DNA; a newline does not, and the
+// doc view puts one between two authors, organisms or molecules, so a
+// phrase cannot run from one into the next.
+export function exact_pattern(phrase) {
+    let words = phrase.split(/[\s-]+/).filter(Boolean);
+    if (words.length === 0) return null;
+    return "(^|[^[:alnum:]])" + words.map(regex_literal).join("[[:blank:]-]+") + "([^[:alnum:]]|$)";
+}
+
+// "Helen Berman", "Helen M. Berman", "J. Sponer": two or three words that
+// read as a person, as the PDB stores them, "Berman, H.M." (family name, a
+// comma, then initials; mmCIF _citation_author.name). Only the initial of a
+// first name is stored, so "Helen Berman" can only ever mean "Berman, H.",
+// and the page says so. null when the text does not read as a name.
+const NAME_WORD = /^[a-z][a-z'-]*\.?$/i;
+
+export function author_form(text) {
+    let words = text.replaceAll("\"", " ").split(/\s+/).filter(Boolean);
+    if (words.length < 2 || words.length > 3 || !words.every((w) => NAME_WORD.test(w))) return null;
+
+    let family = words.at(-1);
+    if (family.endsWith(".") || family.length < 2) return null;
+
+    let given = words.slice(0, -1).map((w) => w.replace(/\.$/, ""));
+    let [first, ...middle] = given;
+    let initial = first[0];
+
+    // The first name as an initial, or written out in full where a depositor
+    // did ("Bleary, Percival R."); a middle initial, if typed, must be there.
+    let pattern = "(^|\n)" + regex_literal(family) + ",[[:blank:]]*"
+        + (first.length > 1 ? `(${regex_literal(initial)}\\.|${regex_literal(first)}\\M)`
+                            : `${regex_literal(initial)}(\\.|\\M)`)
+        + middle.map((m) => `[[:blank:]-]*${regex_literal(m[0])}(\\.|\\M)`).join("");
+
+    let shown = `${family}, ${[initial, ...middle.map((m) => m[0])].map((c) => c.toUpperCase() + ".").join("")}`;
+    return { pattern, family, shown };
 }
 
 // Per kind: was it filled in, and what goes into the ?. Three rules cover ten
@@ -208,18 +261,68 @@ export function build_where(query_params) {
         return sql;
     }
     const add = (clause, value, normalised, typed) => tests.push(bind(clause, value, normalised, typed));
+    const param = (value) => { values.push(value); return "$" + values.length; };
+
+    // An author written "Family, I.": the family name narrows through the
+    // prose index, then the pattern checks the initials.
+    const author_clause = (name) =>
+        `EXISTS (SELECT 1 FROM doc d WHERE d.id = e.id
+                    AND d.prose LIKE ${param(like_normalised(name.family))}
+                    AND d.authors ~* ${param(name.pattern)})`;
+
+    // A quoted phrase. Each of its words narrows through the same indexes the
+    // loose search uses, which is cheap and always a superset: a whole word
+    // in a field is also a substring of it, punctuation dropped or not. Only
+    // the rows left are checked with the pattern, which on its own read every
+    // field of every row (45-217 ms). A full scientific name also matches by
+    // taxon, and a name by its stored form, as unquoted.
+    const exact_clause = (phrase) => {
+        let pattern = exact_pattern(phrase);
+        if (!pattern) return "FALSE";
+
+        let narrow = phrase.split(/[\s-]+/).filter(Boolean).map((word) => {
+            let loose = param(like_contains(word));
+            return `(d.prose LIKE ${param(like_normalised(word))} OR d.id ILIKE ${loose}
+                     OR d.entities ILIKE ${loose} OR d.residues ILIKE ${loose})`;
+        }).join(" AND ");
+
+        let re = param(pattern);
+        let found = [`EXISTS (SELECT 1 FROM doc d WHERE d.id = e.id AND ${narrow}
+                    AND (d.id ~* ${re} OR d.title ~* ${re} OR d.entities ~* ${re}
+                         OR d.authors ~* ${re} OR d.organisms ~* ${re} OR d.residues ~* ${re}))`];
+
+        let taxa = taxa_exactly_named(phrase);
+        if (taxa.length) {
+            found.push(`e.id IN (SELECT s.entry_id FROM ${SOURCES_SQL} s WHERE s.taxid = ANY(${param(taxa)}::int[]))`);
+        }
+
+        let name = author_form(phrase);
+        if (name) found.push(author_clause(name));
+
+        return `(${found.join("\n      OR ")})`;
+    };
 
     for (const filter of FILTERS) {
         let value = f[filter.key];
 
-        // The search box: each word its own clause, any spelling of it will do.
+        // The search box: each word its own clause, any spelling of it will do,
+        // and each quoted phrase its own exact clause.
         if (filter.words) {
-            for (const unit of search_units(value)) {
+            let clauses = search_units(value).map((unit) => {
+                if (is_exact(unit)) return exact_clause(unit[0]);
                 let either = unit.map((spelling) =>
                     bind(filter.where, like_contains(spelling), like_normalised(spelling), spelling)
                         .replace(/^\s*AND\s+/, ""));
-                tests.push(`AND (${either.join("\n         OR ")})`);
-            }
+                return `(${either.join("\n         OR ")})`;
+            });
+            if (clauses.length === 0) continue;
+
+            // Unquoted, a name typed the usual way ("Jiri Sponer") is also
+            // tried as the PDB stores it ("Sponer, J."), since the words alone
+            // never match: no first name is stored.
+            let name = value.includes("\"") ? null : author_form(value);
+            let all = clauses.join("\n     AND ");
+            tests.push(name ? `AND ((${all})\n     OR ${author_clause(name)})` : `AND ${all}`);
             continue;
         }
 
@@ -376,8 +479,41 @@ export async function search_entries(query_params) {
         total:     total,
         page:      page,
         pages:     Math.ceil(total / page_size),
-        page_size: page_size
+        page_size: page_size,
+        ...await how_read(query_params)
     };
+}
+
+// How the box was read, for the note above the results:
+//   exact      a quoted phrase was asked for
+//   phrase     loose words, and the quoted search to offer instead
+//   stored_as  names it was also read as ("Berman, H."), so nobody wonders
+//              why "Helen Berman" lists an H. Berman
+async function how_read(query_params) {
+    let text = clean_text(as_text(query_params.q));
+    let units = text ? search_units(text) : [];
+    return {
+        exact:     units.some(is_exact),
+        phrase:    !text.includes("\"") && units.length >= 2 ? `"${text}"` : null,
+        stored_as: await stored_names(text)
+    };
+}
+
+// Only names some author really has: "yeast tRNA" reads as "tRNA, Y." and
+// says nothing.
+async function stored_names(text) {
+    if (!text) return [];
+
+    let names = text.includes("\"")
+        ? search_units(text).filter(is_exact).map((unit) => author_form(unit[0]))
+        : [author_form(text)];
+    names = names.filter(Boolean);
+    if (names.length === 0) return [];
+
+    let found = await query(`SELECT n.shown FROM unnest($1::text[], $2::text[], $3::text[]) AS n(shown, family, pattern)
+                              WHERE EXISTS (SELECT 1 FROM doc d WHERE d.prose LIKE n.family AND d.authors ~* n.pattern)`,
+                            [names.map((n) => n.shown), names.map((n) => like_normalised(n.family)), names.map((n) => n.pattern)]);
+    return found.rows.map((r) => r.shown);
 }
 
 // The size of the database and when it last changed, for the landing page.

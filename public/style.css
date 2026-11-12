@@ -2579,6 +2579,36 @@ input::placeholder {
 
     .sequence_copy, .sequence_fasta, .entry_fasta > summary,
     a.entry_fasta, .pair_csv { min-height: 36px; padding-inline: 10px; }
+/* <---------------------how the box was read---------------------> */
+
+.search_note {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.note_tag {
+    display: inline-block;
+    margin-right: 4px;
+    padding: 0 8px;
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background-color: var(--accent-tint);
+    border: 1px solid var(--accent-line);
+}
+
+@media (max-width: 1023px) {
+    .search_note { padding: 8px 16px; }
+}
+
 
     .molecule_group summary,
     .sequence summary,

@@ -6,7 +6,8 @@ import assert from "node:assert";
 import { close } from "./db.js";
 import entries from "./entries.json" with { type: "json" };
 import { find_entry, export_entries, search_entries, query_problem, nonstandard_suggestions, ligand_suggestions,
-         build_where, search_units } from "./search.js";
+         build_where, search_units, is_exact, author_form, clean_text } from "./search.js";
+import { taxa_exactly_named } from "./taxonomy.js";
 import { SORTS, DEFAULT_SORT, sort_by,
          columns_answering, columns_for,
          PAGE_SIZE_SUGGESTIONS, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE,
@@ -1041,6 +1042,152 @@ test("a lone letter with a dot joins the next word too", async () => {
     assert.deepEqual(await ids_for({ q: "E. coli" }), plain);
     assert.deepEqual(search_units("E. coli"), [["E coli", "Ecoli", "E-coli", "coli E"]]);
     assert.deepEqual(await ids_for({ q: "e.coli" }), plain);
+});
+
+// --- quoted phrases: exact, whole words -------------------------------------
+
+// The rule, written again in JavaScript and run over every entry, so the SQL
+// is checked against an independent reading rather than against itself:
+// whole words, in order, a space or hyphen between them, inside one field.
+const FIELDS = ["id", "title", "entities", "authors", "organisms", "residues"];
+
+async function holding(phrase) {
+    let words = phrase.split(/[\s-]+/).filter(Boolean)
+        .map((w) => w.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"));
+    let re = new RegExp(`(^|[^a-z0-9])${words.join("[ \\t-]+")}([^a-z0-9]|$)`, "i");
+    let rows = (await query(`SELECT ${FIELDS.join(", ")} FROM doc`)).rows;
+    return rows.filter((r) => FIELDS.some((f) => String(r[f] ?? "").split("\n").some((line) => re.test(line))))
+               .map((r) => r.id).sort();
+}
+
+for (const phrase of ["TAR", "Z DNA", "tRNA", "RNA", "DNA", "PSU", "HIV", "transfer RNA", "Westhof, E.", "tRNA-Phe"]) {
+    test(`"${phrase}" in quotes finds exactly the entries holding it as whole words`, async () => {
+        assert.deepEqual(await ids_for({ q: `"${phrase}"` }), await holding(phrase));
+    });
+}
+
+// The doc view puts each author, organism and residue on a line of its own.
+// A phrase made of the end of one line and the start of the next must not
+// find that entry. The seed's only multi-line field is residues.
+test("a quoted phrase never runs from one line of a field into the next", async () => {
+    let row = (await query(`SELECT id, residues FROM doc
+                             WHERE residues LIKE '%' || chr(10) || '%' ORDER BY id LIMIT 1`)).rows[0];
+    assert.ok(row, "the seed needs an entry with two residues");
+    let [one, two] = row.residues.split("\n").map((line) => line.trim());
+    let phrase = `${one.split(" ").at(-1)} ${two.split(" ")[0]}`;
+    assert.ok(!(await holding(phrase)).includes(row.id), `the seed itself holds "${phrase}" in ${row.id}`);
+    assert.ok(!(await ids_for({ q: `"${phrase}"` })).includes(row.id), `"${phrase}" ran across two lines of ${row.id}`);
+});
+
+test("a quoted word is not found inside a longer one", async () => {
+    let loose = await ids_for({ q: "TAR" });
+    let exact = await ids_for({ q: "\"TAR\"" });
+    assert.ok(loose.length > exact.length, `TAR loose ${loose.length}, quoted ${exact.length}`);
+    assert.ok(exact.every((id) => loose.includes(id)), "quoted is a narrowing of loose");
+});
+
+test("in quotes a space and a hyphen are the same, and plurals are not folded", async () => {
+    let zdna = await ids_for({ q: "\"Z-DNA\"" });
+    assert.ok(zdna.length > 0);
+    assert.deepEqual(await ids_for({ q: "\"Z DNA\"" }), zdna);
+    assert.deepEqual(await ids_for({ q: "\"tRNAs\"" }), await holding("tRNAs"));
+});
+
+test("curly quotes and a quote left open read as an exact phrase", async () => {
+    let straight = await ids_for({ q: "\"Z DNA\"" });
+    assert.deepEqual(await ids_for({ q: "“Z DNA”" }), straight);
+    assert.deepEqual(await ids_for({ q: "«Z DNA»" }), straight);
+    assert.deepEqual(await ids_for({ q: "\"Z DNA" }), straight);
+    assert.ok(is_exact(search_units(clean_text("“Z DNA”"))[0]));
+    assert.ok(is_exact(search_units("\"Z DNA")[0]));
+    assert.ok(!is_exact(search_units("Z DNA")[0]));
+});
+
+test("a quoted phrase and a loose word work together", async () => {
+    let both = await ids_for({ q: "\"Z DNA\" crystal" });
+    let phrase = await ids_for({ q: "\"Z DNA\"" });
+    let word = await ids_for({ q: "crystal" });
+    assert.deepEqual(both, phrase.filter((id) => word.includes(id)));
+});
+
+test("contains and excludes add up to the whole table with a quoted phrase", async () => {
+    let all = (await ids_for({})).length;
+    for (const q of ["\"TAR\"", "\"Z DNA\" crystal", "\"Eric Westhof\"", "\"Escherichia coli\""]) {
+        let yes = (await ids_for({ q })).length;
+        let no = (await ids_for({ q, match: "excludes" })).length;
+        assert.equal(yes + no, all, q);
+    }
+});
+
+test("a phrase with only punctuation, or regex characters, finds nothing and does not fail", async () => {
+    assert.deepEqual(await ids_for({ q: "\"-\"" }), []);
+    assert.deepEqual(await ids_for({ q: "\"a+b(c\"" }), []);
+    assert.deepEqual(await ids_for({ q: "\"[.*\"" }), []);
+});
+
+// The PDB stores "Westhof, E.": no first names. A name typed the usual way is
+// also tried that way, quoted or not, and the reply says so.
+test("a name typed in full finds the author stored with initials", async () => {
+    let stored = await ids_for({ q: "\"Westhof, E.\"" });
+    assert.ok(stored.length > 0);
+    assert.deepEqual(await ids_for({ q: "Eric Westhof" }), stored);
+    assert.deepEqual(await ids_for({ q: "\"Eric Westhof\"" }), stored);
+    assert.deepEqual(await ids_for({ q: "E. Westhof" }), stored);
+    assert.deepEqual((await search_entries({ q: "Eric Westhof" })).stored_as, ["Westhof, E."]);
+    // A different first initial is a different person.
+    assert.deepEqual(await ids_for({ q: "\"Fred Westhof\"" }), []);
+});
+
+test("a name is read as the PDB writes it", () => {
+    assert.equal(author_form("Helen M. Berman").shown, "Berman, H.M.");
+    assert.equal(author_form("Helen Berman").shown, "Berman, H.");
+    assert.equal(author_form("J. Sponer").shown, "Sponer, J.");
+    assert.equal(author_form("crystal structure of tRNA"), null, "four words is not a name");
+    assert.equal(author_form("Sponer J."), null, "an initial last is not a family name");
+    assert.equal(author_form("HIV-1 TAR"), null, "a digit is not in a name");
+});
+
+test("the reply says how the box was read", async () => {
+    let loose = await search_entries({ q: "Z DNA crystal" });
+    assert.equal(loose.exact, false);
+    assert.equal(loose.phrase, "\"Z DNA crystal\"");
+    assert.deepEqual(loose.stored_as, [], "no author is DNA, Z.");
+
+    let exact = await search_entries({ q: "\"Z DNA\"" });
+    assert.equal(exact.exact, true);
+    assert.equal(exact.phrase, null);
+    assert.equal((await search_entries({ q: "tRNA" })).phrase, null, "one word needs no offer");
+});
+
+// Depositors write "Escherichiacoli 'BL21-Gold(DE3)pLysS AG'"; the NCBI id
+// says what it is. Only a full scientific name in quotes means a taxon.
+test("a quoted species name also matches by taxon, and nothing else does", async () => {
+    let ecoli = taxa_exactly_named("Escherichia coli");
+    assert.ok(ecoli.includes(562) && ecoli.includes(866768), "the species and its strains");
+    for (const text of ["coli", "mouse", "HIV", "yeast", "E coli"]) {
+        assert.deepEqual(taxa_exactly_named(text), [], text);
+    }
+    let text_only = await holding("Escherichia coli");
+    let quoted = await ids_for({ q: "\"Escherichia coli\"" });
+    assert.ok(text_only.every((id) => quoted.includes(id)), "every written match is kept");
+});
+
+// The seed has no misspelt E. coli, so one is added for the length of a
+// transaction that is always rolled back: an entry whose only source says
+// "Escherichiacoli" with E. coli's NCBI id is found by the quoted name.
+test("a misspelt organism with the right NCBI id is found by the quoted name", async () => {
+    const ROLLBACK = new Error("rollback");
+    let found;
+    await transaction(async (q) => {
+        let entry = (await q(`SELECT d.id, en.id AS entity_id FROM doc d JOIN entity en ON en.entry_id = d.id
+                               WHERE coalesce(d.organisms, '') !~* 'coli' ORDER BY d.id LIMIT 1`)).rows[0];
+        await q(`INSERT INTO pdbx_entity_src_syn (entry_id, entity_id, pdbx_src_id, organism_scientific, ncbi_taxonomy_id)
+                 VALUES ($1, $2, '99', 'Escherichiacoli BL21', 562)`, [entry.id, entry.entity_id]);
+        let { where, values } = build_where({ q: "\"Escherichia coli\"" });
+        found = { id: entry.id, rows: (await q(`SELECT e.id FROM entry e WHERE ${where}`, values)).rows.map((r) => r.id) };
+        throw ROLLBACK;
+    }).catch((err) => { if (err !== ROLLBACK) throw err; });
+    assert.ok(found.rows.includes(found.id), `${found.id} was not found by its NCBI id`);
 });
 
 test("contains and excludes still add up to the whole table with several words", async () => {

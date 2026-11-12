@@ -462,8 +462,45 @@ function show_page() {
     render_results(current_reply.results);
     update_header(current_reply.total, start, current_reply.results.length);
     update_empty_state(current_reply.total, current_reply.suggestions);
+    paint_search_note(current_reply);
     render_pagination(current_reply.pages);
 }
+
+// One line above the results saying how the box was read. Built from nodes,
+// not HTML, since the phrase is whatever was typed.
+let search_note = document.querySelector(".search_note");
+
+function paint_search_note(reply) {
+    let parts = [];
+
+    if (reply.exact) {
+        let tag = document.createElement("span");
+        tag.className = "note_tag";
+        tag.textContent = "Exact phrase";
+        parts.push([tag, " Whole words, in the order typed."]);
+    } else if (reply.phrase && reply.total > 0) {
+        let offer = document.createElement("button");
+        offer.type = "button";
+        offer.className = "link_button";
+        offer.dataset.phrase = reply.phrase;
+        offer.textContent = `Search ${reply.phrase} as an exact phrase`;
+        parts.push(["Words matched anywhere, in any order. ", offer]);
+    }
+
+    if (reply.stored_as?.length) {
+        parts.push([`The PDB stores authors as family name and initials, so this also looks for ${reply.stored_as.join(", ")}`]);
+    }
+
+    search_note.replaceChildren(...parts.flatMap((p, i) => (i ? [document.createElement("br"), ...p] : p)));
+    search_note.classList.toggle("hidden", parts.length === 0);
+}
+
+search_note.addEventListener("click", function (e) {
+    let offer = e.target.closest("button[data-phrase]");
+    if (!offer) return;
+    top_box.value = offer.dataset.phrase;
+    run_search(1);
+});
 
 
 // The sort control, and the order the URL asks for. An unknown key is left to

@@ -74,6 +74,23 @@ export function taxa_named(text) {
     return found;
 }
 
+// For a quoted phrase: the taxa whose scientific name (or a synonym) is the
+// phrase, whole, and what sits under them in the tree. "Escherichia coli"
+// keeps the two entries whose depositors wrote "Escherichiacoli"; "coli",
+// "mouse" or "HIV" in quotes are text, and name no taxon here.
+export function taxa_exactly_named(text) {
+    let key = name_key(text ?? "");
+    if (key.length < MIN_LENGTH) return [];
+
+    let named = new Set(NAMES.filter((t) => t.whole.includes(key)).map((t) => t.whole[0]));
+    if (named.size === 0) return [];
+
+    return NAMES
+        .filter((t) => named.has(t.whole[0]) || t.lineage.some((l) => named.has(l)))
+        .map((t) => t.taxid)
+        .sort((a, b) => a - b);
+}
+
 // True when the text is one of a taxon's common names or acronyms, whole:
 // "human", "mouse", "HIV". Such a word means the taxon, not every organism
 // whose written name contains it, so "human" leaves out Human adenovirus 2.
