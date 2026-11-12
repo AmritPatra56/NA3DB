@@ -150,9 +150,6 @@ let query_form = document.getElementById("query_form");
 
 query_form.addEventListener("submit", function (e) {
     e.preventDefault();
-    // A phone's filter sheet steps aside for the results. The search writes
-    // the URL, so the panel state rides along in the same history entry.
-    if (phone.matches && panel_is_open()) set_panel(false, false);
     run_search();
 });
 
@@ -537,7 +534,7 @@ function update_url(filters, page) {
 
     if (page > 1) params.set("page", page);
     if (sort_select.value !== REGISTRY.default_sort) params.set("sort", sort_select.value);
-    if (panel_chosen) params.set("panel", panel_is_open() ? "open" : "closed");
+    if (!panel_is_open()) params.set("panel", "closed");
     if (current_view !== "cards") params.set("view", current_view);
 
     if (Number(per_page_select.value) !== REGISTRY.default_page_size) {
@@ -602,47 +599,28 @@ results_list.addEventListener("click", function (e) {
 });
 
 
-// Opening or closing the filters. The choice goes in the URL so a reload keeps
-// it, and so a link shared from here opens the way the sender left it.
-let filters_toggle = document.querySelector(".filters_toggle");
+// Folding or unfolding the filters with the drawer handle. A fold goes in the
+// URL as panel=closed, so a reload or a shared link keeps it; open is the
+// default and needs nothing.
 let query_panel = document.querySelector(".query_panel");
-
-// Only written to the URL once someone has actually used the toggle. Until
-// then the server's own rule decides, and the address stays clean.
-let panel_chosen = new URLSearchParams(location.search).has("panel");
+let panel_handle = document.querySelector(".panel_handle");
 
 function panel_is_open() {
-    return !query_panel.classList.contains("hidden");
+    return !query_panel.classList.contains("folded");
 }
 
-function set_panel(open, write_url = true) {
-    query_panel.classList.toggle("hidden", !open);
-    filters_toggle.setAttribute("aria-expanded", String(open));
-
-    panel_chosen = true;
-    if (write_url) update_url(read_filters(), current_page);
+function set_panel(open) {
+    query_panel.classList.toggle("folded", !open);
+    query_panel.inert = !open;
+    panel_handle.setAttribute("aria-expanded", String(open));
+    let label = open ? "Hide the filters" : "Show the filters";
+    panel_handle.setAttribute("aria-label", label);
+    panel_handle.title = label;
+    update_url(read_filters(), current_page);
 }
 
-filters_toggle.addEventListener("click", function () {
-    set_panel(!panel_is_open());
-});
-
-// On a phone the panel is a sheet over the results, not a column beside
-// them, so it closes once it has done its job: on Search (in the submit
-// listener above), or on the cross.
-const phone = window.matchMedia("(max-width: 640px)");
-
-document.querySelector(".panel_close").addEventListener("click", function () {
-    set_panel(false);
-});
-
-// The server opens the panel for any filtered link, which on a phone would
-// greet the visitor with a sheet over the very results they came for. Only
-// an explicit ?panel=open keeps it.
-if (phone.matches && panel_is_open() && !panel_chosen) {
-    query_panel.classList.add("hidden");
-    filters_toggle.setAttribute("aria-expanded", "false");
-}
+query_panel.inert = !panel_is_open();
+panel_handle.addEventListener("click", () => set_panel(!panel_is_open()));
 
 
 // The panel's Search button says how many entries it would show, kept up to
@@ -956,7 +934,7 @@ function paint_chips(filters) {
             ${escape_html(c.text)}<span aria-hidden="true">&times;</span>
         </button>`).join("");
 
-    filters_toggle.textContent = chips.length ? `Filters · ${chips.length}` : "Filters";
+    document.querySelector(".handle_count").textContent = chips.length || "";
 }
 
 chips_bar.addEventListener("click", function (e) {

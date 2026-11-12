@@ -1542,36 +1542,200 @@ input::placeholder {
     height: auto;
 }
 
-/* Sits beside the Search button, quieter than it: opening the filters is a
-   step further in, not the thing most visitors came to do. */
-.filters_toggle {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-    justify-self: end;
+/* <---------------------drawer handle---------------------------> */
 
-    padding: 10px 16px;
-    border-radius: 6px;
-
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-
-    color: var(--text-muted);
-    background-color: transparent;
-    border: 1px solid var(--input-border);
-
-    cursor: pointer;
+/* The panel folds by sliding off to the left, behind the edge of the page.
+   visibility waits for the slide to end, so the fields leave the tab order
+   only once they are out of sight. */
+.workspace_body > .query_panel {
+    transition: margin-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
 }
 
-.filters_toggle:hover {
-    border-color: var(--input-border-hover);
+.workspace_body > .query_panel.folded {
+    margin-left: -450px;
+    visibility: hidden;
+    transition: margin-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.32s;
+}
+
+@media (min-width: 1024px) {
+    .workspace_body { overflow: hidden; }
+}
+
+/* A zero-width column between the panel and the results, so the handle can
+   sit astride the panel's edge and ride along with it. */
+.panel_edge {
+    position: relative;
+    z-index: 5;
+    flex: 0 0 0;
+}
+
+.panel_handle {
+    position: absolute;
+    top: 50%;
+    left: -13px;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 68px;
+    padding: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
     color: var(--text);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-dark);
+    border-radius: 13px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+    cursor: pointer;
+
+    transition: left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.32s,
+                box-shadow 0.2s, width 0.2s;
 }
 
-.filters_toggle[aria-expanded="true"] {
-    color: var(--accent);
-    border-color: var(--accent);
+.panel_handle:hover { box-shadow: 0 4px 14px rgb(0 0 0 / 0.16); }
+.panel_handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* The grip: one stripe per filter group, in the group's own colour. */
+.handle_grip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
+
+.handle_grip i {
+    display: block;
+    width: 4px;
+    height: 12px;
+    border-radius: 2px;
+    transition: height 0.2s, width 0.2s, transform 0.25s, opacity 0.2s;
+}
+
+.handle_grip i:nth-child(1) { background-color: #378add; }
+.handle_grip i:nth-child(2) { background-color: #1d9e75; }
+.handle_grip i:nth-child(3) { background-color: #ba7517; }
+
+.handle_arrow {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    opacity: 0;
+    scale: 0.5;
+    transition: opacity 0.2s, scale 0.25s, rotate 0.32s;
+}
+
+/* On hover the stripes shrink to dots and part, and an arrow shows which way
+   the panel will go. A touch screen has no hover, so it always shows this. */
+.panel_handle:is(:hover, :focus-visible) .handle_grip i { height: 4px; }
+.panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(1) { transform: translateY(-14px); }
+.panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(2) { opacity: 0; }
+.panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(3) { transform: translateY(14px); }
+.panel_handle:is(:hover, :focus-visible) .handle_arrow { opacity: 1; scale: 1; }
+
+@media (hover: none) {
+    .panel_handle .handle_grip i { height: 4px; }
+    .panel_handle .handle_grip i:nth-child(1) { transform: translateY(-14px); }
+    .panel_handle .handle_grip i:nth-child(2) { opacity: 0; }
+    .panel_handle .handle_grip i:nth-child(3) { transform: translateY(14px); }
+    .panel_handle .handle_arrow { opacity: 1; scale: 1; }
+}
+
+/* Folded, the handle becomes a tab on the page's edge, its arrow turned to
+   point back in, with a count of the filters still in use. */
+.folded + .panel_edge .panel_handle {
+    left: 0;
+    border-left: 0;
+    border-radius: 0 13px 13px 0;
+}
+
+.folded + .panel_edge .handle_arrow { rotate: 180deg; }
+
+.handle_count {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+
+    display: none;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    color: var(--accent-ink);
+    background-color: var(--accent-tint);
+    border: 1px solid var(--accent-line);
+}
+
+.folded + .panel_edge .handle_count:not(:empty) { display: block; }
+
+/* Stacked above the results, the panel folds upwards and the handle lies on
+   its side across the seam, centred. */
+@media (max-width: 1023px) {
+    .workspace_body > .query_panel {
+        overflow: hidden;
+        transition: max-height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+    }
+
+    .workspace_body > .query_panel.folded {
+        margin-left: 0;
+        max-height: 0;
+        border-bottom: 0;
+        transition: max-height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.32s;
+    }
+
+    .panel_handle {
+        top: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 76px;
+        height: 28px;
+        flex-direction: row;
+        transition: top 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.32s, box-shadow 0.2s;
+    }
+
+    .handle_grip { flex-direction: row; }
+    .handle_grip i { width: 12px; height: 4px; }
+    .handle_arrow { rotate: 90deg; }
+
+    .panel_handle:is(:hover, :focus-visible) .handle_grip i { width: 4px; height: 4px; }
+    .panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(1) { transform: translateX(-22px); }
+    .panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(3) { transform: translateX(22px); }
+
+    .folded + .panel_edge .panel_handle {
+        top: 0;
+        left: 50%;
+        border-left: 1px solid var(--border-dark);
+        border-top: 0;
+        border-radius: 0 0 14px 14px;
+    }
+
+    .folded + .panel_edge .handle_arrow { rotate: -90deg; }
+}
+
+@media (max-width: 1023px) and (hover: none) {
+    .panel_handle .handle_grip i { width: 4px; height: 4px; }
+    .panel_handle .handle_grip i:nth-child(1) { transform: translateX(-22px); }
+    .panel_handle .handle_grip i:nth-child(3) { transform: translateX(22px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workspace_body > .query_panel,
+    .workspace_body > .query_panel.folded,
+    .panel_handle,
+    .handle_grip i,
+    .handle_arrow { transition: none; }
+}
+
 
 /* The live count, between the box and the examples. Reserves its own line so
    the examples do not jump down when a number appears. */
@@ -2264,9 +2428,6 @@ input::placeholder {
     .rail-theme { order: 3; margin-top: 0; border-top: 0; }
 }
 
-/* The cross that closes the filter sheet; a wide screen has the toggle. */
-.panel_close { display: none; }
-
 /* Below a laptop width the one-row bar and header no longer fit: at 700px
    the box covered the Contains switch and pushed Filters off the edge. Both
    wrap onto two rows, on tablets and phones alike. */
@@ -2282,7 +2443,6 @@ input::placeholder {
     .top_search_count { grid-column: 1 / -1; grid-row: 2; }
     .top_search_count:empty { display: none; }
     .match_switch   { grid-column: 1; grid-row: 3; }
-    .filters_toggle { grid-column: 2; grid-row: 3; }
 
     .top_search input {
         flex: 1;
@@ -2313,46 +2473,17 @@ input::placeholder {
 
 }
 
-/* The search page on a phone: the bar on two rows, the filters as a sheet
-   over the results, the results header on two rows, two compact cards. */
+/* The search page on a phone: the bar on two rows, the filters above the
+   results, the results header on two rows, two compact cards. */
 @media (max-width: 640px) {
     .match_switch button,
-    .top_search_box button,
-    .filters_toggle { min-height: 44px; }
+    .top_search_box button { min-height: 44px; }
 
-    /* The sheet. Fixed over everything, and the page behind it held still
-       so a scroll inside the sheet does not drag the results along. */
-    .workspace_body > .query_panel {
-        position: fixed;
-        inset: 0;
-        z-index: 30;
-        width: 100%;
-        max-height: none;
-        border: 0;
-    }
-
-    body:has(#query_form:not(.hidden)) { overflow: hidden; }
-
+    /* Stacked above the results like on a tablet, but capped so the
+       results are never more than a short scroll away. */
+    .workspace_body > .query_panel { max-height: 60dvh; }
     #query_form .query_panel_body { overflow-y: auto; }
-
-    .query_panel_header {
-        height: 52px;
-        padding: 0 4px 0 16px;
-        justify-content: space-between;
-    }
-
-    .panel_close {
-        display: block;
-        width: 44px;
-        height: 44px;
-
-        font-size: 28px;
-        line-height: 1;
-        color: var(--text-muted);
-        background: none;
-        border: 0;
-        cursor: pointer;
-    }
+    .query_panel_header { height: 52px; padding: 0 16px; }
 
     .category_header { padding: 0 16px; }
     .category_body { padding: 12px 16px 16px; }
@@ -2404,7 +2535,7 @@ input::placeholder {
 
 /* Nothing to show, or the panel is open and already shows it. */
 .active_filters:empty,
-.workspace:has(#query_form:not(.hidden)) .active_filters { display: none; }
+.workspace:has(#query_form:not(.folded)) .active_filters { display: none; }
 
 .filter_chip {
     display: inline-flex;

@@ -350,14 +350,14 @@ test("the search page carries the registry and not the SQL", async () => {
 // of filters appearing and then collapsing.
 const PANEL_CASES = [
     ["/search",                                   true,  "the Full search link"],
-    ["/search?q=tRNA",                            false, "a search from the box"],
-    ["/search?q=tRNA&page=3&sort=confal_desc",    false, "...paged and sorted"],
+    ["/search?q=tRNA",                            true,  "a search from the box"],
+    ["/search?q=tRNA&page=3&sort=confal_desc",    true,  "...paged and sorted"],
     ["/search?entry_id=tna",                      true,  "an old bookmark using a filter"],
     ["/search?q=tRNA&polymer_type=Protein%2FNA",  true,  "the box plus a filter"],
     ["/search?q=",                                true,  "an empty box"],
-    ["/search?q=tRNA&panel=open",                 true,  "the toggle says open"],
-    ["/search?panel=closed",                      false, "the toggle says closed"],
-    ["/search?q=tRNA&view=lines",                 false, "a layout choice, not a filter"]
+    ["/search?q=tRNA&panel=open",                 true,  "an old link saying open"],
+    ["/search?q=tRNA&panel=closed",               false, "the handle folded it"],
+    ["/search?panel=closed",                      false, "...with no search"]
 ];
 
 for (const [url, open, why] of PANEL_CASES) {
@@ -366,16 +366,17 @@ for (const [url, open, why] of PANEL_CASES) {
         let tag  = html.match(/class="query_panel ([^"]*)"/);
 
         assert.ok(tag, "the panel should be on the page either way");
-        assert.equal(!tag[1].includes("hidden"), open);
+        assert.equal(!tag[1].includes("folded"), open);
     });
 }
 
-test("the toggle reports the state it is in", async () => {
-    let shut = await (await fetch(base + "/search?q=tRNA")).text();
-    let open = await (await fetch(base + "/search")).text();
+test("the drawer handle reports the state it is in", async () => {
+    let shut = await (await fetch(base + "/search?q=tRNA&panel=closed")).text();
+    let open = await (await fetch(base + "/search?q=tRNA")).text();
 
-    assert.match(shut, /class="filters_toggle"\s+aria-expanded="false"/);
-    assert.match(open, /class="filters_toggle"\s+aria-expanded="true"/);
+    assert.match(shut, /class="panel_handle"[^>]*aria-expanded="false"[^>]*aria-label="Show the filters"/);
+    assert.match(open, /class="panel_handle"[^>]*aria-expanded="true"[^>]*aria-label="Hide the filters"/);
+    assert.ok(!open.includes("filters_toggle"), "the old Filters button is gone");
 });
 
 // --- the prominent filter ------------------------------------------------

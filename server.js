@@ -91,9 +91,8 @@ for (const [path, heading] of Object.entries(UNWRITTEN)) {
 
 // The search page: the filter panel, the results and the sort control.
 //
-// The panel starts closed for a plain search from the box, and open for
-// anything else, so arriving from the landing page shows results rather than
-// a wall of filters. ?panel= overrides it, which is what the toggle writes.
+// The panel starts open, so every search lands beside the filters that can
+// refine it. ?panel=closed, written by the handle, keeps it folded.
 // A polymer type spelt the way links were before DNA and RNA were split, put
 // into its current values. null when there is nothing to rewrite.
 function current_polymer_types(original_url) {
@@ -140,15 +139,9 @@ function filters_used(query) {
     return Object.keys(query).filter((k) => !DISPLAY.includes(k));
 }
 
-// `q` with nothing but a page or an order beside it is a simple search.
-// Anything else means a filter was used, so the panel that holds it is shown.
+// Open unless the reader folded it.
 function panel_open(query) {
-    if (query.panel === "open")   return true;
-    if (query.panel === "closed") return false;
-
-    let used = filters_used(query);
-
-    return !(used.length === 1 && used[0] === "q" && query.q !== "");
+    return query.panel !== "closed";
 }
 
 

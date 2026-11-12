@@ -37,19 +37,15 @@
 <%# As on the front page: how many the box would find, as you type. Counted
     with every filter in use, so it is what pressing Search will show. %>
                 <p class="top_search_count" aria-live="polite"></p>
-                <button type="button" class="filters_toggle"
-                        aria-expanded="<%= panel_open %>">Filters</button>
             </div>
 <%# One chip per filter in use, drawn by app.js. Its cross removes that filter
     without opening the panel. Hidden while the panel is open beside them. %>
             <div class="active_filters" role="group" aria-label="Filters in use"></div>
 
             <div class="workspace_body">
-        <form class="query_panel <%= panel_open ? "" : "hidden" %>" id="query_form">
+        <form class="query_panel <%= panel_open ? "" : "folded" %>" id="query_form">
             <div class="query_panel_header">
                 <h1>Full search</h1>
-<%# Only drawn on a phone, where the panel covers the whole screen. %>
-                <button type="button" class="panel_close" aria-label="Close filters">&times;</button>
             </div>
             <div class="query_panel_body">
 <%# The form, generated from the registry. Nothing here names a filter. %>
@@ -154,6 +150,18 @@
 
 
         </form>
+<%# The drawer handle on the panel's edge. Its three stripes are the three
+    filter groups; folded, it stays on the edge with a count of filters in use. %>
+        <div class="panel_edge">
+            <button type="button" class="panel_handle" aria-controls="query_form"
+                    aria-expanded="<%= panel_open %>"
+                    aria-label="<%= panel_open ? "Hide the filters" : "Show the filters" %>"
+                    title="<%= panel_open ? "Hide the filters" : "Show the filters" %>">
+                <span class="handle_grip" aria-hidden="true"><i></i><i></i><i></i></span>
+                <svg class="handle_arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                <span class="handle_count" aria-hidden="true"></span>
+            </button>
+        </div>
         <div class="results_area">
             <div class="results_area_header">
                 <div class="results_count">
