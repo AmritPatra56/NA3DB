@@ -3,7 +3,8 @@
 
 import test, { before, after } from "node:test";
 import assert from "node:assert";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, TOPICS } from "./filters.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS } from "./filters.js";
+import { NAKB_TOPICS, topic_ids } from "./nakb.js";
 import { once } from "node:events";
 import app from "./server.js";
 import { close as close_db, query } from "./db.js";
@@ -765,7 +766,7 @@ test("the landing page states the database's size and last load", async () => {
 // front page promises results the search does not give.
 function shown_rows(html) {
     let rows = [];
-    let re = /<li><a href="([^"]+)">\s*<span class="browse_name">([^<]+)[\s\S]*?<span class="browse_count">([\d,]+)<\/span>/g;
+    let re = /<li[^>]*><a href="([^"]+)">\s*<span class="browse_name">([^<]+)[\s\S]*?<span class="browse_count">([\d,]+)<\/span>/g;
     for (let m of html.matchAll(re)) {
         rows.push({ url: m[1].replaceAll("&amp;", "&"), label: m[2].trim(), count: Number(m[3].replaceAll(",", "")) });
     }
@@ -794,25 +795,44 @@ test("made-of and method rows each add up to every entry", async () => {
     }
 });
 
-test("the landing page shows the three questions, without em dashes", async () => {
+test("the landing page shows the six questions, without em dashes", async () => {
     let html = await (await fetch(base + "/")).text();
     for (const group of BROWSE) assert.ok(html.includes(group.question), group.question);
     assert.ok(html.includes("Not sure what to type? Start from what you know."));
     assert.ok(!html.includes("\u2014"), "no em dash on the landing page");
 });
 
-// Topic words are matched as written, in the title or a molecule name only.
-test("a topic matches its words in a title or molecule name", async () => {
-    for (const topic of TOPICS) {
-        let patterns = topic.words.map((w) => "%" + w.replace(/[\\%_]/g, "\\$&") + "%");
-        let direct = Number((await query(
-            `SELECT count(*) FROM entry e
-              WHERE EXISTS (SELECT 1 FROM struct st WHERE st.entry_id = e.id AND st.title ILIKE ANY($1))
-                 OR EXISTS (SELECT 1 FROM entity en WHERE en.entry_id = e.id AND en.pdbx_description ILIKE ANY($1))`,
-            [patterns])).rows[0].count);
+// A molecule is an entry NAKB labels so (nakb.js): no more, no fewer.
+test("a molecule finds exactly the entries NAKB labels so", async () => {
+    for (const topic of NAKB_TOPICS) {
+        let ids = topic_ids([topic.value]);
+        assert.ok(ids.length > 100, `${topic.value}: nakb.json looks empty`);
+        let direct = Number((await query(`SELECT count(*) FROM entry WHERE upper(id) = ANY($1)`, [ids])).rows[0].count);
         let api = (await (await fetch(base + "/api/count?topic=" + encodeURIComponent(topic.value))).json()).total;
         assert.equal(api, direct, topic.value);
     }
+});
+
+// Counted from the residues themselves, not the doc view the filter reads.
+test("a modification finds the entries holding any of its codes", async () => {
+    for (const m of MODIFICATIONS) {
+        let direct = Number((await query(
+            `SELECT count(DISTINCT entry_id) FROM entity_poly_seq WHERE mon_id = ANY($1)`, [m.codes])).rows[0].count);
+        let api = (await (await fetch(base + "/api/count?modification=" + encodeURIComponent(m.value))).json()).total;
+        assert.equal(api, direct, m.value);
+    }
+    let none = (await (await fetch(base + "/api/count?modification=nonsense")).json()).total;
+    assert.equal(none, 0, "an unknown modification matches nothing");
+});
+
+test("with and without ligands add up to every entry, water not counted", async () => {
+    let total = (await (await fetch(base + "/api/stats")).json()).total;
+    let count = async (v) => (await (await fetch(base + "/api/count?has_ligand=" + encodeURIComponent(v))).json()).total;
+    let with_ = await count("With ligands");
+    assert.equal(with_ + await count("Without ligands"), total);
+    let direct = Number((await query(
+        `SELECT count(DISTINCT entry_id) FROM pdbx_entity_nonpoly WHERE comp_id <> 'HOH'`)).rows[0].count);
+    assert.equal(with_, direct);
 });
 
 test("an unknown topic matches nothing", async () => {

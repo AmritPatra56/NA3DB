@@ -1284,7 +1284,9 @@ input::placeholder {
     color: var(--accent);
 }
 
-/* Browse: three cards, one question each. The bar is the row's count against
+/* Browse: six cards in three columns of two, one question each. Each card
+   keeps its own height, so none holds empty space, and the wider middle
+   column stands tallest: small, big, small. The bar is the row's count against
    the largest in its card, so the cards compare within themselves only. */
 .browse_lead {
     margin-top: 16px;
@@ -1295,17 +1297,40 @@ input::placeholder {
 .browse {
     margin-top: 14px;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr 1.25fr 1fr;
+    align-items: start;
     gap: 14px;
     text-align: left;
 }
 
+.browse_col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
 .browse_card {
+    display: flex;
+    flex-direction: column;
     padding: 14px 14px 10px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--bg-primary);
 }
+
+/* A row that belongs to the one above it: Human under Eukaryotes. */
+.browse_card li.browse_sub a { padding-left: 16px; }
+.browse_card li.browse_sub .browse_name::before { content: "↳ "; color: var(--text-dim); }
+
+/* What the card's counts mean, at its foot whatever its length. */
+.browse_foot {
+    margin-top: auto;
+    padding-top: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-dim);
+}
+.browse_card .browse_foot a { display: inline; padding: 0; font-size: inherit; color: inherit; text-decoration: underline; }
 
 .browse_card h2 {
     font-size: 15px;

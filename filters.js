@@ -2,6 +2,8 @@
 // return, as data. Server only: it holds the SQL. The browser gets the safe
 // fields from public_registry() via GET /api/fields.
 
+import { NAKB_TOPICS, NAKB_SOURCE, topic_ids } from "./nakb.js";
+
 // Asked in the SELECT and in the WHERE, so a result cannot contradict its page.
 // One pass over the entry's entity_poly rows sets all four flags. Separate
 // EXISTS per flag cost 205 ms a search against 13 for the old two-way split.
@@ -103,38 +105,34 @@ export const GROUPS = [
 ];
 
 
-// The molecules offered on the landing page and as pills in the panel. An
-// entry is one when its own title or one of its molecule names says so, in
-// any of `words`, ignoring case. Nothing is inferred: 2DCG is Z-DNA by shape,
-// but its title says "left-handed", so it is not counted. Paper titles are
-// left out on purpose, since they describe the study rather than the entry
-// (9G4P's paper says "tRNA-mimicking"; the entry is not a tRNA). `note` is a
-// plain-words label for the landing page and changes nothing that is counted.
-export const TOPICS = [
-    { value: "tRNA",       words: ["tRNA", "transfer RNA"], note: "carries amino acids" },
-    { value: "Ribosome",   words: ["ribosome"],    note: "makes proteins" },
-    { value: "Nucleosome", words: ["nucleosome"],  note: "DNA wrapped on histones" },
-    { value: "CRISPR",     words: ["CRISPR"],      note: "RNA-guided cutting" },
-    { value: "Quadruplex", words: ["quadruplex"],  note: "four-stranded" },
-    { value: "Riboswitch", words: ["riboswitch"],  note: "RNA that senses a molecule" },
-    { value: "Ribozyme",   words: ["ribozyme"],    note: "RNA that acts as an enzyme" },
-    { value: "Aptamer",    words: ["aptamer"],     note: "made to bind a target" },
-    { value: "Z-DNA",      words: ["Z-DNA"],       note: "left-handed DNA" }
+// The chemical modifications offered on the landing page and as pills in the
+// panel, each by the PDB codes that are that modification on a nucleic acid
+// chain (chem_comp mon_nstd_flag 'n'). 7MG is how many tRNAs write m7G46
+// (1EHZ). 5MC is the RNA m5C; 5CM is DNA's 5-methyl-dC, kept apart.
+export const MODIFICATIONS = [
+    { value: "Nm",            label: "2′-O-methyl (Nm)",         codes: ["OMG", "OMC", "OMU", "A2M"] },
+    { value: "Pseudouridine", label: "Pseudouridine (Ψ)",        codes: ["PSU"] },
+    { value: "m5C",           label: "5-methylcytidine (m⁵C)",   codes: ["5MC"] },
+    { value: "m7G",           label: "7-methylguanosine (m⁷G)",  codes: ["G7M", "7MG"] },
+    { value: "m6A",           label: "N⁶-methyladenosine (m⁶A)", codes: ["6MZ"] },
+    { value: "5-methyl-dC",   label: "5-methyl-dC, in DNA",      codes: ["5CM"] }
 ];
 
-// The ILIKE patterns for chosen topics. An unknown topic adds none, so it
-// matches nothing rather than everything.
-export function topic_patterns(values) {
-    return values.flatMap((v) => TOPICS.find((t) => t.value === v)?.words ?? [])
-                 .map((w) => "%" + w.replace(/[\\%_]/g, "\\$&") + "%");
-}
+// The codes for chosen modifications. An unknown one adds none.
+export const modification_codes = (values) =>
+    values.flatMap((v) => MODIFICATIONS.find((m) => m.value === v)?.codes ?? []);
 
-// The landing page's three ways in, one question each. Every row is a filter
-// link, counted with the very query the link runs (search.js browse_counts),
-// so a row and its results cannot disagree. Made of and method each cover
-// every entry once: an entry has one polymer type and one method.
-const browse_row = (label, key, values, note = null) =>
-    ({ label, note, params: { [key]: values },
+// The landing page's six ways in, one question each, in three columns of
+// two: the sample (made of, organism), the molecule (which one, how
+// modified), the experiment (method, what is bound in the model). Listed
+// column by column, which is also the order a phone stacks them in.
+// Every row is a filter link, counted with the very query the link runs
+// (search.js browse_counts), so a row and its results cannot disagree. Made
+// of and method each cover every entry once: an entry has one polymer type
+// and one method. The other cards can count an entry twice, and say so.
+// `sub` draws a row under the one above it; `foot` is a line under the card.
+const browse_row = (label, key, values, note = null, sub = false) =>
+    ({ label, note, sub, params: { [key]: values },
        url: "/search?" + key + "=" + values.map(encodeURIComponent).join(",") });
 
 export const BROWSE = [
@@ -146,13 +144,35 @@ export const BROWSE = [
         browse_row("Protein with RNA", "polymer_type", ["Protein/RNA"]),
         browse_row("Protein with DNA and RNA", "polymer_type", ["Protein/DNA/RNA"])
     ] },
-    { question: "Which molecule?", hint: "Named in its title or a molecule",
-      rows: TOPICS.map((t) => browse_row(t.value, "topic", [t.value], t.note)) },
+    { question: "Where is it from?", hint: "The organism of any of its molecules", rows: [
+        browse_row("Eukaryotes", "source_organism", ["Eukaryota"]),
+        browse_row("Human", "source_organism", ["human"], null, true),
+        browse_row("Bacteria", "source_organism", ["Bacteria"]),
+        browse_row("Archaea", "source_organism", ["Archaea"]),
+        browse_row("Viruses", "source_organism", ["Viruses"]),
+        browse_row("Chemically synthesised", "source_kind", ["Synthetic"])
+    ], foot: { text: "A human protein on synthetic DNA counts under both." } },
+    { question: "Which molecule?", hint: "As labelled by NAKB",
+      rows: NAKB_TOPICS.map((t) => browse_row(t.value, "topic", [t.value], t.note)),
+      foot: { text: "Labels from the Nucleic Acid Knowledgebase, curated by its team.",
+              link: { href: NAKB_SOURCE, label: "nakb.org" } } },
+    { question: "Is it modified?", hint: "Chemically modified nucleotides", rows: [
+        browse_row("Any modified nucleotide", "monomer_flag", ["Non-Standard"]),
+        ...MODIFICATIONS.map((m) => browse_row(m.label, "modification", [m.value], m.codes.join(" · ")))
+    ], foot: { text: "An entry with several modifications counts under each." } },
     { question: "How was it solved?", hint: "The experimental method", rows: [
         browse_row("X-ray", "experimental_method", ["X-RAY DIFFRACTION"]),
         browse_row("Electron microscopy", "experimental_method", ["ELECTRON MICROSCOPY"]),
         browse_row("NMR", "experimental_method", ["SOLUTION NMR", "SOLID-STATE NMR"])
-    ] }
+    ] },
+    { question: "What is bound to it?", hint: "Ions and small molecules in the entry", rows: [
+        browse_row("Any ligand", "has_ligand", ["With ligands"]),
+        browse_row("Magnesium (Mg²⁺)", "ligand", ["MG"], "MG"),
+        browse_row("Zinc (Zn²⁺)", "ligand", ["ZN"], "ZN"),
+        browse_row("Sodium (Na⁺)", "ligand", ["NA"], "NA"),
+        browse_row("Potassium (K⁺)", "ligand", ["K"], "K"),
+        browse_row("Calcium (Ca²⁺)", "ligand", ["CA"], "CA")
+    ], foot: { text: "Manganese, spermine and more from the search box. An entry with several ligands counts under each." } }
 ];
 
 // One object per searchable question. `kind` decides how the value is read and
@@ -435,16 +455,40 @@ export const FILTERS = [
                                                              WHERE upper(c2.id) = upper(substr(?, 2, length(?) - 2))))))))`
     },
 
-    // See TOPICS. Both ? are the one array of patterns.
+    // See nakb.js. ? is the PDB ids NAKB gives the chosen labels.
     {
         key: "topic", label: "Molecule",
         group: "Structure Components", kind: "pills", any: true,
-        options: TOPICS.map((t) => option(t.value)),
-        expand: topic_patterns,
-        where: `AND (EXISTS (SELECT 1 FROM struct st
-                             WHERE st.entry_id = e.id AND st.title ILIKE ANY(?))
-                  OR EXISTS (SELECT 1 FROM entity ent
-                             WHERE ent.entry_id = e.id AND ent.pdbx_description ILIKE ANY(?)))`
+        options: NAKB_TOPICS.map((t) => option(t.value)),
+        expand: topic_ids,
+        where: `AND e.id = ANY(?::text[])`
+    },
+
+    // See MODIFICATIONS. The codes each entry holds come ready made from the
+    // doc view, as for the non-standard residue filter.
+    {
+        key: "modification", label: "Modification",
+        group: "Structure Components", kind: "pills", any: true,
+        options: MODIFICATIONS.map((m) => ({ value: m.value, label: m.label })),
+        expand: modification_codes,
+        where: `AND EXISTS (SELECT 1 FROM doc d
+                            WHERE d.id = e.id
+                              AND string_to_array(d.residue_codes, ', ') && ?::text[])`
+    },
+
+    // Any ion or small molecule but water: 1,083 of 1,489 entries.
+    {
+        key: "has_ligand", label: "Ligands",
+        group: "Structure Components", kind: "pills", any: false,
+        options: ["With ligands", "Without ligands"].map(option),
+        clause: (v) => {
+            if (v.length !== 1) return null;
+            let any = `EXISTS (SELECT 1 FROM pdbx_entity_nonpoly n
+                               WHERE n.entry_id = e.id AND n.comp_id <> 'HOH')`;
+            if (v[0] === "With ligands")    return `AND ${any}`;
+            if (v[0] === "Without ligands") return `AND NOT ${any}`;
+            return null;
+        }
     },
 
     {
