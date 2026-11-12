@@ -165,14 +165,15 @@ export const BROWSE = [
         browse_row("Electron microscopy", "experimental_method", ["ELECTRON MICROSCOPY"]),
         browse_row("NMR", "experimental_method", ["SOLUTION NMR", "SOLID-STATE NMR"])
     ] },
-    { question: "What is bound to it?", hint: "Ions and small molecules in the entry", rows: [
+    { question: "What is bound to it?", hint: "Ions, small molecules and water", rows: [
         browse_row("Any ligand", "has_ligand", ["With ligands"]),
         browse_row("Magnesium (Mg²⁺)", "ligand", ["MG"], "MG"),
         browse_row("Zinc (Zn²⁺)", "ligand", ["ZN"], "ZN"),
         browse_row("Sodium (Na⁺)", "ligand", ["NA"], "NA"),
         browse_row("Potassium (K⁺)", "ligand", ["K"], "K"),
-        browse_row("Calcium (Ca²⁺)", "ligand", ["CA"], "CA")
-    ], foot: { text: "Manganese, spermine and more from the search box. An entry with several ligands counts under each." } }
+        browse_row("Calcium (Ca²⁺)", "ligand", ["CA"], "CA"),
+        browse_row("Water molecules", "has_water", ["With water"], "HOH · where modelled")
+    ], foot: { text: "Manganese, spermine and more from the search box. An entry with several counts under each." } }
 ];
 
 // One object per searchable question. `kind` decides how the value is read and
@@ -487,6 +488,24 @@ export const FILTERS = [
                                WHERE n.entry_id = e.id AND n.comp_id <> 'HOH')`;
             if (v[0] === "With ligands")    return `AND ${any}`;
             if (v[0] === "Without ligands") return `AND NOT ${any}`;
+            return null;
+        }
+    },
+
+    // Water is solvent, so it stays out of the ligand filters above, but some
+    // want structures with ordered water. 783 of 1,489 entries model it,
+    // nearly all X-ray: 99% of entries sharper than 2 Å, 5% beyond 4 Å.
+    // "Without water" means none was modelled, not that none was there.
+    {
+        key: "has_water", label: "Water",
+        group: "Structure Components", kind: "pills", any: false,
+        options: ["With water", "Without water"].map(option),
+        clause: (v) => {
+            if (v.length !== 1) return null;
+            let any = `EXISTS (SELECT 1 FROM pdbx_entity_nonpoly n
+                               WHERE n.entry_id = e.id AND n.comp_id = 'HOH')`;
+            if (v[0] === "With water")    return `AND ${any}`;
+            if (v[0] === "Without water") return `AND NOT ${any}`;
             return null;
         }
     },

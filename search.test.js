@@ -659,26 +659,45 @@ test("a quoted phrase spanning the title and the authors matches nothing", async
     assert.ok(checked > 0, "no spanning phrase could be built, so nothing was proved");
 });
 
-test("the seed has no multi-valued field to span", async () => {
-    // Not a claim about the code. doc joins repeated values with a newline
-    // too, so two authors or two entity descriptions cannot be read as one
-    // run of text. That path cannot be exercised here: every entry in the
-    // 120-entry seed has exactly one description, one author and one
-    // organism. Against the real na3db, "-3') MAGNESIUM" found 29 structures
-    // before 008 and none after.
-    //
-    // If the seed ever gains a repeated value this fails, and that is the
-    // signal to assert the spanning case properly instead of by hand.
-    let multi = await query(`
-        SELECT (SELECT count(*) FROM (SELECT entry_id FROM entity
-                 WHERE pdbx_description IS NOT NULL
-                 GROUP BY entry_id HAVING count(DISTINCT pdbx_description) > 1) a) AS entities,
-               (SELECT count(*) FROM (SELECT entry_id FROM citation_author
-                 GROUP BY entry_id HAVING count(DISTINCT name) > 1) b) AS authors`);
+// The seed's ions and water give entries two descriptions, "tRNA-Phe" and
+// "MAGNESIUM ION" say, which doc joins with a newline in sorted order. A
+// phrase from the end of one to the start of the next is in neither. Against
+// the real na3db, "-3') MAGNESIUM" found 29 structures before 008 and none
+// after.
+test("a quoted phrase spanning two entity descriptions does not find the entry", async () => {
+    let rows = (await query(`
+        SELECT entry_id AS id, array_agg(DISTINCT pdbx_description ORDER BY pdbx_description) AS names
+          FROM entity WHERE pdbx_description IS NOT NULL
+         GROUP BY entry_id HAVING count(DISTINCT pdbx_description) > 1
+         ORDER BY entry_id LIMIT 5`)).rows;
+    assert.ok(rows.length > 0, "the seed needs an entry with two descriptions");
 
-    assert.equal(Number(multi.rows[0].entities), 0,
-        "the seed now has an entry with two descriptions: assert the spanning case");
-    assert.equal(Number(multi.rows[0].authors), 0,
+    let words = (t) => t.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    let checked = 0;
+    for (const { id, names } of rows) {
+        let [a, b] = names;
+        let last = words(a).pop(), first = words(b)[0];
+        if (!last || !first) continue;
+        let spanning = `${last} ${first}`;
+        if (names.some((n) => words(n).join(" ").includes(spanning))) continue;
+
+        let found = async (q) => (await export_entries({ q })).results.map((e) => e.pdb_id);
+        // Each half alone finds it, so the search does reach the descriptions.
+        assert.ok((await found(`"${first}"`)).includes(id), `"${first}" should find ${id}`);
+        assert.ok(!(await found(`"${spanning}"`)).includes(id),
+            `"${spanning}" is in no single description of ${id}, only across their join`);
+        checked++;
+    }
+    assert.ok(checked > 0, "no spanning phrase could be built, so nothing was proved");
+});
+
+test("the seed has no entry with two authors to span", async () => {
+    // Not a claim about the code. Every seed entry has one author, so the
+    // author join cannot be exercised here. If the seed ever gains a second
+    // author this fails: then assert that spanning case as above.
+    let multi = await query(`SELECT count(*) AS n FROM (SELECT entry_id FROM citation_author
+                              GROUP BY entry_id HAVING count(DISTINCT name) > 1) b`);
+    assert.equal(Number(multi.rows[0].n), 0,
         "the seed now has an entry with two authors: assert the spanning case");
 });
 

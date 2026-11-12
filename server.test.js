@@ -832,6 +832,20 @@ test("with and without ligands add up to every entry, water not counted", async 
     assert.equal(with_ + await count("Without ligands"), total);
     let direct = Number((await query(
         `SELECT count(DISTINCT entry_id) FROM pdbx_entity_nonpoly WHERE comp_id <> 'HOH'`)).rows[0].count);
+    assert.ok(direct > 0 && direct < total, "the seed has entries with and without ligands");
+    assert.equal(with_, direct);
+});
+
+// The seed (db/make_seed.mjs) has entries with water only, ions only, both
+// and neither, so these two cannot pass by matching each other's rows.
+test("with and without water add up to every entry, and with is every entry that models HOH", async () => {
+    let total = (await (await fetch(base + "/api/stats")).json()).total;
+    let count = async (v) => (await (await fetch(base + "/api/count?has_water=" + encodeURIComponent(v))).json()).total;
+    let with_ = await count("With water");
+    assert.equal(with_ + await count("Without water"), total);
+    let direct = Number((await query(
+        `SELECT count(DISTINCT entry_id) FROM pdbx_entity_nonpoly WHERE comp_id = 'HOH'`)).rows[0].count);
+    assert.ok(direct > 0 && direct < total, "the seed has entries with and without water");
     assert.equal(with_, direct);
 });
 

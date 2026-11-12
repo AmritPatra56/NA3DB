@@ -27,6 +27,10 @@ INSERT INTO chem_comp (id, name, mon_nstd_flag) VALUES ('UR3', NULL, 'n') ON CON
 INSERT INTO chem_comp (id, name, mon_nstd_flag) VALUES ('2MA', NULL, 'n') ON CONFLICT (id) DO NOTHING;
 INSERT INTO chem_comp (id, name, mon_nstd_flag) VALUES ('6MZ', NULL, 'n') ON CONFLICT (id) DO NOTHING;
 INSERT INTO chem_comp (id, name, mon_nstd_flag) VALUES ('OMU', NULL, 'n') ON CONFLICT (id) DO NOTHING;
+INSERT INTO chem_comp (id, name) VALUES ('MG', 'MAGNESIUM ION') ON CONFLICT (id) DO NOTHING;
+INSERT INTO chem_comp (id, name) VALUES ('ZN', 'ZINC ION') ON CONFLICT (id) DO NOTHING;
+INSERT INTO chem_comp (id, name) VALUES ('K', 'POTASSIUM ION') ON CONFLICT (id) DO NOTHING;
+INSERT INTO chem_comp (id, name) VALUES ('HOH', 'WATER') ON CONFLICT (id) DO NOTHING;
 INSERT INTO entry (id) VALUES ('4TNA');
 INSERT INTO struct (entry_id, title) VALUES ('4TNA', 'FURTHER REFINEMENT OF THE STRUCTURE OF YEAST T-RNA-PHE');
 INSERT INTO exptl (entry_id, method) VALUES ('4TNA', 'X-RAY DIFFRACTION');
@@ -49,6 +53,14 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TN
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TNA', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TNA', 11, 'PSU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TNA', 12, 'YG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '4TNA', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '4TNA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '4TNA', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '4TNA', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '4TNA', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '4TNA', 'POTASSIUM ION', 'K');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('5', '4TNA', 'water', 'water', 10);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('5', '4TNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('6TNA');
 INSERT INTO struct (entry_id, title) VALUES ('6TNA', 'CRYSTAL STRUCTURE OF YEAST PHENYLALANINE T-RNA. I.CRYSTALLOGRAPHIC REFINEMENT');
 INSERT INTO exptl (entry_id, method) VALUES ('6TNA', 'X-RAY DIFFRACTION');
@@ -71,6 +83,8 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '6TN
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '6TNA', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '6TNA', 11, 'PSU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '6TNA', 12, 'YG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '6TNA', 'water', 'water', 47);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '6TNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1ZNA');
 INSERT INTO struct (entry_id, title) VALUES ('1ZNA', 'CONFORMATION AND DYNAMICS IN A Z-DNA TETRAMER');
 INSERT INTO exptl (entry_id, method) VALUES ('1ZNA', 'X-RAY DIFFRACTION');
@@ -82,6 +96,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1ZNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1ZNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1ZNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1ZNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1ZNA', 'water', 'water', 84);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1ZNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1BNA');
 INSERT INTO struct (entry_id, title) VALUES ('1BNA', 'STRUCTURE OF A B-DNA DODECAMER. CONFORMATION AND DYNAMICS');
 INSERT INTO exptl (entry_id, method) VALUES ('1BNA', 'X-RAY DIFFRACTION');
@@ -93,6 +109,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1BNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1BNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1BNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1BNA', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1BNA', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('2BNA');
 INSERT INTO struct (entry_id, title) VALUES ('2BNA', 'STRUCTURE OF A B-DNA DODECAMER AT 16 KELVIN');
 INSERT INTO exptl (entry_id, method) VALUES ('2BNA', 'X-RAY DIFFRACTION');
@@ -104,6 +122,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '2BNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '2BNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '2BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2BNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '2BNA', 'water', 'water', 158);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '2BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('3BNA');
 INSERT INTO struct (entry_id, title) VALUES ('3BNA', 'REVERSIBLE BENDING AND HELIX GEOMETRY IN A B-DNA DODECAMER: CGCGAATTBRCGCG');
 INSERT INTO exptl (entry_id, method) VALUES ('3BNA', 'X-RAY DIFFRACTION');
@@ -116,6 +136,8 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '3BNA', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '3BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '3BNA', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '3BNA', 2, 'CBR');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '3BNA', 'water', 'water', 195);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '3BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('4BNA');
 INSERT INTO struct (entry_id, title) VALUES ('4BNA', 'REVERSIBLE BENDING AND HELIX GEOMETRY IN A B-DNA DODECAMER: CGCGAATTBRCGCG');
 INSERT INTO exptl (entry_id, method) VALUES ('4BNA', 'X-RAY DIFFRACTION');
@@ -128,6 +150,10 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '4BNA', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '4BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4BNA', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4BNA', 2, 'CBR');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '4BNA', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '4BNA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '4BNA', 'water', 'water', 232);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '4BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1ANA');
 INSERT INTO struct (entry_id, title) VALUES ('1ANA', 'HELIX GEOMETRY AND HYDRATION IN AN A-DNA TETRAMER. IC-C-G-G');
 INSERT INTO exptl (entry_id, method) VALUES ('1ANA', 'X-RAY DIFFRACTION');
@@ -140,6 +166,8 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1ANA', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1ANA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1ANA', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1ANA', 2, 'C38');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1ANA', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1ANA', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('5BNA');
 INSERT INTO struct (entry_id, title) VALUES ('5BNA', 'THE PRIMARY MODE OF BINDING OF CISPLATIN TO A B-DNA DODECAMER: C-G-C-G-A-A-T-T-C-G-C-G');
 INSERT INTO exptl (entry_id, method) VALUES ('5BNA', 'X-RAY DIFFRACTION');
@@ -151,6 +179,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '5BNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '5BNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '5BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '5BNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '5BNA', 'water', 'water', 306);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '5BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('6BNA');
 INSERT INTO struct (entry_id, title) VALUES ('6BNA', 'BINDING OF AN ANTITUMOR DRUG TO DNA. NETROPSIN AND C-G-C-G-A-A-T-T-BRC-G-C-G');
 INSERT INTO exptl (entry_id, method) VALUES ('6BNA', 'X-RAY DIFFRACTION');
@@ -163,6 +193,10 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '6BNA', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '6BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '6BNA', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '6BNA', 2, 'CBR');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '6BNA', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '6BNA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '6BNA', 'water', 'water', 43);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '6BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('7BNA');
 INSERT INTO struct (entry_id, title) VALUES ('7BNA', 'ANISOTROPIC THERMAL-PARAMETER REFINEMENT OF THE DNA DODECAMER CGCGAATTCGCG BY THE SEGMENTED RIGID-BODY METHOD');
 INSERT INTO exptl (entry_id, method) VALUES ('7BNA', 'X-RAY DIFFRACTION');
@@ -174,6 +208,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '7BNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '7BNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '7BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '7BNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '7BNA', 'water', 'water', 80);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '7BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('2ANA');
 INSERT INTO struct (entry_id, title) VALUES ('2ANA', 'THE CRYSTAL STRUCTURE OF D(G-G-G-G-C-C-C-C). A MODEL FOR POLY(DG).POLY(DC)');
 INSERT INTO exptl (entry_id, method) VALUES ('2ANA', 'X-RAY DIFFRACTION');
@@ -185,6 +221,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '2ANA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '2ANA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '2ANA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2ANA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '2ANA', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '2ANA', 'POTASSIUM ION', 'K');
 INSERT INTO entry (id) VALUES ('1TRA');
 INSERT INTO struct (entry_id, title) VALUES ('1TRA', 'RESTRAINED REFINEMENT OF THE MONOCLINIC FORM OF YEAST PHENYLALANINE TRANSFER RNA. TEMPERATURE FACTORS AND DYNAMICS, COORDINATED WATERS, AND BASE-PAIR PROPELLER TWIST ANGLES');
 INSERT INTO exptl (entry_id, method) VALUES ('1TRA', 'X-RAY DIFFRACTION');
@@ -207,6 +245,10 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TR
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TRA', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TRA', 11, 'PSU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TRA', 12, 'YG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1TRA', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1TRA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1TRA', 'water', 'water', 154);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1TRA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1TN2');
 INSERT INTO struct (entry_id, title) VALUES ('1TN2', 'CRYSTALLOGRAPHIC AND BIOCHEMICAL INVESTIGATION OF THE LEAD(II)-CATALYZED HYDROLYSIS OF YEAST PHENYLALANINE T-RNA');
 INSERT INTO exptl (entry_id, method) VALUES ('1TN2', 'X-RAY DIFFRACTION');
@@ -229,6 +271,8 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN2', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN2', 11, 'PSU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN2', 12, 'YG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1TN2', 'water', 'water', 191);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1TN2', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1TN1');
 INSERT INTO struct (entry_id, title) VALUES ('1TN1', 'CRYSTALLOGRAPHIC AND BIOCHEMICAL INVESTIGATION OF THE LEAD(II)-CATALYZED HYDROLYSIS OF YEAST PHENYLALANINE TRNA');
 INSERT INTO exptl (entry_id, method) VALUES ('1TN1', 'X-RAY DIFFRACTION');
@@ -251,6 +295,10 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN1', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN1', 11, 'PSU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1TN1', 12, 'YG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1TN1', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1TN1', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1TN1', 'water', 'water', 228);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1TN1', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('8BNA');
 INSERT INTO struct (entry_id, title) VALUES ('8BNA', 'BINDING OF HOECHST 33258 TO THE MINOR GROOVE OF B-DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('8BNA', 'X-RAY DIFFRACTION');
@@ -262,6 +310,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '8BNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '8BNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '8BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '8BNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '8BNA', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '8BNA', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('1DN4');
 INSERT INTO struct (entry_id, title) VALUES ('1DN4', 'SOLVATION OF THE LEFT-HANDED HEXAMER D(5BRC-G-5BRC-G-5BRC-G) IN CRYSTALS GROWN AT TWO TEMPERATURES');
 INSERT INTO exptl (entry_id, method) VALUES ('1DN4', 'X-RAY DIFFRACTION');
@@ -274,6 +324,8 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DN4', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DN4', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DN4', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DN4', 2, 'CBR');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DN4', 'water', 'water', 302);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DN4', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DN5');
 INSERT INTO struct (entry_id, title) VALUES ('1DN5', 'SOLVATION OF THE LEFT-HANDED HEXAMER D(5BRC-G-5BRC-G-5BRC-G) IN CRYSTALS GROWN AT TWO TEMPERATURES');
 INSERT INTO exptl (entry_id, method) VALUES ('1DN5', 'X-RAY DIFFRACTION');
@@ -286,6 +338,8 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DN5', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DN5', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DN5', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DN5', 2, 'CBR');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DN5', 'water', 'water', 39);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DN5', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('2TRA');
 INSERT INTO struct (entry_id, title) VALUES ('2TRA', 'RESTRAINED REFINEMENT OF TWO CRYSTALLINE FORMS OF YEAST ASPARTIC ACID AND PHENYLALANINE TRANSFER RNA CRYSTALS');
 INSERT INTO exptl (entry_id, method) VALUES ('2TRA', 'X-RAY DIFFRACTION');
@@ -302,6 +356,10 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2TR
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2TRA', 4, '5MU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2TRA', 5, 'H2U');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2TRA', 6, 'PSU');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '2TRA', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '2TRA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '2TRA', 'water', 'water', 76);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '2TRA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('3TRA');
 INSERT INTO struct (entry_id, title) VALUES ('3TRA', 'RESTRAINED REFINEMENT OF TWO CRYSTALLINE FORMS OF YEAST ASPARTIC ACID AND PHENYLALANINE TRANSFER RNA CRYSTALS');
 INSERT INTO exptl (entry_id, method) VALUES ('3TRA', 'X-RAY DIFFRACTION');
@@ -340,6 +398,8 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TR
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TRA', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TRA', 11, 'PSU');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4TRA', 12, 'YG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '4TRA', 'water', 'water', 150);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '4TRA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DN6');
 INSERT INTO struct (entry_id, title) VALUES ('1DN6', 'THE CRYSTAL STRUCTURE OF D(GGATGGGAG). AN ESSENTIAL PART OF THE BINDING SITE FOR TRANSCRIPTION FACTOR IIIA');
 INSERT INTO exptl (entry_id, method) VALUES ('1DN6', 'X-RAY DIFFRACTION');
@@ -351,6 +411,12 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DN6', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DN6', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DN6', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DN6', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DN6', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DN6', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1DN6', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1DN6', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '1DN6', 'water', 'water', 187);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '1DN6', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('9DNA');
 INSERT INTO struct (entry_id, title) VALUES ('9DNA', 'CRYSTAL STRUCTURE ANALYSIS OF AN A-DNA FRAGMENT AT 1.8 ANGSTROMS RESOLUTION. D(GCCCGGGC)');
 INSERT INTO exptl (entry_id, method) VALUES ('9DNA', 'X-RAY DIFFRACTION');
@@ -362,6 +428,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '9DNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '9DNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '9DNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '9DNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '9DNA', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '9DNA', 'POTASSIUM ION', 'K');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9DNA', 'water', 'water', 224);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9DNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DN8');
 INSERT INTO struct (entry_id, title) VALUES ('1DN8', 'STRUCTURE OF A Z-DNA WITH TWO DIFFERENT BACKBONE CHAIN CONFORMATIONS. STABILIZATION OF THE DECADEOXYOLIGONUCLEOTIDE D(CGTACGTACG) BY (CO(NH3)6)3+ BINDING TO THE GUANINE');
 INSERT INTO exptl (entry_id, method) VALUES ('1DN8', 'X-RAY DIFFRACTION');
@@ -384,6 +454,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D16', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D16', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D16', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D16', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D16', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D16', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1D16', 'water', 'water', 298);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1D16', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DCG');
 INSERT INTO struct (entry_id, title) VALUES ('1DCG', 'THE MOLECULAR STRUCTURE OF THE LEFT-HANDED Z-DNA DOUBLE HELIX AT 1.0 ANGSTROM ATOMIC RESOLUTION. GEOMETRY, CONFORMATION, AND IONIC INTERACTIONS OF D(CGCGCG)');
 INSERT INTO exptl (entry_id, method) VALUES ('1DCG', 'X-RAY DIFFRACTION');
@@ -395,6 +469,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DCG', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DCG', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DCG', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DCG', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DCG', 'water', 'water', 35);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DCG', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DNE');
 INSERT INTO struct (entry_id, title) VALUES ('1DNE', 'MOLECULAR STRUCTURE OF THE NETROPSIN-D(CGCGATATCGCG) COMPLEX: DNA CONFORMATION IN AN ALTERNATING AT SEGMENT; CONFORMATION 2');
 INSERT INTO exptl (entry_id, method) VALUES ('1DNE', 'X-RAY DIFFRACTION');
@@ -406,6 +482,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DNE', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DNE', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DNE', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DNE', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DNE', 'water', 'water', 72);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DNE', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DNH');
 INSERT INTO struct (entry_id, title) VALUES ('1DNH', 'THE MOLECULAR STRUCTURE OF THE COMPLEX OF HOECHST 33258 AND THE DNA DODECAMER D(CGCGAATTCGCG)');
 INSERT INTO exptl (entry_id, method) VALUES ('1DNH', 'X-RAY DIFFRACTION');
@@ -417,6 +495,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DNH', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DNH', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DNH', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DNH', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DNH', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DNH', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('2DCG');
 INSERT INTO struct (entry_id, title) VALUES ('2DCG', 'MOLECULAR STRUCTURE OF A LEFT-HANDED DOUBLE HELICAL DNA FRAGMENT AT ATOMIC RESOLUTION');
 INSERT INTO exptl (entry_id, method) VALUES ('2DCG', 'X-RAY DIFFRACTION');
@@ -428,6 +508,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '2DCG', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '2DCG', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '2DCG', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2DCG', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '2DCG', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '2DCG', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '2DCG', 'water', 'water', 146);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '2DCG', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('2DND');
 INSERT INTO struct (entry_id, title) VALUES ('2DND', 'A BIFURCATED HYDROGEN-BONDED CONFORMATION IN THE D(A.T) BASE PAIRS OF THE DNA DODECAMER D(CGCAAATTTGCG) AND ITS COMPLEX WITH DISTAMYCIN');
 INSERT INTO exptl (entry_id, method) VALUES ('2DND', 'X-RAY DIFFRACTION');
@@ -439,6 +523,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '2DND', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '2DND', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '2DND', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2DND', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '2DND', 'water', 'water', 183);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '2DND', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('3ANA');
 INSERT INTO struct (entry_id, title) VALUES ('3ANA', 'THREE-DIMENSIONAL STRUCTURE OF D(GGGATCCC) IN THE CRYSTALLINE STATE');
 INSERT INTO exptl (entry_id, method) VALUES ('3ANA', 'X-RAY DIFFRACTION');
@@ -450,6 +536,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '3ANA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '3ANA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '3ANA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '3ANA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '3ANA', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '3ANA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '3ANA', 'water', 'water', 220);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '3ANA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('3DNB');
 INSERT INTO struct (entry_id, title) VALUES ('3DNB', 'HELIX GEOMETRY, HYDRATION, AND G.A MISMATCH IN A B-DNA DECAMER');
 INSERT INTO exptl (entry_id, method) VALUES ('3DNB', 'X-RAY DIFFRACTION');
@@ -473,6 +563,8 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '4DNB', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '4DNB', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4DNB', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '4DNB', 2, '6MA');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '4DNB', 'water', 'water', 294);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '4DNB', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1VJ4');
 INSERT INTO struct (entry_id, title) VALUES ('1VJ4', 'SEQUENCE-DEPENDENT CONFORMATION OF AN A-DNA DOUBLE HELIX: THE CRYSTAL STRUCTURE OF THE OCTAMER D(G-G-T-A-T-A-C-C)');
 INSERT INTO exptl (entry_id, method) VALUES ('1VJ4', 'X-RAY DIFFRACTION');
@@ -484,6 +576,12 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1VJ4', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1VJ4', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1VJ4', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1VJ4', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1VJ4', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1VJ4', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1VJ4', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1VJ4', 'POTASSIUM ION', 'K');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '1VJ4', 'water', 'water', 31);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '1VJ4', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1BD1');
 INSERT INTO struct (entry_id, title) VALUES ('1BD1', 'CRYSTALLOGRAPHIC STUDY OF ONE TURN OF G/C-RICH B-DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('1BD1', 'X-RAY DIFFRACTION');
@@ -495,6 +593,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1BD1', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1BD1', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1BD1', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1BD1', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1BD1', 'water', 'water', 68);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1BD1', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DN9');
 INSERT INTO struct (entry_id, title) VALUES ('1DN9', 'STRUCTURE OF AN ALTERNATING-B DNA HELIX AND ITS RELATIONSHIP TO A-TRACT DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('1DN9', 'X-RAY DIFFRACTION');
@@ -506,6 +606,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DN9', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DN9', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DN9', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DN9', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DN9', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DN9', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('1DNS');
 INSERT INTO struct (entry_id, title) VALUES ('1DNS', 'BASE ONLY BINDING OF SPERMINE IN THE DEEP GROOVE OF THE A-DNA OCTAMER D(GTGTACAC)');
 INSERT INTO exptl (entry_id, method) VALUES ('1DNS', 'X-RAY DIFFRACTION');
@@ -517,6 +619,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DNS', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DNS', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DNS', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DNS', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DNS', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DNS', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1DNS', 'water', 'water', 142);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1DNS', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('5ANA');
 INSERT INTO struct (entry_id, title) VALUES ('5ANA', 'THE CRYSTAL STRUCTURE OF D(GTACGTAC) AT 2.25 ANGSTROMS RESOLUTION. ARE THE A-DNA''S ALWAYS UNWOUND APPROXIMATELY 10 DEGREES AT THE C-G STEPS');
 INSERT INTO exptl (entry_id, method) VALUES ('5ANA', 'X-RAY DIFFRACTION');
@@ -528,6 +634,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '5ANA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '5ANA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '5ANA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '5ANA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '5ANA', 'water', 'water', 179);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '5ANA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D10');
 INSERT INTO struct (entry_id, title) VALUES ('1D10', 'STRUCTURAL COMPARISON OF ANTICANCER DRUG-DNA COMPLEXES. ADRIAMYCIN AND DAUNOMYCIN');
 INSERT INTO exptl (entry_id, method) VALUES ('1D10', 'X-RAY DIFFRACTION');
@@ -539,6 +647,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D10', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D10', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D10', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D10', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D10', 'water', 'water', 216);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D10', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D11');
 INSERT INTO struct (entry_id, title) VALUES ('1D11', 'INTERACTIONS BETWEEN AN ANTHRACYCLINE ANTIBIOTIC AND DNA MOLECULAR STRUCTURE OF DAUNOMYCIN COMPLEXED TO D(CPGPTPAPCPG) AT 1.2-ANGSTROMS RESOLUTION');
 INSERT INTO exptl (entry_id, method) VALUES ('1D11', 'X-RAY DIFFRACTION');
@@ -550,6 +660,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D11', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D11', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D11', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D11', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D11', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D11', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('1D12');
 INSERT INTO struct (entry_id, title) VALUES ('1D12', 'STRUCTURAL COMPARISON OF ANTICANCER DRUG-DNA COMPLEXES. ADRIAMYCIN AND DAUNOMYCIN');
 INSERT INTO exptl (entry_id, method) VALUES ('1D12', 'X-RAY DIFFRACTION');
@@ -561,6 +673,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D12', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D12', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D12', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D12', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D12', 'water', 'water', 290);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D12', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D13');
 INSERT INTO struct (entry_id, title) VALUES ('1D13', 'MOLECULAR STRUCTURE OF AN A-DNA DECAMER D(ACCGGCCGGT)');
 INSERT INTO exptl (entry_id, method) VALUES ('1D13', 'X-RAY DIFFRACTION');
@@ -572,6 +686,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D13', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D13', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D13', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D13', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D13', 'water', 'water', 27);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D13', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D14');
 INSERT INTO struct (entry_id, title) VALUES ('1D14', 'STRUCTURE OF 11-DEOXYDAUNOMYCIN BOUND TO DNA CONTAINING A PHOSPHOROTHIOATE');
 INSERT INTO exptl (entry_id, method) VALUES ('1D14', 'X-RAY DIFFRACTION');
@@ -584,6 +700,12 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D14', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D14', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D14', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D14', 2, 'AS');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D14', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D14', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1D14', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1D14', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '1D14', 'water', 'water', 64);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '1D14', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1DNF');
 INSERT INTO struct (entry_id, title) VALUES ('1DNF', 'EFFECTS OF 5-FLUOROURACIL/GUANINE WOBBLE BASE PAIRS IN Z-DNA. MOLECULAR AND CRYSTAL STRUCTURE OF D(CGCGFG)');
 INSERT INTO exptl (entry_id, method) VALUES ('1DNF', 'X-RAY DIFFRACTION');
@@ -607,6 +729,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1BDN', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1BDN', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1BDN', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1BDN', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1BDN', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1BDN', 'POTASSIUM ION', 'K');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1BDN', 'water', 'water', 138);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1BDN', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1RNA');
 INSERT INTO struct (entry_id, title) VALUES ('1RNA', 'CRYSTALLOGRAPHIC STRUCTURE OF AN RNA HELIX: [U(U-A)6A]2');
 INSERT INTO exptl (entry_id, method) VALUES ('1RNA', 'X-RAY DIFFRACTION');
@@ -618,6 +744,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1RNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1RNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1RNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1RNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1RNA', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1RNA', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1RNA', 'water', 'water', 175);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1RNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('9BNA');
 INSERT INTO struct (entry_id, title) VALUES ('9BNA', 'RE-REFINEMENT OF THE B-DODECAMER D(CGCGAATTCGCG) WITH A COMPARATIVE ANALYSIS OF THE SOLVENT IN IT AND IN THE Z-HEXAMER D(5BRCG5BRCG5BRCG)');
 INSERT INTO exptl (entry_id, method) VALUES ('9BNA', 'X-RAY DIFFRACTION');
@@ -629,6 +759,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '9BNA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '9BNA', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '9BNA', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '9BNA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '9BNA', 'water', 'water', 212);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '9BNA', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('2D25');
 INSERT INTO struct (entry_id, title) VALUES ('2D25', 'C-C-A-G-G-C-M5C-T-G-G; HELICAL FINE STRUCTURE, HYDRATION, AND COMPARISON WITH C-C-A-G-G-C-C-T-G-G');
 INSERT INTO exptl (entry_id, method) VALUES ('2D25', 'X-RAY DIFFRACTION');
@@ -652,6 +784,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D15', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D15', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D15', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D15', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D15', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D15', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1D15', 'water', 'water', 286);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1D15', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D17');
 INSERT INTO struct (entry_id, title) VALUES ('1D17', 'DNA-NOGALAMYCIN INTERACTIONS');
 INSERT INTO exptl (entry_id, method) VALUES ('1D17', 'X-RAY DIFFRACTION');
@@ -664,6 +800,10 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D17', 'polyri
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D17', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D17', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D17', 2, '5CM');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D17', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D17', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1D17', 'water', 'water', 23);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1D17', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D18');
 INSERT INTO struct (entry_id, title) VALUES ('1D18', 'SOLUTION CONFORMATION OF PURINE-PYRIMIDINE DNA OCTAMERS USING NUCLEAR MAGNETIC RESONANCE, RESTRAINED MOLECULAR DYNAMICS AND NOE-BASED REFINEMENT');
 INSERT INTO exptl (entry_id, method) VALUES ('1D18', 'SOLUTION NMR');
@@ -684,6 +824,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D19', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D19', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D19', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D19', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D19', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D19', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('1D20');
 INSERT INTO struct (entry_id, title) VALUES ('1D20', 'SOLUTION STRUCTURE OF PHAGE LAMBDA HALF-OPERATOR DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('1D20', 'SOLUTION NMR');
@@ -707,6 +849,8 @@ INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D21', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D21', 2, '5CM');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D21', 3, 'AS');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D21', 'water', 'water', 171);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D21', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('1D22');
 INSERT INTO struct (entry_id, title) VALUES ('1D22', 'BINDING OF THE ANTITUMOR DRUG NOGALAMYCIN AND ITS DERIVATIVES TO DNA: STRUCTURAL COMPARISON');
 INSERT INTO exptl (entry_id, method) VALUES ('1D22', 'X-RAY DIFFRACTION');
@@ -720,6 +864,8 @@ INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D22', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D22', 2, '5CM');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D22', 3, 'AS');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D22', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D22', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('1DNM');
 INSERT INTO struct (entry_id, title) VALUES ('1DNM', 'CRYSTAL STRUCTURE AND SEQUENCE-DEPENDENT CONFORMATION OF THE A.G MIS-PAIRED OLIGONUCLEOTIDE D(CGCAAGCTGGCG)');
 INSERT INTO exptl (entry_id, method) VALUES ('1DNM', 'X-RAY DIFFRACTION');
@@ -731,6 +877,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1DNM', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1DNM', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1DNM', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1DNM', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1DNM', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1DNM', 'POTASSIUM ION', 'K');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '1DNM', 'water', 'water', 245);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '1DNM', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('28DN');
 INSERT INTO struct (entry_id, title) VALUES ('28DN', 'CRYSTAL STRUCTURE ANALYSIS OF AN A(DNA) OCTAMER D(GTACGTAC)');
 INSERT INTO exptl (entry_id, method) VALUES ('28DN', 'X-RAY DIFFRACTION');
@@ -742,6 +892,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '28DN', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '28DN', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '28DN', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '28DN', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '28DN', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '28DN', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '28DN', 'water', 'water', 282);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '28DN', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('2DBE');
 INSERT INTO struct (entry_id, title) VALUES ('2DBE', 'CRYSTAL STRUCTURE OF A BERENIL-DODECANUCLEOTIDE COMPLEX: THE ROLE OF WATER IN SEQUENCE-SPECIFIC LIGAND BINDING');
 INSERT INTO exptl (entry_id, method) VALUES ('2DBE', 'X-RAY DIFFRACTION');
@@ -753,6 +907,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '2DBE', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '2DBE', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '2DBE', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '2DBE', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '2DBE', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '2DBE', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '2DBE', 'water', 'water', 19);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '2DBE', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('2D47');
 INSERT INTO struct (entry_id, title) VALUES ('2D47', 'MOLECULAR STRUCTURE OF A COMPLETE TURN OF A-DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('2D47', 'X-RAY DIFFRACTION');
@@ -775,6 +933,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('1', '1D23', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('1', '1D23', 'polyribonucleotide');
 INSERT INTO pdbx_entity_src_syn (entity_id, entry_id, organism_scientific, ncbi_taxonomy_id) VALUES ('1', '1D23', 'synthetic construct', 32630);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('1', '1D23', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('2', '1D23', 'water', 'water', 93);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('2', '1D23', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('10WP');
 INSERT INTO struct (entry_id, title) VALUES ('10WP', 'MPXV replisome bound to forked DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('10WP', 'ELECTRON MICROSCOPY');
@@ -788,6 +948,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '10WP', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '10WP', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '10WP', 'Monkeypox virus', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '10WP', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '10WP', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '10WP', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('11HE');
 INSERT INTO struct (entry_id, title) VALUES ('11HE', 'Rabbit 60S ribosomal subunit with eEF2 domain IV closed');
 INSERT INTO exptl (entry_id, method) VALUES ('11HE', 'ELECTRON MICROSCOPY');
@@ -827,6 +989,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '11HV', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '11HV', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '11HV', 'Oryctolagus cuniculus', 9986, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11HV', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '11HV', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '11HV', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '11HV', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '11HV', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('11IQ');
 INSERT INTO struct (entry_id, title) VALUES ('11IQ', 'Rabbit 80S with eEF2,eIF5A and SERBP1');
 INSERT INTO exptl (entry_id, method) VALUES ('11IQ', 'ELECTRON MICROSCOPY');
@@ -866,6 +1032,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '11KH', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '11KH', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '11KH', 'Oryctolagus cuniculus', 9986, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11KH', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '11KH', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '11KH', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '11KH', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '11KH', 'POTASSIUM ION', 'K');
 INSERT INTO entry (id) VALUES ('11WZ');
 INSERT INTO struct (entry_id, title) VALUES ('11WZ', 'MPXV polymerase-E5 primase core complex');
 INSERT INTO exptl (entry_id, method) VALUES ('11WZ', 'ELECTRON MICROSCOPY');
@@ -906,6 +1076,8 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '23VV', 'polyri
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '23VV', 'bacterium', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '23VV', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '23VV', 2, 'PST');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '23VV', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '23VV', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('23VW');
 INSERT INTO struct (entry_id, title) VALUES ('23VW', 'Cryo-EM structure of the TfCas12m3-crRNA-tgDNA ternary complex');
 INSERT INTO exptl (entry_id, method) VALUES ('23VW', 'ELECTRON MICROSCOPY');
@@ -919,6 +1091,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '23VW', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '23VW', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '23VW', 'DNA molecule', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '23VW', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '23VW', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '23VW', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('30LM');
 INSERT INTO struct (entry_id, title) VALUES ('30LM', 'Mouse cGAS in complex with DNA and ATP, crystallized in presence of Ap4A.');
 INSERT INTO exptl (entry_id, method) VALUES ('30LM', 'X-RAY DIFFRACTION');
@@ -932,6 +1106,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '30LM', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '30LM', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '30LM', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '30LM', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '30LM', 'water', 'water', 237);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '30LM', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('30LN');
 INSERT INTO struct (entry_id, title) VALUES ('30LN', 'Mouse cGAS in complex with DNA and pppGpA, crystallized in presence of Ap4G.');
 INSERT INTO exptl (entry_id, method) VALUES ('30LN', 'X-RAY DIFFRACTION');
@@ -945,6 +1121,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '30LN', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '30LN', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '30LN', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '30LN', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '30LN', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '30LN', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '30LN', 'water', 'water', 274);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '30LN', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('36BT');
 INSERT INTO struct (entry_id, title) VALUES ('36BT', 'HIV-1 reverse transcriptase in complex with DNAddG Aptamer and unincorporated ISL-triphosphate');
 INSERT INTO exptl (entry_id, method) VALUES ('36BT', 'ELECTRON MICROSCOPY');
@@ -989,6 +1169,8 @@ INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, 
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36CW', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36CW', 2, 'DDG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36CW', 3, 'OMC');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '36CW', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '36CW', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('36DK');
 INSERT INTO struct (entry_id, title) VALUES ('36DK', 'HIV-1 reverse transcriptase (F227C) in complex with DNA Aptamer and Incorporated dATP');
 INSERT INTO exptl (entry_id, method) VALUES ('36DK', 'ELECTRON MICROSCOPY');
@@ -1017,6 +1199,10 @@ INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '36DN', 'polyri
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '36DN', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36DN', 1, 'A');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '36DN', 2, 'OMC');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '36DN', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '36DN', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '36DN', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '36DN', 'POTASSIUM ION', 'K');
 INSERT INTO entry (id) VALUES ('9E16');
 INSERT INTO struct (entry_id, title) VALUES ('9E16', 'Cryo-EM structure of the ribosome-tunnel occluding hibernation factor bound to the Mycobacterium tuberculosis C- 70S ribosome carrying an E-tRNA');
 INSERT INTO exptl (entry_id, method) VALUES ('9E16', 'ELECTRON MICROSCOPY');
@@ -1030,6 +1216,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9E16', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9E16', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9E16', 'Mycobacterium tuberculosis', 1773, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9E16', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9E16', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9E16', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9E1S');
 INSERT INTO struct (entry_id, title) VALUES ('9E1S', 'Cryo-EM structure of the ribosome-tunnel occluding hibernation factor bound to the Mycobacterium tuberculosis C- 50S ribosomal subunit');
 INSERT INTO exptl (entry_id, method) VALUES ('9E1S', 'ELECTRON MICROSCOPY');
@@ -1069,6 +1257,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9EC3', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9EC3', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9EC3', 'Escherichia coli', 562, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9EC3', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9EC3', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9EC3', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9IF7');
 INSERT INTO struct (entry_id, title) VALUES ('9IF7', 'Cryo-EM structure of the kinetoplastid trans-spliceosome activated for catalytic step II (C* complex)');
 INSERT INTO exptl (entry_id, method) VALUES ('9IF7', 'ELECTRON MICROSCOPY');
@@ -1108,6 +1298,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9NSP', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9NSP', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9NSP', 'Monkeypox virus', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9NSP', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9NSP', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9NSP', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '9NSP', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '9NSP', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('9SPJ');
 INSERT INTO struct (entry_id, title) VALUES ('9SPJ', 'CryoEM structure of the vacant Candida auris 80S ribosome');
 INSERT INTO exptl (entry_id, method) VALUES ('9SPJ', 'ELECTRON MICROSCOPY');
@@ -1147,6 +1341,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9T7T', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9T7T', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9T7T', 'Candidozyma auris', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9T7T', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9T7T', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9T7T', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9TWR');
 INSERT INTO struct (entry_id, title) VALUES ('9TWR', 'Complex of E. coli leucyl-tRNA synthetase AN3365-resistant mutant R344H bound to tRNA(leu) and AN3365');
 INSERT INTO exptl (entry_id, method) VALUES ('9TWR', 'X-RAY DIFFRACTION');
@@ -1160,6 +1356,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TWR', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TWR', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TWR', 'Escherichia coli', 562, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TWR', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TWR', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TWR', 'POTASSIUM ION', 'K');
 INSERT INTO entry (id) VALUES ('9TWS');
 INSERT INTO struct (entry_id, title) VALUES ('9TWS', 'Complex of E. coli leucyl-tRNA synthetase AN3365-resistant mutant T247I bound to tRNA(leu)');
 INSERT INTO exptl (entry_id, method) VALUES ('9TWS', 'X-RAY DIFFRACTION');
@@ -1173,6 +1371,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TWS', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TWS', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TWS', 'Escherichia coli', 562, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TWS', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TWS', 'water', 'water', 303);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TWS', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('9TWT');
 INSERT INTO struct (entry_id, title) VALUES ('9TWT', 'Complex of E. coli leucyl-tRNA synthetase AN3365-resistant mutant D251N bound to tRNA(leu) and AN3365');
 INSERT INTO exptl (entry_id, method) VALUES ('9TWT', 'X-RAY DIFFRACTION');
@@ -1186,6 +1386,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TWT', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TWT', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TWT', 'Escherichia coli', 562, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TWT', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TWT', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TWT', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '9TWT', 'water', 'water', 40);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '9TWT', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('9TWU');
 INSERT INTO struct (entry_id, title) VALUES ('9TWU', 'Complex of E. coli leucyl-tRNA synthetase AN3365-resistant mutant P339L bound to tRNA(leu)');
 INSERT INTO exptl (entry_id, method) VALUES ('9TWU', 'X-RAY DIFFRACTION');
@@ -1199,6 +1403,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TWU', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TWU', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TWU', 'Escherichia coli', 562, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TWU', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TWU', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TWU', 'ZINC ION', 'ZN');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '9TWU', 'water', 'water', 77);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '9TWU', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('9TWV');
 INSERT INTO struct (entry_id, title) VALUES ('9TWV', 'Complex of E. coli leucyl-tRNA synthetase AN3365-resistant mutant D345A bound to tRNA(leu)');
 INSERT INTO exptl (entry_id, method) VALUES ('9TWV', 'X-RAY DIFFRACTION');
@@ -1225,6 +1433,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9Y7B', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9Y7B', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9Y7B', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Y7B', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9Y7B', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9Y7B', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9ZP4');
 INSERT INTO struct (entry_id, title) VALUES ('9ZP4', 'E. coli RNA polymerase elongation complex containing the unnatural dZ:PTP base pair in a trigger-loop-closed conformation');
 INSERT INTO exptl (entry_id, method) VALUES ('9ZP4', 'ELECTRON MICROSCOPY');
@@ -1264,6 +1474,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '11FS', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '11FS', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '11FS', 'Pyrococcus abyssi', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11FS', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '11FS', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '11FS', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('11HC');
 INSERT INTO struct (entry_id, title) VALUES ('11HC', 'Effector complex from type IV-C CRISPR-Cas system');
 INSERT INTO exptl (entry_id, method) VALUES ('11HC', 'ELECTRON MICROSCOPY');
@@ -1290,6 +1502,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '11HD', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '11HD', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '11HD', 'Pyrococcus abyssi', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '11HD', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '11HD', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '11HD', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('21CH');
 INSERT INTO struct (entry_id, title) VALUES ('21CH', 'crystal structure of Solanum lycopersicum CNR SBP domain in complex with DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('21CH', 'X-RAY DIFFRACTION');
@@ -1303,6 +1517,12 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '21CH', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '21CH', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '21CH', 'Solanum lycopersicum', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '21CH', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '21CH', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '21CH', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '21CH', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '21CH', 'POTASSIUM ION', 'K');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('5', '21CH', 'water', 'water', 73);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('5', '21CH', 'water', 'HOH');
 INSERT INTO entry (id) VALUES ('23WQ');
 INSERT INTO struct (entry_id, title) VALUES ('23WQ', 'Cryo-EM structure of EcBPAN-guide RNA-target DNA complex');
 INSERT INTO exptl (entry_id, method) VALUES ('23WQ', 'ELECTRON MICROSCOPY');
@@ -1342,6 +1562,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '25QK', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '25QK', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '25QK', 'Salicola phage CGphi29', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '25QK', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '25QK', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '25QK', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('25QL');
 INSERT INTO struct (entry_id, title) VALUES ('25QL', 'Cryo-EM structure of TasH-tigRNA-MM5 dsDNA complex');
 INSERT INTO exptl (entry_id, method) VALUES ('25QL', 'ELECTRON MICROSCOPY');
@@ -1381,6 +1603,10 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9IBC', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9IBC', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9IBC', 'Leishmania tarentolae', NULL, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9IBC', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9IBC', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9IBC', 'MAGNESIUM ION', 'MG');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('4', '9IBC', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('4', '9IBC', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('9Q3Q');
 INSERT INTO struct (entry_id, title) VALUES ('9Q3Q', 'Cryo-EM structure of translating Escherichia coli 70S ribosome bound to mRNA, P-site QKF-peptidyl-tRNAPhe, glycyl-tRNAGly in A/T conformation, EF-Tu-GDP, and bottromycin at 2.01A resolution');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q3Q', 'ELECTRON MICROSCOPY');
@@ -1444,6 +1670,8 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q40', 9, 'OMC');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q40', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q40', 11, 'OMU');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9Q40', 'non-polymer', 'MAGNESIUM ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9Q40', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9Q42');
 INSERT INTO struct (entry_id, title) VALUES ('9Q42', 'Pseudomonas aeruginosa 50S ribosome bound to RsfS (L1 stalk ''in'' conformation)');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q42', 'ELECTRON MICROSCOPY');
@@ -1490,6 +1718,8 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q43', 9, 'OMC');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q43', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q43', 11, 'OMU');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9Q43', 'non-polymer', 'POTASSIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9Q43', 'POTASSIUM ION', 'K');
 INSERT INTO entry (id) VALUES ('9Q44');
 INSERT INTO struct (entry_id, title) VALUES ('9Q44', 'Pseudomonas aeruginosa 50S ribosome bound to RsfS (L1 stalk in ''out'' conformation and missing uL1 and tRNA)');
 INSERT INTO exptl (entry_id, method) VALUES ('9Q44', 'ELECTRON MICROSCOPY');
@@ -1513,6 +1743,8 @@ INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q4
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q44', 9, 'OMC');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q44', 10, 'OMG');
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9Q44', 11, 'OMU');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9Q44', 'non-polymer', 'MAGNESIUM ION', 4);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9Q44', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9TGD');
 INSERT INTO struct (entry_id, title) VALUES ('9TGD', 'DDK-salt stripped phosphorylated MCM2-7 DH');
 INSERT INTO exptl (entry_id, method) VALUES ('9TGD', 'ELECTRON MICROSCOPY');
@@ -1526,6 +1758,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TGD', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TGD', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TGD', 'Saccharomyces cerevisiae', 4932, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TGD', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TGD', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TGD', 'ZINC ION', 'ZN');
 INSERT INTO entry (id) VALUES ('9TH8');
 INSERT INTO struct (entry_id, title) VALUES ('9TH8', 'Cryo-EM structure of MCM2-7 DH bound to Sld3-Sld7, Cdc45 and DNA');
 INSERT INTO exptl (entry_id, method) VALUES ('9TH8', 'ELECTRON MICROSCOPY');
@@ -1552,6 +1786,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TU7', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TU7', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TU7', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TU7', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TU7', 'non-polymer', 'MAGNESIUM ION', 3);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TU7', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9TU8');
 INSERT INTO struct (entry_id, title) VALUES ('9TU8', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 1');
 INSERT INTO exptl (entry_id, method) VALUES ('9TU8', 'ELECTRON MICROSCOPY');
@@ -1591,6 +1827,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TUA', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TUA', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TUA', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TUA', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TUA', 'non-polymer', 'MAGNESIUM ION', 2);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TUA', 'MAGNESIUM ION', 'MG');
 INSERT INTO entry (id) VALUES ('9TUB');
 INSERT INTO struct (entry_id, title) VALUES ('9TUB', 'CryoEM structure of DruE:ATPgammaS:DNA from Druantia type III - dimer 4');
 INSERT INTO exptl (entry_id, method) VALUES ('9TUB', 'ELECTRON MICROSCOPY');
@@ -1617,6 +1855,8 @@ INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES ('2', '9TUC', '
 INSERT INTO entity_poly (entity_id, entry_id, type) VALUES ('2', '9TUC', 'polyribonucleotide');
 INSERT INTO entity_src_gen (entity_id, entry_id, pdbx_gene_src_scientific_name, pdbx_gene_src_ncbi_taxonomy_id, pdbx_host_org_scientific_name, pdbx_host_org_ncbi_taxonomy_id) VALUES ('1', '9TUC', 'synthetic construct', 32630, 'Escherichia coli', 562);
 INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id) VALUES ('2', '9TUC', 1, 'A');
+INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules) VALUES ('3', '9TUC', 'non-polymer', 'ZINC ION', 1);
+INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id) VALUES ('3', '9TUC', 'ZINC ION', 'ZN');
 UPDATE entry e SET has_nonstandard_residue = EXISTS (
     SELECT 1 FROM entity_poly_seq eps
     JOIN entity_poly ep ON ep.entry_id = eps.entry_id AND ep.entity_id = eps.entity_id

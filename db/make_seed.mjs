@@ -38,7 +38,11 @@ const TAXA = {
 let body = [];
 let chem_comps = new Map();          // code → 'y' or 'n', collected as we go
 
-for (const e of entries) {
+// Ions and water, as the PDB names them. Not residues: no monomer flag.
+const NONPOLY = { MG: "MAGNESIUM ION", ZN: "ZINC ION", K: "POTASSIUM ION", HOH: "WATER" };
+let xray = 0;                        // X-ray entries seen so far
+
+entries.forEach((e, n) => {
     const id = q(e.pdb_id);
 
     body.push(`INSERT INTO entry (id) VALUES (${id});`);
@@ -113,14 +117,40 @@ for (const e of entries) {
         body.push(`INSERT INTO entity_poly_seq (entity_id, entry_id, num, mon_id)`
                 + ` VALUES (${na}, ${id}, ${i + 1}, ${q(code)});`);
     });
-}
+
+    // Ligands and water. entries.json has neither, so a fixed rule makes them
+    // up, as for sources above: fixture data, not PDB data. Water goes on
+    // three of every four X-ray entries, as in the real set where water
+    // comes with sharp X-ray maps; ions go by position. That gives entries
+    // with water only, ions only, both and neither, so a test can tell a
+    // water filter from a ligand filter.
+    let nonpoly = [];
+    if (n % 3 === 0)  nonpoly.push(["MG", 1 + n % 4]);
+    if (n % 7 === 0)  nonpoly.push(["ZN", 1]);
+    if (n % 11 === 0) nonpoly.push(["K", 2]);
+    if (e.method === "X-RAY DIFFRACTION" && xray++ % 4 !== 3) nonpoly.push(["HOH", 10 + (n * 37) % 300]);
+
+    nonpoly.forEach(([code, copies], i) => {
+        const ent = q(String(types.length + i + 1));
+        const kind = code === "HOH" ? "water" : "non-polymer";
+        const name = code === "HOH" ? "water" : NONPOLY[code];
+        body.push(`INSERT INTO entity (id, entry_id, type, pdbx_description, pdbx_number_of_molecules)`
+                + ` VALUES (${ent}, ${id}, '${kind}', ${q(name)}, ${copies});`);
+        body.push(`INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id)`
+                + ` VALUES (${ent}, ${id}, ${q(name)}, ${q(code)});`);
+    });
+});
 
 // chem_comp is global: one row per residue code, shared by every entry using
-// it. name is NULL because entries.json has codes and no chemical names, which
-// also lets a test tell "search the code" from "search the name".
+// it. A residue's name is NULL because entries.json has codes and no chemical
+// names, which also lets a test tell "search the code" from "search the
+// name". The ions and water carry their PDB names, so the ligand filter's
+// name search has something to find.
 const comps = [...chem_comps].map(([code, flag]) =>
     `INSERT INTO chem_comp (id, name, mon_nstd_flag)`
-  + ` VALUES (${q(code)}, NULL, ${q(flag)}) ON CONFLICT (id) DO NOTHING;`);
+  + ` VALUES (${q(code)}, NULL, ${q(flag)}) ON CONFLICT (id) DO NOTHING;`)
+  .concat(Object.entries(NONPOLY).map(([code, name]) =>
+    `INSERT INTO chem_comp (id, name) VALUES (${q(code)}, ${q(name)}) ON CONFLICT (id) DO NOTHING;`));
 
 // Rebuilding doc is part of loading data, not part of the schema: the view
 // is created empty when the migrations run and only this fills it.
