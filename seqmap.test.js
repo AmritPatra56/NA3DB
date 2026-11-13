@@ -5,7 +5,7 @@
 
 import test from "node:test";
 import assert from "node:assert";
-import { sequence_map, sequence_map_text } from "./detail.js";
+import { sequence_map, sequence_map_text, MAP_STRANDS } from "./detail.js";
 
 const rna = (labels) => [{ id: "1", kind: "RNA", chains: labels.map((label) => ({ label, auth: label })) },
                          { id: "2", kind: "Protein", chains: [{ label: "P", auth: "P" }] }];
@@ -79,6 +79,42 @@ test("a duplex: the partner strand comes along, after a separator", () => {
     assert.deepEqual([one.shown, one.rows], [["D"], []], "one strand asked for: its pairs to C are off the ruler");
     assert.deepEqual(sequence_map(rna(["C", "D"]), tracks, pairs, ["nope"]).shown, ["C", "D"],
                      "unknown strands fall back to the default");
+});
+
+// Pairs between strands as cWW Watson–Crick, one per [strand, pos, strand, pos].
+const between = (list) => list.map(([label_1, pos_1, label_2, pos_2]) =>
+    ({ label_1, pos_1, label_2, pos_2, family: "cWW", kind: "wc", copy_1: "1", copy_2: "1" }));
+
+test("by default every strand linked through pairs is shown, in file order (1P8K)", () => {
+    // 1P8K: A pairs with D and C, B only with C, so B is reached through C.
+    let tracks = { residues: ["A", "B", "C", "D"].flatMap((l) => residues(l, "GCGC")), steps: [] };
+    let pairs = between([["A", 1, "D", 4], ["A", 4, "C", 1], ["B", 1, "C", 4]]);
+    let map = sequence_map(rna(["A", "B", "C", "D"]), tracks, pairs);
+
+    assert.deepEqual(map.shown, ["A", "B", "C", "D"]);
+    assert.equal(map.seq, "GCGC&GCGC&GCGC&GCGC");
+});
+
+test("a strand with no link to the first is left for the picker", () => {
+    let tracks = { residues: ["A", "B", "C", "D"].flatMap((l) => residues(l, "GCGC")), steps: [] };
+    let map = sequence_map(rna(["A", "B", "C", "D"]), tracks, between([["A", 1, "B", 4], ["C", 1, "D", 4]]));
+
+    assert.deepEqual(map.shown, ["A", "B"]);
+});
+
+test("a long chain of linked strands stops at the cap, nearest strands first", () => {
+    let labels = Array.from({ length: MAP_STRANDS + 4 }, (_, n) => `S${n}`);
+    let tracks = { residues: labels.flatMap((l) => residues(l, "GC")), steps: [] };
+    // S0-S1, S1-S2, ...: each strand reached through the one before.
+    let pairs = between(labels.slice(1).map((l, n) => [labels[n], 1, l, 2]));
+    let map = sequence_map(rna(labels), tracks, pairs);
+
+    assert.equal(MAP_STRANDS, 8);
+    assert.deepEqual(map.shown, labels.slice(0, MAP_STRANDS));
+
+    // One strand pairing with all the others reaches them at once: still capped.
+    let star = sequence_map(rna(labels), tracks, between(labels.slice(1).map((l) => ["S0", 1, l, 2])));
+    assert.deepEqual(star.shown, labels.slice(0, MAP_STRANDS));
 });
 
 test("a symmetry copy is its own strand, named with a prime", () => {

@@ -858,8 +858,26 @@ function map_strands(entities, by_chain, pairs) {
     return list;
 }
 
+// The most strands the map shows unasked: a ribosome links dozens.
+export const MAP_STRANDS = 8;
+
+// The first chain with pairs and every strand linked to it through pairs,
+// partners of partners too (1P8K: B pairs only with C, C with A), nearest
+// first up to MAP_STRANDS, then in file order.
+function linked_strands(strands) {
+    let by_key = new Map(strands.map((s) => [s.key, s]));
+    let first = strands.find((s) => s.partners.size) ?? strands[0];
+    let reached = [first.key];
+    for (let n = 0; n < reached.length && reached.length < MAP_STRANDS; n++) {
+        for (const k of by_key.get(reached[n]).partners) {
+            if (reached.length < MAP_STRANDS && by_key.has(k) && !reached.includes(k)) reached.push(k);
+        }
+    }
+    return reached;
+}
+
 // The map for the strands asked for (tokens such as A or A:2_755), or, when
-// none are, the first chain with pairs and the strands it pairs with.
+// none are, the first chain with pairs and the strands linked to it.
 export function sequence_map(entities, tracks, pairs, wanted = []) {
     let by_chain = new Map();
     for (const r of tracks.residues) {
@@ -871,10 +889,7 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
 
     let known = new Set(strands.map((s) => s.key));
     let chosen = wanted.filter((k) => known.has(k));
-    if (!chosen.length) {
-        let first = strands.find((s) => s.partners.size) ?? strands[0];
-        chosen = [first.key, ...[...first.partners].filter((k) => k !== first.key)];
-    }
+    if (!chosen.length) chosen = linked_strands(strands);
     let shown = strands.filter((s) => chosen.includes(s.key));
 
     // The ruler: strands end to end, a separator column between two.
