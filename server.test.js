@@ -6,7 +6,7 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS } from "./filters.js";
 import { NAKB_TOPICS, topic_ids } from "./nakb.js";
 import { once } from "node:events";
-import app, { cited_rows } from "./server.js";
+import app, { cited_rows, asked_view } from "./server.js";
 import { close as close_db, query } from "./db.js";
 import { find_entry, entry_contents, entry_residues, entry_citation } from "./search.js";
 import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE } from "./detail.js";
@@ -672,7 +672,7 @@ test("every sidebar link on a structure page lands on a section", async () => {
         .map((m) => m[1] ?? m[2]);
     let sections = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
 
-    assert.deepEqual(links, ["overview", "molecules", "sources", "modified-nucleotides", "ligands",
+    assert.deepEqual(links, ["views", "overview", "molecules", "sources", "modified-nucleotides", "ligands",
                              "base-pairs", "conformation", "sequence-map", "same-sequence", "citations", "links"]);
     assert.deepEqual(sections, links, "one section per link, in the same order");
 });
@@ -1013,14 +1013,14 @@ test("a polymer pill shows its count, and a selected empty one is still drawn", 
 const render = (view, locals) =>
     new Promise((ok, fail) => app.render(view, locals, (err, html) => err ? fail(err) : ok(html)));
 
-async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0) {
+async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0, view) {
     let entry = await find_entry("4TNA");
     let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
     let page = { entry, rows: detail_rows(entry), citation: null,
                  molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains,
                  same_entries };
     return render("structure", { ...page, page: "search", sections: structure_sections(page),
-                                 PAGE_GROUPS, rail_query: "" });
+                                 PAGE_GROUPS, rail_query: "", view });
 }
 
 const section = (html, id) => {
@@ -1188,6 +1188,71 @@ test("the structure page has a Same sequence section after the Sequence map, dra
     assert.ok(!none.includes("/sameseq.js"), "and no script for it");
 });
 
+test("Views opens the page: 1D, 2D and 3D tiles, the 1D dot-bracket open and drawn by its own script", async () => {
+    let html = await page_with_arcs(null, 2);
+    let views = section(html, "views");
+    assert.ok(html.indexOf('id="views"') < html.indexOf('id="overview"'), "Views comes first");
+    assert.match(html, /class="nav_item nav_solo[^"]*" href="#views"|href="#views" class="nav_item nav_solo/,
+                 "its own sidebar link, with no group label over it");
+    assert.ok(!views.includes('class="band_group"'), "and no group name over its title");
+
+    assert.match(views, /role="tablist"/);
+    let tabs = [...views.matchAll(/<button[^>]*role="tab"[^>]*>/g)].map((m) => m[0]);
+    assert.deepEqual(tabs.map((t) => t.match(/data-view="(\w+)"/)[1]), ["1d", "2d", "3d"]);
+    assert.deepEqual(tabs.map((t) => t.match(/aria-selected="(\w+)"/)[1]), ["true", "false", "false"]);
+    for (const v of ["1d", "2d", "3d"]) {
+        assert.match(views, new RegExp(`role="tabpanel"[^>]*aria-labelledby="view-${v}-tab"`), `${v} has its panel`);
+        assert.match(views, new RegExp(`id="view-${v}-tab"[^>]*aria-controls="view-${v}"`));
+    }
+    let panel = (v) => views.match(new RegExp(`<div[^>]*id="view-${v}"[^>]*>`))[0];
+    assert.ok(!/ hidden/.test(panel("1d")) && / hidden/.test(panel("2d")) && / hidden/.test(panel("3d")),
+              "1D open, the others closed");
+
+    assert.match(views, /class="lbn" data-entry="4TNA"/, "1D is the plain dot-bracket");
+    assert.ok(!views.includes('class="seqmap"') && !views.includes("sequence-map-guide"),
+              "the Sequence map, NtC bars and all, stays in its own section");
+    assert.match(views, /href="#sequence-map"/, "1D points to the full map");
+    assert.match(html, /<script type="module" src="\/views.js"><\/script>/);
+    assert.ok(!/\u2014/.test(views), "no em dash in what the section says");
+    let script = await (await fetch(base + "/views.js")).text();
+    assert.ok(!/\u2014/.test(script), "no em dash anywhere the script writes");
+
+    let none = await (await fetch(base + "/structure/4TNA")).text();
+    assert.ok(section(none, "views").includes("None recorded"), "no chains, nothing to draw");
+    assert.ok(!section(none, "views").includes('role="tablist"'), "and no tiles for nothing");
+    assert.ok(!none.includes("/views.js"), "and no script for it");
+});
+
+test("?view= opens that view; anything else opens 1D; the 3D slot links to viewers of this entry", async () => {
+    let tab = (html, v) => section(html, "views").match(new RegExp(`<button[^>]*data-view="${v}"[^>]*>`))[0];
+    let panel = (html, v) => section(html, "views").match(new RegExp(`<div[^>]*id="view-${v}"[^>]*>`))[0];
+
+    let three = await page_with_arcs(null, 2, 0, "3d");
+    assert.match(tab(three, "3d"), /aria-selected="true"/);
+    assert.match(tab(three, "1d"), /aria-selected="false"/);
+    assert.ok(!/tabindex/.test(tab(three, "3d")) && /tabindex="-1"/.test(tab(three, "1d")), "Tab reaches the open one");
+    assert.ok(!/ hidden/.test(panel(three, "3d")) && / hidden/.test(panel(three, "1d")) && / hidden/.test(panel(three, "2d")));
+    let slot = section(three, "views").slice(section(three, "views").indexOf('id="view-3d"'));
+    for (const href of ["https://www.rcsb.org/3d-view/4TNA", "https://www.ebi.ac.uk/pdbe/entry/pdb/4tna",
+                        "https://molstar.org/viewer/?pdb=4tna"]) {
+        assert.ok(slot.includes(`href="${href}"`), href);
+    }
+    assert.ok(!/\u2014/.test(slot));
+
+    let two = await page_with_arcs(null, 2, 0, "2d");
+    let kept = section(two, "views").slice(section(two, "views").indexOf('id="view-2d"'), section(two, "views").indexOf('id="view-3d"'));
+    assert.ok(!/ hidden/.test(panel(two, "2d")), "?view=2d opens 2D");
+    assert.match(kept, /class="view_slot"/, "2D is a place kept, like 3D");
+    assert.match(kept, /will be shown here/);
+    assert.ok(!/R2DT|not drawn yet|<a /.test(kept), "and promises no method and links nowhere yet");
+
+    assert.deepEqual(["1d", "2d", "3d"].map(asked_view), ["1d", "2d", "3d"]);
+    for (const asked of [undefined, "", "4d", "3D", "<b>", ["2d", "3d"]]) {
+        assert.equal(asked_view(asked), "1d", `${JSON.stringify(asked)} opens 1D`);
+    }
+    assert.equal((await fetch(base + "/structure/4TNA?view=%3Cb%3E")).status, 200, "a bad view is no error");
+});
+
 test("the structure page has a Sequence map section after Conformation, drawn by its own script", async () => {
     let html = await page_with_arcs(null, 2);
     let map = section(html, "sequence-map");
@@ -1205,6 +1270,7 @@ test("the structure page has a Sequence map section after Conformation, drawn by
     assert.ok(section(none, "sequence-map").includes("None recorded"), "no chains, nothing to draw");
     assert.ok(!none.includes("/seqmap.js"), "and no script for it");
 });
+
 
 // Em dashes read as machine-written; a blank cell says "none" instead.
 test("no em dash anywhere a structure page or an error page shows", async () => {

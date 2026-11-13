@@ -166,6 +166,10 @@ app.get("/report", (req, res) => {
     });
 });
 
+// The Views tabs; ?view= opens one, so a copied link shows the same view.
+export const VIEWS = ["1d", "2d", "3d"];
+export const asked_view = (asked) => VIEWS.includes(asked) ? asked : VIEWS[0];
+
 // One structure's page. The id is in the path so the address can be cited.
 // An unknown id is a real 404, not a 200 that says "not found".
 app.get("/structure/:id", async (req, res) => {
@@ -206,7 +210,8 @@ app.get("/structure/:id", async (req, res) => {
         cite_unpublished: page.citation && unpublished(page.citation),
         full_name,
         PAGE_GROUPS,
-        rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id)
+        rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id),
+        view: asked_view(req.query.view)
     });
 });
 

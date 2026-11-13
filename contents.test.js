@@ -1412,9 +1412,9 @@ test("a section with nothing in it is listed as empty, not dropped", () => {
                                         base_pairs: null, citation: null });
     let by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
 
-    assert.equal(sections.length, 11, "every section stays in the list");
+    assert.equal(sections.length, 12, "every section stays in the list");
     for (const id of ["molecules", "modified-nucleotides", "ligands", "sources",
-                      "base-pairs", "sequence-map", "same-sequence", "conformation", "citations"]) {
+                      "base-pairs", "views", "sequence-map", "same-sequence", "conformation", "citations"]) {
         assert.ok(by_id[id].empty, `${id} should be marked empty`);
     }
     assert.ok(!by_id.overview.empty && !by_id.links.empty, "the overview and links always have content");
@@ -1463,7 +1463,9 @@ test("the page groups its sections as the filter panel does", () => {
     let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
                                         base_pairs: null, citation: null });
     assert.deepEqual(sections.map((s) => s.id),
-                     ["overview", "molecules", "sources", "modified-nucleotides", "ligands", "base-pairs",
+                     ["views", "overview", "molecules", "sources", "modified-nucleotides", "ligands", "base-pairs",
                       "conformation", "sequence-map", "same-sequence", "citations", "links"]);
     assert.equal(PAGE_GROUPS.find((g) => g.key === "structure").label, "Structure");
+    assert.deepEqual(PAGE_GROUPS.map((g) => g.key), ["views", "overview", "composition", "structure", "references"],
+                     "Views leads, a group of its own");
 });

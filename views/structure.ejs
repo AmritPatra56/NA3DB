@@ -22,6 +22,7 @@
         "ligands": "Small molecules bound in the structure: ions, cofactors, drugs and sugars. Count is how many copies the entry holds. Each code links to its page at RCSB. Water is left out.",
         "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxonomy ID its number in NCBI Taxonomy, Produced in the host it was made in when expressed.",
         "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). Pairs fall in four groups: cis Watson–Crick (cWW) A–U (A–T in DNA), cWW G–C, cWW G–U, and Others, which holds every other pair and is broken down by family. A modified base counts as the base it came from.",
+        "views": "Three ways to look at the nucleic acids; pick one and it opens below. 1D is the sequence with every base pair in layered dot-bracket notation: one row per Leontis–Westhof family, brackets of a deeper kind where pairs cross, & between strands. WC holds the Watson–Crick pairs (A–U, G–C, A–T), cWW the other cis Watson–Crick pairs such as G–U. A lower-case letter is a modified nucleotide. Point at or tap a nucleotide to see what it pairs with. The Sequence map adds the backbone steps and more strands. 2D and 3D are kept for a secondary-structure diagram and a 3D viewer, still to come; 3D links to viewers on other sites meanwhile.",
         "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (its NtC in DNATCO's colours, 5′ half and 3′ half; height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
         "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
         "conformation": "Each step from one nucleotide to the next gets an NtC class from DNATCO, such as AA00. Similar classes form a CANA class, such as AAA (A-form), and the list groups them that way. Each NtC is drawn in DNATCO's colours, one for each half of the step; How the colours work has the key. The confal score (0 to 100) says how well the steps fit their classes; the percentile ranks it against other structures. Steps DNATCO could not class (NANT) are counted last.",
@@ -150,6 +151,9 @@
                                     <% if (a.counts.copies) { %><span class="arc_note">′ marks a symmetry copy from the crystal</span><% } %>
                                 </figcaption>
                             </figure>
+                        <% } %>
+                        <% if (s.id === "views" && !s.empty) { %>
+                            <%- include("includes/views.ejs") %>
                         <% } %>
                         <% if (s.id === "sequence-map" && !s.empty) { %>
                             <%- include("includes/map_guide.ejs") %>
@@ -285,6 +289,7 @@
     <% if (arcs) { %>
     <%- include("includes/arc_viewer.ejs") %>
     <% } %>
+    <% if (sections.some((s) => s.id === "views" && !s.empty)) { %><script type="module" src="/views.js"></script><% } %>
     <% if (sections.some((s) => s.id === "sequence-map" && !s.empty)) { %><script type="module" src="/seqmap.js"></script><% } %>
     <% if (sections.some((s) => s.id === "same-sequence" && !s.empty)) { %><script type="module" src="/sameseq.js"></script><% } %>
     <script>

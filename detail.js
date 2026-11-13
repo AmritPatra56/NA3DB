@@ -647,6 +647,7 @@ export function base_pairs_csv(pairs) {
 // of the filter-panel category it answers, so a search and the page it leads
 // to look like one thing.
 export const PAGE_GROUPS = [
+    { key: "views",       label: "Views" },
     { key: "overview",    label: "Overview" },
     { key: "composition", label: "Composition" },
     { key: "structure",   label: "Structure" },
@@ -680,6 +681,9 @@ export function structure_sections({ entry, rows, molecules, base_pairs, citatio
     let steps    = entry.ntc_step_count ?? null;
 
     let sections = [
+        // 1D, 2D and 3D views of the nucleic acids, one open at a time: the
+        // first thing the page shows.
+        { id: "views", title: "Views", group: "views", count: nucleic_chains },
         { id: "overview", title: "Overview", group: "overview", rows: rows_in.overview },
         { id: "molecules", title: "Molecules", group: "composition", groups: polymers,
           count: sum(polymers) },

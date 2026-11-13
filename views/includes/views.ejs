@@ -1,0 +1,52 @@
+<%#
+  The Views section: 1D, 2D and 3D tiles over one panel each, one open at a
+  time. 2D and 3D are places kept for what comes later. `view` (from ?view=,
+  1D when not given) says which is open when the page loads; public/views.js
+  switches them, keeps ?view= in the address and writes the 1D lines.
+%>
+<%
+  const tiles = [
+      { key: "1d", name: "1D", what: "Sequence and base pairs",
+        glyph: '<path d="M4 7h40M4 17h40"/><path class="view_pair" d="M10 7v10M20 7v10M30 7v10"/>' },
+      { key: "2d", name: "2D", what: "Secondary structure",
+        glyph: '<path d="M20 24V12M28 24V12"/><circle cx="24" cy="7" r="5"/><path class="view_pair" d="M20 20h8M20 15h8"/>' },
+      { key: "3d", name: "3D", what: "Model in space",
+        glyph: '<path d="M12 2c24 4 24 16 0 20"/><path class="view_pair" d="M36 2c-24 4-24 16 0 20"/>' }
+  ];
+  const open = locals.view ?? "1d";
+  const id = entry.pdb_id;
+  const lower = encodeURIComponent(id.toLowerCase());
+%>
+<div class="views">
+    <div class="view_tiles" role="tablist" aria-label="Views of the nucleic acids">
+        <% for (const t of tiles) { const on = t.key === open; %>
+        <button type="button" class="view_tile" role="tab" id="view-<%= t.key %>-tab" data-view="<%= t.key %>" aria-controls="view-<%= t.key %>" aria-selected="<%= on %>"<% if (!on) { %> tabindex="-1"<% } %>>
+            <svg class="view_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- t.glyph %></svg>
+            <span class="view_name"><%= t.name %></span><span class="view_what"><%= t.what %></span>
+        </button>
+        <% } %>
+    </div>
+    <div class="view_panel" role="tabpanel" id="view-1d" aria-labelledby="view-1d-tab"<% if (open !== "1d") { %> hidden<% } %>>
+        <div class="lbn" data-entry="<%= id %>">
+            <p class="seqmap_wait">Reading the base pairs…</p>
+        </div>
+        <p class="lbn_more">The <a href="#sequence-map">Sequence map</a> adds the backbone steps and lets you pick other strands.</p>
+    </div>
+    <div class="view_panel" role="tabpanel" id="view-2d" aria-labelledby="view-2d-tab"<% if (open !== "2d") { %> hidden<% } %>>
+        <div class="view_slot">
+            <svg class="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- tiles[1].glyph %></svg>
+            <p>The 2D diagram of the secondary structure will be shown here.</p>
+        </div>
+    </div>
+    <div class="view_panel" role="tabpanel" id="view-3d" aria-labelledby="view-3d-tab"<% if (open !== "3d") { %> hidden<% } %>>
+        <div class="view_slot">
+            <svg class="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- tiles[2].glyph %></svg>
+            <p>The 3D viewer will open here. Until then, <%= id %> can be turned and zoomed on these sites:</p>
+            <ul class="view_slot_links">
+                <li><a class="detail_link" target="_blank" rel="noopener" href="https://www.rcsb.org/3d-view/<%= encodeURIComponent(id) %>">RCSB PDB 3D view</a></li>
+                <li><a class="detail_link" target="_blank" rel="noopener" href="https://www.ebi.ac.uk/pdbe/entry/pdb/<%= lower %>">PDBe entry with Mol*</a></li>
+                <li><a class="detail_link" target="_blank" rel="noopener" href="https://molstar.org/viewer/?pdb=<%= lower %>">Mol* viewer</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
