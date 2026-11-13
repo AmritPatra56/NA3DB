@@ -77,7 +77,7 @@ const key_html = (map) => {
         <span class="seqmap_group">${class_key(map.steps.map((s) => s.ntc))}</span>
         ${KEY_NOTE}
         <span class="seqmap_key_title">Pairs</span>
-        <span class="seqmap_group"><span><i style="background:${ROW_COLOUR.WC}"></i>WC: Watson–Crick</span><span><i style="background:${ROW_COLOUR.cWW}"></i>cWW: other cis W–W</span><span><i style="background:${OTHER_ROW}"></i>other families</span><span><b class="seqmap_mod">a</b>lower case: modified</span>${map.names.length > 1 ? `<span><b class="seqmap_cross">•</b>under a bracket: partner on another strand</span>` : ""}</span>`;
+        <span class="seqmap_group"><span><i style="background:${ROW_COLOUR.WC}"></i>WC: Watson–Crick</span><span><i style="background:${ROW_COLOUR.cWW}"></i>cWW: other cis W–W</span><span><i style="background:${OTHER_ROW}"></i>other families</span><span><b class="seqmap_mod">a</b>lower case: modified</span></span>`;
 };
 const HINT = `<span class="seqmap_hint">Hover or tap a column: its pairs and the steps on either side show here.</span>`;
 const file_url = (map) => `/api/entries/${encodeURIComponent(map.pdb_id)}/sequence_map?strands=${encodeURIComponent(map.shown.join(","))}&format=text`;
@@ -188,8 +188,9 @@ function draw_map(box, w) {
     }
 
     // Rows: brackets in the row's colour over faint dots, or a tick per
-    // paired base when narrow. A dot under a bracket: its partner is on
-    // another strand.
+    // paired base when narrow. Nothing is drawn under a bracket: a mark there
+    // touches its tail and reads as a dot inside it. The pointer names a
+    // partner on another strand.
     map.rows.forEach((r, k) => {
         let y = row_y(k) + 4;
         let colour = ROW_COLOUR[r.name] ?? OTHER_ROW;
@@ -204,10 +205,6 @@ function draw_map(box, w) {
         } else {
             let g = el("g", { fill: colour }, svg);
             for (const i of ends) el("rect", { x: i * w, y: row_y(k) - 4, width: Math.max(0.8, w), height: 8 }, g);
-        }
-        for (const [i, j] of r.pairs) {
-            if (strand_of[i] === strand_of[j] || !wide) continue;
-            for (const c of [i, j]) el("circle", { cx: x_of(c), cy: row_y(k) + 6.5, r: 1.4, fill: colour }, svg);
         }
     });
 

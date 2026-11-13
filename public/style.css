@@ -3561,7 +3561,6 @@ path.arc_nc { stroke: var(--pair-nc); }
     cursor: pointer;
 }
 .seqmap_full:hover { border-color: var(--accent); }
-.seqmap_cross { color: var(--text-muted); }
 .seqmap_jump {
     padding: 0 4px;
     font: inherit;
