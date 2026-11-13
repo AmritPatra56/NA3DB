@@ -13,6 +13,11 @@ const TOP = 14, PAD = 22, GAP = 24;
 // The drawing is as many units as the screen has pixels, so text is the same
 // size on a phone as on a computer. Set when the viewer opens or resizes.
 let W = 1000, H = 470, BASE = 420;
+// Pairs that cross the ones above the line hang under it, from just below the
+// letters; DEPTH is the room they take, 0 when there are none.
+const FOOT = 20;
+let DEPTH = 0;
+const under = (p) => p[7] === 1;
 
 const dialog = document.getElementById("arc_viewer");
 const svg = dialog.querySelector(".av_svg");
@@ -65,7 +70,8 @@ function build(d) {
     let r = svg.getBoundingClientRect();
     W = Math.max(300, Math.round(r.width));
     H = Math.max(220, Math.min(Math.round(r.height), Math.round(W * 0.6)));
-    BASE = H - 58;
+    DEPTH = d.pairs.some(under) ? Math.round((H - 58 - TOP) * 0.3) : 0;
+    BASE = H - 58 - DEPTH;
     svg.textContent = "";
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     let L = layout(d);
@@ -81,13 +87,19 @@ function build(d) {
     paint();
 }
 
+// An arc's control height on screen: it follows the arc's width, capped at
+// the top of the drawing, or at the bottom of the room under the line.
+function arc_height(xa, xb, low) {
+    let reach = low ? DEPTH - FOOT - 8 : BASE - TOP - 3;
+    return (3 + reach * Math.min(1, (xb - xa) / V.L.room)) / 0.75;
+}
+
 // Everything that moves with the zoom. An arc's height follows its width on
 // screen, capped at the top, so zooming in turns flat stems into rainbows.
 function draw() {
     let { d, L } = V;
     let sx = (v) => V.tx + V.s * v;
-    let reach = BASE - TOP - 3;
-    let height = (xa, xb) => (3 + reach * Math.min(1, (xb - xa) / L.room)) / 0.75;
+    let height = arc_height;
     d.strands.forEach((s, j) => {
         let [x1, x2] = L.ends(s, j);
         V.lines[j].setAttribute("x1", sx(x1));
@@ -96,11 +108,12 @@ function draw() {
     let symbols = "";
     V.paths.forEach((p, i) => {
         let [a, b, kind, , fam] = d.pairs[i];
-        let xa = sx(L.x(a)), xb = sx(L.x(b)), h = height(xa, xb), y = BASE - h;
-        p.setAttribute("d", `M${xa.toFixed(1)} ${BASE}C${xa.toFixed(1)} ${y.toFixed(1)} ${xb.toFixed(1)} ${y.toFixed(1)} ${xb.toFixed(1)} ${BASE}`);
+        let low = under(d.pairs[i]), foot = low ? BASE + FOOT : BASE;
+        let xa = sx(L.x(a)), xb = sx(L.x(b)), h = height(xa, xb, low) * (low ? 1 : -1), y = foot + h;
+        p.setAttribute("d", `M${xa.toFixed(1)} ${foot}C${xa.toFixed(1)} ${y.toFixed(1)} ${xb.toFixed(1)} ${y.toFixed(1)} ${xb.toFixed(1)} ${foot}`);
         // A symbol only where the arc is wide enough on screen to carry it.
         if (kind === "nc" && xb - xa >= 22 && xb > 0 && xa < W) {
-            symbols += `<g data-i="${i}" class="av_sym">${glyph(fam, (xa + xb) / 2, BASE - h * 0.75)}</g>`;
+            symbols += `<g data-i="${i}" class="av_sym">${glyph(fam, (xa + xb) / 2, foot + h * 0.75)}</g>`;
         }
     });
     V.glyphs.innerHTML = symbols;
@@ -129,8 +142,10 @@ function draw() {
         for (const i of d.pairs[on].slice(0, 2)) el("circle", { cx: sx(L.x(i)), cy: BASE, r: 5.5, class: "av_end" }, V.marks);
     }
 
-    // A ruler counted from each strand's 5' end, spaced so labels never touch.
+    // A ruler counted from each strand's 5' end, spaced so labels never touch,
+    // under the arcs below the line.
     V.ticks.textContent = "";
+    let LOW = BASE + DEPTH;
     let every = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].find((n) => n * L.step * V.s >= 44) ?? 2000;
     d.strands.forEach((s, j) => {
         let [x1, x2] = L.ends(s, j).map(sx);
@@ -138,16 +153,16 @@ function draw() {
         for (let p = every; p <= s.length; p += every) {
             let x = sx(L.x(s.start + p));
             if (x < 0 || x > W) continue;
-            el("line", { x1: x, y1: BASE + 22, x2: x, y2: BASE + 27, class: "av_tick" }, V.ticks);
-            el("text", { x, y: BASE + 52, class: "av_ticklabel" }, V.ticks, p);
+            el("line", { x1: x, y1: LOW + 22, x2: x, y2: LOW + 27, class: "av_tick" }, V.ticks);
+            el("text", { x, y: LOW + 52, class: "av_ticklabel" }, V.ticks, p);
         }
         let room = Math.min(x2, W) - Math.max(x1, 0);
         if (room >= 70) {
-            el("text", { x: Math.max(x1, 4), y: BASE + 40, class: "av_label" }, V.ticks, "5′");
-            el("text", { x: Math.min(x2, W - 4), y: BASE + 40, class: "av_label av_right" }, V.ticks, "3′");
+            el("text", { x: Math.max(x1, 4), y: LOW + 40, class: "av_label" }, V.ticks, "5′");
+            el("text", { x: Math.min(x2, W - 4), y: LOW + 40, class: "av_label av_right" }, V.ticks, "3′");
         }
         if ((d.strands.length > 1 || s.symmetry) && room >= 24) {
-            el("text", { x: (Math.max(x1, 0) + Math.min(x2, W)) / 2, y: BASE + 40, class: "av_label av_name" }, V.ticks, s.name);
+            el("text", { x: (Math.max(x1, 0) + Math.min(x2, W)) / 2, y: LOW + 40, class: "av_label av_name" }, V.ticks, s.name);
         }
     });
 }
@@ -226,12 +241,12 @@ const picture_x = (ev) => picture_point(ev).x;
 
 // The arc nearest the pointer, within a finger's width, so a thin line need
 // not be hit exactly. Each arc is a cubic with its control points straight
-// above its ends: x = a + (b - a)(3t² - 2t³), y = BASE - h·3t(1 - t).
+// above (or below) its ends: x = a + (b - a)(3t² - 2t³), y = foot ∓ h·3t(1 - t).
 function nearest(ev) {
     let { x, y, k } = picture_point(ev);
-    let reach = BASE - TOP - 3, best = null, within = 14 / k;
+    let best = null, within = 14 / k;
     let sx = (v) => V.tx + V.s * v;
-    V.d.pairs.forEach(([a, b, , , fam], i) => {
+    V.d.pairs.forEach(([a, b, , , fam, , , low], i) => {
         if (V.fam && fam !== V.fam) return;
         let xa = sx(V.L.x(a)), xb = sx(V.L.x(b));
         if (x < xa - within || x > xb + within) return;
@@ -242,8 +257,8 @@ function nearest(ev) {
             if (3 * t * t - 2 * t * t * t < f) lo = t; else hi = t;
         }
         let t = (lo + hi) / 2;
-        let h = (3 + reach * Math.min(1, (xb - xa) / V.L.room)) / 0.75;
-        let gap = Math.abs(y - (BASE - h * 3 * t * (1 - t)));
+        let h = arc_height(xa, xb, low) * 3 * t * (1 - t);
+        let gap = Math.abs(y - (low ? BASE + FOOT + h : BASE - h));
         if (gap < within) { within = gap; best = i; }
     });
     return best;
@@ -283,7 +298,10 @@ async function open(id, button) {
     let trigger = figure?.querySelector(".arc_full") ?? button;
     if (!expand(dialog, figure ?? button, trigger)) return;
     info.innerHTML = "<span>Loading…</span>";
-    let d = cache.get(id);
+    // The view the page shows (assembly 1, another, or "au"); a search tile
+    // names none, which is assembly 1, as its picture is.
+    let view = button.dataset.arcView ?? "";
+    let d = cache.get(`${id} ${view}`);
     dialog.querySelector(".av_id").textContent = id;
     dialog.querySelector(".av_title").textContent = d?.title ?? "";
     dialog.querySelector(".av_table").href = `/structure/${encodeURIComponent(id)}#base-pairs`;
@@ -292,10 +310,10 @@ async function open(id, button) {
         rows.textContent = "";
         fams.textContent = "";
         dialog.querySelector(".av_summary").textContent = "";
-        let res = await fetch(`/api/entries/${encodeURIComponent(id)}/arcs`);
+        let res = await fetch(`/api/entries/${encodeURIComponent(id)}/arcs?assembly=${encodeURIComponent(view)}`);
         if (!res.ok) { info.innerHTML = "<span>Could not load the pairs.</span>"; return; }
         d = await res.json();
-        cache.set(id, d);
+        cache.set(`${id} ${view}`, d);
         dialog.querySelector(".av_title").textContent = d.title ?? "";
     }
     V = null;

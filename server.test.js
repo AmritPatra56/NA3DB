@@ -1013,14 +1013,14 @@ test("a polymer pill shows its count, and a selected empty one is still drawn", 
 const render = (view, locals) =>
     new Promise((ok, fail) => app.render(view, locals, (err, html) => err ? fail(err) : ok(html)));
 
-async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0, view) {
+async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0, view, arc_view) {
     let entry = await find_entry("4TNA");
     let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
     let page = { entry, rows: detail_rows(entry), citation: null,
                  molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains,
                  same_entries };
     return render("structure", { ...page, page: "search", sections: structure_sections(page),
-                                 PAGE_GROUPS, rail_query: "", view });
+                                 PAGE_GROUPS, rail_query: "", view, arc_view });
 }
 
 const section = (html, id) => {
@@ -1074,17 +1074,37 @@ test("a symmetry copy is named A′, drawn dashed and explained under the pictur
 
     assert.match(html, /class="arc_strand arc_copy"/);
     assert.match(html, />A′<\/text>/);
-    assert.ok(html.includes("′ marks a symmetry copy from the crystal"));
+    assert.ok(html.includes("′ marks a copy from the crystal's symmetry"));
     assert.ok(!html.includes("arc_mod"), "nothing modified, no key entry for it");
     assert.ok(!html.includes('<i class="arc_gu">') && !html.includes('<i class="arc_nc">'),
               "the key lists only the kinds drawn");
+});
+
+test("the picture offers Assembly 1 | Asymmetric unit, and the expanded view follows it", async () => {
+    let one = pair_arcs(dna(["A"], 4), plain(4), [arc_pair("A", 1, "A", 4, "wc", "2")]);
+    let arc_view = { key: "1", assembly: true, note: { text: "Assembly 1 has 30 strands.", link: "au", link_text: "The asymmetric unit is easier to read." },
+                     options: [{ key: "1", label: "Assembly 1", current: true, title: "In the cell" },
+                               { key: "au", label: "Asymmetric unit", current: false, title: "As stored" }],
+                     about: ["Assembly 1 builds 1 strand by symmetry, drawn dashed.", "Under the line: <pairs>"] };
+    let html = pairs_section(await page_with_arcs(one, 0, 0, undefined, arc_view));
+
+    assert.match(html, /<nav class="arc_views" aria-label="Which chains to draw">\s*<a href="\?assembly=1#base-pairs" title="In the cell" aria-current="true">Assembly 1<\/a><a href="\?assembly=au#base-pairs" title="As stored">Asymmetric unit<\/a>/);
+    assert.equal((html.match(/data-arc-view="1"/g) || []).length, 2, "both open buttons ask for the same view");
+    assert.ok(html.includes('<span class="arc_note">Assembly 1 builds 1 strand by symmetry, drawn dashed.</span>'));
+    assert.ok(html.includes('<span class="arc_note">Under the line: &lt;pairs&gt;</span>'), "each line said once, escaped");
+    assert.ok(!html.includes("′ marks a copy"), "the assembly's own line says it, not the crystal note");
+    assert.match(html, /Assembly 1 has 30 strands\. <a href="\?assembly=au#base-pairs">The asymmetric unit is easier to read\.<\/a>/);
+
+    let plain_page = pairs_section(await page_with_arcs(one));
+    assert.ok(!plain_page.includes("arc_views"), "no assemblies known: no choice to offer");
+    assert.ok(plain_page.includes("′ marks a copy from the crystal's symmetry"));
 });
 
 test("the arcs API gives the viewer every pair as numbers, and a 404 for an unknown entry", async () => {
     let res = await fetch(base + "/api/entries/4tna/arcs");
     assert.equal(res.status, 200);
     let body = await res.json();
-    assert.deepEqual({ ...body, title: undefined }, { pdb_id: "4TNA", title: undefined, strands: [], pairs: [] }, "the seed has no pairs");
+    assert.deepEqual({ ...body, title: undefined }, { pdb_id: "4TNA", title: undefined, view: "au", strands: [], pairs: [] }, "the seed has no pairs, nor assemblies");
     assert.equal(typeof body.title, "string", "the viewer heads itself with the title");
     assert.equal((await fetch(base + "/api/entries/ZZZZ/arcs")).status, 404);
 });

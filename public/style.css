@@ -3279,6 +3279,30 @@ input::placeholder {
     border-radius: 10px;
 }
 .arc_picture svg { display: block; width: 100%; height: auto; }
+/* Assembly 1 | Asymmetric unit: the same segmented look as Contains | Excludes. */
+.arc_views {
+    display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    margin: 0 0 8px;
+    gap: 1px;                              /* the rules between cells, also when they wrap */
+    background: var(--input-border);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.arc_views a {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    flex: 1 0 auto;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    text-decoration: none;
+}
+.arc_views a:hover { color: var(--text); }
+.arc_views a[aria-current="true"] { color: var(--on-accent); background-color: var(--accent); }
 .arc_strand { stroke: var(--strand); stroke-width: 2.2; stroke-linecap: round; }
 .arc_copy   { stroke-dasharray: 4 2.5; }
 .arc_lines path { fill: none; }

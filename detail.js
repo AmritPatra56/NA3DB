@@ -399,16 +399,186 @@ const ARC_TOP = 8;       // the widest arc peaks here
 const ARC_PAD = 8;
 const ARC_GAP = 16;      // between two strands, shrunk when there are many
 const ARC_DOT = 2.4;
+const ARC_BELOW = 56;    // the widest arc under the line reaches this far down
 const PRIMES = ["′", "″", "‴"];
 const IDENTITY = "1";    // struct_oper_id of the copy in the file
-const round1 = (v) => Math.round(v * 10) / 10;
 const by_copy = (a, b) => (b === IDENTITY) - (a === IDENTITY) || a.localeCompare(b, "en", { numeric: true });
+const round1 = (v) => Math.round(v * 10) / 10;
+
+// --- biological assemblies --------------------------------------------------
+// An operator is [r11, r12, r13, t1, r21, ..., t3]: x' = R·x + t.
+const compose = (a, b) => {            // a after b
+    let m = [];
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) m.push(a[4 * i] * b[j] + a[4 * i + 1] * b[4 + j] + a[4 * i + 2] * b[8 + j]);
+        m.push(a[4 * i] * b[3] + a[4 * i + 1] * b[7] + a[4 * i + 2] * b[11] + a[4 * i + 3]);
+    }
+    return m;
+};
+const invert = (m) => {
+    let [a, b, c, , d, e, f, , g, h, i] = m;
+    let det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    let r = [e * i - f * h, c * h - b * i, b * f - c * e,
+             f * g - d * i, a * i - c * g, c * d - a * f,
+             d * h - e * g, b * g - a * h, a * e - b * d].map((v) => v / det);
+    let t = [0, 1, 2].map((k) => -(r[3 * k] * m[3] + r[3 * k + 1] * m[7] + r[3 * k + 2] * m[11]));
+    return [r[0], r[1], r[2], t[0], r[3], r[4], r[5], t[1], r[6], r[7], r[8], t[2]];
+};
+const same_op = (a, b) => a.every((v, k) => Math.abs(v - b[k]) <= 1e-3 * Math.max(1, Math.abs(v)));
+const ONE = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+
+// The operator ids of one oper_expression group: "1,2", "1-60", "X0".
+const group_ids = (g) => g.split(",").flatMap((part) => {
+    let m = /^(\d+)-(\d+)$/.exec(part);
+    return m ? Array.from({ length: m[2] - m[1] + 1 }, (_, k) => String(Number(m[1]) + k)) : [part];
+});
+
+// Each operator an oper_expression makes, as { key, m }. "(X0)(1-3)" is a
+// product: every operator of the right group, then X0 (the mmCIF reading),
+// keyed "X0×1".
+export function expression_ops(expr, opers) {
+    let groups = expr.includes("(") ? [...expr.matchAll(/\(([^()]*)\)/g)].map((g) => g[1]) : [expr];
+    let out = [{ key: "", m: ONE }];
+    for (const g of groups.reverse()) {
+        out = group_ids(g).flatMap((id) => {
+            let m = opers.get(id);
+            if (!m) throw new Error(`operator ${id} of ${expr} is not in the list`);
+            return out.map((o) => ({ key: o.key ? `${id}×${o.key}` : id, m: compose(m, o.m) }));
+        });
+    }
+    return out;
+}
+
+// The operator that leaves a chain where the file has it. Usually "1", but not
+// always: in 4NH6 operator 1 is a crystal symmetry and 2 the identity.
+export const identity_op = (opers) =>
+    [...(opers ?? new Map())].find(([, m]) => same_op(m, ONE))?.[0] ?? IDENTITY;
+
+// The pairs of one assembly, ready for pair_arcs. Each chain is in it once per
+// operator that the assembly applies to it. A pair listed between copy a of X
+// and copy b of Y holds in every copy g of X, with the copy of Y that g·a⁻¹·b
+// makes, when that copy is in the assembly too; so a duplex half built by
+// symmetry gets both its strands paired, and pairs to a chain the assembly
+// leaves out are dropped.
+export function assembly_pairs(assembly, opers, pairs) {
+    let members = new Map();    // chain -> [{ key, m }] in file order
+    for (const gen of assembly.gens) {
+        let ops = expression_ops(gen.expr, opers);
+        for (const chain of gen.chains) {
+            let list = members.get(chain) ?? members.set(chain, []).get(chain);
+            for (const op of ops) if (!list.some((o) => o.key === op.key)) list.push(op);
+        }
+    }
+    // Pairs share a few copy combinations, so each is worked out once.
+    let images = new Map();
+    let images_of = (label_1, a_id, label_2, b_id) => {
+        let key = `${label_1} ${a_id} ${label_2} ${b_id}`;
+        if (images.has(key)) return images.get(key);
+        let a = opers.get(a_id), b = opers.get(b_id);
+        let found = [];
+        if (a && b) {
+            let a_to_b = compose(invert(a), b);
+            for (const g of members.get(label_1) ?? []) {
+                let want = compose(g.m, a_to_b);
+                let h = (members.get(label_2) ?? []).find((o) => same_op(o.m, want));
+                if (h) found.push([g.key, h.key]);
+            }
+        }
+        images.set(key, found);
+        return found;
+    };
+    let out = [];
+    for (const p of pairs) {
+        for (const [g, h] of images_of(p.label_1, String(p.copy_1 ?? IDENTITY), p.label_2, String(p.copy_2 ?? IDENTITY))) {
+            out.push({ ...p, copy_1: g, copy_2: h });
+        }
+    }
+    // A chain's own copy is the identity one; failing that, its first.
+    let own = new Map([...members].map(([chain, list]) =>
+        [chain, (list.find((o) => same_op(o.m, ONE)) ?? list[0]).key]));
+    let rank = new Map([...members].flatMap(([chain, list]) => list.map((o, k) => [`${chain} ${o.key}`, k])));
+    return { pairs: out, own: (label) => own.get(label) ?? IDENTITY,
+             rank: (label, copy) => rank.get(`${label} ${copy}`) ?? Infinity };
+}
 
 // How many nucleic-acid chains a sequence map can show.
 export const nucleic_chain_count = (entities) =>
     entities.filter((e) => NUCLEIC_KINDS.has(e.kind)).reduce((n, e) => n + e.chains.length, 0);
 
-export function pair_arcs(entities, residues, pairs) {
+// --- which arcs go above the line ------------------------------------------
+// Arcs that cross each other cannot share a side. The ones that do not cross
+// (nested or side by side) go above the line, so a tRNA's cloverleaf reads as
+// four stems, and the pairs that cross them, its tertiary pairs, go below.
+// Of all sets that do not cross, the one of most weight: weight(k) is 2 for a
+// Watson–Crick or G–U pair, 1 for the others, so stems win over a pseudoknot.
+// arcs are [i, j], i <= j; two arcs may share an end. Returns the kept indices.
+//
+// Exact: an arc's inside is solved before any arc that holds it, as weighted
+// interval scheduling over the arcs within it (Kleinberg and Tardos,
+// Algorithm Design, 6.1). 3,693 pairs (9GFT) take about 0.15 s.
+export function nested_set(arcs, weight) {
+    let n = arcs.length;
+    let by_end = arcs.map((_, k) => k).sort((x, y) => arcs[x][1] - arcs[y][1] || arcs[y][0] - arcs[x][0] || x - y);
+    let ends = by_end.map((k) => arcs[k][1]);
+    let first_end_at = (v) => {
+        let lo = 0, hi = n;
+        while (lo < hi) { let m = (lo + hi) >> 1; if (ends[m] < v) lo = m + 1; else hi = m; }
+        return lo;
+    };
+    let inner = new Float64Array(n), pick = new Array(n);
+    // The best chain of arcs side by side among cands (ordered by end), each
+    // worth its weight and its inside.
+    let schedule = (cands) => {
+        let best = [0], from = [], end_at = [];
+        for (let c = 0; c < cands.length; c++) {
+            let k = cands[c], s = arcs[k][0];
+            let lo = 0, hi = c;   // how many of the earlier ones end by s
+            while (lo < hi) { let m = (lo + hi + 1) >> 1; if (end_at[m - 1] <= s) lo = m; else hi = m - 1; }
+            let take = best[lo] + weight(k) + inner[k];
+            if (take > best[c]) { best.push(take); from.push(lo); } else { best.push(best[c]); from.push(-1); }
+            end_at.push(arcs[k][1]);
+        }
+        let chosen = [];
+        for (let c = cands.length; c > 0;) {
+            if (from[c - 1] === -1) { c--; continue; }
+            chosen.push(cands[c - 1]);
+            c = from[c - 1];
+        }
+        return [best[cands.length], chosen];
+    };
+    // Shortest first; of two equal arcs the later one holds the earlier.
+    let order = arcs.map((_, k) => k).sort((x, y) => (arcs[x][1] - arcs[x][0]) - (arcs[y][1] - arcs[y][0]) || x - y);
+    let done = new Uint8Array(n);
+    for (const k of order) {
+        let [a, b] = arcs[k];
+        let cands = [];
+        for (let c = first_end_at(a); c < n && ends[c] <= b; c++) {
+            let j = by_end[c];
+            if (done[j] && arcs[j][0] >= a) cands.push(j);
+        }
+        [inner[k], pick[k]] = schedule(cands);
+        done[k] = 1;
+    }
+    let keep = new Set();
+    let stack = schedule(by_end)[1];
+    while (stack.length) {
+        let k = stack.pop();
+        keep.add(k);
+        stack.push(...pick[k]);
+    }
+    return keep;
+}
+
+// view says which copy of a chain is the chain itself (own) and how its
+// copies are ordered (rank); by default the identity operator's copy, then
+// the rest by number. view.flat draws every arc above the line, for a view
+// only counted or compared, not shown.
+export function pair_arcs(entities, residues, pairs, view = {}) {
+    let own = view.own ?? (() => view.identity ?? IDENTITY);
+    let rank = view.rank ?? ((label, copy) => copy);
+    let copy_order = (label) => (a, b) => (b === own(label)) - (a === own(label))
+        || (typeof rank(label, a) === "number" ? rank(label, a) - rank(label, b)
+            : String(a).localeCompare(String(b), "en", { numeric: true }));
     let chains = new Map();
     for (const e of entities) {
         if (!NUCLEIC_KINDS.has(e.kind)) continue;
@@ -422,8 +592,8 @@ export function pair_arcs(entities, residues, pairs) {
     }
 
     // One end of a pair: a chain, which copy of it, and a position.
-    let ends_of = (p) => [{ label: p.label_1, copy: String(p.copy_1 ?? IDENTITY), pos: p.pos_1 },
-                          { label: p.label_2, copy: String(p.copy_2 ?? IDENTITY), pos: p.pos_2 }];
+    let ends_of = (p) => [{ label: p.label_1, copy: String(p.copy_1 ?? own(p.label_1)), pos: p.pos_1 },
+                          { label: p.label_2, copy: String(p.copy_2 ?? own(p.label_2)), pos: p.pos_2 }];
     let fits = ({ label, pos }) => {
         let c = chains.get(label);
         return c && Number.isInteger(pos) && pos >= 1 && pos <= c.length;
@@ -449,11 +619,11 @@ export function pair_arcs(entities, residues, pairs) {
         let key = `${e.label} ${e.copy}`;
         if (!strands.has(key)) strands.set(key, { ...chains.get(e.label), copy: e.copy });
     }
-    let line = [...strands.values()].sort((x, y) => x.order - y.order || by_copy(x.copy, y.copy));
+    let line = [...strands.values()].sort((x, y) => x.order - y.order || copy_order(x.label)(x.copy, y.copy));
     for (const c of line) {
-        let others = line.filter((s) => s.label === c.label && s.copy !== IDENTITY).map((s) => s.copy);
+        let others = line.filter((s) => s.label === c.label && s.copy !== own(c.label)).map((s) => s.copy);
         let rank = others.indexOf(c.copy);
-        c.symmetry = c.copy !== IDENTITY;
+        c.symmetry = c.copy !== own(c.label);
         c.shown = !c.symmetry ? c.name : rank < PRIMES.length ? c.name + PRIMES[rank] : `${c.name} (copy ${c.copy})`;
     }
 
@@ -472,26 +642,6 @@ export function pair_arcs(entities, residues, pairs) {
     }
     let at = (e) => start.get(`${e.label} ${e.copy}`) + (e.pos - 0.5) * step;
 
-    // A cubic curve peaks at 3/4 of its control height.
-    let reach = ARC_BASE - ARC_TOP - 3;
-    let arc = (p) => {
-        let [a, b] = p.ends.map(at).sort((u, v) => u - v);
-        let peak = 3 + reach * (b - a) / room;
-        let y = round1(ARC_BASE - peak / 0.75);
-        return `M${round1(a)} ${ARC_BASE}C${round1(a)} ${y} ${round1(b)} ${y} ${round1(b)} ${ARC_BASE}`;
-    };
-    // One path per kind, coloured as in the Base pairs section.
-    let paths = { wc: "", gu: "", nc: "" };
-    for (const p of drawn) paths[p.kind] += arc(p);
-
-    // Few enough pairs to give each its own arc, named on hover as the Base
-    // pairs table names it; a copy's end carries its prime.
-    let shown = new Map(line.map((c) => [`${c.label} ${c.copy}`, c.shown]));
-    let named = (e, res) => `${shown.get(`${e.label} ${e.copy}`)}:${res ?? e.pos}`;
-    let label = (p) => `${named(p.ends[0], p.res_1)} – ${named(p.ends[1], p.res_2)} · ${p.family}`;
-    let each = drawn.length > ARC_HOVER_MAX ? null
-             : drawn.map((p) => ({ kind: p.kind, d: arc(p), label: label(p) }));
-
     // The same picture as numbers, for the full-screen viewer to draw at any
     // size: strands end to end, nucleotide i of the whole line at index i.
     let first = new Map();
@@ -505,15 +655,47 @@ export function pair_arcs(entities, residues, pairs) {
         return s;
     });
     let index = (e) => first.get(`${e.label} ${e.copy}`) + e.pos;
+    let spans = drawn.map((p) => p.ends.map(index).sort((u, v) => u - v));
+    let above = view.flat ? new Set(spans.keys()) : nested_set(spans, (k) => (drawn[k].kind === "nc" ? 1 : 2));
+    drawn.forEach((p, k) => { p.below = !above.has(k); });
+
+    // A cubic curve peaks at 3/4 of its control height. Under the line the
+    // arcs are shallower, so the crossing pairs do not take as much room as
+    // the structure above them.
+    let reach = ARC_BASE - ARC_TOP - 3;
+    let peak = (p) => {
+        let [a, b] = p.ends.map(at).sort((u, v) => u - v);
+        return [a, b, 3 + (p.below ? ARC_BELOW - 3 : reach) * (b - a) / room];
+    };
+    let arc = (p) => {
+        let [a, b, h] = peak(p);
+        let y = round1(ARC_BASE + (p.below ? 1 : -1) * h / 0.75);
+        return `M${round1(a)} ${ARC_BASE}C${round1(a)} ${y} ${round1(b)} ${y} ${round1(b)} ${ARC_BASE}`;
+    };
+    let depth = Math.ceil(drawn.reduce((m, p) => (p.below ? Math.max(m, peak(p)[2]) : m), 0));
+    // One path per kind, coloured as in the Base pairs section.
+    let paths = { wc: "", gu: "", nc: "" };
+    for (const p of drawn) paths[p.kind] += arc(p);
+
+    // Few enough pairs to give each its own arc, named on hover as the Base
+    // pairs table names it; a copy's end carries its prime.
+    let shown = new Map(line.map((c) => [`${c.label} ${c.copy}`, c.shown]));
+    let named = (e, res) => `${shown.get(`${e.label} ${e.copy}`)}:${res ?? e.pos}`;
+    let label = (p) => `${named(p.ends[0], p.res_1)} – ${named(p.ends[1], p.res_2)} · ${p.family}`;
+    let each = drawn.length > ARC_HOVER_MAX ? null
+             : drawn.map((p) => ({ kind: p.kind, d: arc(p), label: label(p) }));
+
     let layout = {
         strands: on_line,
         // [5′-most end, other end, kind, hover label, LW family, the two ends
-        // named in the same order as the positions].
+        // named in the same order as the positions], and 1 after them for a
+        // pair drawn under the line.
         pairs: drawn.map((p) => {
             let ends = [[p.ends[0], p.res_1], [p.ends[1], p.res_2]]
                 .map(([e, res]) => ({ i: index(e), name: named(e, res) }))
                 .sort((u, v) => u.i - v.i);
-            return [ends[0].i, ends[1].i, p.kind, label(p), p.family, ends[0].name, ends[1].name];
+            let row = [ends[0].i, ends[1].i, p.kind, label(p), p.family, ends[0].name, ends[1].name];
+            return p.below ? [...row, 1] : row;
         })
     };
 
@@ -523,7 +705,9 @@ export function pair_arcs(entities, residues, pairs) {
     }));
 
     return {
-        width: ARC_WIDTH, height: ARC_HEIGHT, base: ARC_BASE,
+        // Strand names sit under the arcs below the line, if there are any.
+        width: ARC_WIDTH, height: ARC_HEIGHT + (depth && depth + 4), base: ARC_BASE,
+        bottom: ARC_BASE + (depth && depth + 4), below: drawn.filter((p) => p.below).length,
         chains: line.map(({ label, copy, symmetry, shown, length, x1, x2 }) =>
             ({ label, copy, symmetry, name: shown, length, x1, x2 })),
         paths, each, layout,
@@ -534,6 +718,75 @@ export function pair_arcs(entities, residues, pairs) {
         counts: { drawn: drawn.length,
                   copies: line.filter((c) => c.symmetry).length, unplaced,
                   nucleotides: total, modified: dots.length }
+    };
+}
+
+// --- the arc picture of one view -------------------------------------------
+// An entry is drawn as one of its biological assemblies, "1" unless asked,
+// or as the asymmetric unit ("au"), the chains as deposited. Above
+// ARC_PAIR_MAX pairs an assembly is not drawn: 4V3P's assembly 1 has 37,145,
+// ten times the largest asymmetric unit, 5 MB of picture.
+export const ARC_PAIR_MAX = 10000;
+export const ARC_MANY_STRANDS = 24;
+export const AU = "au";
+
+const ASSEMBLY_TITLE = "The molecule as it works in the cell, as the depositors define it in the file";
+const AU_TITLE = "The chains exactly as stored in the file";
+const strand_count = (n) => (n === 1 ? "1 strand" : `${n} strands`);
+
+// One line each on what the picture shows that the file alone would not: an
+// assembly that keeps only some of the file's strands (1TTT: one tRNA of
+// three), or builds more by symmetry (1EN9: the duplex's other strand), and
+// pairs drawn under the line.
+function view_about(chosen, arcs, au) {
+    let about = [];
+    if (chosen.key !== AU) {
+        let kept = new Set(arcs.chains.map((c) => c.label)).size;
+        let filed = new Set(au?.chains.map((c) => c.label)).size;
+        if (kept < filed) about.push(`The file holds ${strand_count(filed)}; ${chosen.label.toLowerCase()} uses ${kept} of them.`);
+        let built = arcs.chains.filter((c) => c.symmetry).length;
+        if (built) about.push(`${chosen.label} builds ${strand_count(built)} by symmetry, drawn dashed.`);
+    }
+    if (arcs.below) about.push("Under the line: pairs that cross the ones above.");
+    return about;
+}
+
+export function arc_views(entities, residues, pairs, { assemblies = [], opers = new Map() } = {}, asked) {
+    // Every view is laid out flat to compare them; only the one shown is
+    // sorted into above and below the line (0.1 s for a ribosome).
+    let identity = identity_op(opers);
+    let views = [];
+    for (const a of assemblies) {
+        let v = assembly_pairs(a, opers, pairs);
+        let too_big = v.pairs.length > ARC_PAIR_MAX;
+        views.push({ key: a.id, label: `Assembly ${a.id}`, too_big, pairs: v.pairs.length, draw: [v.pairs, v],
+                     arcs: too_big ? null : pair_arcs(entities, residues, v.pairs, { ...v, flat: true }) });
+    }
+    views.push({ key: AU, label: "Asymmetric unit", draw: [pairs, { identity }],
+                 arcs: pair_arcs(entities, residues, pairs, { identity, flat: true }) });
+
+    let drawn = views.filter((v) => v.arcs);
+    let first = views.find((v) => v.arcs || v.too_big);   // the default when it can be drawn
+    let chosen = drawn.find((v) => v.key === asked) ?? (first?.arcs ? first : drawn[0]) ?? null;
+    let same = drawn.every((v) => JSON.stringify(v.arcs.layout) === JSON.stringify(drawn[0].arcs.layout));
+
+    let note = null;
+    if (chosen && first?.too_big && chosen.key === AU && asked !== AU) {
+        note = { text: `${first.label} has ${first.pairs.toLocaleString("en-GB")} base pairs, too many to draw, so this is the asymmetric unit.` };
+    } else if (chosen && chosen.key !== AU && chosen.arcs.chains.length > ARC_MANY_STRANDS) {
+        note = { text: `${chosen.label} has ${chosen.arcs.chains.length} strands.`, link: AU, link_text: "The asymmetric unit is easier to read." };
+    }
+    let arcs = chosen ? pair_arcs(entities, residues, ...chosen.draw) : null;
+    return {
+        arcs,
+        key: chosen?.key ?? AU,
+        assembly: chosen && chosen.key !== AU,
+        options: same ? [] : drawn.map(({ key, label }) => ({ key, label, current: key === chosen.key,
+                                                             title: key === AU ? AU_TITLE : ASSEMBLY_TITLE })),
+        note,
+        about: arcs ? view_about(chosen, arcs, views.at(-1).arcs) : [],
+        // Counts stay those of the deposited pairs, so copies never double them.
+        au: views.at(-1).arcs
     };
 }
 
@@ -569,7 +822,7 @@ export function arc_thumbnail(arcs, pdb_id) {
         `<line x1="${c.x1}" y1="${arcs.base}" x2="${c.x2}" y2="${arcs.base}"${c.symmetry ? ' stroke-dasharray="4 2.5"' : ""}/>`).join("");
     let paths = ["nc", "gu", "wc"].filter((k) => arcs.paths[k])
         .map((k) => `<path stroke="${THUMB_COLOURS[k]}" class="${k}" d="${arcs.paths[k]}"/>`).join("");
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 2 ${arcs.width} ${arcs.base + 4}" role="img" aria-label="${xml(pdb_id)}: ${arcs.counts.drawn} base pairs as arcs">`
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 2 ${arcs.width} ${(arcs.bottom ?? arcs.base) + 4}" role="img" aria-label="${xml(pdb_id)}: ${arcs.counts.drawn} base pairs as arcs">`
          + THUMB_DARK
          + `<g stroke="#64748b" stroke-width="2.6" stroke-linecap="round" class="s">${lines}</g>`
          + `<g fill="none" stroke-width="${stroke}">${paths}</g>`

@@ -5,7 +5,7 @@
 
 import test from "node:test";
 import assert from "node:assert";
-import { pair_arcs, ARC_WIDTH, ARC_HEIGHT } from "./detail.js";
+import { pair_arcs, nested_set, ARC_WIDTH, ARC_HEIGHT } from "./detail.js";
 
 // One polymer, as entry_contents gives it.
 const polymer = (id, kind, labels, length) =>
@@ -46,7 +46,12 @@ test("a tRNA: every pair drawn, one path per kind as the Base pairs section coun
     assert.equal(arcs(d.paths.nc).length, 5);
     assert.deepEqual(d.chains.map((c) => c.label), ["R"], "the protein is not on the line");
     assert.equal(d.width, ARC_WIDTH);
-    assert.equal(d.height, ARC_HEIGHT);
+    // 8-14, 9-13, 16-57 and 18-54 cross the D stem (10-24): under the line, and the
+    // picture grows to hold them, the names under them.
+    let under = d.layout.pairs.filter((p) => p[7] === 1).map((p) => `${p[0]}-${p[1]}`);
+    assert.deepEqual(under, ["8-14", "9-13", "16-57", "18-54"]);
+    assert.equal(d.below, 4);
+    assert.ok(d.bottom > d.base && d.height === ARC_HEIGHT + d.bottom - d.base);
 });
 
 test("a stem draws as nested arcs: the outer pair is wider and taller", () => {
@@ -199,8 +204,8 @@ test("the layout gives the viewer the same picture as numbers", () => {
         "each strand carries its letters, the line breaks gone");
     assert.deepEqual(layout.pairs, [[1, 16, "wc", "A:1 – A′:8 · cWW", "cWW", "A:1", "A′:8"],
                                     [3, 11, "wc", "A:3 – A′:3 · cWW", "cWW", "A:3", "A′:3"],
-                                    [2, 6, "nc", "A:6 – A:2 · tWH", "tWH", "A:2", "A:6"]],
-                     "A1 to the copy's 8th, at 8 + 8; the ends named in position order");
+                                    [2, 6, "nc", "A:6 – A:2 · tWH", "tWH", "A:2", "A:6", 1]],
+                     "A1 to the copy's 8th, at 8 + 8; the ends named in position order; 2-6 crosses 3-11, so under the line");
 });
 
 test("the small picture is a standalone image: own colours, no labels, escaped id", async () => {
@@ -231,4 +236,63 @@ test("a card's numbers come from the same picture: strands, nucleotides, pairs, 
     assert.deepEqual(arc_summary(d), { strands: 2, nucleotides: 16, pairs: 2, modified: 2, wc: 1 },
                      "the symmetry copy counts as a strand drawn, with its own modified residue");
     assert.equal(arc_summary(null), null);
+});
+
+// --- which arcs go above the line ----------------------------------------
+const cross = ([i, j], [k, l]) => (i < k && k < j && j < l) || (k < i && i < l && l < j);
+const kept = (arcs, w = () => 1) => [...nested_set(arcs, w)].sort((a, b) => a - b);
+
+test("nested_set: a stem stays above, the pair that crosses it goes below", () => {
+    let arcs = [[1, 10], [2, 9], [3, 8], [5, 15]];
+    assert.deepEqual(kept(arcs), [0, 1, 2]);
+});
+
+test("nested_set: arcs side by side, sharing an end, or equal, all stay above", () => {
+    assert.deepEqual(kept([[1, 4], [5, 9], [1, 9]]), [0, 1, 2]);
+    assert.deepEqual(kept([[1, 10], [1, 5], [5, 10]]), [0, 1, 2], "a base in two pairs");
+    assert.deepEqual(kept([[2, 7], [2, 7]]), [0, 1], "one pair in two families");
+});
+
+test("nested_set: weight decides, not order: Watson–Crick counts twice", () => {
+    let arcs = [[1, 10], [5, 15]];
+    assert.deepEqual(kept(arcs, (k) => [1, 2][k]), [1]);
+    assert.deepEqual(kept(arcs, (k) => [2, 1][k]), [0]);
+    // Three Others nested in each other outweigh one Watson–Crick pair.
+    let three = [[1, 10], [5, 15], [6, 14], [7, 13]];
+    assert.deepEqual(kept(three, (k) => (k === 0 ? 2 : 1)), [1, 2, 3]);
+});
+
+test("nested_set: the most weight that does not cross, as trying every subset finds", () => {
+    let seed = 7;
+    let rand = (n) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+    for (let round = 0; round < 300; round++) {
+        let n = 1 + rand(11);
+        let arcs = Array.from({ length: n }, () => { let a = 1 + rand(14), b = 1 + rand(14); return a < b ? [a, b] : [b, a + 1]; });
+        let w = arcs.map(() => 1 + rand(2));
+        let best = 0;
+        for (let m = 0; m < 1 << n; m++) {
+            let set = arcs.filter((_, k) => m >> k & 1);
+            if (set.some((x, i) => set.some((y, j) => j > i && cross(x, y)))) continue;
+            best = Math.max(best, arcs.reduce((s, _, k) => s + (m >> k & 1 ? w[k] : 0), 0));
+        }
+        let got = kept(arcs, (k) => w[k]);
+        let set = got.map((k) => arcs[k]);
+        assert.ok(!set.some((x, i) => set.some((y, j) => j > i && cross(x, y))), `${JSON.stringify(arcs)}: kept arcs cross`);
+        assert.equal(got.reduce((s, k) => s + w[k], 0), best, JSON.stringify({ arcs, w }));
+    }
+});
+
+test("an arc under the line bends down, and the picture holds it", () => {
+    let entities = [polymer("1", "RNA", ["A"], 20)];
+    let d = pair_arcs(entities, new Map([["1", residues_for(20)]]),
+                      [pair("A", 1, "A", 10), pair("A", 2, "A", 9), pair("A", 5, "A", 15, "tWH", "nc")]);
+    let [[, , up]] = arcs(d.paths.wc);
+    let [[, , down]] = arcs(d.paths.nc);
+    assert.ok(up < d.base && down > d.base, "control points either side of the line");
+    assert.ok(down - d.base < d.base - up, "5-15 is wider than 1-10 but shallower: the room below is smaller");
+    assert.ok(down * 0.75 + d.base * 0.25 <= d.bottom, "the lowest point is inside the picture");
+    assert.ok(d.bottom + 14 < d.height, "names under the arcs fit too");
+    let flat = pair_arcs(entities, new Map([["1", residues_for(20)]]), [pair("A", 1, "A", 10)]);
+    assert.equal(flat.height, ARC_HEIGHT, "nothing below: the picture as before");
+    assert.equal(flat.bottom, flat.base);
 });

@@ -990,6 +990,32 @@ export async function entry_base_pairs(id, q = query) {
     return result.rows;
 }
 
+// An entry's biological assemblies (migration 016): each with the chains and
+// operator expressions that build it, in file order, and every operator as
+// [r11, r12, r13, t1, r21, r22, r23, t2, r31, r32, r33, t3].
+export async function entry_assemblies(id, q = query) {
+    let key = [as_text(id).trim()];
+    let [assemblies, opers] = await Promise.all([
+        q(`SELECT a.id, a.details, a.oligomeric_count AS count,
+                  json_agg(json_build_object('expr', g.oper_expression, 'chains', g.asym_id_list)
+                           ORDER BY g.ordinal) AS gens
+             FROM pdbx_struct_assembly a
+             JOIN pdbx_struct_assembly_gen g ON g.entry_id = a.entry_id AND g.assembly_id = a.id
+            WHERE a.entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))
+            GROUP BY a.id, a.details, a.oligomeric_count
+            ORDER BY length(a.id), a.id`, key),
+        q(`SELECT id, ARRAY[matrix_1_1, matrix_1_2, matrix_1_3, vector_1,
+                            matrix_2_1, matrix_2_2, matrix_2_3, vector_2,
+                            matrix_3_1, matrix_3_2, matrix_3_3, vector_3] AS m
+             FROM pdbx_struct_oper_list
+            WHERE entry_id = (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))`, key)]);
+    return {
+        assemblies: assemblies.rows.map((a) => ({ ...a, gens: a.gens.map((g) => ({
+            expr: g.expr, chains: g.chains.split(",") })) })),
+        opers: new Map(opers.rows.map((o) => [o.id, o.m.map(Number)]))
+    };
+}
+
 // What the sequence map needs beyond the pairs: every nucleotide of every
 // nucleic-acid chain (its letter, author number, whether it is in the model)
 // and every NtC step of model 1 with its CANA class and confidence (confal).

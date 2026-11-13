@@ -21,7 +21,7 @@
         "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine). One row per kind in each chain, with every position it occupies, in the authors' numbering.",
         "ligands": "Small molecules bound in the structure: ions, cofactors, drugs and sugars. Count is how many copies the entry holds. Each code links to its page at RCSB. Water is left out.",
         "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxonomy ID its number in NCBI Taxonomy, Produced in the host it was made in when expressed.",
-        "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). Pairs fall in four groups: cis Watson–Crick (cWW) A–U (A–T in DNA), cWW G–C, cWW G–U, and Others, which holds every other pair and is broken down by family. A modified base counts as the base it came from.",
+        "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). Pairs fall in four groups: cis Watson–Crick (cWW) A–U (A–T in DNA), cWW G–C, cWW G–U, and Others, which holds every other pair and is broken down by family. A modified base counts as the base it came from. The picture shows biological assembly 1: the molecule as it works in the cell, as the depositors define it in the file. The asymmetric unit is what the file itself holds, which can be several copies of the molecule, or half of one that symmetry completes; the counts are always those of the file. Pairs that cross others are drawn under the line, so the main structure above reads clearly, like a tRNA's cloverleaf.",
         "views": "Three ways to look at the nucleic acids; pick one and it opens below. 1D is the sequence with every base pair in layered dot-bracket notation: one row per Leontis–Westhof family, brackets of a deeper kind where pairs cross, & between strands. WC holds the Watson–Crick pairs (A–U, G–C, A–T), cWW the other cis Watson–Crick pairs such as G–U. A lower-case letter is a modified nucleotide. Point at or tap a nucleotide to see what it pairs with. The Sequence map adds the backbone steps and more strands. 2D and 3D are kept for a secondary-structure diagram and a 3D viewer, still to come; 3D links to viewers on other sites meanwhile.",
         "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (its NtC in DNATCO's colours, 5′ half and 3′ half; height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
         "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
@@ -128,7 +128,12 @@
 
                         <% if (s.id === "base-pairs" && arcs) { const a = arcs; const strands = a.chains.length; const labelled = strands <= 8; %>
                             <figure class="arc_picture">
-                                <button type="button" class="arc_zoom" data-arc-open="<%= entry.pdb_id %>" title="Expand">
+                                <% const v = locals.arc_view ?? { options: [], key: "", assembly: false, note: null, about: [] }; if (v.options.length) { %>
+                                <nav class="arc_views" aria-label="Which chains to draw">
+                                    <% for (const o of v.options) { %><a href="?assembly=<%= o.key %>#base-pairs" title="<%= o.title %>"<% if (o.current) { %> aria-current="true"<% } %>><%= o.label %></a><% } %>
+                                </nav>
+                                <% } %>
+                                <button type="button" class="arc_zoom" data-arc-open="<%= entry.pdb_id %>" data-arc-view="<%= v.key %>" title="Expand">
                                 <svg viewBox="0 0 <%= a.width %> <%= a.height %>" role="img" aria-label="Arc diagram: <%= a.counts.drawn %> base pairs drawn as arcs over <%= strands === 1 ? "one strand" : strands + " strands" %> (<%= a.chains.map((c) => c.name).join(", ") %>), <%= a.counts.nucleotides.toLocaleString("en-GB") %> nucleotides">
                                     <% for (const c of a.chains) { %><line class="arc_strand<%= c.symmetry ? " arc_copy" : "" %>" x1="<%= c.x1 %>" y1="<%= a.base %>" x2="<%= c.x2 %>" y2="<%= a.base %>"/><% } %>
                                     <g class="arc_lines" stroke-width="<%= a.stroke %>">
@@ -140,15 +145,17 @@
                                     </g>
                                     <% if (a.dot_path) { %><path class="arc_dot" d="<%= a.dot_path %>"/><% } %>
                                     <% if (labelled) { for (const c of a.chains) { const wide = c.x2 - c.x1 >= 30; %>
-                                    <% if (wide) { %><text class="arc_name" x="<%= c.x1 %>" y="<%= a.base + 14 %>">5′</text><text class="arc_name arc_end" x="<%= c.x2 %>" y="<%= a.base + 14 %>">3′</text><% } %>
-                                    <% if ((strands > 1 || c.symmetry) && c.x2 - c.x1 >= 12) { %><text class="arc_name arc_mid" x="<%= Math.round((c.x1 + c.x2) * 5) / 10 %>" y="<%= a.base + 14 %>"><%= c.name %></text><% } %>
+                                    <% if (wide) { %><text class="arc_name" x="<%= c.x1 %>" y="<%= a.bottom + 14 %>">5′</text><text class="arc_name arc_end" x="<%= c.x2 %>" y="<%= a.bottom + 14 %>">3′</text><% } %>
+                                    <% if ((strands > 1 || c.symmetry) && c.x2 - c.x1 >= 12) { %><text class="arc_name arc_mid" x="<%= Math.round((c.x1 + c.x2) * 5) / 10 %>" y="<%= a.bottom + 14 %>"><%= c.name %></text><% } %>
                                     <% } } %>
                                 </svg>
                                 </button>
                                 <figcaption>
-                                    <span><%= strands === 1 ? "1 strand" : strands + " strands" %> · <%= a.counts.nucleotides.toLocaleString("en-GB") %> nt<% if (a.each) { %> · hover an arc for its pair<% } %><button type="button" class="arc_full" data-arc-open="<%= entry.pdb_id %>" aria-expanded="false">⤢ Expand</button></span>
+                                    <span><%= strands === 1 ? "1 strand" : strands + " strands" %> · <%= a.counts.nucleotides.toLocaleString("en-GB") %> nt<% if (a.each) { %> · hover an arc for its pair<% } %><button type="button" class="arc_full" data-arc-open="<%= entry.pdb_id %>" data-arc-view="<%= v.key %>" aria-expanded="false">⤢ Expand</button></span>
                                     <span class="arc_key"><% for (const [kind, label] of [["wc", "cWW Watson–Crick"], ["gu", "cWW G–U"], ["nc", "Others"]]) { if (a.paths[kind]) { %><span><i class="arc_<%= kind %>"></i><%= label %></span><% } } %><% if (a.counts.modified) { %><span><i class="arc_mod"></i>modified</span><% } %></span>
-                                    <% if (a.counts.copies) { %><span class="arc_note">′ marks a symmetry copy from the crystal</span><% } %>
+                                    <% for (const line of v.about ?? []) { %><span class="arc_note"><%= line %></span><% } %>
+                                    <% if (a.counts.copies && !v.assembly) { %><span class="arc_note">′ marks a copy from the crystal's symmetry</span><% } %>
+                                    <% if (v.note) { %><span class="arc_note"><%= v.note.text %><% if (v.note.link) { %> <a href="?assembly=<%= v.note.link %>#base-pairs"><%= v.note.link_text %></a><% } %></span><% } %>
                                 </figcaption>
                             </figure>
                         <% } %>
