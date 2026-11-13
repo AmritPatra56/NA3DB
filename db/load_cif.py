@@ -150,6 +150,8 @@ ALL_TABLES = [
     "pdbx_entity_src_syn", "pdbx_entity_nonpoly",
     # T3
     "struct_asym", "pdbx_poly_seq_scheme", "struct_ref", "struct_ref_seq",
+    "pdbx_struct_assembly", "pdbx_struct_oper_list",
+    "pdbx_struct_assembly_gen", "pdbx_struct_assembly_gen_asym",
     # T4
     "atom_site", "atom_sites", "database_pdb_matrix",
     # T5
@@ -502,6 +504,88 @@ def load_struct_asym(cur, eid, text, sv):
     return _many(cur, """INSERT INTO struct_asym
         (id,entry_id,entity_id,details) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
         [(r.get("id"), eid, r.get("entity_id"), r.get("details")) for r in rp])
+
+# ── Biological assemblies (migration 016) ─────────────────────────────────────
+# No ON CONFLICT in any of them: a repeated key means a malformed file, and it
+# should fail loudly in its savepoint rather than lose a row unseen.
+
+def operator_ids(expr: str) -> list:
+    """The operator ids an oper_expression names, in order.
+
+    '1' -> ['1'];  '1,2' -> ['1','2'];  '(1-3)' -> ['1','2','3'];
+    '(1-2)(3,P)' -> ['1','2','3','P'] (a product: every pair of the two).
+    """
+    expr = re.sub(r"\s", "", expr or "")
+    groups = re.findall(r"\(([^()]*)\)", expr) if "(" in expr else [expr]
+    if not expr or "".join(f"({g})" for g in groups) != expr and "(" in expr:
+        raise ValueError(f"unreadable oper_expression {expr!r}")
+    ids = []
+    for g in groups:
+        for part in g.split(","):
+            m = re.fullmatch(r"(\d+)-(\d+)", part)
+            if m:
+                lo, hi = int(m[1]), int(m[2])
+                if lo > hi:
+                    raise ValueError(f"backwards range {part!r} in {expr!r}")
+                ids += [str(i) for i in range(lo, hi + 1)]
+            elif part:
+                ids.append(part)
+            else:
+                raise ValueError(f"empty operator in {expr!r}")
+    return ids
+
+def load_pdbx_struct_assembly(cur, eid, text):
+    rp = [r for r in _parse_loop(text, "pdbx_struct_assembly") if r.get("id")]
+    return _many(cur, """INSERT INTO pdbx_struct_assembly
+        (entry_id,id,details,method_details,oligomeric_details,oligomeric_count)
+        VALUES (%s,%s,%s,%s,%s,%s)""",
+        [(eid, r["id"], r.get("details"), r.get("method_details"),
+          r.get("oligomeric_details"), _int(r.get("oligomeric_count"))) for r in rp])
+
+def load_pdbx_struct_oper_list(cur, eid, text):
+    rp = [r for r in _parse_loop(text, "pdbx_struct_oper_list") if r.get("id")]
+    cells = [f"matrix[{i}][{j}]" for i in (1, 2, 3) for j in (1, 2, 3)] + \
+            [f"vector[{i}]" for i in (1, 2, 3)]
+    rows = []
+    for r in rp:
+        nums = [_float(r.get(c)) for c in cells]
+        if None in nums:
+            raise ValueError(f"operator {r['id']} has a missing or non-numeric "
+                             f"{cells[nums.index(None)]}")
+        rows.append((eid, r["id"], r.get("type"), r.get("name"),
+                     r.get("symmetry_operation"), *nums))
+    return _many(cur, """INSERT INTO pdbx_struct_oper_list
+        (entry_id,id,type,name,symmetry_operation,
+         matrix_1_1,matrix_1_2,matrix_1_3,matrix_2_1,matrix_2_2,matrix_2_3,
+         matrix_3_1,matrix_3_2,matrix_3_3,vector_1,vector_2,vector_3)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""", rows)
+
+def load_pdbx_struct_assembly_gen(cur, eid, text):
+    """The generator rows and, with them, one row per chain they name.
+
+    Both go in together, so an assembly never has a generator without its
+    chains. An operator missing from oper_list rejects the whole category.
+    """
+    rp = _parse_loop(text, "pdbx_struct_assembly_gen")
+    cur.execute("SELECT id FROM pdbx_struct_oper_list WHERE entry_id=%s", (eid,))
+    known = {r[0] for r in cur.fetchall()}
+    gens, chains = [], []
+    for n, r in enumerate(rp, start=1):
+        expr = re.sub(r"\s", "", r.get("oper_expression") or "")
+        asyms = re.sub(r"\s", "", r.get("asym_id_list") or "")
+        if not r.get("assembly_id") or not expr or not asyms:
+            raise ValueError(f"generator row {n} is incomplete")
+        missing = [o for o in operator_ids(expr) if o not in known]
+        if missing:
+            raise ValueError(f"generator row {n} names unknown operator(s) {missing}")
+        gens.append((eid, n, r["assembly_id"], expr, asyms))
+        chains += [(eid, n, a) for a in dict.fromkeys(asyms.split(","))]
+    _many(cur, """INSERT INTO pdbx_struct_assembly_gen
+        (entry_id,ordinal,assembly_id,oper_expression,asym_id_list)
+        VALUES (%s,%s,%s,%s,%s)""", gens)
+    _many(cur, """INSERT INTO pdbx_struct_assembly_gen_asym
+        (entry_id,ordinal,asym_id) VALUES (%s,%s,%s)""", chains)
+    return len(gens)
 
 def load_pdbx_poly_seq_scheme(cur, eid, text):
     rp = _parse_loop(text, "pdbx_poly_seq_scheme")
@@ -1097,6 +1181,14 @@ def process_cif(cur, conn, filepath: str) -> dict:
     S["struct_ref"]           = run_table(cur, "struct_ref",           load_struct_ref,            cur, eid, text, sv)
     S["struct_ref_seq"]       = run_table(cur, "struct_ref_seq",       load_struct_ref_seq,        cur, eid, text) if _count(cur, "struct_ref", eid) > 0 else 0
 
+    # Assemblies: generators need their assembly, their operators and the
+    # chains they name, so they go last and only when all three are in.
+    S["pdbx_struct_assembly"]  = run_table(cur, "pdbx_struct_assembly",  load_pdbx_struct_assembly,  cur, eid, text)
+    S["pdbx_struct_oper_list"] = run_table(cur, "pdbx_struct_oper_list", load_pdbx_struct_oper_list, cur, eid, text)
+    gen_ok = asym_ok and S["pdbx_struct_assembly"] > 0 and S["pdbx_struct_oper_list"] > 0
+    S["pdbx_struct_assembly_gen"] = run_table(cur, "pdbx_struct_assembly_gen", load_pdbx_struct_assembly_gen, cur, eid, text) if gen_ok else 0
+    S["pdbx_struct_assembly_gen_asym"] = _count(cur, "pdbx_struct_assembly_gen_asym", eid)
+
     # T4
     S["atom_sites"]          = run_table(cur, "atom_sites",          load_atom_sites,         cur, eid, sv)
     S["database_pdb_matrix"] = run_table(cur, "database_pdb_matrix", load_database_pdb_matrix,cur, eid, sv)
@@ -1199,6 +1291,8 @@ def verify(conn, eid):
         ("FK chain→entity",
          "SELECT COUNT(*) FROM struct_asym sa JOIN entity e "
          "ON sa.entity_id=e.id AND sa.entry_id=e.entry_id WHERE sa.entry_id=%s"),
+        ("assemblies",           "SELECT COUNT(*) FROM pdbx_struct_assembly WHERE entry_id=%s"),
+        ("assembly chains",      "SELECT COUNT(*) FROM pdbx_struct_assembly_gen_asym WHERE entry_id=%s"),
         ("FK ntc_step→entry",
          "SELECT COUNT(*) FROM ndb_struct_ntc_step s JOIN entry e ON s.entry_id=e.id WHERE s.entry_id=%s"),
     ]

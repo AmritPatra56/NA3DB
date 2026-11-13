@@ -153,5 +153,94 @@ class ParentBases(unittest.TestCase):
         self.assertTrue({("5MC", "C"), ("PSU", "U"), ("M2G", "G")} <= pairs)
 
 
+class FakeCursor:
+    """Records inserts; answers the oper_list lookup with the given ids."""
+    def __init__(self, known=()):
+        self.known, self.rows = list(known), {}
+
+    def execute(self, sql, args=None):
+        self.last = sql
+
+    def fetchall(self):
+        return [(k,) for k in self.known]
+
+    def executemany(self, sql, rows):
+        table = sql.split("INSERT INTO")[1].split()[0]
+        self.rows.setdefault(table, []).extend(rows)
+
+
+class Assemblies(unittest.TestCase):
+    def test_operator_ids_reads_every_shape_in_the_files(self):
+        ids = lc.operator_ids
+        self.assertEqual(ids("1"), ["1"])
+        self.assertEqual(ids("1,2"), ["1", "2"])
+        self.assertEqual(ids("(1-3)"), ["1", "2", "3"])
+        self.assertEqual(ids("(1,2,6)"), ["1", "2", "6"])
+        self.assertEqual(ids("P"), ["P"])
+        self.assertEqual(ids("(X0)(1-2,5-6)"), ["X0", "1", "2", "5", "6"])
+        self.assertEqual(ids(" 1,\n2 "), ["1", "2"])
+
+    def test_operator_ids_refuses_what_it_cannot_read(self):
+        for bad in ["", "(3-1)", "1,,2", "(1-2", "1(2)"]:
+            with self.assertRaises(ValueError, msg=bad):
+                lc.operator_ids(bad)
+
+    def test_generators_and_their_chains_go_in_together(self):
+        text = ("loop_\n_pdbx_struct_assembly_gen.assembly_id\n_pdbx_struct_assembly_gen.oper_expression\n"
+                "_pdbx_struct_assembly_gen.asym_id_list\n1 '1,\n2' A,B\n2 1 'C,\nD'\n#\n")
+        cur = FakeCursor(["1", "2"])
+        self.assertEqual(lc.load_pdbx_struct_assembly_gen(cur, "ZZ01", text), 2)
+        self.assertEqual(cur.rows["pdbx_struct_assembly_gen"],
+                         [("ZZ01", 1, "1", "1,2", "A,B"), ("ZZ01", 2, "2", "1", "C,D")])
+        self.assertEqual(cur.rows["pdbx_struct_assembly_gen_asym"],
+                         [("ZZ01", 1, "A"), ("ZZ01", 1, "B"), ("ZZ01", 2, "C"), ("ZZ01", 2, "D")])
+
+    def test_an_unknown_operator_stops_the_whole_category(self):
+        text = ("loop_\n_pdbx_struct_assembly_gen.assembly_id\n_pdbx_struct_assembly_gen.oper_expression\n"
+                "_pdbx_struct_assembly_gen.asym_id_list\n1 1 A\n2 1,3 A\n#\n")
+        cur = FakeCursor(["1", "2"])
+        with self.assertRaisesRegex(ValueError, r"unknown operator\(s\) \['3'\]"):
+            lc.load_pdbx_struct_assembly_gen(cur, "ZZ01", text)
+        self.assertEqual(cur.rows, {})
+
+    def test_an_operator_without_its_matrix_is_refused(self):
+        text = ("_pdbx_struct_oper_list.id 1\n_pdbx_struct_oper_list.type 'identity operation'\n"
+                + "".join(f"_pdbx_struct_oper_list.matrix[{i}][{j}] {1 if i == j else 0}\n"
+                          for i in (1, 2, 3) for j in (1, 2, 3) if (i, j) != (3, 3))
+                + "_pdbx_struct_oper_list.vector[1] 0\n_pdbx_struct_oper_list.vector[2] 0\n"
+                  "_pdbx_struct_oper_list.vector[3] 0\n#\n")
+        with self.assertRaisesRegex(ValueError, r"matrix\[3\]\[3\]"):
+            lc.load_pdbx_struct_oper_list(FakeCursor(), "ZZ01", text)
+
+    def test_1ttt_three_copies_three_assemblies(self):
+        text = cif("1TTT")
+        cur = FakeCursor(["1"])
+        self.assertEqual(lc.load_pdbx_struct_assembly(cur, "1TTT", text), 3)
+        self.assertEqual(lc.load_pdbx_struct_assembly_gen(cur, "1TTT", text), 3)
+        first = [a for (_, n, a) in cur.rows["pdbx_struct_assembly_gen_asym"] if n == 1]
+        self.assertEqual(first, ["A", "D", "G", "H", "M", "N", "S", "V"])
+
+    def test_1en9_one_strand_and_its_symmetry_mate(self):
+        text = cif("1EN9")
+        cur = FakeCursor()
+        self.assertEqual(lc.load_pdbx_struct_oper_list(cur, "1EN9", text), 2)
+        ops = cur.rows["pdbx_struct_oper_list"]
+        self.assertEqual([(o[1], o[2]) for o in ops],
+                         [("1", "identity operation"), ("2", "crystal symmetry operation")])
+        self.assertEqual(ops[0][5:], (1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0))
+        self.assertNotEqual(ops[1][5:], ops[0][5:])
+        cur.known = ["1", "2"]
+        lc.load_pdbx_struct_assembly_gen(cur, "1EN9", text)
+        self.assertEqual(cur.rows["pdbx_struct_assembly_gen"][0][2:4], ("1", "1,2"))
+
+    def test_1bmv_icosahedral_operators_with_letters(self):
+        text = cif("1BMV")
+        cur = FakeCursor()
+        self.assertEqual(lc.load_pdbx_struct_oper_list(cur, "1BMV", text), 62)
+        cur.known = [o[1] for o in cur.rows["pdbx_struct_oper_list"]]
+        self.assertEqual(lc.load_pdbx_struct_assembly_gen(cur, "1BMV", text), 6)
+        self.assertEqual(cur.rows["pdbx_struct_assembly_gen"][5][3], "(X0)(1-15,21-35)")
+
+
 if __name__ == "__main__":
     unittest.main()
