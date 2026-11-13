@@ -24,6 +24,13 @@
                         aria-selected="<%= on %>"<% if (!on) { %> tabindex="-1"<% } %>><%= t.name %></button>
                 <% } %>
             </div>
+            <details class="report_why">
+                <summary>Why three tables?</summary>
+                <p>A structure holds many molecules and ligands. In a single table, its
+                   title and paper would repeat on every line and counts would go wrong.
+                   So each table has one kind of row, and Entry ID links them, ready to
+                   join in Excel, R or pandas.</p>
+            </details>
             <div class="query_panel_body" id="report_fields" role="tabpanel" aria-labelledby="table-<%= table %>"></div>
             <div class="query_panel_footer">
                 <div class="report_downloads">

@@ -468,6 +468,14 @@ test("/report opens on the table ?table= names, Structures otherwise", async () 
     assert.equal(html.match(/role="tab"/g).length, 3);
     assert.match(html, /Download CSV/);
     assert.match(html, /Download all \(ZIP\)/);
+
+    // The reason for three tables is one closed link, outside the tab list.
+    let why = html.match(/<details class="report_why">([\s\S]*?)<\/details>/);
+    assert.ok(why, "the Why three tables note is on the page");
+    assert.match(why[1], /<summary>Why three tables\?<\/summary>/);
+    assert.match(why[1], /Entry ID links them/);
+    assert.doesNotMatch(why[0], /\sopen[\s>]/);
+    assert.doesNotMatch(html, /structure level|entity level|—/i);
 });
 
 test("?table= alone is not a search and does not open the report", async () => {

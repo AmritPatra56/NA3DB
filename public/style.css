@@ -700,8 +700,37 @@ input::placeholder {
 .report_tabs {
     display: flex;
     gap: 4px;
-    padding: 12px 24px;
+    padding: 12px 24px 4px;
+}
+
+/* Shut by default: regulars never see more than the one link. */
+.report_why {
+    padding: 0 24px 10px;
     border-bottom: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.report_why summary {
+    width: fit-content;
+    margin-left: auto;
+    padding: 4px 0;
+    color: var(--accent-ink);
+    cursor: pointer;
+    list-style: none;
+}
+
+.report_why summary::-webkit-details-marker { display: none; }
+.report_why summary::after { content: " ▾"; }
+.report_why[open] summary::after { content: " ▴"; }
+.report_why summary:hover { text-decoration: underline; }
+
+.report_why p {
+    margin: 4px 0 2px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    background-color: var(--accent-wash);
 }
 
 .report_tab {
@@ -2775,6 +2804,8 @@ input::placeholder {
     .interface:has(.report_body) .results_area_header { order: 1; padding: 0 16px; }
     .report_tabs   { order: 2; padding: 8px 16px; background-color: var(--bg-secondary); }
     .report_tab    { min-height: 40px; font-size: 13px; }
+    .report_why    { order: 2; padding: 0 16px 8px; background-color: var(--bg-secondary); }
+    .report_why summary { padding: 8px 0; }
     #report_fields { order: 3; flex: none; }
     .report_body   { order: 4; overflow: visible; padding: 12px 16px 16px; }
     #report_fields + .query_panel_footer { order: 5; }
