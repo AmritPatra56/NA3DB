@@ -15,14 +15,26 @@
             <div class="query_panel_header">
                 <h1>Report</h1>
             </div>
-            <div class="query_panel_body" id="report_fields"></div>
+<%# One tab per table. A table holds one kind of row, so a structure's paper
+    and a molecule's sequence can never be ticked into the same file. %>
+            <div class="report_tabs" role="tablist" aria-label="Report tables">
+                <% for (const t of registry.report_tables) { const on = t.key === table; %>
+                <button type="button" class="report_tab" role="tab" id="table-<%= t.key %>"
+                        data-table="<%= t.key %>" aria-controls="report_fields"
+                        aria-selected="<%= on %>"<% if (!on) { %> tabindex="-1"<% } %>><%= t.name %></button>
+                <% } %>
+            </div>
+            <div class="query_panel_body" id="report_fields" role="tabpanel" aria-labelledby="table-<%= table %>"></div>
             <div class="query_panel_footer">
-                <button type="button" class="search" id="export_button">Export to CSV</button>
+                <div class="report_downloads">
+                    <button type="button" class="search" id="export_button">Download CSV</button>
+                    <button type="button" class="search" id="zip_button">Download all (ZIP)</button>
+                </div>
             </div>
         </div>
         <div class="results_area">
             <div class="results_area_header">
-                <h1 class="report_count">Entries (0)</h1>
+                <h1 class="report_count"><%= registry.report_tables.find((t) => t.key === table).name %></h1>
 <%# Collapses the field list so the table has the whole width. The state goes
     in the URL, so a link opens the way it was left. %>
                 <button type="button" class="fields_toggle"
@@ -42,6 +54,7 @@
     <script>window.REGISTRY = <%- registry_json %>;</script>
     <script src="/api.js"></script>
     <script src="/shared.js"></script>
+    <script src="/zip.js"></script>
     <script src="/report.js"></script>
     <%- include("includes/footer.ejs") %>
 </body>

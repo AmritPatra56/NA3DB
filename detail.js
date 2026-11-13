@@ -967,3 +967,42 @@ export function sequence_map_text(pdb_id, map) {
     for (const r of map.rows) lines.push(`${r.name.padEnd(12)}: ${r.text}`);
     return lines.join("\n") + "\n";
 }
+
+// ---- Dot-bracket for the report's ZIP ---------------------------------------
+// One record per entry: every nucleic-acid chain of the file joined by &, and
+// the canonical pairs (cWW A-U, G-C, G-U) between them, the 2D structure most
+// tools read. Pairs with a symmetry copy are left out: the file is the
+// asymmetric unit. A base in two such pairs keeps the first along the
+// sequence; a pair that crosses another takes [] or {} (bracket_line).
+// chains: [{ asym, auth, sequence }] in order; pairs: [{ asym_1, pos_1, asym_2, pos_2 }].
+export function dot_bracket_record(pdb_id, chains, pairs) {
+    let start = new Map();
+    let width = 0;
+    let seps = new Set();
+    chains.forEach((c, n) => {
+        if (n) seps.add(width++);
+        start.set(c.asym, width);
+        width += c.sequence.length;
+    });
+    let length = new Map(chains.map((c) => [c.asym, c.sequence.length]));
+    let at = (asym, pos) => (pos >= 1 && pos <= (length.get(asym) ?? 0) ? start.get(asym) + pos - 1 : undefined);
+
+    // Along the ruler, so "the first" of two pairs on one base is the one
+    // that starts sooner, whatever order the pairs came in.
+    let placed = pairs.map((p) => [at(p.asym_1, p.pos_1), at(p.asym_2, p.pos_2)])
+        .filter(([i, j]) => i !== undefined && j !== undefined && i !== j)
+        .map(([i, j]) => (i < j ? [i, j] : [j, i]))
+        .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    let used = new Set();
+    let kept = [];
+    for (const [i, j] of placed) {
+        if (used.has(i) || used.has(j)) continue;
+        used.add(i).add(j);
+        kept.push([i, j]);
+    }
+
+    let names = chains.map((c) => c.auth ?? c.asym);
+    return `>${pdb_id}|${names.length === 1 ? "Chain" : "Chains"} ${names.join(", ")}\n` +
+           `${chains.map((c) => c.sequence).join(LBN_SEP)}\n` +
+           `${bracket_line(width, seps, kept)}\n`;
+}

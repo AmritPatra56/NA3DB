@@ -880,6 +880,10 @@ export const COLUMNS = [
 
     // Residues counts protein too, which hides the nucleic acid: 2VON has 400
     // residues and 14 nucleotides. Same rules, DNA, RNA and hybrid chains only.
+    //
+    // report_select is the report's way to the same number: each molecule's
+    // sequence length times its chains. Identical for all 1,489 entries, and
+    // a full report takes 0.4 s with it against 15 s with select.
     {
         key: "nucleotide_count", label: "Nucleotides", group: "Contents",
         scope: "detail", thousands: true,
@@ -888,7 +892,12 @@ export const COLUMNS = [
                                           JOIN entity_poly ep ON ep.entry_id = s.entry_id
                                                              AND ep.entity_id = s.entity_id
                                          WHERE s.entry_id = e.id
-                                           AND ep.type ILIKE '%nucleotide%') r)::int`
+                                           AND ep.type ILIKE '%nucleotide%') r)::int`,
+        report_select: `(SELECT COALESCE(sum(length(regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g'))
+                                             * (SELECT count(*) FROM struct_asym a
+                                                 WHERE a.entry_id = ep.entry_id AND a.entity_id = ep.entity_id)), 0)
+                           FROM entity_poly ep
+                          WHERE ep.entry_id = e.id AND ep.type ILIKE '%nucleotide%')::int`
     },
 
     // One copy of the structure: an NMR entry stores every model (136D has 14,
@@ -923,9 +932,222 @@ export const COLUMNS = [
                   FROM (SELECT DISTINCT ss.assigned_ntc AS c
                         FROM ndb_struct_ntc_step_summary ss
                         WHERE ss.entry_id = e.id AND ss.assigned_ntc <> 'NANT') d)`
+    },
+
+    // Fetched by the report alone: the structure page shows the paper as its
+    // citation list and has no use for these as separate values. Journal and
+    // year apart, not "Published", so a spreadsheet can sort by year.
+    {
+        key: "paper_title", label: "Paper title", group: "Citation",
+        scope: "report", show: [],
+        select: `(SELECT c.title FROM citation c
+                  WHERE c.entry_id = e.id AND c.id = 'primary')`
+    },
+
+    {
+        key: "journal", label: "Journal", group: "Citation",
+        scope: "report", show: [],
+        select: `(SELECT c.journal_abbrev FROM citation c
+                  WHERE c.entry_id = e.id AND c.id = 'primary')`
+    },
+
+    {
+        key: "year", label: "Year", group: "Citation",
+        scope: "report", show: [],
+        select: `(SELECT c.year FROM citation c
+                  WHERE c.entry_id = e.id AND c.id = 'primary')`
+    },
+
+    // From refine, which has one row per entry; NMR and EM entries leave it
+    // empty, as the PDB does. 35 older entries give only R observed, refined
+    // against every reflection with none set aside, which is their R-work.
+    {
+        key: "r_work", label: "R-work", group: "Demographics",
+        scope: "report", show: [],
+        select: `(SELECT COALESCE(rfn.ls_r_factor_r_work, rfn.ls_r_factor_obs)
+                  FROM refine rfn WHERE rfn.entry_id = e.id)`
+    },
+
+    {
+        key: "r_free", label: "R-free", group: "Demographics",
+        scope: "report", show: [],
+        select: `(SELECT rfn.ls_r_factor_r_free FROM refine rfn WHERE rfn.entry_id = e.id)`
     }
 
 ];
+
+
+// The Molecules table of the report: one row per polymer, aliases ep
+// (entity_poly) and en (entity). Separate from COLUMNS because a row here is a
+// molecule, not an entry.
+const SAME_ENTITY = (t) => `${t}.entry_id = ep.entry_id AND ${t}.entity_id = ep.entity_id`;
+
+export const MOLECULE_COLUMNS = [
+    { key: "pdb_id", label: "Entry ID", select: `ep.entry_id` },
+    { key: "molecule_id", label: "Molecule no.", select: `ep.entity_id` },
+
+    // Author chain ids, the ones papers and viewers use (A, B, 1A), not the
+    // label ids, upper case before lower as RCSB lists them (C, I, a, g: the
+    // database's own collation would mix them, a, C, g). One scheme row per chain by its index: grouping the scheme
+    // by molecule gives the same answer for every entry and took 12 s.
+    { key: "chains", label: "Chains",
+      select: `(SELECT string_agg(c.auth, ', ' ORDER BY length(c.auth), c.auth COLLATE "C")
+                  FROM (SELECT DISTINCT (SELECT s.pdb_strand_id FROM pdbx_poly_seq_scheme s
+                                          WHERE s.asym_id = a.id AND s.entry_id = a.entry_id
+                                          LIMIT 1) AS auth
+                          FROM struct_asym a WHERE ${SAME_ENTITY("a")}) c)` },
+
+    { key: "copies", label: "Copies",
+      select: `(SELECT count(*) FROM struct_asym a WHERE ${SAME_ENTITY("a")})::int` },
+
+    { key: "molecule_name", label: "Name", select: `en.pdbx_description` },
+
+    // The words the structure page uses. A "hybrid" in the PDB is one strand
+    // with both DNA and RNA residues.
+    { key: "molecule_type", label: "Type",
+      select: `CASE ep.type WHEN 'polyribonucleotide' THEN 'RNA'
+                            WHEN 'polydeoxyribonucleotide' THEN 'DNA'
+                            WHEN 'polydeoxyribonucleotide/polyribonucleotide hybrid' THEN 'DNA/RNA hybrid'
+                            WHEN 'polypeptide(L)' THEN 'Protein'
+                            WHEN 'polypeptide(D)' THEN 'Protein'
+                            ELSE ep.type END` },
+
+    { key: "length", label: "Length",
+      select: `length(regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g'))` },
+
+    // The whole sequence studied, residues missing from the model included,
+    // each modified residue as its parent (PSU as U), so it reads as a plain
+    // sequence and lines up with Length.
+    { key: "sequence", label: "Sequence",
+      select: `regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g')` },
+
+    // Where the sequence has a modified residue, by its position in Sequence:
+    // "PSU 39,55; 5MC 49". A position with alternative residues counts once.
+    // Read from mods, which export_molecules joins in (modified_sql).
+    { key: "modified", label: "Modified residues", select: `mods.v` },
+
+    // A chimera has several source rows, one per stretch of sequence.
+    { key: "organism", label: "Organism",
+      select: `(SELECT string_agg(DISTINCT trim(s.organism), '; ')
+                  FROM ${SOURCES_SQL} s
+                 WHERE ${SAME_ENTITY("s")} AND trim(s.organism) <> '')` },
+
+    { key: "taxonomy_id", label: "Taxonomy ID",
+      select: `(SELECT string_agg(DISTINCT s.taxid::text, '; ')
+                  FROM ${SOURCES_SQL} s WHERE ${SAME_ENTITY("s")})` },
+
+    { key: "obtained", label: "Obtained",
+      select: `COALESCE(
+                 CASE WHEN EXISTS (SELECT 1 FROM entity_src_nat t WHERE ${SAME_ENTITY("t")}) THEN 'Natural'
+                      WHEN EXISTS (SELECT 1 FROM entity_src_gen t WHERE ${SAME_ENTITY("t")}) THEN 'Expressed'
+                      WHEN EXISTS (SELECT 1 FROM pdbx_entity_src_syn t WHERE ${SAME_ENTITY("t")}) THEN 'Synthetic'
+                 END, 'Not recorded')` },
+
+    { key: "expression_host", label: "Expression host",
+      select: `(SELECT string_agg(DISTINCT trim(g.pdbx_host_org_scientific_name), '; ')
+                  FROM entity_src_gen g
+                 WHERE ${SAME_ENTITY("g")} AND trim(g.pdbx_host_org_scientific_name) <> '')` }
+];
+
+// Every modified residue of the molecules of the entries in $1, worked out
+// in one pass for all of them, joined to the Molecules rows as mods. One
+// lookup per molecule gave the same text and took three times as long.
+// nucleic_only leaves out the proteins when the table does.
+export const modified_sql = (nucleic_only) => `
+    SELECT c.entry_id, c.entity_id, string_agg(c.mon_id || ' ' || c.nums, '; ' ORDER BY c.first) AS v
+      FROM (SELECT p.entry_id, p.entity_id, p.mon_id, min(p.num) AS first,
+                   string_agg(p.num::text, ',' ORDER BY p.num) AS nums
+              FROM (SELECT DISTINCT eps.entry_id, eps.entity_id, eps.num, eps.mon_id
+                      FROM entity_poly_seq eps
+                     WHERE eps.entry_id = ANY($1)
+                       AND eps.mon_id IN (SELECT id FROM chem_comp WHERE mon_nstd_flag = 'n')
+                       ${nucleic_only ? `AND EXISTS (SELECT 1 FROM entity_poly na
+                                                      WHERE na.entry_id = eps.entry_id
+                                                        AND na.entity_id = eps.entity_id
+                                                        AND na.type ILIKE '%nucleotide%')` : ""}) p
+             GROUP BY p.entry_id, p.entity_id, p.mon_id) c
+     GROUP BY c.entry_id, c.entity_id`;
+
+// The Ligands table of the report: one row per ligand (non-polymer entity),
+// aliases n (pdbx_entity_nonpoly), en (entity) and cc (chem_comp, the PDB's
+// dictionary entry for the code). Water only when asked, by export_ligands.
+export const LIGAND_COLUMNS = [
+    { key: "pdb_id", label: "Entry ID", select: `n.entry_id` },
+    { key: "ligand_code", label: "Code", select: `n.comp_id` },
+    // The dictionary name, the same in every entry: an entry's own name for
+    // its ligand differs once in 2,415 rows.
+    { key: "ligand_name", label: "Name", select: `cc.name` },
+    // The PDB writes a non-zero formal charge after the formula ("Mg 2",
+    // "O4 S -2"), which reads as Mg2. Split as RCSB shows it: Mg, charge 2.
+    { key: "formula", label: "Formula", select: `regexp_replace(cc.formula, '\\s+[-+]?\\d+$', '')` },
+    { key: "charge", label: "Charge",
+      select: `CASE WHEN cc.formula IS NULL THEN NULL
+                    ELSE COALESCE(substring(cc.formula from '\\s([-+]?\\d+)$')::int, 0) END` },
+    { key: "weight", label: "Weight (Da)", select: `cc.formula_weight` },
+    // Equals the count of its struct_asym rows for every ligand but water,
+    // where one row holds all the waters.
+    { key: "ligand_copies", label: "Copies", select: `en.pdbx_number_of_molecules` },
+    { key: "synonyms", label: "Synonyms", select: `cc.pdbx_synonyms` }
+];
+
+// The report's tables. Each row of a table is one thing, so a field about the
+// whole structure (its paper) and one about a part of it (a chain's sequence)
+// never share a table: a ribosome would repeat its paper fifty times. Entry ID
+// comes first in every table and cannot be unticked, so the tables join back
+// together.
+export const REPORT_TABLES = [
+    {
+        key: "structures", name: "Structures", row: "One row per structure",
+        groups: [
+            { name: "Structure", keys: ["pdb_id", "title", "method", "resolution",
+                                        "r_work", "r_free", "deposition_date"] },
+            { name: "Paper", keys: ["author", "all_authors", "paper_title", "journal",
+                                    "year", "doi", "pubmed"] },
+            { name: "Contents", keys: ["polymer_type", "chain_count", "nucleotide_count",
+                                       "monomer_flag"] },
+            { name: "3D features", keys: ["confal_score", "confal_percentile", "ntc_classes"] }
+        ],
+        labels: { author: "First author", confal_score: "Confal score",
+                  ntc_classes: "NtC classes", polymer_type: "Polymer types" },
+        defaults: ["pdb_id", "title", "method", "resolution", "deposition_date"]
+    },
+    {
+        key: "molecules", name: "Molecules", row: "One row per molecule in a structure",
+        columns: MOLECULE_COLUMNS,
+        groups: [
+            { name: "Molecule", keys: ["pdb_id", "molecule_id", "chains", "copies",
+                                       "molecule_name", "molecule_type", "length"] },
+            { name: "Sequence", keys: ["sequence", "modified"] },
+            { name: "Source", keys: ["organism", "taxonomy_id", "obtained", "expression_host"] }
+        ],
+        defaults: ["pdb_id", "molecule_id", "chains", "molecule_name", "molecule_type",
+                   "length", "sequence"],
+        // Nucleic acids unless asked: a ribosome has fifty proteins.
+        option: { key: "proteins", label: "Include proteins" }
+    },
+    {
+        key: "ligands", name: "Ligands", row: "One row per ligand in a structure",
+        columns: LIGAND_COLUMNS,
+        groups: [
+            { name: "Ligand", keys: ["pdb_id", "ligand_code", "ligand_name", "ligand_copies"] },
+            { name: "Chemistry", keys: ["formula", "charge", "weight", "synonyms"] }
+        ],
+        defaults: ["pdb_id", "ligand_code", "ligand_name", "formula", "ligand_copies"],
+        // Water is in most crystals and says little about the structure.
+        option: { key: "water", label: "Include water" }
+    }
+];
+
+// The id column every table starts with.
+export const REPORT_KEY = "pdb_id";
+
+// A report table's fields in order, each with the label the file uses.
+export function report_fields(table) {
+    return table.groups.flatMap((g) => g.keys.map((key) => {
+        let column = (table.columns ?? COLUMNS).find((c) => c.key === key);
+        return { key, group: g.name, label: table.labels?.[key] ?? column.label };
+    }));
+}
 
 
 // The columns one view displays, in registry order. `also` names extra keys to
@@ -974,6 +1196,11 @@ export function public_registry() {
 
         columns: COLUMNS.map(({ key, label, group, scope, show }) =>
             ({ key, label, group, scope, show })),
+
+        report_tables: REPORT_TABLES.map((t) =>
+            ({ key: t.key, name: t.name, row: t.row, defaults: t.defaults ?? [],
+               option: t.option ?? null, fields: report_fields(t) })),
+        report_key: REPORT_KEY,
 
         text_filters: TEXT_FILTERS,
         pill_filters: PILL_FILTERS

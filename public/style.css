@@ -661,6 +661,12 @@ input::placeholder {
 
 /* <---------------report page-------------> */
 
+.report_downloads {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
 .report_group {
     padding: 20px 24px;
     border-bottom: 1px solid var(--border);
@@ -688,6 +694,50 @@ input::placeholder {
     accent-color: var(--focus);
     cursor: pointer;
 }
+
+/* The table tabs: one row of equal buttons under the heading. The open one
+   is filled, as the result view switch is. */
+.report_tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.report_tab {
+    flex: 1;
+    padding: 7px 4px;
+    border-radius: 5px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--text-muted);
+    background-color: transparent;
+    border: 1px solid var(--input-border);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.report_tab:hover { border-color: var(--input-border-hover); }
+
+.report_tab[aria-selected="true"] {
+    color: var(--on-accent);
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.report_row_note {
+    padding: 14px 24px 0;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.check_always {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.check_row input:disabled { cursor: default; }
 
 .report_summary {
     padding: 24px;
@@ -2723,12 +2773,15 @@ input::placeholder {
     .query_panel.hidden > #report_fields { display: none; }
 
     .interface:has(.report_body) .results_area_header { order: 1; padding: 0 16px; }
-    #report_fields { order: 2; flex: none; }
-    .report_body   { order: 3; overflow: visible; padding: 12px 16px 16px; }
-    #report_fields + .query_panel_footer { order: 4; }
+    .report_tabs   { order: 2; padding: 8px 16px; background-color: var(--bg-secondary); }
+    .report_tab    { min-height: 40px; font-size: 13px; }
+    #report_fields { order: 3; flex: none; }
+    .report_body   { order: 4; overflow: visible; padding: 12px 16px 16px; }
+    #report_fields + .query_panel_footer { order: 5; }
+    .report_row_note { padding: 12px 16px 0; }
 
     /* "Report" over the list; the count above already says where you are. */
-    .query_panel_header:has(+ #report_fields) { display: none; }
+    .query_panel_header:has(+ .report_tabs) { display: none; }
 
     .query_panel:has(#report_fields) > .query_panel_footer {
         display: block;
@@ -2739,7 +2792,8 @@ input::placeholder {
         border-top: 1px solid var(--border);
     }
 
-    .query_panel_footer #export_button { width: 100%; min-height: 48px; }
+    .query_panel_footer #export_button,
+    .query_panel_footer #zip_button { width: 100%; min-height: 48px; }
 
     #report_fields { background-color: var(--bg-secondary); border-bottom: 1px solid var(--border); }
     .report_group { padding: 14px 16px; }

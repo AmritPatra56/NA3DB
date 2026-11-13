@@ -28,14 +28,3 @@ async function search_entries(filters, page = 1, sort = "", per_page = "", match
 
     return get_json("/api/entries?" + params.toString());
 }
-
-// Every matching entry, for the report page: { results, total, truncated }.
-// match travels too: it decides which entries match, so a report of an
-// Excludes search would otherwise quietly report the Contains one.
-async function export_entries(filters, match = "") {
-    let params = filters_to_params(filters);
-
-    if (match) params.set("match", match);
-
-    return get_json("/api/export?" + params.toString());
-}

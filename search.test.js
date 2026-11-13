@@ -51,9 +51,19 @@ const text_cases = [
     ["source_organism", "sacch",    (e) => e.source_organism]
 ];
 
+// Every matching row as the results list has it, page by page: the report's
+// rows hold only the Structures fields, not the organism a card shows.
+async function every_result(params) {
+    let rows = [];
+    for (let page = 1; page <= (await search_entries(params)).pages; page++) {
+        rows.push(...(await search_entries({ ...params, page: String(page) })).results);
+    }
+    return rows;
+}
+
 for (const [field, value, read] of text_cases) {
     test(`${field} matches anywhere in the text, ignoring case`, async () => {
-        let found = (await export_entries({ [field]: value })).results;
+        let found = await every_result({ [field]: value });
 
         assert.ok(found.length > 0, "the test value should match something");
 
@@ -151,12 +161,8 @@ test("the last page is reachable when the total does not divide evenly", async (
 
 // The important one. Off-by-one slicing shows up here and almost nowhere else.
 test("walking every page yields every entry exactly once, in order", async () => {
-    let all = (await export_entries({})).results;
-    let walked = [];
-
-    for (let page = 1; page <= (await search_entries({})).pages; page++) {
-        walked.push(...(await search_entries({ page: String(page) })).results);
-    }
+    let all = (await export_entries({})).results.map((e) => e.pdb_id);
+    let walked = (await every_result({})).map((e) => e.pdb_id);
 
     assert.deepEqual(walked, all);
 });

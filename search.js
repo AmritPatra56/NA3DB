@@ -3,11 +3,14 @@
 
 import { readFileSync } from "node:fs";
 import { query } from "./db.js";
+import { dot_bracket_record } from "./detail.js";
 import { clean_title, pdb_author } from "./cite.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
 import { taxa_named, taxa_exactly_named, taxon, is_common_name } from "./taxonomy.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
-         page_size_from, match_mode, RESOLUTION_SQL, BROWSE } from "./filters.js";
+         page_size_from, match_mode, RESOLUTION_SQL, BROWSE,
+         REPORT_TABLES, report_fields, MOLECULE_COLUMNS, LIGAND_COLUMNS,
+         modified_sql } from "./filters.js";
 
 
 // One raw query value as a single string, whatever shape it arrived in.
@@ -569,7 +572,7 @@ export async function export_entries(query_params) {
     let { order, values: ranking } = best_match(query_params, values.length, sort);
 
     let [rows, counted] = await Promise.all([
-        query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
+        query(`SELECT ${STRUCTURE_COLUMNS} ${ENTRY_JOINS}
                WHERE ${where}
                ORDER BY ${order}
                LIMIT ${EXPORT_LIMIT}`, [...values, ...ranking]),
@@ -587,6 +590,132 @@ export async function export_entries(query_params) {
 }
 
 
+// Every polymer of every matching entry, for the report's Molecules table:
+// entries in the order export_entries gives them, then nucleic acids before
+// proteins, molecules by number. Nucleic acids only unless proteins is "1".
+// `q` lets a test run this inside its own transaction.
+// The ids of the entries a search matches, in the order the results list
+// shows them. The part tables list their rows entry by entry in this order.
+async function export_ids(query_params, q) {
+    let { where, values } = build_where(query_params);
+    let sort = sort_by(as_text(query_params.sort));
+    let { order, values: ranking } = best_match(query_params, values.length, sort);
+
+    return (await q(`SELECT e.id ${ENTRY_JOINS}
+                         WHERE ${where}
+                         ORDER BY ${order}
+                         LIMIT ${EXPORT_LIMIT}`, [...values, ...ranking])).rows.map((r) => r.id);
+}
+
+export async function export_molecules(query_params, q = query) {
+    let ids = await export_ids(query_params, q);
+
+    let proteins = as_text(query_params.proteins) === "1";
+    let rows = await q(
+        `SELECT ${MOLECULE_COLUMNS.map((c) => `${c.select} AS ${c.key}`).join(",\n    ")}
+           FROM entity_poly ep
+           JOIN entity en ON en.entry_id = ep.entry_id AND en.id = ep.entity_id
+           LEFT JOIN (${modified_sql(!proteins)}) mods ON mods.entry_id = ep.entry_id AND mods.entity_id = ep.entity_id
+          WHERE ep.entry_id = ANY($1)
+            ${proteins ? "" : "AND ep.type ILIKE '%nucleotide%'"}
+          ORDER BY array_position($1, ep.entry_id),
+                   ep.type NOT ILIKE '%nucleotide%',
+                   length(ep.entity_id), ep.entity_id`,
+        [ids]);
+
+    return { results: rows.rows, total: rows.rows.length, entries: ids.length, proteins };
+}
+
+// The report's Ligands table: one row per ligand of the matching entries,
+// water only with ?water=1, in entry order, then as each entry numbers them.
+export async function export_ligands(query_params, q = query) {
+    let ids = await export_ids(query_params, q);
+    let water = as_text(query_params.water) === "1";
+
+    let rows = await q(
+        `SELECT ${LIGAND_COLUMNS.map((c) => `${c.select} AS ${c.key}`).join(",\n    ")}
+           FROM pdbx_entity_nonpoly n
+           JOIN entity en ON en.entry_id = n.entry_id AND en.id = n.entity_id
+           JOIN chem_comp cc ON cc.id = n.comp_id
+          WHERE n.entry_id = ANY($1)
+            ${water ? "" : "AND n.comp_id <> 'HOH'"}
+          ORDER BY array_position($1, n.entry_id), length(n.entity_id), n.entity_id`,
+        [ids]);
+
+    return { results: rows.rows, total: rows.rows.length, entries: ids.length, water };
+}
+
+
+// The base_pairs.dbn file of the report's ZIP: one dot_bracket_record per
+// matching entry with annotated pairs, in the order of the results list. An
+// entry with nucleic acids but no annotation is listed in unannotated, not
+// written as a line of dots, which would read as "no pairs".
+export async function export_dot_brackets(query_params, q = query) {
+    let ids = await export_ids(query_params, q);
+
+    let chains = (await q(
+        `SELECT a.entry_id, a.id AS asym,
+                (SELECT s.pdb_strand_id FROM pdbx_poly_seq_scheme s
+                  WHERE s.asym_id = a.id AND s.entry_id = a.entry_id LIMIT 1) AS auth,
+                regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g') AS sequence
+           FROM struct_asym a
+           JOIN entity_poly ep ON ep.entry_id = a.entry_id AND ep.entity_id = a.entity_id
+          WHERE a.entry_id = ANY($1) AND ep.type ILIKE '%nucleotide%'
+          ORDER BY array_position($1, a.entry_id), length(ep.entity_id), ep.entity_id,
+                   length(a.id), a.id`, [ids])).rows;
+
+    // Two plain reads joined here, not in SQL: for the join the planner
+    // guesses a few hundred pairs, loops over 370,000 and took 16 s. Each
+    // row comes as one line of text, since building 400,000 row objects
+    // took the driver 4 s and splitting the lines takes a fraction of that.
+    let cww = new Set((await q(
+        `SELECT entry_id || ' ' || base_pair_id AS k FROM ndb_base_pair_annotation
+          WHERE entry_id = ANY($1) AND lw_family = 'cWW'`, [ids])).rows.map((r) => r.k));
+
+    let listed = (await q(
+        `SELECT concat_ws(' ', entry_id, base_pair_id, coalesce(pdb_model_number, 1),
+                          asym_id_1, seq_id_1, comp_id_1, asym_id_2, seq_id_2, comp_id_2) AS r
+           FROM ndb_base_pair_list
+          WHERE entry_id = ANY($1)
+            AND COALESCE(struct_oper_id_1, '1') = '1' AND COALESCE(struct_oper_id_2, '1') = '1'`,
+        [ids])).rows.flatMap(({ r }) => {
+            let [entry_id, base_pair_id, model, asym_1, pos_1, comp_id_1, asym_2, pos_2, comp_id_2] = r.split(" ");
+            return cww.has(`${entry_id} ${base_pair_id}`)
+                ? [{ entry_id, model: +model, asym_1, pos_1: +pos_1, comp_id_1, asym_2, pos_2: +pos_2, comp_id_2 }]
+                : [];
+        });
+
+    // Canonical by the bases' parents, so a modified U (PSU) pairs as U.
+    let parent = new Map((await q(`SELECT id, parent_comp_id FROM chem_comp WHERE parent_comp_id IS NOT NULL`)).rows
+        .map((r) => [r.id, r.parent_comp_id]));
+    let base = (comp) => (parent.get(comp) ?? comp).replace(/^D(?=[ACGTU]$)/, "").replace("T", "U");
+
+    // An NMR ensemble annotates every model; the first is enough. Every entry
+    // with any annotation counts as annotated, even with no cWW pair.
+    let first = new Map();
+    for (const p of listed) first.set(p.entry_id, Math.min(first.get(p.entry_id) ?? Infinity, p.model));
+    let annotated = new Set((await q(
+        `SELECT DISTINCT entry_id FROM ndb_base_pair_list WHERE entry_id = ANY($1)`, [ids])).rows
+        .map((r) => r.entry_id));
+
+    let pairs = listed.filter((p) => p.model === first.get(p.entry_id) &&
+                                     ["AU", "CG", "GU"].includes([base(p.comp_id_1), base(p.comp_id_2)].sort().join("")));
+
+    let by_entry = (rows) => Map.groupBy(rows, (r) => r.entry_id);
+    let chains_of = by_entry(chains);
+    let pairs_of = by_entry(pairs);
+    let records = [];
+    let unannotated = [];
+
+    for (const id of ids) {
+        if (!chains_of.has(id)) continue;
+        if (!annotated.has(id)) { unannotated.push(id); continue; }
+        records.push(dot_bracket_record(id, chains_of.get(id), pairs_of.get(id) ?? []));
+    }
+
+    return { text: records.join(""), records: records.length, unannotated };
+}
+
 // The SELECT list for one scope, built from the registry.
 function columns_sql(scope) {
     return COLUMNS
@@ -597,6 +726,19 @@ function columns_sql(scope) {
 
 // Every search result row.
 const ENTRY_COLUMNS = columns_sql("entry");
+
+// The Structures table of the report: its own fields only, whatever their
+// scope. A column with a fallback takes it here, as the page does, so an
+// entry that records only its first author still has authors in the file;
+// one with a report_select uses that, a faster way to the same value.
+const STRUCTURE_COLUMNS = report_fields(REPORT_TABLES.find((t) => t.key === "structures"))
+    .map(({ key }) => {
+        let c = COLUMNS.find((col) => col.key === key);
+        let back = c.fallback && COLUMNS.find((col) => col.key === c.fallback);
+        let select = c.report_select ?? c.select;
+        return `${back ? `COALESCE(${select}, ${back.select})` : select} AS ${key}`;
+    })
+    .join(",\n    ");
 
 // Extra columns for one entry. Each is a subquery, so a page of ten results
 // must not pay for them.

@@ -1,6 +1,6 @@
 import express from "express";
 import path from "node:path";
-import { search_entries, export_entries, find_entry, query_problem,
+import { search_entries, export_entries, export_molecules, export_ligands, export_dot_brackets, find_entry, query_problem,
          count_entries, entry_citation, entry_contents, entry_base_pairs, entry_sequence_tracks,
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes } from "./search.js";
@@ -8,7 +8,7 @@ import { query, DatabaseUnavailable } from "./db.js";
 import { citation_ris, citation_bibtex, citation_text, unpublished, short_name, full_name } from "./cite.js";
 import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
 import { public_registry, columns_answering, match_mode,
-         POLYMER_TYPE_ALIASES } from "./filters.js";
+         POLYMER_TYPE_ALIASES, REPORT_TABLES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
          entry_fasta, base_pair_export, base_pairs_csv, structure_sections, pair_arcs, sequence_map, sequence_map_text, nucleic_chain_count, arc_thumbnail, arc_summary,
          PAGE_GROUPS } from "./detail.js";
@@ -134,7 +134,7 @@ app.get("/search", async (req, res) => {
 // The parameters that say how to show results rather than which ones. Both
 // the panel rule and the report gate have to ignore them, or a layout choice
 // would look like a search.
-const DISPLAY = ["page", "sort", "view", "per_page", "match", "fields", "panel"];
+const DISPLAY = ["page", "sort", "view", "per_page", "match", "fields", "panel", "table", "proteins", "water"];
 
 function filters_used(query) {
     return Object.keys(query).filter((k) => !DISPLAY.includes(k));
@@ -162,9 +162,14 @@ app.get("/report", (req, res) => {
 
     res.render("report", {
         page: "report",
-        fields_open: req.query.fields !== "closed"
+        fields_open: req.query.fields !== "closed",
+        table: asked_table(req.query.table)
     });
 });
+
+// The report table ?table= names, the first when it names none.
+export const asked_table = (asked) =>
+    (REPORT_TABLES.find((t) => t.key === asked) ?? REPORT_TABLES[0]).key;
 
 // The Views tabs; ?view= opens one, so a copied link shows the same view.
 export const VIEWS = ["1d", "2d", "3d"];
@@ -523,6 +528,42 @@ app.get("/api/export", async (req, res) => {
     }
 
     res.json(await export_entries(req.query));
+});
+
+// The report's Molecules table for the same search; ?proteins=1 adds proteins.
+app.get("/api/export/molecules", async (req, res) => {
+    let problem = query_problem(req.query);
+
+    if (problem) {
+        res.status(400).json({ error: problem });
+        return;
+    }
+
+    res.json(await export_molecules(req.query));
+});
+
+// The report's Ligands table for the same search; ?water=1 adds water.
+app.get("/api/export/ligands", async (req, res) => {
+    let problem = query_problem(req.query);
+
+    if (problem) {
+        res.status(400).json({ error: problem });
+        return;
+    }
+
+    res.json(await export_ligands(req.query));
+});
+
+// The base_pairs.dbn of the report's ZIP for the same search.
+app.get("/api/export/dbn", async (req, res) => {
+    let problem = query_problem(req.query);
+
+    if (problem) {
+        res.status(400).json({ error: problem });
+        return;
+    }
+
+    res.json(await export_dot_brackets(req.query));
 });
 
 // Anything under /api that got this far matched no route above.
