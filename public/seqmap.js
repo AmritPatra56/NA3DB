@@ -277,7 +277,7 @@ function draw(box, map) {
             <div class="seqmap_chips" role="group" aria-label="Strands on the ruler"></div>
             <span class="seqmap_buttons">
                 <button type="button" class="seqmap_full" aria-expanded="false" title="Expand here, with every strand and an overview">⤢ Expand</button>
-                <a class="seqmap_file" href="${file_url(map)}" download title="The rows as text, in layered dot-bracket notation">Download notation</a>
+                <a class="download download_small seqmap_file" href="${file_url(map)}" download title="The rows as text, in layered dot-bracket notation">Download notation</a>
             </span>
         </div>
         <div class="seqmap_scroll" tabindex="0" aria-label="Sequence map, scrolls sideways"></div>
@@ -348,7 +348,7 @@ function make_dialog() {
                     <button type="button" data-zoom="fit" title="Every column on screen">Fit</button>
                     <button type="button" data-zoom="read" title="Columns wide enough to read">Letters</button>
                 </span>
-                <a class="seqmap_file smd_file" download>Download notation</a>
+                <a class="download download_small smd_file" download>Download notation</a>
             </div>
             <div class="smd_main">
                 <aside class="smd_side">

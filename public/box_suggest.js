@@ -17,8 +17,8 @@ const BOX_GROUP_LABELS = { entries: "Entries", authors: "Authors", organisms: "O
 
 // input: the box. params(): the other filters, as URLSearchParams, so counts
 // are what the search will show. picked(item): runs the search once the box
-// holds the pick; an item with .filter is a residue or ligand code, which
-// belongs in that filter instead of the box.
+// holds the pick; an item with .filter is an organism, residue or ligand,
+// which belongs in that filter instead of the box.
 function box_suggest(input, { params = () => new URLSearchParams(), picked }) {
     let list = document.createElement("ul");
     list.id = `${input.id || input.name}_box_options`;

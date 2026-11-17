@@ -19,7 +19,7 @@
         </tbody>
         <% if (g.rows.length > g.shown) { %>
             <tfoot><tr><td colspan="4"><button type="button" class="more_rows_toggle" aria-expanded="false"
-                data-more="Show all <%= g.rows.length %>" data-less="Show fewer">Show all <%= g.rows.length %></button></td></tr></tfoot>
+                data-more="Show all <%= g.rows.length %>" data-less="Show fewer"><span>Show all <%= g.rows.length %></span> <i class="arrow" aria-hidden="true"></i></button></td></tr></tfoot>
         <% } %>
     <% } else if (g.polymer) { %>
         <colgroup><col style="width:36%"><col style="width:10%"><col style="width:20%"><col style="width:14%"><col style="width:20%"></colgroup>
@@ -44,7 +44,7 @@
                             <% if (r.sequence.unmodelled) { %><span><span class="sequence_unmodelled">C</span> not modelled in any chain</span><% } %>
                             <span class="sequence_actions">
                                 <button type="button" class="sequence_copy" title="Copy sequence" aria-label="Copy sequence"><svg class="icon_copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><svg class="icon_done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></button>
-                                <a class="sequence_fasta" href="/structure/<%= entry.pdb_id %>/fasta/<%= r.entity_id %>" download title="Download as FASTA"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>FASTA</a>
+                                <a class="download download_small" href="/structure/<%= entry.pdb_id %>/fasta/<%= r.entity_id %>" download title="Download as FASTA">FASTA</a>
                             </span>
                         </div>
                     </details>

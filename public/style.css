@@ -1,6 +1,6 @@
 /* Colours. Every colour that differs between the themes is a token here,
-   light first, dark after it. The dark values are the palette of the first
-   NA3DB interface (#1e1e1b ground, #2a2a27 panels, #e8e8e3 text).
+   light first, dark after it. Dark is a cool blue-grey (#11161d ground,
+   #18202a panels, #e3e8ef text).
 
    Data colours keep their meaning in both themes: the base-pair families and
    the NtC classes stay the same hue, only lifted where a dark ground would
@@ -8,30 +8,33 @@
 
    Auto follows the device (prefers-color-scheme); a visitor's own choice sets
    data-theme on <html> (views/includes/theme.ejs). Both dark blocks must stay
-   identical; server.test.js checks it. Screen only, so printing stays light. */
+   identical; theme.test.js checks it. Screen only, so printing stays light.
+
+   Calm lab (Round 1): one ink-blue interface colour (--accent, also --focus),
+   cool neutrals; every bright colour left on a page is data. */
 :root {
     color-scheme: light;
-    --bg-primary: #f8fafc;
+    --bg-primary: #f5f6f8;
     --bg-secondary: #ffffff;
-    --border: #e2e8f0;
-    --border-dark: #cbd5e1;
-    --text: #0f172a;
-    --text-muted: #475569;
-    --text-dim: #94a3b8;
-    --accent: #2563eb;
+    --border: #e1e5eb;
+    --border-dark: #c6cdd7;
+    --text: #1b2330;
+    --text-muted: #5e6878;
+    --text-dim: #7f8a9a;
+    --accent: #24508f;
     --on-accent: #ffffff;
-    --input-border: #cbd5e1;
-    --input-border-hover: #94a3b8;
-    --focus: #1d9e75;
+    --input-border: #7f8a9a;
+    --input-border-hover: #5e6878;
+    --focus: #24508f;
     --danger: #b91c1c;
 
-    --accent-tint: #dbeafe;
-    --accent-ink: #1e40af;
-    --accent-line: #bfdbfe;
-    --accent-hover-line: #93c5fd;
-    --accent-wash: #eff6ff;
-    --accent-strong: #1e3a8a;
-    --row-hover: #eef2ff;
+    --accent-tint: #e8eef7;
+    --accent-ink: #1c4378;
+    --accent-line: #c9d6ea;
+    --accent-hover-line: #9db3d6;
+    --accent-wash: #f0f4fa;
+    --accent-strong: #1c4378;
+    --row-hover: #eef2f8;
 
     --ok-tint: #e3f5ee;
     --ok-ink: #085041;
@@ -39,7 +42,7 @@
     --ok-badge-tint: #d9f2e8;
     --ok-badge-ink: #0f6b4f;
     --ok-wash: #f6fbf9;
-    --here: #1d9e75;
+    --here: #127a55;
     --good: #15803d;
     --warn: #b45309;
     --bad: #b91c1c;
@@ -50,12 +53,12 @@
     --ink-amber: #633806;
     --tint-teal: #e1f5ee;
     --ink-teal: #085041;
-    --tint-gray: #f1f5f9;
-    --ink-gray: #334155;
-    --sec-gray: #64748b;
+    --tint-gray: #f0f3f7;
+    --ink-gray: #2e3846;
+    --sec-gray: #5e6878;
 
     --pair-wc: #139068;
-    --pair-gu: #e0a030;
+    --pair-gu: #b7791f;
     --pair-nc: #7f77dd;
     --pair-mod: #26215c;
     --on-pair-mod: #ffffff;
@@ -63,7 +66,7 @@
     --strand: #64748b;
     --seq-band: #fde68a;
     --seq-partner: #fecdd3;
-    --ntc-nan-line: #9ca3af;
+    --ntc-nan-line: #7f8a9a;
     --ntc-edge: #858a93;
     --swatch-edge: rgba(0, 0, 0, 0.25);
 
@@ -75,48 +78,48 @@
 @media screen {
     :root[data-theme="dark"] {
         color-scheme: dark;
-        --bg-primary: #1e1e1b;
-        --bg-secondary: #2a2a27;
-        --border: #3d3d39;
-        --border-dark: #4a4a46;
-        --text: #e8e8e3;
-        --text-muted: #c4c4be;
-        --text-dim: #85858a;
-        --accent: #85b7eb;
-        --on-accent: #1e1e1b;
-        --input-border: #4a4a46;
-        --input-border-hover: #6a6a66;
-        --focus: #1d9e75;
+        --bg-primary: #11161d;
+        --bg-secondary: #18202a;
+        --border: #253041;
+        --border-dark: #34425a;
+        --text: #e3e8ef;
+        --text-muted: #b0bac8;
+        --text-dim: #8a96a8;
+        --accent: #86a9e2;
+        --on-accent: #0d1520;
+        --input-border: #66758b;
+        --input-border-hover: #8a96a8;
+        --focus: #86a9e2;
         --danger: #f09595;
 
-        --accent-tint: #1e3a4a;
-        --accent-ink: #85b7eb;
-        --accent-line: #2b4f63;
-        --accent-hover-line: #378add;
-        --accent-wash: #1b2f3b;
-        --accent-strong: #185fa5;
-        --row-hover: #2e2e2b;
+        --accent-tint: #1c2a40;
+        --accent-ink: #a3bfec;
+        --accent-line: #2a3d5c;
+        --accent-hover-line: #4a6a9e;
+        --accent-wash: #1a2536;
+        --accent-strong: #4a6a9e;
+        --row-hover: #1f2934;
 
         --ok-tint: #04342c;
         --ok-ink: #9fe1cb;
         --ok-line: #0f6e56;
         --ok-badge-tint: #085041;
         --ok-badge-ink: #9fe1cb;
-        --ok-wash: #232a25;
+        --ok-wash: #16231f;
         --here: #5dcaa5;
         --good: #97c459;
         --warn: #ef9f27;
         --bad: #f09595;
 
-        --tint-blue: #1b2f3b;
+        --tint-blue: #1a2536;
         --ink-blue: #85b7eb;
         --tint-amber: #33291a;
         --ink-amber: #fac775;
         --tint-teal: #15302a;
         --ink-teal: #9fe1cb;
-        --tint-gray: #2e2e2b;
-        --ink-gray: #c4c4be;
-        --sec-gray: #85858a;
+        --tint-gray: #1f2934;
+        --ink-gray: #c9d1dc;
+        --sec-gray: #8a96a8;
 
         --pair-wc: #1d9e75;
         --pair-gu: #e0a030;
@@ -124,12 +127,12 @@
         --pair-mod: #cecbf6;
         --on-pair-mod: #26215c;
         --pair-sym: #afa9ec;
-        --strand: #85858a;
+        --strand: #7c889a;
         --seq-band: #633806;
         --seq-partner: #4b1528;
-        --ntc-nan-line: #85858a;
-        --ntc-edge: #85858a;
-        --swatch-edge: rgba(232, 232, 227, 0.35);
+        --ntc-nan-line: #7c889a;
+        --ntc-edge: #7c889a;
+        --swatch-edge: rgba(227, 232, 239, 0.35);
 
         --icon-filter: none;
         --shadow-rgb: 0 0 0;
@@ -140,48 +143,48 @@
 @media screen and (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
         color-scheme: dark;
-        --bg-primary: #1e1e1b;
-        --bg-secondary: #2a2a27;
-        --border: #3d3d39;
-        --border-dark: #4a4a46;
-        --text: #e8e8e3;
-        --text-muted: #c4c4be;
-        --text-dim: #85858a;
-        --accent: #85b7eb;
-        --on-accent: #1e1e1b;
-        --input-border: #4a4a46;
-        --input-border-hover: #6a6a66;
-        --focus: #1d9e75;
+        --bg-primary: #11161d;
+        --bg-secondary: #18202a;
+        --border: #253041;
+        --border-dark: #34425a;
+        --text: #e3e8ef;
+        --text-muted: #b0bac8;
+        --text-dim: #8a96a8;
+        --accent: #86a9e2;
+        --on-accent: #0d1520;
+        --input-border: #66758b;
+        --input-border-hover: #8a96a8;
+        --focus: #86a9e2;
         --danger: #f09595;
 
-        --accent-tint: #1e3a4a;
-        --accent-ink: #85b7eb;
-        --accent-line: #2b4f63;
-        --accent-hover-line: #378add;
-        --accent-wash: #1b2f3b;
-        --accent-strong: #185fa5;
-        --row-hover: #2e2e2b;
+        --accent-tint: #1c2a40;
+        --accent-ink: #a3bfec;
+        --accent-line: #2a3d5c;
+        --accent-hover-line: #4a6a9e;
+        --accent-wash: #1a2536;
+        --accent-strong: #4a6a9e;
+        --row-hover: #1f2934;
 
         --ok-tint: #04342c;
         --ok-ink: #9fe1cb;
         --ok-line: #0f6e56;
         --ok-badge-tint: #085041;
         --ok-badge-ink: #9fe1cb;
-        --ok-wash: #232a25;
+        --ok-wash: #16231f;
         --here: #5dcaa5;
         --good: #97c459;
         --warn: #ef9f27;
         --bad: #f09595;
 
-        --tint-blue: #1b2f3b;
+        --tint-blue: #1a2536;
         --ink-blue: #85b7eb;
         --tint-amber: #33291a;
         --ink-amber: #fac775;
         --tint-teal: #15302a;
         --ink-teal: #9fe1cb;
-        --tint-gray: #2e2e2b;
-        --ink-gray: #c4c4be;
-        --sec-gray: #85858a;
+        --tint-gray: #1f2934;
+        --ink-gray: #c9d1dc;
+        --sec-gray: #8a96a8;
 
         --pair-wc: #1d9e75;
         --pair-gu: #e0a030;
@@ -189,12 +192,12 @@
         --pair-mod: #cecbf6;
         --on-pair-mod: #26215c;
         --pair-sym: #afa9ec;
-        --strand: #85858a;
+        --strand: #7c889a;
         --seq-band: #633806;
         --seq-partner: #4b1528;
-        --ntc-nan-line: #85858a;
-        --ntc-edge: #85858a;
-        --swatch-edge: rgba(232, 232, 227, 0.35);
+        --ntc-nan-line: #7c889a;
+        --ntc-edge: #7c889a;
+        --swatch-edge: rgba(227, 232, 239, 0.35);
 
         --icon-filter: none;
         --shadow-rgb: 0 0 0;
@@ -204,6 +207,58 @@
 
 
 
+/* IBM Plex Sans and Mono, served from /assets/fonts (SIL Open Font License,
+   license.txt there). Nothing is fetched from a font host. */
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+}
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexSans-Medium.woff2") format("woff2");
+}
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+}
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexSans-Bold.woff2") format("woff2");
+}
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+}
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+}
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("/assets/fonts/IBMPlexMono-SemiBold.woff2") format("woff2");
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -211,7 +266,7 @@
 }
 
 body {
-    font-family: Inter, sans-serif;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text);
 }
@@ -336,13 +391,32 @@ body {
     background-color: var(--border);
 }
 
-/* The NA3DB monogram: NA over 3D. Drawn inline so it takes the page font. */
+/* The mark over the name. The mark is drawn inline so it takes the theme:
+   an accent tile with the lines in the accent's own text colour. */
+.rail-logo {
+    height: 72px;
+    flex-direction: column;
+    gap: 4px;
+}
+
 .rail-logo svg {
     display: block;
     width: 34px;
     height: 34px;
-    font-family: inherit;
 }
+
+.mark_tile { fill: var(--accent); }
+.mark_lines { stroke: var(--on-accent); }
+.mark_gap { stroke: var(--accent); }
+
+.rail-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.rail-name i { font-style: normal; color: var(--accent); }
 
 .rail-item img {
     display: block;
@@ -365,7 +439,6 @@ body {
 }
 
 .rail-theme[hidden] { display: none; }
-.rail-theme + .rail-brand { margin-top: 16px; }
 .rail-theme svg { display: none; width: 22px; height: 22px; }
 .rail-theme[data-choice="auto"] .theme_auto,
 .rail-theme[data-choice="light"] .theme_light,
@@ -374,19 +447,6 @@ body {
 
 .rail-item img.icon-narrow {
     width: 20px;
-}
-
-.rail-brand {
-    margin-top: auto;
-    margin-bottom: 16px;
-    text-align: center;
-
-    font-size: 30px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
 }
 
 
@@ -406,6 +466,8 @@ body {
     align-items: center;
     justify-content: space-between;
 }
+
+.category_header:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 .category_title {
     display: flex;
@@ -429,14 +491,6 @@ body {
     font-weight: 500;
 }
 
-.category_arrow {
-    display: block;
-    width: 24px;
-    height: auto;
-    filter: var(--icon-filter);
-    transition: transform 0.2s;
-}
-
 .category_body {
     padding: 24px;
     padding-top: 16px;
@@ -445,10 +499,6 @@ body {
 
 .category.collapsed .category_body {
     display: none;
-}
-
-.category.collapsed .category_arrow {
-    transform: rotate(-90deg);
 }
 
 /* <---------------form field-------------> */
@@ -542,6 +592,9 @@ body {
 
 .pill[hidden],
 .revealed_field[hidden] { display: none; }
+/* A resolution band picked on the landing page: there while on, so it can be
+   turned off here too, and gone once off. */
+.pill_band:not(.selected) { display: none; }
 
 /* "9 more" at the end of a long pill group: the shape of a pill, drawn dashed
    so it reads as a way to more choices rather than one of them. */
@@ -559,16 +612,6 @@ body {
     border: 1px dashed var(--input-border-hover);
     cursor: pointer;
 }
-.pill_more::after {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: translateY(-2px) rotate(45deg);
-    transition: transform 0.15s;
-}
-.pill_more[aria-expanded="true"]::after { transform: translateY(1px) rotate(-135deg); }
 .pill_more:hover { border-style: solid; }
 .pill_more:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
@@ -659,6 +702,87 @@ input::placeholder {
 }
 
 
+/* The one open/close arrow: a chevron in ink blue, 14px, pointing right when
+   shut and down when open. A button carries it as <i class="arrow">, turned
+   by the button's aria-expanded; every fold-out (<details>) gets it before
+   its summary on its own, except the "?" and the download menus. A panel
+   that slides sideways uses .arrow_side: right to open, left to close. */
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+
+.arrow,
+details:not(.help, .entry_fasta) > summary::before {
+    content: "";
+    display: inline-block;
+    flex: none;
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    background: var(--accent);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5l7 7-7 7'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: rotate 0.2s;
+}
+
+details:not(.help, .entry_fasta) > summary::before { margin-right: 6px; }
+
+[aria-expanded="true"] > .arrow,
+details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
+
+[aria-expanded="true"] > .arrow_side { rotate: 180deg; }
+
+@media (prefers-reduced-motion: reduce) {
+    .arrow, details > summary::before { transition: none; }
+}
+
+/* The one download button: every link or button that saves a file wears
+   .download, the arrow included, so a file is spotted the same way on every
+   page. .download_small is the size for section bands and tool rows. */
+.download {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.download::before {
+    content: "";
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v11M7 10l5 5 5-5M5 20h14'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.download:hover:not(:disabled) { background: var(--accent-ink); border-color: var(--accent-ink); }
+.download:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.download:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.download_small { padding: 4px 9px; font-size: 12px; gap: 5px; }
+.download_small::before { width: 13px; height: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .download { transition: none; }
+}
+
+
 /* <---------------report page-------------> */
 
 .report_downloads {
@@ -691,7 +815,7 @@ input::placeholder {
 .check_row input {
     width: 15px;
     height: 15px;
-    accent-color: var(--focus);
+    accent-color: var(--accent);
     cursor: pointer;
 }
 
@@ -703,34 +827,11 @@ input::placeholder {
     padding: 12px 24px 4px;
 }
 
-/* Shut by default: regulars never see more than the one link. */
+/* Shut by default: regulars never see more than the one link. The look is
+   the shared .guide; this only places it under the tabs. */
 .report_why {
     padding: 0 24px 10px;
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
-}
-
-.report_why summary {
-    width: fit-content;
-    margin-left: auto;
-    padding: 4px 0;
-    color: var(--accent-ink);
-    cursor: pointer;
-    list-style: none;
-}
-
-.report_why summary::-webkit-details-marker { display: none; }
-.report_why summary::after { content: " ▾"; }
-.report_why[open] summary::after { content: " ▴"; }
-.report_why summary:hover { text-decoration: underline; }
-
-.report_why p {
-    margin: 4px 0 2px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    line-height: 1.5;
-    color: var(--text-muted);
-    background-color: var(--accent-wash);
 }
 
 .report_tab {
@@ -874,7 +975,7 @@ input::placeholder {
     cursor: help;
 }
 
-.molecule_table a {
+.molecule_table a:not(.download) {
     color: var(--accent);
 }
 
@@ -1290,7 +1391,7 @@ input::placeholder {
    examples need room under the box without the whole block drifting. */
 .landing_inner {
     width: 100%;
-    max-width: 760px;
+    max-width: 1000px;
     margin-bottom: 8vh;
 
     text-align: center;
@@ -1308,7 +1409,7 @@ input::placeholder {
     color: var(--text-muted);
 }
 
-/* Narrower than the block around it: the examples below need a full line, but
+/* Narrower than the block around it: the cards below need the width, but
    a search box that wide stops reading as a box. */
 .landing_search {
     max-width: 620px;
@@ -1370,10 +1471,11 @@ input::placeholder {
     color: var(--accent);
 }
 
-/* Browse: six cards in three columns of two, one question each. Each card
-   keeps its own height, so none holds empty space, and the wider middle
-   column stands tallest: small, big, small. The bar is the row's count against
-   the largest in its card, so the cards compare within themselves only. */
+/* Browse: five cards laid out 2-1-2, one question each. filters.js BROWSE
+   names each card's area. The middle card spans both rows, and every card
+   stretches to its row, so the five close as one even block whatever their
+   lengths. The bar is the row's count against the largest in its card, so the
+   cards compare within themselves only. */
 .browse_lead {
     margin-top: 16px;
     font-size: 15px;
@@ -1384,15 +1486,22 @@ input::placeholder {
     margin-top: 14px;
     display: grid;
     grid-template-columns: 1fr 1.25fr 1fr;
-    align-items: start;
+    grid-template-areas:
+        "made     from method"
+        "modified from bound";
     gap: 14px;
     text-align: left;
 }
-
-.browse_col {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+/* Three columns leave each row too little room once Yes and No sit beside
+   it, so a tablet takes two, the organisms down the right. */
+@media (min-width: 641px) and (max-width: 900px) {
+    .browse {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "made     from"
+            "modified from"
+            "method   bound";
+    }
 }
 
 .browse_card {
@@ -1404,10 +1513,6 @@ input::placeholder {
     background: var(--bg-primary);
 }
 
-/* A row that belongs to the one above it: Human under Eukaryotes. */
-.browse_card li.browse_sub a { padding-left: 16px; }
-.browse_card li.browse_sub .browse_name::before { content: "↳ "; color: var(--text-dim); }
-
 /* What the card's counts mean, at its foot whatever its length. */
 .browse_foot {
     margin-top: auto;
@@ -1416,7 +1521,6 @@ input::placeholder {
     line-height: 1.4;
     color: var(--text-dim);
 }
-.browse_card .browse_foot a { display: inline; padding: 0; font-size: inherit; color: inherit; text-decoration: underline; }
 
 .browse_card h2 {
     font-size: 15px;
@@ -1435,17 +1539,31 @@ input::placeholder {
     padding: 0;
 }
 
-.browse_card a {
+/* A row: its name, number and bar on the left, Yes and No on the right.
+   Without the script the name and Yes are the same link, No its own. */
+.browse_row {
     display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: baseline;
-    column-gap: 8px;
-    padding: 5px 0 6px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 10px;
+}
+
+.browse_card a {
     color: var(--text);
     text-decoration: none;
+}
+
+.browse_link,
+.browse_options a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 8px;
+    padding: 6px 0 7px;
     font-size: 14px;
 }
 
+.browse_name { min-width: 0; }
 .browse_name small {
     display: block;
     font-size: 12px;
@@ -1468,6 +1586,173 @@ input::placeholder {
 
 .browse_card a:hover .browse_name { color: var(--accent); }
 .browse_card a:hover .browse_bar { opacity: 1; }
+
+/* Yes and No: two small joined buttons. Yes on takes the accent, No on a
+   red wash; one press more turns either off. */
+.browse_answer {
+    display: inline-flex;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.browse_card .browse_answer a {
+    min-width: 38px;
+    padding: 3px 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--bg-primary);
+    cursor: pointer;
+}
+.browse_card .browse_answer a + a { border-left: 1px solid var(--input-border); }
+.browse_card .browse_yes:hover { color: var(--accent); background: var(--accent-wash); }
+.browse_card .browse_no:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, transparent); }
+.browse_card .browse_yes[aria-pressed="true"] { color: var(--bg-primary); background: var(--accent); }
+.browse_card .browse_no[aria-pressed="true"] { color: var(--bg-primary); background: var(--danger); }
+.browse_card .browse_answer a:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+.picking .browse_row:has(.browse_yes[aria-pressed="true"]) > .browse_link .browse_name { color: var(--accent); font-weight: 600; }
+.picking .browse_row:has(.browse_no[aria-pressed="true"]) > .browse_link .browse_name { color: var(--danger); font-weight: 600; }
+
+/* A row's options, open under it while Yes is on: a quiet heading, then
+   rows with a tick box, set in from the card's edge with a line on the left
+   so they read as part of the row above. */
+.browse_options {
+    grid-column: 1 / -1;
+    margin: 2px 0 6px 2px;
+    padding-left: 12px;
+    border-left: 2px solid var(--accent-wash);
+}
+.browse_options[hidden] { display: none; }
+.browse_options_name {
+    padding: 4px 0 2px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.browse_options_name small {
+    margin-left: 4px;
+    font-weight: 400;
+    color: var(--text-dim);
+}
+.browse_options a { font-size: 13.5px; padding: 5px 0 6px; }
+.browse_options .browse_name small {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Ticking an option (pick.js): an empty box at its right, filled when on. */
+.browse_tick { display: none; }
+
+.picking .browse_options a {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    margin: 0 -6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.picking .browse_tick {
+    display: block;
+    align-self: center;
+    width: 16px;
+    height: 16px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--input-border);
+    border-radius: 4px;
+}
+
+.picking .browse_options a:hover .browse_tick { border-color: var(--accent); }
+.picking .browse_options a[aria-checked="true"] { background: var(--accent-wash); }
+.picking .browse_options a[aria-checked="true"] .browse_name { color: var(--accent); font-weight: 600; }
+.picking .browse_options a[aria-checked="true"] .browse_bar { opacity: 1; }
+.picking .browse_options a[aria-checked="true"] .browse_tick {
+    border-color: var(--accent);
+    background: var(--accent) no-repeat center / 12px
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+}
+
+.picking .browse_card a:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+}
+.picking .browse_link { cursor: pointer; }
+
+/* While rows are ticked, the bar below holds the count, so the line under
+   the box keeps its place but goes quiet rather than show a second number. */
+.picked .landing_count { visibility: hidden; }
+
+/* What is ticked and what it finds, held at the bottom of the view while the
+   page scrolls under it. Last in the landing's own scroller, so it never
+   covers the footer. */
+.pick_bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    width: min(760px, calc(100% - 32px));
+    margin: 0 auto 12px;
+    padding: 10px 10px 10px 16px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    box-shadow: 0 6px 24px rgb(var(--shadow-rgb) / 0.14);
+}
+.pick_bar[hidden] { display: none; }
+
+.pick_what {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    color: var(--text);
+}
+/* The bar's sentence starts with a capital, whatever its first answer. */
+.pick_what::first-letter { text-transform: uppercase; }
+
+.pick_count {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    white-space: nowrap;
+}
+
+.pick_bar button {
+    padding: 9px 18px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pick_clear {
+    color: var(--accent);
+    background: none;
+    border: 1px solid transparent;
+}
+.pick_clear:hover { background: var(--accent-wash); }
+
+.pick_search {
+    color: var(--on-accent);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+}
+.pick_search:hover { background: var(--accent-ink); border-color: var(--accent-ink); }
+.pick_search:disabled { opacity: 0.45; cursor: default; }
+.pick_search:disabled:hover { background: var(--accent); border-color: var(--accent); }
 
 /* Quiet on purpose: most visitors want the box, and the ones who want the
    filters are looking for this. */
@@ -1696,78 +1981,22 @@ input::placeholder {
 
     color: var(--text);
     background-color: var(--bg-primary);
-    border: 1px solid var(--border-dark);
-    border-radius: 13px;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+    border: 0;
+    border-radius: 8px;
     cursor: pointer;
 
-    transition: left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.32s,
-                box-shadow 0.2s, width 0.2s;
+    transition: left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s;
 }
 
-.panel_handle:hover { box-shadow: 0 4px 14px rgb(0 0 0 / 0.16); }
+/* A bare arrow, no outline: the page colour behind it only hides the seam
+   it sits on, and a pale tint shows it is pressable. */
+.panel_handle:hover { background-color: var(--accent-wash); }
 .panel_handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* The grip: one stripe per filter group, in the group's own colour. */
-.handle_grip {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
+/* Folded, the handle becomes a tab on the page's edge, with a count of the
+   filters still in use. */
+.folded + .panel_edge .panel_handle { left: 0; }
 
-.handle_grip i {
-    display: block;
-    width: 4px;
-    height: 12px;
-    border-radius: 2px;
-    transition: height 0.2s, width 0.2s, transform 0.25s, opacity 0.2s;
-}
-
-.handle_grip i:nth-child(1) { background-color: #378add; }
-.handle_grip i:nth-child(2) { background-color: #1d9e75; }
-.handle_grip i:nth-child(3) { background-color: #ba7517; }
-
-.handle_arrow {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-
-    opacity: 0;
-    scale: 0.5;
-    transition: opacity 0.2s, scale 0.25s, rotate 0.32s;
-}
-
-/* On hover the stripes shrink to dots and part, and an arrow shows which way
-   the panel will go. A touch screen has no hover, so it always shows this. */
-.panel_handle:is(:hover, :focus-visible) .handle_grip i { height: 4px; }
-.panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(1) { transform: translateY(-14px); }
-.panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(2) { opacity: 0; }
-.panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(3) { transform: translateY(14px); }
-.panel_handle:is(:hover, :focus-visible) .handle_arrow { opacity: 1; scale: 1; }
-
-@media (hover: none) {
-    .panel_handle .handle_grip i { height: 4px; }
-    .panel_handle .handle_grip i:nth-child(1) { transform: translateY(-14px); }
-    .panel_handle .handle_grip i:nth-child(2) { opacity: 0; }
-    .panel_handle .handle_grip i:nth-child(3) { transform: translateY(14px); }
-    .panel_handle .handle_arrow { opacity: 1; scale: 1; }
-}
-
-/* Folded, the handle becomes a tab on the page's edge, its arrow turned to
-   point back in, with a count of the filters still in use. */
-.folded + .panel_edge .panel_handle {
-    left: 0;
-    border-left: 0;
-    border-radius: 0 13px 13px 0;
-}
-
-.folded + .panel_edge .handle_arrow { rotate: 180deg; }
 
 .handle_count {
     position: absolute;
@@ -1804,47 +2033,29 @@ input::placeholder {
         transition: max-height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.32s;
     }
 
-    .panel_handle {
+    .workspace_body .panel_handle {
         top: -14px;
         left: 50%;
         transform: translateX(-50%);
         width: 76px;
         height: 28px;
         flex-direction: row;
-        transition: top 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.32s, box-shadow 0.2s;
+        transition: top 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s;
     }
 
-    .handle_grip { flex-direction: row; }
-    .handle_grip i { width: 12px; height: 4px; }
-    .handle_arrow { rotate: 90deg; }
+    /* Stacked, the panel folds upwards: the arrow points up to close it,
+       down to open it. */
+    .workspace_body .panel_handle .arrow { rotate: 90deg; }
+    .workspace_body .panel_handle[aria-expanded="true"] .arrow { rotate: -90deg; }
 
-    .panel_handle:is(:hover, :focus-visible) .handle_grip i { width: 4px; height: 4px; }
-    .panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(1) { transform: translateX(-22px); }
-    .panel_handle:is(:hover, :focus-visible) .handle_grip i:nth-child(3) { transform: translateX(22px); }
+    .workspace_body .folded + .panel_edge .panel_handle { top: 0; left: 50%; }
 
-    .folded + .panel_edge .panel_handle {
-        top: 0;
-        left: 50%;
-        border-left: 1px solid var(--border-dark);
-        border-top: 0;
-        border-radius: 0 0 14px 14px;
-    }
-
-    .folded + .panel_edge .handle_arrow { rotate: -90deg; }
-}
-
-@media (max-width: 1023px) and (hover: none) {
-    .panel_handle .handle_grip i { width: 4px; height: 4px; }
-    .panel_handle .handle_grip i:nth-child(1) { transform: translateX(-22px); }
-    .panel_handle .handle_grip i:nth-child(3) { transform: translateX(22px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .workspace_body > .query_panel,
     .workspace_body > .query_panel.folded,
-    .panel_handle,
-    .handle_grip i,
-    .handle_arrow { transition: none; }
+    .panel_handle { transition: none; }
 }
 
 
@@ -2203,36 +2414,51 @@ input::placeholder {
     min-height: 0;
 }
 
-/* The same arrow the category headers use, turned to point at what it does:
-   left to close the list, right to open it. */
+/* The report's field list folds with the full search's drawer handle, on
+   its edge, and slides off to the left the same way. Folded, the edge keeps
+   the handle's width so the tab never covers the table. */
+.interface > .query_panel:has(#report_fields) {
+    transition: margin-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+}
+.interface > .query_panel.folded:has(#report_fields) {
+    margin-left: -450px;
+    visibility: hidden;
+    transition: margin-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.32s;
+}
+.interface > .query_panel.folded + .panel_edge { flex-basis: 26px; }
+
+@media (max-width: 1023px) {
+    .interface > .query_panel.folded:has(#report_fields) { margin-left: -320px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .interface > .query_panel:has(#report_fields),
+    .interface > .query_panel.folded:has(#report_fields) { transition: none; }
+}
+
+/* On a phone the list sits above the table and this opens it downwards;
+   beside the table the handle does it. */
+@media (min-width: 641px) {
+    .fields_toggle { display: none; }
+    /* The list slides off to the left behind the rail and stays out of sight. */
+    .interface:has(#report_fields) { overflow: hidden; }
+    .interface:has(#report_fields) > .rail { position: relative; z-index: 6; }
+}
+
 .fields_toggle {
     margin-left: auto;
     padding: 6px;
     border-radius: 5px;
 
     background-color: transparent;
-    border: 1px solid var(--input-border);
+    border: 0;
     line-height: 0;
 
     cursor: pointer;
 }
 
-.fields_toggle:hover {
-    border-color: var(--input-border-hover);
-}
+.fields_toggle:hover { background-color: var(--accent-wash); }
 
-.fields_toggle img {
-    display: block;
-    width: 20px;
-    height: auto;
-    filter: var(--icon-filter);
-    transform: rotate(90deg);
-    transition: transform 0.2s;
-}
-
-.fields_toggle[aria-expanded="false"] img {
-    transform: rotate(-90deg);
-}
 
 
 
@@ -2327,7 +2553,7 @@ input::placeholder {
     border: 1px solid var(--border);
     border-radius: 4px;
     background: var(--bg-primary);
-    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
     font-size: 13px;
     line-height: 1.8;
     overflow-x: auto;
@@ -2365,11 +2591,11 @@ input::placeholder {
     color: var(--text-dim);
 }
 .sequence_foot .sequence_modified, .sequence_foot .sequence_unmodelled {
-    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
     padding: 0 2px;
 }
 .sequence_actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-.sequence_copy, .sequence_fasta, .entry_fasta > summary, a.entry_fasta, .pair_csv {
+.sequence_copy {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -2382,9 +2608,8 @@ input::placeholder {
     text-decoration: none;
     cursor: pointer;
 }
-.sequence_copy:hover, .sequence_fasta:hover,
-.entry_fasta > summary:hover, a.entry_fasta:hover, .pair_csv:hover { border-color: var(--border-dark); }
-.sequence_actions svg, .entry_fasta svg, .pair_csv svg {
+.sequence_copy:hover { border-color: var(--border-dark); }
+.sequence_actions svg {
     width: 14px;
     height: 14px;
     fill: none;
@@ -2398,8 +2623,6 @@ input::placeholder {
 
 /* The whole-entry FASTA, beside the Molecules summary. */
 .entry_fasta { margin-left: auto; position: relative; }
-.entry_fasta > summary { list-style: none; }
-.entry_fasta > summary::-webkit-details-marker { display: none; }
 .entry_fasta_menu {
     position: absolute;
     right: 0;
@@ -2528,7 +2751,6 @@ input::placeholder {
 
 /* The base-pair count with its CSV download at the far end. */
 .pair_head { display: flex; align-items: center; gap: 8px; }
-.pair_csv { margin-left: auto; }
 
 /* Show all / Show fewer under a long table: a quiet link, not a button. */
 .more_rows_toggle {
@@ -2577,7 +2799,7 @@ input::placeholder {
         border-bottom: 1px solid var(--border);
     }
 
-    /* The logo and the name on the left, the page icons on the right. */
+    /* The mark and the name on the left, the page icons on the right. */
     .rail-icons { display: contents; }
 
     .rail-logo,
@@ -2587,16 +2809,17 @@ input::placeholder {
         border-bottom: 0;
     }
 
+    .rail-logo {
+        width: auto;
+        margin-right: auto;
+        padding: 0 10px;
+        flex-direction: row;
+        gap: 8px;
+    }
+
     .rail-logo svg { width: 30px; height: 30px; }
 
-    .rail-brand {
-        order: 1;
-        margin: 0 auto 0 2px;
-
-        font-size: 18px;
-        writing-mode: horizontal-tb;
-        transform: none;
-    }
+    .rail-name { font-size: 18px; }
 
     .rail-item { order: 2; }
     .rail-theme { order: 3; margin-top: 0; border-top: 0; }
@@ -2668,7 +2891,8 @@ input::placeholder {
     .range_row input { font-size: 16px; padding: 10px; }
 
     .query_panel_footer { padding: 12px; }
-    .query_panel_footer .search { width: 100%; min-height: 48px; font-size: 15px; }
+    .query_panel_footer .search,
+    .query_panel_footer .download { width: 100%; min-height: 48px; font-size: 15px; }
 
     .sort_field span,
     .per_page_field span { display: none; }
@@ -2781,8 +3005,7 @@ input::placeholder {
     .molecule_table { min-width: 520px; }
     .pair_list .molecule_table { min-width: 420px; }
 
-    .sequence_copy, .sequence_fasta, .entry_fasta > summary,
-    a.entry_fasta, .pair_csv { min-height: 36px; padding-inline: 10px; }
+    .sequence_copy, .download_small { min-height: 36px; padding-inline: 10px; }
 
     .molecule_group summary,
     .sequence summary,
@@ -2798,14 +3021,14 @@ input::placeholder {
     .interface > .query_panel:has(#report_fields) { display: contents; }
 
     /* Shut means the list folds away, not the Export button with it. */
-    .interface > .query_panel.hidden:has(#report_fields) { display: contents !important; }
-    .query_panel.hidden > #report_fields { display: none; }
+    .interface > .query_panel.folded:has(#report_fields) { margin-left: 0; visibility: visible; }
+    .query_panel.folded > #report_fields { display: none; }
+    .interface > .panel_edge { display: none; }
 
     .interface:has(.report_body) .results_area_header { order: 1; padding: 0 16px; }
     .report_tabs   { order: 2; padding: 8px 16px; background-color: var(--bg-secondary); }
     .report_tab    { min-height: 40px; font-size: 13px; }
     .report_why    { order: 2; padding: 0 16px 8px; background-color: var(--bg-secondary); }
-    .report_why summary { padding: 8px 0; }
     #report_fields { order: 3; flex: none; }
     .report_body   { order: 4; overflow: visible; padding: 12px 16px 16px; }
     #report_fields + .query_panel_footer { order: 5; }
@@ -2843,6 +3066,8 @@ input::placeholder {
     }
 
     .fields_toggle::before { content: "Fields"; }
+    /* Here the list sits above the table, so the arrow opens downwards. */
+    .fields_toggle[aria-expanded="true"] > .arrow_side { rotate: 90deg; }
 
     .report_body .preview_scroll { max-height: 70vh; }
 }
@@ -2862,8 +3087,24 @@ input::placeholder {
     .landing_advanced { display: inline-block; padding: 10px 4px; }
 
     .browse_lead { margin-top: 12px; }
-    .browse { grid-template-columns: 1fr; }
-    .browse_card a { padding: 9px 0 10px; font-size: 15px; }
+    .browse {
+        grid-template-columns: 1fr;
+        grid-template-areas: "made" "from" "method" "modified" "bound";
+    }
+    .browse_link, .browse_options a { padding: 9px 0 10px; font-size: 15px; }
+    .picking .browse_options a { padding: 9px 6px 10px; }
+    .browse_card .browse_answer a { min-width: 46px; padding: 7px 10px; font-size: 14px; }
+
+    /* The page scrolls as one document on a phone, under a fixed footer. */
+    .pick_bar {
+        bottom: calc(var(--footer-h) + 8px);
+        flex-wrap: wrap;
+        row-gap: 8px;
+        padding: 10px 12px;
+    }
+    .pick_what { flex-basis: 100%; white-space: normal; }
+    .pick_count { flex: 1; }
+    .pick_bar button { min-height: 44px; }
 
     .empty_state .detail_link { padding: 10px 4px; font-size: 15px; }
 }
@@ -2881,9 +3122,10 @@ input::placeholder {
 
 .structure_page {
     display: grid;
-    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-columns: 180px 0 minmax(0, 1fr);
     align-items: start;
 }
+.structure_page.nav_folded { grid-template-columns: 0 26px minmax(0, 1fr); }
 
 .structure_page .detail_body {
     max-width: 1100px;
@@ -2946,7 +3188,7 @@ input::placeholder {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 16px 6px 31px;
+    padding: 6px 12px 6px 31px;
     font-size: 13px;
     color: var(--text);
     text-decoration: none;
@@ -2962,6 +3204,30 @@ input::placeholder {
 }
 
 .nav_item.empty { color: var(--text-dim); }
+
+/* The full search's drawer handle (.panel_handle), on the sidebar's edge: a
+   zero-width column that stays in view, so the handle sits astride the edge
+   at the middle of the screen. Folded, the sidebar slides off to the left
+   and the handle stays on the page's edge. */
+.nav_edge {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    height: calc(100vh - 60px - var(--footer-h));
+}
+
+.structure_page { transition: grid-template-columns 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.section_nav { transition: visibility 0s; }
+.nav_folded .section_nav {
+    visibility: hidden;
+    transition: visibility 0s 0.32s;
+}
+.nav_folded .nav_handle { left: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    .structure_page,
+    .section_nav { transition: none; }
+}
 
 /* The page opens on the Overview band; the title is its first, larger row. */
 .page_section:first-of-type { margin-top: 0; }
@@ -3014,64 +3280,47 @@ input::placeholder {
     place-items: center;
     width: 26px;
     height: 26px;
-    border: 1px solid transparent;
+    border: 0;
     border-radius: 50%;
     background: none;
     color: var(--ink);
     cursor: pointer;
 }
 
-/* A button at rest, not only on hover: a filled circle in the section's
-   colour, raised a little, so a reader sees there is help to open. */
-.band_help > summary {
+/* The one "?" on the site (views/includes/help.ejs): a round ink-blue
+   button, filled when open, so it reads the same in every section. */
+.help > summary {
     display: grid;
     place-items: center;
     width: 28px;
     height: 28px;
-    border: 1.5px solid var(--sec);
+    border: 1.5px solid var(--accent);
     border-radius: 50%;
-    background: color-mix(in srgb, var(--sec) 16%, var(--bg-secondary));
-    color: var(--ink);
+    background: var(--accent-wash);
+    color: var(--accent);
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1;
-    box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.12);
     cursor: pointer;
     list-style: none;
-    transition: background 0.15s, transform 0.15s;
+    transition: background 0.15s, color 0.15s;
 }
 
-.band_help > summary::-webkit-details-marker { display: none; }
+.help > summary:hover { background: var(--accent-tint); }
+.help[open] > summary { background: var(--accent); color: var(--on-accent); }
 
-.band_help > summary:hover,
-.band_help[open] > summary {
-    background: color-mix(in srgb, var(--sec) 32%, var(--bg-secondary));
-    transform: translateY(-1px);
-}
-
-.band_help > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.help > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-    .band_help > summary { transition: none; }
-    .band_help > summary:hover, .band_help[open] > summary { transform: none; }
+    .help > summary { transition: none; }
 }
 
-.band_fold:hover { border-color: var(--sec); background: var(--bg-secondary); }
+.band_fold:hover { background: var(--accent-wash); }
 
-.band_fold svg {
-    width: 16px;
-    height: 16px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    transition: transform 0.15s;
-}
 
-.band_fold[aria-expanded="false"] svg { transform: rotate(180deg); }
+.help { position: relative; }
 
-.band_help { position: relative; }
-
-.band_help p {
+.help p {
     position: absolute;
     right: 0;
     top: 32px;
@@ -3117,6 +3366,7 @@ input::placeholder {
 }
 
 .link_list a { color: var(--accent); }
+.link_files { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
 
 /* Tablets and phones: the sidebar becomes a strip of chips that scrolls
    sideways and stays under the top of the page. */
@@ -3138,6 +3388,9 @@ input::placeholder {
 
     .nav_group { display: contents; }
     .nav_group_label { display: none; }
+    /* A strip has no side to fold to, so folded or not it shows the chips. */
+    .nav_edge { display: none; }
+    .nav_folded .section_nav { visibility: visible; }
 
     .nav_item {
         flex-shrink: 0;
@@ -3169,7 +3422,7 @@ input::placeholder {
     .page_section [id],
     .page_section .in_place { scroll-margin-top: 104px; }
 
-    .band_fold, .band_help > summary { width: 34px; height: 34px; }
+    .band_fold, .help > summary { width: 34px; height: 34px; }
 }
 
 
@@ -3260,7 +3513,9 @@ input::placeholder {
     :root { --footer-h: 48px; }
     body { padding-bottom: var(--footer-h); }
 
-    .landing_page { flex-grow: 1; }
+    /* Not a scroller here, or the tick bar would stick inside a box that
+       never scrolls instead of to the screen. */
+    .landing_page { flex-grow: 1; overflow-y: visible; }
 
     .site_footer { padding: 0 12px; gap: 8px; }
     .site_footer_copy,
@@ -3592,14 +3847,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 }
 .seqmap_chip[aria-pressed="true"] { color: #fff; background: #1d9e75; border-color: #1d9e75; }
 .seqmap_partner { border-style: dashed; border-color: #1d9e75; }
-.seqmap_file {
-    padding: 2px 10px;
-    color: var(--text);
-    border: 1px solid var(--border-dark);
-    border-radius: 6px;
-    text-decoration: none;
-}
-.seqmap_file:hover { border-color: var(--accent); }
 .seqmap_scroll {
     display: flex;
     overflow-x: auto;
@@ -3696,7 +3943,6 @@ path.arc_nc { stroke: var(--pair-nc); }
     border-radius: 7px;
     cursor: pointer;
 }
-.smd_file { font-size: 13px; padding: 3px 10px; }
 .smd_main { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 0; }
 .smd_side { padding: 12px 14px; overflow: auto; border-right: 1px solid var(--border); font-size: 13px; }
 .smd_side h4 { margin-bottom: 8px; font-size: 13px; }
@@ -3816,10 +4062,8 @@ path.arc_nc { stroke: var(--pair-nc); }
 .ss_facts { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: var(--text-muted); }
 .ss_facts .ss_ab { margin-left: 2px; }
 .ss_dot { color: var(--text-dim); }
-.ss_how { margin: 8px 0 10px; padding: 6px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; }
-.ss_how summary { cursor: pointer; font-weight: 600; color: var(--text); }
-.ss_how ul { margin: 6px 0 2px 18px; display: grid; gap: 4px; }
-.ss_swatch { padding: 0 3px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border-radius: 3px; }
+.ss_how { margin: 8px 0 10px; }
+.ss_swatch { padding: 0 3px; font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; border-radius: 3px; }
 .ss_swatch.ss_na { color: var(--text-dim); }
 .ss_only_a { fill: rgba(220, 38, 38, .2); background: rgba(220, 38, 38, .2); }
 .ss_only_b { fill: rgba(22, 163, 74, .22); background: rgba(22, 163, 74, .22); }
@@ -3929,6 +4173,8 @@ path.arc_nc { stroke: var(--pair-nc); }
 /* Fold-out guides: how to read a section's colours or picture. */
 .guide { font-size: 13px; }
 .guide > summary { cursor: pointer; color: var(--accent); font-size: 13px; width: max-content; margin-bottom: 4px; }
+.guide > summary:hover { text-decoration: underline; }
+.guide > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .guide_body { margin: 8px 0 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px;
               background: var(--bg-secondary); color: var(--text-muted); line-height: 1.55; }
 .guide_body p { margin: 0 0 8px; }
@@ -4015,10 +4261,8 @@ path.arc_nc { stroke: var(--pair-nc); }
     .view_what { display: none; }
 }
 .lbn_text {
-    margin: 0;
-    padding: 10px 12px;
-    overflow-x: auto;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    display: flex;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
     font-size: 13px;
     line-height: 1.6;
     color: var(--text);
@@ -4026,7 +4270,10 @@ path.arc_nc { stroke: var(--pair-nc); }
     border: 1px solid var(--border);
     border-radius: 8px;
 }
-.lbn_text:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.lbn_names, .lbn_lines { margin: 0; padding: 10px 0; font: inherit; }
+.lbn_names { flex: none; padding-left: 12px; }
+.lbn_lines { flex: 1 1 auto; min-width: 0; padding-right: 12px; overflow-x: auto; border-radius: 0 8px 8px 0; }
+.lbn_lines:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .lbn_note, .lbn_more { margin: 6px 0 0; font-size: 13px; color: var(--text-muted); }
 /* The 3D slot: the place the viewer will take, with links meanwhile. */
 .view_slot {
@@ -4045,10 +4292,63 @@ path.arc_nc { stroke: var(--pair-nc); }
 .view_slot p { margin: 0; max-width: 46ch; font-size: 14px; }
 .view_slot_glyph { width: 72px; height: 36px; fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; }
 .view_slot_glyph .view_pair { stroke: var(--pair-wc); }
-.view_slot_links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin: 0; padding: 0; list-style: none; }
-.view_slot_links .detail_link { margin: 0; padding: 6px 0; }
 /* 1D: the column under the pointer and its partners, behind the text. */
-.lbn_text { position: relative; isolation: isolate; cursor: crosshair; }
+.lbn_lines { position: relative; isolation: isolate; cursor: crosshair; }
 .lbn_band { position: absolute; top: 0; bottom: 0; z-index: -1; background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent); pointer-events: none; }
 .lbn_partner { box-shadow: inset 0 0 0 1px var(--pair-wc); }
 .lbn_info { margin: 6px 0 0; min-height: 1.5em; font-size: 14px; color: var(--text); overflow-wrap: anywhere; }
+.lbn_find { color: var(--accent); }
+
+/* The other pairs, linked to the 1D view: a pair is a link that shows it
+   there, and the pair on show keeps its row marked. */
+.pair_hint { margin: 8px 0 6px; font-size: 13px; color: var(--text-muted); }
+.pair_show { color: var(--accent); text-decoration: none; }
+.pair_show:hover { text-decoration: underline; }
+.pair_table tr.pair_on td { background: var(--accent-wash); }
+
+/* A wide screen: the Views leave the run of sections for a column of their
+   own, beside the page and always in sight. The sections keep their order;
+   the Views span every row, with a last 1fr row taking any height they have
+   over the rest, so no gap opens between two sections. Narrower, the Views
+   stay the page's first section. */
+@media (min-width: 1360px) {
+    .structure_page .detail_body {
+        --viewer: clamp(360px, 27vw, 560px);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--viewer);
+        grid-template-rows: repeat(var(--rows), auto) 1fr;
+        column-gap: 40px;
+        align-content: start;
+        max-width: calc(1100px + 40px + var(--viewer));
+        /* A scrolling box here would hold the Views still against itself. */
+        overflow: visible;
+    }
+    .structure_page .detail_body > .page_section { grid-column: 1; }
+    .structure_page .detail_body > #views {
+        grid-column: 2;
+        grid-row: 1 / -1;
+        align-self: start;
+        position: sticky;
+        top: 16px;
+        margin-top: 0;
+    }
+    /* Never taller than the window, or its foot would wait for the end of
+       the page: the reading area (100vh less the 60px header and the footer)
+       less 16px above, the 44px band and its 10px, and 16px below. The band
+       stays out of it, so its help note is never cut. */
+    .structure_page #views > .section_body {
+        max-height: calc(100vh - 146px - var(--footer-h));
+        overflow-y: auto;
+    }
+    .structure_page #views + .page_section { margin-top: 0; }
+    .structure_page #views .section_band { margin: 0 0 10px; }
+    /* Three tiles in a column this narrow: glyph and name in one line, and
+       the open view's words under the row as its caption. */
+    #views .view_tiles { position: relative; padding-bottom: 22px; margin-bottom: 8px; }
+    #views .view_tile { grid-template-columns: auto auto; justify-content: center; padding: 8px; }
+    #views .view_glyph { grid-row: auto; }
+    #views .view_what { display: none; }
+    #views .view_tile[aria-selected="true"] .view_what { display: block; position: absolute; left: 0; bottom: 0; font-size: 13px; }
+    /* Always in sight, so not in the list of places to go. */
+    .section_nav .group_views { display: none; }
+}

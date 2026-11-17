@@ -371,7 +371,11 @@ export function base_pair_section(pairs) {
         links_shown: PAIR_LINKS_SHOWN,
         noncanonical: pairs.filter((p) => p.kind === "nc").map((p) => ({
             chain: p.chain_1 === p.chain_2 ? p.chain_1 : `${p.chain_1} / ${p.chain_2}`,
-            pair: `${p.res_1} – ${p.res_2}`, family: p.family, name: family_name(p.family)
+            pair: `${p.res_1} – ${p.res_2}`, family: p.family, name: family_name(p.family),
+            // Each end as the 1D view keys its columns ("A:2_755 12"), so a
+            // row and its two columns can find each other.
+            ends: [[p.label_1, p.copy_1, p.pos_1], [p.label_2, p.copy_2, p.pos_2]]
+                .map(([label, copy, pos]) => `${strand_token(label, String(copy ?? IDENTITY))} ${pos}`)
         }))
     };
 }
@@ -1201,7 +1205,7 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
             ({ key, name, symmetry, label, length: by_chain.get(label).length, partners: [...partners] })),
         shown: shown.map((s) => s.key),
         names: shown.map((s) => s.name),
-        cols: cols.map((c) => c && [c.letter, c.num, c.seen ? 1 : 0, c.code]),
+        cols: cols.map((c) => c && [c.letter, c.num, c.seen ? 1 : 0, c.code, c.pos]),
         rows: rows.map(({ name, family, text, pairs, overflow }) => ({ name, family, text, pairs, overflow: !!overflow })),
         steps,
         seq

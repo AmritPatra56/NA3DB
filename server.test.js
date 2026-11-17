@@ -3,13 +3,14 @@
 
 import test, { before, after } from "node:test";
 import assert from "node:assert";
-import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS } from "./filters.js";
-import { NAKB_TOPICS, topic_ids } from "./nakb.js";
+import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS, RESOLUTION_BANDS } from "./filters.js";
 import { once } from "node:events";
+import { readFileSync } from "node:fs";
 import app, { cited_rows, asked_view } from "./server.js";
 import { close as close_db, query } from "./db.js";
-import { find_entry, entry_contents, entry_residues, entry_citation } from "./search.js";
-import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE } from "./detail.js";
+import { find_entry, entry_contents, entry_residues, entry_citation, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
+import { lineage_of, name_key } from "./taxonomy.js";
+import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section } from "./detail.js";
 import { full_name } from "./cite.js";
 
 let base;
@@ -177,9 +178,38 @@ test("the field list opens or closes from the URL", async () => {
 
     assert.match(open, /class="query_panel "/);
     assert.match(open, /fields_toggle"[\s\S]*?aria-expanded="true"/);
+    assert.match(open, /class="panel_handle fields_handle" aria-controls="report_panel"\s+aria-expanded="true"\s+aria-label="Hide the fields"/);
 
-    assert.match(shut, /class="query_panel hidden"/);
+    assert.match(shut, /class="query_panel folded"/);
     assert.match(shut, /fields_toggle"[\s\S]*?aria-expanded="false"/);
+    assert.match(shut, /class="panel_handle fields_handle"[^>]*aria-expanded="false"\s+aria-label="Show the fields"/);
+});
+
+// Beside the table the list folds with the full search's drawer handle; on a
+// phone it sits above the table and the Fields button opens it downwards.
+test("the report's field list folds with the full search's handle, and the phone keeps its button", () => {
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    let js = readFileSync(new URL("./public/report.js", import.meta.url), "utf8");
+    let block = (start) => { let b = css.slice(css.indexOf(start)); return b.slice(0, b.indexOf("\n}\n")); };
+
+    assert.match(css, /\n\.interface > \.query_panel\.folded:has\(#report_fields\) \{\n    margin-left: -450px;\n    visibility: hidden;/);
+    assert.match(css, /\n\.interface > \.query_panel\.folded \+ \.panel_edge \{ flex-basis: 26px; \}/, "the tab never covers the table");
+    let wide = block("@media (min-width: 641px) {\n    .fields_toggle");
+    assert.match(wide, /\.fields_toggle \{ display: none; \}/);
+    assert.match(wide, /> \.rail \{ position: relative; z-index: 6; \}/, "the list slides behind the rail, not over it");
+
+    // Folded on a phone hides the list, never the Download buttons with it.
+    let phone = block("@media (max-width: 640px) {\n    .interface > .results_area:has(.report_body)");
+    assert.match(phone, /\.query_panel\.folded:has\(#report_fields\) \{ margin-left: 0; visibility: visible; \}/);
+    assert.match(phone, /\.query_panel\.folded > #report_fields \{ display: none; \}/);
+    assert.match(phone, /\.interface > \.panel_edge \{ display: none; \}/);
+
+    // The search page's stacked handle lies on its side; the report's stays upright.
+    let stacked = block("/* Stacked above the results, the panel folds upwards");
+    assert.doesNotMatch(stacked, /\n    \.panel_handle/, "an unscoped rule would turn the report's handle too");
+
+    assert.match(js, /fields_panel\.inert = !open && !phone\.matches/, "the Download buttons stay reachable on a phone");
+    assert.doesNotThrow(() => new Function(js.replace(/^(import|export) .*$/gm, "")));
 });
 
 test("/report with a search opens", async () => {
@@ -472,7 +502,7 @@ test("the method pills show four, the rest behind a More button", async () => {
     group = group.slice(0, group.indexOf("</div>"));
     let method = FILTERS.find((f) => f.key === "experimental_method");
 
-    assert.equal((group.match(/class="pill pill_extra"[^>]* hidden>/g) || []).length, method.options.length - 4);
+    assert.equal((group.match(/class="pill pill_extra"[^>]* hidden>/g) || []).length, method.options.filter((o) => !o.band).length - 4);
     assert.match(group, /class="pill_more" aria-expanded="false"/);
 
     // A link that picks a hidden method arrives with them unfolded.
@@ -677,6 +707,33 @@ test("every sidebar link on a structure page lands on a section", async () => {
     assert.deepEqual(sections, links, "one section per link, in the same order");
 });
 
+// The sidebar folds away with the full search's drawer handle on a wide
+// screen and stays folded for the next structure. On a narrow one it is a
+// chip strip, which a fold would empty.
+test("the sidebar folds on a wide screen and never empties the strip", async () => {
+    let html = await (await fetch(base + "/structure/4TNA")).text();
+    assert.match(html, /<button type="button" class="panel_handle nav_handle" aria-controls="section_nav"\s+aria-expanded="true"/,
+                 "the full search's handle, not one drawn again");
+    assert.match(html, /<nav class="section_nav" id="section_nav"/);
+    assert.match(html, /<div class="nav_edge">[\s\S]*?<i class="arrow arrow_side" aria-hidden="true"><\/i>/);
+    // Read before the page is drawn, so a folded sidebar never flashes open.
+    assert.ok(html.indexOf('localStorage.getItem("section_nav")') < html.indexOf('class="detail_body"'));
+    assert.match(html, /try \{ localStorage\.setItem\("section_nav"/, "storage can throw in a private window");
+    assert.match(html, /nav_list\.inert = on && !nav_strip\.matches/, "folded links leave the tab order, only beside the page");
+    // One name declared twice stops the whole script, the fold and the
+    // reading position with it.
+    for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(code));
+
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(css, /\n\.structure_page \{\n    display: grid;\n    grid-template-columns: 180px 0 minmax/);
+    assert.match(css, /\n\.structure_page\.nav_folded \{ grid-template-columns: 0 26px minmax/, "folded, the page gets all but the handle");
+    assert.match(css, /\n\.nav_folded \.nav_handle \{ left: 0; \}/, "the handle stays on the page's edge");
+    let strip = css.slice(css.indexOf("\n    .structure_page { display: block; }"));
+    strip = strip.slice(0, strip.indexOf("\n}\n"));
+    assert.match(strip, /\.nav_edge \{ display: none; \}/);
+    assert.match(strip, /\.nav_folded \.section_nav \{ visibility: visible; \}/, "folded on a wide screen, chips on a narrow one");
+});
+
 test("the raw fields survive beside the formatted rows", async () => {
     let api = await (await fetch(base + "/api/entries/4TNA")).json();
 
@@ -763,23 +820,29 @@ test("the landing page states the database's size and last load", async () => {
 });
 
 // --- browse cards on the landing page -------------------------------------
-// Each row shows a number and links to a search; the two must agree, or the
-// front page promises results the search does not give.
+// Each row shows a number and its Yes links to a search; the two must agree,
+// or the front page promises results the search does not give. So must each
+// option's number and link.
 function shown_rows(html) {
     let rows = [];
-    let re = /<li[^>]*><a href="([^"]+)">\s*<span class="browse_name">([^<]+)[\s\S]*?<span class="browse_count">([\d,]+)<\/span>/g;
+    let re = /<a (class="browse_link" )?href="([^"]+)"[^>]*>\s*<span class="browse_name">([^<]+)[\s\S]*?<span class="browse_count">([\d,]+)<\/span>/g;
     for (let m of html.matchAll(re)) {
-        rows.push({ url: m[1].replaceAll("&amp;", "&"), label: m[2].trim(), count: Number(m[3].replaceAll(",", "")) });
+        rows.push({ option: !m[1], url: m[2].replaceAll("&amp;", "&"), label: m[3].trim(),
+                    count: Number(m[4].replaceAll(",", "")) });
     }
     return rows;
 }
+const count_of = async (q) => (await (await fetch(base + "/api/count?" + q)).json()).total;
+const query_of = (url) => url.slice("/search?".length);
 
-test("every browse row's number is what its link finds", async () => {
+test("every browse row's number is what its Yes finds, and every option's what it finds", async () => {
     let rows = shown_rows(await (await fetch(base + "/")).text());
-    assert.equal(rows.length, BROWSE.flatMap((g) => g.rows).length, "a row is missing from the page");
+    let built = (await browse_counts()).flatMap((g) => g.rows.flatMap((r) => [r, ...r.options]));
+    assert.equal(rows.length, built.length, "a row is missing from the page");
+    assert.ok(rows.some((r) => r.option) && rows.some((r) => !r.option));
 
     for (const row of rows) {
-        let found = (await (await fetch(base + "/api/count" + row.url.slice("/search".length))).json()).total;
+        let found = await count_of(query_of(row.url));
         assert.equal(row.count, found, `${row.label}: shows ${row.count}, its link finds ${found}`);
     }
 });
@@ -788,7 +851,7 @@ test("every browse row's number is what its link finds", async () => {
 // cover the whole database once. A missing or doubled value shows up here.
 test("made-of and method rows each add up to every entry", async () => {
     let total = (await (await fetch(base + "/api/stats")).json()).total;
-    let rows  = shown_rows(await (await fetch(base + "/")).text());
+    let rows  = shown_rows(await (await fetch(base + "/")).text()).filter((r) => !r.option);
 
     for (const key of ["polymer_type=", "experimental_method="]) {
         let sum = rows.filter((r) => r.url.startsWith("/search?" + key)).reduce((a, r) => a + r.count, 0);
@@ -796,22 +859,198 @@ test("made-of and method rows each add up to every entry", async () => {
     }
 });
 
-test("the landing page shows the six questions, without em dashes", async () => {
+// Yes and No answer one question, so between them they hold every entry
+// once: an entry with nothing modelled bound is a No, not missing.
+test("every row's Yes and No add up to every entry, and the page links both", async () => {
+    let total = await count_of("");
     let html = await (await fetch(base + "/")).text();
+    let rows = BROWSE.flatMap((g) => g.rows);
+    assert.equal(rows.length, 17);
+    for (const row of rows) {
+        assert.equal(await count_of(query_of(row.url)) + await count_of(query_of(row.no_url)), total, row.label);
+        assert.ok(html.includes(`class="browse_no" href="${row.no_url.replaceAll("&", "&amp;")}"`), row.label);
+        assert.ok(row.say_yes && row.say_no, "a pressed Yes or No says what it means in the bar");
+    }
+});
+
+// The professor's ask: a shop shelf, most common first, read from the data,
+// opened under Yes.
+test("the 10 most frequent are the database's own, most entries first, water never a ligand", async () => {
+    let rows = (await browse_counts()).flatMap((g) => g.rows.filter((r) => r.top));
+    assert.deepEqual(rows.map((r) => r.params), [{ monomer_flag: ["Non-Standard"] }, { has_ligand: ["With ligands"] }]);
+    for (const row of rows) {
+        assert.ok(row.options.length > 0 && row.options.length <= BROWSE_TOP);
+        let counts = row.options.map((r) => r.count);
+        assert.deepEqual(counts, [...counts].sort((a, b) => b - a), "not most first");
+        // A code is its own label; its name, when the PDB gives one, the note.
+        assert.ok(row.options.every((r) => /^[A-Z0-9]{1,5}$/.test(r.label)), "every row is a code");
+    }
+    let ligands = rows[1].options.map((r) => r.label);
+    assert.ok(!ligands.includes("HOH"));
+    let direct = (await query(
+        `SELECT comp_id FROM pdbx_entity_nonpoly WHERE comp_id <> 'HOH'
+          GROUP BY 1 ORDER BY count(DISTINCT entry_id) DESC, 1 LIMIT 1`)).rows[0].comp_id;
+    assert.equal(ligands[0], direct, "the first ligand is the most common one");
+
+    // Options wait for Yes: none shows before the script opens them.
+    let html = await (await fetch(base + "/")).text();
+    let shelves = html.match(/<div class="browse_options"[^>]*>/g);
+    assert.ok(shelves.length >= 5 && shelves.every((d) => d.endsWith(" hidden>")));
+    assert.match(html, new RegExp(`${rows[1].options.length} most frequent <small>`));
+});
+
+// Ticking two codes asks for either, read as each would be alone; a name with
+// a comma in it is still one name.
+test("a list of codes finds entries with any of them; a name with a comma stays one name", async () => {
+    let count = async (q) => (await (await fetch(base + "/api/count?" + q)).json()).total;
+    let two = (await query(
+        `SELECT comp_id FROM pdbx_entity_nonpoly WHERE comp_id <> 'HOH'
+          GROUP BY 1 ORDER BY count(DISTINCT entry_id) DESC, 1 LIMIT 2`)).rows.map((r) => r.comp_id);
+    let either = Number((await query(
+        `SELECT count(DISTINCT entry_id) FROM pdbx_entity_nonpoly WHERE comp_id = ANY($1)`, [two])).rows[0].count);
+    assert.ok(either > await count("ligand=" + two[0]), "the seed's two commonest ligands overlap entirely");
+    assert.equal(await count("ligand=" + two.join(",")), either);
+    assert.equal(await count("ligand=" + two.join(", ")), either, "spaces after commas are fine");
+
+    let res = (await query(
+        `SELECT cc.id FROM doc d CROSS JOIN LATERAL unnest(string_to_array(d.residue_codes, ', ')) r(code)
+           JOIN chem_comp cc ON cc.id = r.code AND cc.mon_nstd_flag = 'n'
+          GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 2`)).rows.map((r) => r.id);
+    let any_res = Number((await query(
+        `SELECT count(DISTINCT entry_id) FROM entity_poly_seq WHERE mon_id = ANY($1)`, [res])).rows[0].count);
+    assert.equal(await count("nonstandard_residue=" + res.join(",")), any_res);
+
+    // Not code-shaped, so still the one name it always was.
+    assert.equal(await count("ligand=1,2-ETHANEDIOL"), await count("ligand=" + encodeURIComponent("1,2-ethanediol")));
+    assert.equal(await count("ligand=MG,not a code"), 0, "a list with a name in it is one text, as before");
+});
+
+// Each kingdom opens on its own organisms, the commonest first, each one
+// organism once: E. coli, not E. coli and its strain beside it.
+test("each kingdom's most frequent organisms are its own, most entries first, none twice", async () => {
+    let from = (await browse_counts()).find((g) => g.area === "from");
+    let kingdoms = from.rows.filter((r) => r.within);
+    assert.deepEqual(kingdoms.map((r) => r.within), ["Eukaryota", "Bacteria", "Archaea", "Viruses"]);
+    // The seed has no viruses; the page draws no options for an empty list.
+    assert.ok(kingdoms.filter((k) => k.options.length > 1).length >= 2);
+    for (const k of kingdoms) {
+        assert.ok(k.options.length <= BROWSE_TOP, k.label);
+        let counts = k.options.map((r) => r.count);
+        assert.deepEqual(counts, [...counts].sort((a, b) => b - a), `${k.label}: not most first`);
+        for (const o of k.options) {
+            let lineage = lineage_of(o.label);
+            assert.ok(lineage.includes(name_key(k.within)), `${o.label} is not in ${k.label}`);
+            assert.ok(!lineage.some((l) => l.startsWith("unclassified ")), `${o.label} names no one organism`);
+            assert.ok(!k.options.some((p) => lineage.includes(name_key(p.label))), `${o.label} sits under another row`);
+        }
+    }
+});
+
+// The seed holds no species beside its own strain, so the choosing is
+// checked on a made-up list, most entries first as the box gives it.
+test("a kingdom lists a species once, without its strains, and nothing unplaced", () => {
+    let list = ["Escherichia coli", "Escherichia coli K-12", "bacterium", "Homo sapiens",
+                "Thermus thermophilus", "Escherichia coli BL21(DE3)", "Bacillus subtilis"]
+        .map((code) => ({ code, name: "" }));
+    assert.deepEqual(kingdom_organisms(list, "Bacteria").map((o) => o.code),
+                     ["Escherichia coli", "Thermus thermophilus", "Bacillus subtilis"]);
+    assert.deepEqual(kingdom_organisms(list, "Bacteria", 2).map((o) => o.code),
+                     ["Escherichia coli", "Thermus thermophilus"]);
+});
+
+// The bands under X-ray and EM each answer one question, so each entry of
+// the method falls in exactly one of its bands, and nothing else in any. A
+// band is a method value, so a band of X-ray and EM itself are either.
+test("the resolution bands hold every X-ray and EM entry once; bands and methods find either", async () => {
+    let enc = (values) => "experimental_method=" + encodeURIComponent(values.join(","));
+    let rows = (await browse_counts()).find((g) => g.area === "method").rows;
+    for (const [method, bands] of Object.entries(RESOLUTION_BANDS)) {
+        let row = rows.find((r) => r.params.experimental_method[0] === method);
+        assert.deepEqual(row.options.map((r) => r.label), bands.map((b) => b.short), method);
+        assert.equal(row.options.reduce((a, r) => a + r.count, 0), row.count, `${method}: a band misses or doubles an entry`);
+        assert.ok(row.options.every((r) => r.say === bands.find((b) => b.short === r.label).label));
+
+        let [a, b] = bands.slice(1, 3).map((band) => band.value);
+        assert.equal(await count_of(enc([a, b])), await count_of(enc([a])) + await count_of(enc([b])), method);
+        assert.equal(await count_of(enc([a, "SOLUTION NMR"])),
+                     await count_of(enc([a])) + await count_of(enc(["SOLUTION NMR"])), "a band or NMR is either");
+        assert.equal(await count_of(enc([a, method])), await count_of(enc([method])), "the whole method holds its band");
+        assert.equal(await count_of(enc([method + ":nonsense"])), 0, "an unknown band finds nothing, as an unknown method");
+    }
+    // Full search shows a band picked on the landing page, so it can be turned off.
+    let html = await (await fetch(base + "/search?" + enc([RESOLUTION_BANDS["ELECTRON MICROSCOPY"][2].value]))).text();
+    assert.match(html, /class="pill pill_band selected" data-value="ELECTRON MICROSCOPY:3-3.5">EM 3 to 3.5 Å</);
+    assert.match(html, /class="pill pill_band" data-value="X-RAY DIFFRACTION:2-2.5">/);
+});
+
+// not_<key> turns one filter round, so a filter and its not hold every
+// entry between them, whatever the filter: text, pills, a list, a band.
+test("a filter and its not add up to every entry, an entry it cannot judge counted as not", async () => {
+    let count = async (q) => (await (await fetch(base + "/api/count?" + q)).json()).total;
+    let total = await count("");
+    for (const q of ["source_organism=Bacteria", "ligand=MG", "polymer_type=DNA", "polymer_type=DNA,RNA",
+                     "experimental_method=X-RAY%20DIFFRACTION%3A2-2.5", "nonstandard_residue=PSU,5MC", "synthetic=Synthetic",
+                     // NMR has no resolution: neither in nor out would lose it.
+                     "resolution_min=2"]) {
+        assert.equal(await count(q) + await count("not_" + q), total, q);
+    }
+    // Many values in one not_ are none of them.
+    assert.equal(await count("not_source_organism=Eukaryota,Bacteria"), total - await count("source_organism=Eukaryota,Bacteria"));
+    // A not and a tick both hold; "not with ligands" is "without".
+    assert.equal(await count("experimental_method=X-RAY%20DIFFRACTION&not_has_ligand=With%20ligands"),
+                 await count("experimental_method=X-RAY%20DIFFRACTION&has_ligand=Without%20ligands"));
+    // The box has none (Excludes turns the whole search), and an unknown key asks nothing.
+    assert.equal(await count("not_q=tRNA"), total);
+    assert.equal(await count("not_no_such_filter=1"), total);
+});
+
+// Ticking two kingdoms means either, as two ligand codes do. Read as one
+// name, "Eukaryota,Bacteria" found nothing.
+test("a list of taxa finds entries from any of them; a name that is no taxon stays text", async () => {
+    let ids = async (params) => {
+        let { where, values } = build_where(params);
+        return new Set((await query(`SELECT e.id FROM entry e WHERE ${where}`, values)).rows.map((r) => r.id));
+    };
+    let union = async (...names) => new Set((await Promise.all(names.map((n) => ids({ source_organism: n })))).flatMap((s) => [...s]));
+    let either = await union("Eukaryota", "Bacteria");
+    assert.ok(either.size > 0);
+    assert.deepEqual(await ids({ source_organism: "Eukaryota,Bacteria" }), either);
+    assert.deepEqual(await ids({ source_organism: "human, Bacteria" }), await union("human", "Bacteria"),
+                     "a common name in the list is read as if typed alone");
+    assert.equal((await ids({ source_organism: "Bacteria,no such organism" })).size, 0, "one text, as before");
+});
+
+// NAKB's labels are hand-made and can be wrong (an oligo labelled ribosome),
+// so the front page does not offer them. Full search still can.
+test("the landing page shows its five questions, laid out 2-1-2, without NAKB labels", async () => {
+    let html = await (await fetch(base + "/")).text();
+    assert.equal(BROWSE.length, 5);
+    assert.ok(!BROWSE.some((g) => g.question === "Which molecule?"));
+    assert.ok(!/nakb/i.test(html), "the landing page still shows NAKB");
+
+    // The page is in BROWSE order, which is how a phone stacks the cards.
+    let at = BROWSE.map((g) => html.indexOf(g.question));
+    assert.deepEqual(at, [...at].sort((a, b) => a - b), "the page does not follow BROWSE order");
+    for (const g of BROWSE) assert.ok(html.includes(`style="grid-area: ${g.area}"`), g.area);
+
+    // Desktop: two left, the middle spanning both rows, two right. Tablet: two
+    // columns. Phone: one column in BROWSE order. Every area a card names is
+    // in each grid.
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    let grids = [...css.matchAll(/\.browse \{[^}]*grid-template-areas:([^;]+);/g)].map((m) => m[1].match(/"[^"]+"/g).map((r) => r.slice(1, -1).trim().split(/\s+/)));
+    let [desk, tablet, phone] = grids;
+    assert.equal(grids.length, 3, "desktop, tablet and phone");
+    assert.deepEqual(new Set(tablet.flat()), new Set(BROWSE.map((g) => g.area)));
+    assert.deepEqual(desk.map((r) => r.length), [3, 3]);
+    assert.equal(desk[0][1], desk[1][1], "the middle card spans both rows");
+    assert.notEqual(desk[0][0], desk[1][0]);
+    assert.notEqual(desk[0][2], desk[1][2]);
+    assert.deepEqual(new Set(desk.flat()), new Set(BROWSE.map((g) => g.area)));
+    assert.deepEqual(phone.flat(), BROWSE.map((g) => g.area), "a phone stacks the cards out of order");
+
     for (const group of BROWSE) assert.ok(html.includes(group.question), group.question);
     assert.ok(html.includes("Not sure what to type? Start from what you know."));
     assert.ok(!html.includes("\u2014"), "no em dash on the landing page");
-});
-
-// A molecule is an entry NAKB labels so (nakb.js): no more, no fewer.
-test("a molecule finds exactly the entries NAKB labels so", async () => {
-    for (const topic of NAKB_TOPICS) {
-        let ids = topic_ids([topic.value]);
-        assert.ok(ids.length > 100, `${topic.value}: nakb.json looks empty`);
-        let direct = Number((await query(`SELECT count(*) FROM entry WHERE upper(id) = ANY($1)`, [ids])).rows[0].count);
-        let api = (await (await fetch(base + "/api/count?topic=" + encodeURIComponent(topic.value))).json()).total;
-        assert.equal(api, direct, topic.value);
-    }
 });
 
 // Counted from the residues themselves, not the doc view the filter reads.
@@ -850,9 +1089,13 @@ test("with and without water add up to every entry, and with is every entry that
     assert.equal(with_, direct);
 });
 
-test("an unknown topic matches nothing", async () => {
-    let n = (await (await fetch(base + "/api/count?topic=nonsense")).json()).total;
-    assert.equal(n, 0);
+// NAKB's labels are hand-made and can be wrong, so neither page offers them.
+test("no NAKB molecule filter is left anywhere", async () => {
+    assert.ok(!FILTERS.some((f) => f.key === "topic"));
+    for (const path of ["/", "/search?panel=open"]) {
+        let html = await (await fetch(base + path)).text();
+        assert.ok(!/nakb/i.test(html), `${path} still shows NAKB`);
+    }
 });
 
 // The footer links before its pages are written; each must still answer.
@@ -1243,7 +1486,47 @@ test("Views opens the page: 1D, 2D and 3D tiles, the 1D dot-bracket open and dra
     assert.ok(!none.includes("/views.js"), "and no script for it");
 });
 
-test("?view= opens that view; anything else opens 1D; the 3D slot links to viewers of this entry", async () => {
+// MG3: the Views move beside the page on a wide screen and the page itself
+// stays as it was; the table of other pairs is linked to the 1D view.
+test("each other pair links to the 1D view by its two ends; wide, the Views take a column beside the sections", async () => {
+    let entry = await find_entry("4TNA");
+    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
+    let bp = (label_2, pos_2, copy_2, kind, family) => ({ label_1: "A", pos_1: 3, copy_1: "1", label_2, pos_2, copy_2,
+        chain_1: "A", chain_2: label_2, kind, family, bases: "CG", res_1: "G3", res_2: `C${pos_2}` });
+    let page = { entry, rows: detail_rows(entry), citation: null, molecules: molecule_groups(contents, residues),
+                 base_pairs: base_pair_section([bp("A", 9, "1", "wc", "cWW"), bp("B", 4, "2_755", "nc", "tWH")]),
+                 arcs: null, nucleic_chains: 2, same_entries: 0 };
+    let sections = structure_sections(page);
+    let html = await render("structure", { ...page, page: "search", sections, PAGE_GROUPS, rail_query: "" });
+    let pairs = pairs_section(html);
+
+    assert.match(pairs, /<tr data-a="A 3" data-b="B:2_755 4"><td>A \/ B<\/td><td><a class="pair_show" href="#views">G3 – C4<\/a><\/td>/,
+                 "the ends as the 1D view keys its columns, the copy's included; the pair's words unchanged");
+    assert.equal((pairs.match(/<tr data-a=/g) || []).length, 1, "only the other pairs: Watson–Crick ones have no row");
+    assert.match(pairs, /<p class="pair_hint">Select a pair to show it in the 1D view\.<\/p>/);
+
+    // The page keeps its order: Views first, then every section as before.
+    assert.ok(html.indexOf('<section id="views"') < html.indexOf('<section id="overview"'));
+    assert.match(html, new RegExp(`<div class="detail_body" style="--rows: ${sections.length - 1}">`),
+                 "one row per section beside the Views");
+
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
+    let side = js.match(/const SIDE = "([^"]+)"/)[1];
+    let wide = css.slice(css.indexOf(`@media ${side} {`));
+    assert.ok(css.includes(`@media ${side} {`), "the script and the page agree on when the Views sit beside");
+    wide = wide.slice(0, wide.indexOf("\n}\n"));
+    assert.match(wide, /grid-template-rows: repeat\(var\(--rows\), auto\) 1fr;/,
+                 "a last 1fr row takes the Views' extra height, so no gap opens between sections");
+    assert.match(wide, /> #views \{[^}]*grid-column: 2;[^}]*grid-row: 1 \/ -1;[^}]*position: sticky;/);
+    assert.match(wide, /overflow: visible;/, "a scrolling detail_body would hold the sticky Views still");
+    assert.match(wide, /#views > \.section_body \{\s*max-height: calc\(100vh - 146px - var\(--footer-h\)\);\s*overflow-y: auto;/,
+                 "never taller than the window, the band and its help note outside the scroll");
+    assert.match(wide, /\.section_nav \.group_views \{ display: none; \}/);
+    assert.ok(!/\u2014/.test(pairs), "no em dash in the new words");
+});
+
+test("?view= opens that view; anything else opens 1D; the 3D slot is a place kept, linking nowhere", async () => {
     let tab = (html, v) => section(html, "views").match(new RegExp(`<button[^>]*data-view="${v}"[^>]*>`))[0];
     let panel = (html, v) => section(html, "views").match(new RegExp(`<div[^>]*id="view-${v}"[^>]*>`))[0];
 
@@ -1253,10 +1536,10 @@ test("?view= opens that view; anything else opens 1D; the 3D slot links to viewe
     assert.ok(!/tabindex/.test(tab(three, "3d")) && /tabindex="-1"/.test(tab(three, "1d")), "Tab reaches the open one");
     assert.ok(!/ hidden/.test(panel(three, "3d")) && / hidden/.test(panel(three, "1d")) && / hidden/.test(panel(three, "2d")));
     let slot = section(three, "views").slice(section(three, "views").indexOf('id="view-3d"'));
-    for (const href of ["https://www.rcsb.org/3d-view/4TNA", "https://www.ebi.ac.uk/pdbe/entry/pdb/4tna",
-                        "https://molstar.org/viewer/?pdb=4tna"]) {
-        assert.ok(slot.includes(`href="${href}"`), href);
-    }
+    // The professor's ask (C2): no viewers elsewhere; the place waits for our own.
+    assert.match(slot, /class="view_slot"/);
+    assert.match(slot, /will be shown here/);
+    assert.ok(!/<a |rcsb|pdbe|molstar/i.test(slot), "the 3D slot sends no one to another viewer");
     assert.ok(!/\u2014/.test(slot));
 
     let two = await page_with_arcs(null, 2, 0, "2d");

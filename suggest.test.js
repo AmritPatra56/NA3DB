@@ -4,7 +4,7 @@ import test, { after } from "node:test";
 import assert from "node:assert";
 import { close } from "./db.js";
 import { count_entries } from "./search.js";
-import { did_you_mean, distance, closest, box_suggestions, word_start } from "./suggest.js";
+import { did_you_mean, distance, closest, box_suggestions, word_start, organism_rows } from "./suggest.js";
 import { search_entries } from "./search.js";
 import { query } from "./db.js";
 
@@ -72,7 +72,7 @@ const offers = async (params) => (await box_suggestions(params)).groups;
 const TYPED = ["gra", "seraj", "west", "mouse", "human", "coli", "trna", "rna", "ribo", "hiv", "dna",
                "psu", "5mc", "omg", "pseudouridine", "methyl", "grsas"];
 
-// The search a pick runs: a code in its own filter, the box emptied, or the
+// The search a pick runs: an organism or code in its own filter, the box emptied, or the
 // quoted name in the box.
 const picked = (extra, item) => (item.filter ? { ...extra, q: "", [item.filter]: item.value } : { ...extra, q: item.value });
 
@@ -131,6 +131,34 @@ test("a common name offers its organism, read the way the search reads it", asyn
     assert.equal((await organisms("human"))[0], "Homo sapiens");
     // "mouse-ear cress" is Arabidopsis, which mouse does not mean.
     assert.ok(!(await organisms("mouse")).includes("Arabidopsis thaliana"));
+});
+
+// E. coli is offered beside its strains, so it must say it holds them, or it
+// reads as one strain more. Only a species says so: a strain with a
+// substrain under it is still one strain. The seed has no species beside its
+// strain, so this runs on a made-up list, as the box gives it.
+test("a species with strains listed is offered as All, with every strain", () => {
+    let list = [{ code: "Escherichia coli", name: "E. coli, Escherichia coli", entries: 191 },
+                { code: "Escherichia coli K-12", name: "", entries: 70 },
+                { code: "Escherichia coli str. K-12 substr. MG1655", name: "", entries: 3 },
+                { code: "Homo sapiens", name: "human", entries: 374 },
+                { code: "Escherichia", name: "", entries: 194 }];
+    let rows = organism_rows(list);
+    assert.deepEqual(rows.map((r) => r.label ?? r.code),
+                     ["All Escherichia coli", "Escherichia coli K-12", "Escherichia coli str. K-12 substr. MG1655",
+                      "Homo sapiens", "Escherichia"]);
+    assert.equal(rows[0].also, "E. coli, every strain");
+    assert.equal(rows[0].code, "Escherichia coli", "the filter still gets the name alone");
+    assert.equal(rows[3].also, "human");
+});
+
+// An organism lands in the Source organism filter, as a code lands in its
+// own: the search the box offers is the organism's, not the text's.
+test("an organism is offered as the Source organism filter", async () => {
+    let group = (await offers({ q: "human" })).find((g) => g.kind === "organisms");
+    assert.deepEqual({ filter: group.items[0].filter, value: group.items[0].value },
+                     { filter: "source_organism", value: "Homo sapiens" });
+    assert.equal(group.items[0].total, await count_entries({ source_organism: "Homo sapiens" }));
 });
 
 test("a typed person offers the stored name: Lukas Grass is Grass, L.M.", async () => {

@@ -334,12 +334,17 @@ for (const [filters, expected] of pill_answers) {
     });
 }
 
-test("a whole pill list goes in as ONE parameter", () => {
+// The method filter writes its values into the SQL, so only the ones it
+// knows may get there: anything else finds nothing, and no quote gets in.
+test("method pills are written in only when known", () => {
     let built = build_where({ experimental_method: "SOLUTION NMR,X-RAY DIFFRACTION" });
+    assert.equal(built.values.length, 0);
+    assert.match(built.where, /x\.method IN \('X-RAY DIFFRACTION', 'SOLUTION NMR'\)/);
 
-    assert.equal(built.values.length, 1, "two pills, still one parameter");
-    assert.deepEqual(built.values[0], ["SOLUTION NMR", "X-RAY DIFFRACTION"]);
-    assert.match(built.where, /= ANY\(\$1\)/);
+    let odd = build_where({ experimental_method: "X-RAY DIFFRACTION:2-2.5,EPR') OR TRUE --" });
+    assert.ok(!odd.where.includes("OR TRUE"));
+    assert.match(odd.where, /x\.method = 'X-RAY DIFFRACTION' AND EXISTS/);
+    assert.match(build_where({ experimental_method: "x' OR '1'='1" }).where, /^\s*FALSE\s*$/);
 });
 
 

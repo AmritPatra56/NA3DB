@@ -8,7 +8,7 @@
 
 import { query } from "./db.js";
 import { clean_text, singular, count_entries, organism_suggestions, ligand_suggestions, nonstandard_suggestions } from "./search.js";
-import { taxa_named, name_key } from "./taxonomy.js";
+import { taxa_named, name_key, lineage_of } from "./taxonomy.js";
 
 // Every word of every entry's searchable text, with how many entries hold it.
 // The same normalising as doc.prose: lower case, punctuation dropped.
@@ -207,8 +207,8 @@ async function search_box_offers(query_params, q) {
 //     merged or expanded: nobody can tell whether Chen, S. is Chen, S.J.
 //   - each with the count picking it returns, counted by count_entries with
 //     the filters in use, so the number is the search; 0 is never offered
-//   - picking fills the box with the name in quotes, an exact phrase; Enter
-//     without picking still runs what was typed
+//   - picking an author or molecule fills the box with the name in quotes,
+//     an exact phrase; an organism, residue or ligand opens its own filter. Enter without picking still runs what was typed
 
 // Lines of the doc view: one author, organism or molecule per line, with the
 // entries holding each. Case-folded, keeping the commonest spelling.
@@ -343,7 +343,27 @@ function chemical_rank(r, lower) {
 }
 
 // The boxes a pick fills, and where a group sits in the list.
-const FILTER_OF = { residues: "nonstandard_residue", ligands: "ligand" };
+const FILTER_OF = { organisms: "source_organism", residues: "nonstandard_residue", ligands: "ligand" };
+
+// The organisms as the box offers them, each in the Source organism filter,
+// which holds its strains too (taxonomy.js). One with strains of its own in
+// NA3DB, if a species, says so, "All Escherichia coli", or it reads as one strain beside
+// the others listed under it. `common` is what a common name is matched on.
+const species_shaped = (name) => /^[A-Z][a-z]+ [a-z]+$/.test(name);
+let organisms_made = { from: null, rows: [] };
+export function organism_rows(list) {
+    if (organisms_made.from === list) return organisms_made.rows;
+    let lineages = list.map((o) => lineage_of(o.code));
+    let rows = list.map((o) => {
+        let key = name_key(o.code);
+        let common = o.name ?? "";
+        let row = { code: o.code, name: o.code, common, also: common, held: o.entries };
+        if (!species_shaped(o.code) || !lineages.some((l) => l.includes(key))) return row;
+        return { ...row, label: `All ${o.code}`, also: [common.split(", ")[0], "every strain"].filter(Boolean).join(", ") };
+    });
+    organisms_made = { from: list, rows };
+    return rows;
+}
 const ORDER = ["authors", "organisms", "residues", "ligands", "molecules"];
 
 export async function box_suggestions(query_params, q = query) {
@@ -361,14 +381,12 @@ export async function box_suggestions(query_params, q = query) {
     }
     let person = as_person(lower);
 
-    let organisms = (await organism_suggestions("source_organisms")).map((o) => ({
-        name: o.code, also: o.name, held: o.entries
-    }));
+    let organisms = organism_rows(await organism_suggestions("source_organisms"));
     // Mouse finds Mus musculus by its common name, as taxonomy.js reads one:
     // by its last word, where English puts the thing named, so mouse finds
     // "house mouse" but not Arabidopsis, the "mouse-ear cress".
     let organism_rank = (o) => {
-        let common = (o.also ?? "").toLowerCase().split(/,\s*/).filter(Boolean);
+        let common = (o.common ?? "").toLowerCase().split(/,\s*/).filter(Boolean);
         // Named whole, by either name, first: human is Homo sapiens before
         // it is Human immunodeficiency virus.
         if (o.name.toLowerCase() === lower || common.includes(lower)) return -1;
@@ -398,7 +416,7 @@ export async function box_suggestions(query_params, q = query) {
             return d.length ? Math.min(...d) : null;
         };
         groups = await counted_groups(query_params, rows, Object.fromEntries(ORDER.map((kind) =>
-            [kind, (r) => close(r.code ?? r.name, r.also)])));
+            [kind, (r) => close(r.code ?? r.name, r.common ?? r.also)])));
         near_miss = groups.length > 0;
     }
 
@@ -412,7 +430,7 @@ export async function box_suggestions(query_params, q = query) {
 }
 
 // Each group's best few, counted as the search the pick runs: a name quoted
-// in the box, or a residue or ligand code in its own filter, every other
+// in the box, or an organism, residue or ligand in its own filter, every other
 // filter as it is. In parallel; each count is a few milliseconds.
 async function counted_groups(query_params, rows, ranks) {
     let groups = await Promise.all(ORDER.filter((kind) => rows[kind]).map(async (kind) => {
@@ -423,7 +441,7 @@ async function counted_groups(query_params, rows, ranks) {
             : { ...query_params, q: `"${r.name}"` }));
         let totals = await Promise.all(asks.map((a) => count_entries(a)));
         let items = tried.map((r, i) => ({
-            ...(filter ? { filter, value: r.code, label: r.code } : { value: `"${r.name}"`, label: r.name }),
+            ...(filter ? { filter, value: r.code, label: r.label ?? r.code } : { value: `"${r.name}"`, label: r.name }),
             ...(r.also ? { also: r.also } : {}),
             total: totals[i]
         })).filter((item) => item.total > 0).slice(0, PER_GROUP);

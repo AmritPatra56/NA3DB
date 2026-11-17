@@ -5,7 +5,8 @@
 
 import test from "node:test";
 import assert from "node:assert";
-import { sequence_map, sequence_map_text, MAP_STRANDS } from "./detail.js";
+import { sequence_map, sequence_map_text, MAP_STRANDS, base_pair_section } from "./detail.js";
+import { column_key } from "./public/views.js";
 
 const rna = (labels) => [{ id: "1", kind: "RNA", chains: labels.map((label) => ({ label, auth: label })) },
                          { id: "2", kind: "Protein", chains: [{ label: "P", auth: "P" }] }];
@@ -40,7 +41,8 @@ test("9CFN chain A gives the rows the notation's README prints", () => {
     ]);
     assert.deepEqual(map.rows.find((r) => r.name === "tHW").pairs, [[4, 41]],
                      "42-5 tWH is read from the lower base: A5 tHW A42");
-    assert.deepEqual(map.cols[55], ["A", "56", 0, "A"], "56 is in the sequence, not the model");
+    assert.deepEqual(map.cols[55], ["A", "56", 0, "A", 56],
+                     "56 is in the sequence, not the model; 56 is also where the base-pair rows find it");
     assert.deepEqual(map.shown, ["A"]);
 });
 
@@ -126,6 +128,29 @@ test("a symmetry copy is its own strand, named with a prime", () => {
     assert.deepEqual(map.names, ["A", "A′"]);
     assert.equal(map.rows[0].text, "((((&))))");
     assert.deepEqual(map.steps.map((s) => s.i), [1, 6], "the copy shares its chain's steps");
+});
+
+// The Base pairs table and the 1D view find each other by key alone: each
+// row of other pairs must name two columns of the view that pair there, a
+// symmetry copy's end included. A key written two ways would link nothing.
+test("every row of other pairs names two columns of the 1D view, and they pair there", () => {
+    let copy = { label_1: "A", pos_1: 1, label_2: "A", pos_2: 3, family: "tHS", kind: "nc", copy_1: "1", copy_2: "2_755" };
+    let pairs = [...PAIRS, copy];
+    let rows = base_pair_section(pairs.map((p) => ({ ...p, chain_1: "A", chain_2: "A", bases: "AG", res_1: "", res_2: "" })))
+        .noncanonical;
+    // Author numbers from 101: the key is the position, which they are not.
+    let tracks = { residues: TRACKS.residues.map((r) => ({ ...r, num: String(r.pos + 100) })), steps: [] };
+    let map = sequence_map(rna(["A"]), tracks, pairs);
+    let col = new Map(map.cols.map((c, i) => [column_key(map, i), i]));
+    let paired = new Set(map.rows.flatMap((r) => r.pairs.map(([i, j]) => `${i} ${j}`)));
+
+    assert.equal(rows.length, 6);
+    assert.deepEqual(rows.at(-1).ends, ["A 1", "A:2_755 3"]);
+    for (const r of rows) {
+        let [i, j] = r.ends.map((k) => col.get(k)).sort((a, b) => a - b);
+        assert.ok(i !== undefined && j !== undefined, `${r.ends.join(" / ")} are columns`);
+        assert.ok(paired.has(`${i} ${j}`), `${r.ends.join(" / ")} pair in the view`);
+    }
 });
 
 test("modified nucleotides are their parent in lower case", () => {

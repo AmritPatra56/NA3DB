@@ -1453,7 +1453,7 @@ test("NtC steps are counted by CANA class, each class named, no class last and a
                      "the fold-out shows DNATCO's nine classes");
     assert.ok(t.key.every((k) => k.name && /^#[0-9A-F]{6}$/.test(k.background)));
     let chip = (ntc) => t.families.flatMap((f) => f.classes).flatMap((c) => c.ntcs).find((x) => x.ntc === ntc);
-    assert.equal(chip("AA00").background, "#FFC1C1", "each NtC carries its DNATCO colour");
+    assert.equal(chip("AA00").background, "#FFEBA1", "each NtC carries its DNATCO colour");
     assert.equal(chip("ZZ01").background, "#01F60E");
     assert.equal(chip("NANT").background, "#F2F2F2");
     assert.deepEqual(ntc_section([]).families, []);

@@ -65,8 +65,12 @@ async function count(term) {
 // if box_suggest.js loaded: the count works without it.
 if (typeof box_suggest === "function") box_suggest(box, {
     picked(item) {
-        // A residue or ligand code lands in its own filter.
-        if (item.filter) location.href = "/search?" + new URLSearchParams({ [item.filter]: item.value });
+        // An organism, residue or ligand lands in its own filter.
+        // pick.js, when loaded, keeps any ticked rows with it.
+        if (item.filter) {
+            if (typeof pick_with === "function" && pick_with(item.filter, item.value)) return;
+            location.href = "/search?" + new URLSearchParams({ [item.filter]: item.value });
+        }
         else box.form.requestSubmit();
     }
 });

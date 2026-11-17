@@ -5,6 +5,7 @@ import { search_entries, export_entries, export_molecules, export_ligands, expor
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes, entry_assemblies } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
+import help from "./help_texts.js";
 import { citation_ris, citation_bibtex, citation_text, unpublished, short_name, full_name } from "./cite.js";
 import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
 import { public_registry, columns_answering, match_mode,
@@ -35,6 +36,9 @@ app.set("views", path.join(import.meta.dirname, "views"));
 app.locals.registry = public_registry();
 app.locals.registry_json =
     JSON.stringify(app.locals.registry).replaceAll("<", "\\u003c");
+
+// Every help text, for the one "?" template (views/includes/help.ejs).
+app.locals.help = help;
 
 // Whether the app can do its job, which means reaching the database. A server
 // that is up but cannot query is not healthy, it only looks it.

@@ -4,31 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NA3DB · <%= entry.pdb_id %></title>
-    <link rel="icon" href="/assets/favicon.ico">
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/assets/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
     <link rel="stylesheet" href="/style.css">
 <%- include("includes/theme.ejs") %>
 </head>
 <body>
 <%
     // Rows from detail.js, which the cards read too.
-    const dl = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
     const fasta_url = `/structure/${entry.pdb_id}/fasta`;
-
-    // Said under each band's "?": the terms a reader new to the section needs.
-    const help = {
-        "overview": "What the entry is: its title, how it was solved, when it was deposited, at what resolution, by whom and in which paper, what it is made of, and its size in chains, residues, nucleotides and atoms. From the entry's own PDB record.",
-        "molecules": "Each polymer once, with the chains that are copies of it. Modelled is how many of its residues have coordinates, out of the full sequence; missing ones are in the sequence but not in the model. Numbering is the authors' own residue numbers, which can skip or start above 1. Link is the molecule in UniProt or another sequence database.",
-        "modified-nucleotides": "Nucleotides chemically changed from A, C, G, U or T, such as PSU (pseudouridine) or 2MG (N2-methylguanosine). One row per kind in each chain, with every position it occupies, in the authors' numbering.",
-        "ligands": "Small molecules bound in the structure: ions, cofactors, drugs and sugars. Count is how many copies the entry holds. Each code links to its page at RCSB. Water is left out.",
-        "sources": "Where each molecule came from. Organism is where the sequence comes from, Taxonomy ID its number in NCBI Taxonomy, Produced in the host it was made in when expressed.",
-        "base-pairs": "Every base pair in the first model, named in the Leontis–Westhof scheme by DNATCO: c or t for cis or trans, then the two edges that touch (W Watson–Crick, H Hoogsteen, S sugar). Pairs fall in four groups: cis Watson–Crick (cWW) A–U (A–T in DNA), cWW G–C, cWW G–U, and Others, which holds every other pair and is broken down by family. A modified base counts as the base it came from. The picture shows biological assembly 1: the molecule as it works in the cell, as the depositors define it in the file. The asymmetric unit is what the file itself holds, which can be several copies of the molecule, or half of one that symmetry completes; the counts are always those of the file. Pairs that cross others are drawn under the line, so the main structure above reads clearly, like a tRNA's cloverleaf.",
-        "views": "Three ways to look at the nucleic acids; pick one and it opens below. 1D is the sequence with every base pair in layered dot-bracket notation: one row per Leontis–Westhof family, brackets of a deeper kind where pairs cross, & between strands. WC holds the Watson–Crick pairs (A–U, G–C, A–T), cWW the other cis Watson–Crick pairs such as G–U. A lower-case letter is a modified nucleotide. Point at or tap a nucleotide to see what it pairs with. The Sequence map adds the backbone steps and more strands. 2D and 3D are kept for a secondary-structure diagram and a 3D viewer, still to come; 3D links to viewers on other sites meanwhile.",
-        "sequence-map": "Every nucleotide on one ruler: a bar for the step to the next one (its NtC in DNATCO's colours, 5′ half and 3′ half; height its confal score), the sequence, then every base pair in bracket rows, one row per Leontis–Westhof family. Point at a column, or tap it, to see its pairs and step. How to read the map explains the rows.",
-        "same-sequence": "Every chain in NA3DB with exactly this sequence, letter for letter (plain A, C, G, T or U only). Compare any two: their base pairs, the backbone shape of each step and the chemistry of each nucleotide, position by position. A nucleotide one of them does not model is never counted as a difference.",
-        "conformation": "Each step from one nucleotide to the next gets an NtC class from DNATCO, such as AA00. Similar classes form a CANA class, such as AAA (A-form), and the list groups them that way. Each NtC is drawn in DNATCO's colours, one for each half of the step; How the colours work has the key. The confal score (0 to 100) says how well the steps fit their classes; the percentile ranks it against other structures. Steps DNATCO could not class (NANT) are counted last.",
-        "citations": "The paper the depositors name for this structure, the one to cite. Save reference gives a file for EndNote, Zotero, Mendeley (.ris) or LaTeX (.bib); Copy gives it as one line of text. Taken from the publisher's record (Crossref) and PubMed, checked against each other and the PDB: full author names, journal, issue, pages, abstract and keywords. An entry not yet in a paper is saved as unpublished work, linked to its PDB entry.",
-        "links": "This entry elsewhere, and its data as files."
-    };
 %>
     <div class="interface">
         <%- include("includes/rail.ejs") %>
@@ -38,7 +23,7 @@
             </div>
             <div class="results_area_body">
                 <div class="structure_page">
-                    <nav class="section_nav" aria-label="Sections of this page">
+                    <nav class="section_nav" id="section_nav" aria-label="Sections of this page">
                         <% for (const g of PAGE_GROUPS) { %>
                             <div class="nav_group group_<%= g.key %>">
                                 <%# A group that is one section of the same name (Overview) is
@@ -51,8 +36,23 @@
                             </div>
                         <% } %>
                     </nav>
+                    <%# The full search's drawer handle, on the sidebar's edge: folded,
+                        the sidebar slides away and the handle stays on the page's
+                        edge. Only on a wide screen, where it is a sidebar. %>
+                    <div class="nav_edge">
+                        <button type="button" class="panel_handle nav_handle" aria-controls="section_nav"
+                                aria-expanded="true" aria-label="Hide the sections" title="Hide the sections">
+                            <i class="arrow arrow_side" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <%# Folded or not as last time, before the page is drawn. %>
+                    <script>
+                        try { if (localStorage.getItem("section_nav") === "folded") document.querySelector(".structure_page").classList.add("nav_folded"); } catch {}
+                    </script>
 
-                <div class="detail_body">
+                <%# --rows: the sections beside the Views on a wide screen, where the
+                    Views take a column of their own (style.css). %>
+                <div class="detail_body" style="--rows: <%= sections.length - 1 %>">
 
                     <% for (const s of sections) { const group = PAGE_GROUPS.find((g) => g.key === s.group); %>
                     <section id="<%= s.id %>" class="page_section group_<%= s.group %><%= s.empty ? " empty" : "" %>" aria-labelledby="<%= s.id %>-title">
@@ -64,22 +64,19 @@
                             <div class="band_tools">
                                 <% if (s.id === "molecules" && molecules.fasta.na && molecules.fasta.na < molecules.fasta.all) { %>
                                     <details class="entry_fasta">
-                                        <summary title="Download sequences as FASTA"><%- dl %>FASTA</summary>
+                                        <summary class="download download_small" title="Download sequences as FASTA">FASTA</summary>
                                         <div class="entry_fasta_menu">
                                             <a href="<%= fasta_url %>?only=na" download>Nucleic acids only <span><%= molecules.fasta.na %> <%= molecules.fasta.na === 1 ? "molecule" : "molecules" %></span></a>
                                             <a href="<%= fasta_url %>" download>All polymers <span><%= molecules.fasta.all %> molecules</span></a>
                                         </div>
                                     </details>
                                 <% } else if (s.id === "molecules" && molecules.fasta.all) { %>
-                                    <a class="entry_fasta" href="<%= fasta_url %>" download title="Download <%= molecules.fasta.all === 1 ? "the sequence" : "all " + molecules.fasta.all + " sequences" %> as FASTA"><%- dl %>FASTA</a>
+                                    <a class="download download_small" href="<%= fasta_url %>" download title="Download <%= molecules.fasta.all === 1 ? "the sequence" : "all " + molecules.fasta.all + " sequences" %> as FASTA">FASTA</a>
                                 <% } else if (s.id === "base-pairs" && base_pairs) { %>
-                                    <a class="pair_csv" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download title="Download every pair as CSV"><%- dl %>CSV</a>
+                                    <a class="download download_small" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download title="Download every pair as CSV">CSV</a>
                                 <% } %>
-                                <details class="band_help">
-                                    <summary aria-label="What this section shows" title="What this section shows">?</summary>
-                                    <p><%= help[s.id] %></p>
-                                </details>
-                                <button type="button" class="band_fold" aria-expanded="true" aria-controls="<%= s.id %>-body" title="Fold this section"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+                                <%- include("includes/help", { key: s.id }) %>
+                                <button type="button" class="band_fold" aria-expanded="true" aria-controls="<%= s.id %>-body" title="Fold this section"><i class="arrow" aria-hidden="true"></i></button>
                             </div>
                         </div>
                         <div class="section_body" id="<%= s.id %>-body">
@@ -87,7 +84,7 @@
                             <div class="detail_field<%= row.key === "title" ? " structure_lead" : "" %>">
                                 <div class="detail_label"><%= row.label %></div>
                                 <% if (row.key === "published" && locals.citation) { %>
-                                <div class="detail_value published_value"><span><%= row.value %></span><%- include("includes/cite_save.ejs", { where: "top", dl }) %></div>
+                                <div class="detail_value published_value"><span><%= row.value %></span><%- include("includes/cite_save.ejs", { where: "top" }) %></div>
                                 <% } else { %>
                                 <div class="detail_value"><%= row.value %></div>
                                 <% } %>
@@ -100,7 +97,7 @@
                                     <div class="guide_body">
                                         <p>The colours are DNATCO's. Each NtC is drawn in two halves, its 5′ side and its 3′ side, and each half takes the colour of its conformer class: AB01 is A then B, BB07 is BII on both sides. A low pale grey box (N) is a step DNATCO could not class.</p>
                                         <div class="cana_key"><% for (const k of t.key) { %><span><i class="cana_swatch" style="background:<%= k.background %>"></i><code><%= k.code %></code><%= k.name %></span><% } %></div>
-                                        <p class="guide_source">Classes and their meaning: <a target="_blank" rel="noopener" href="https://doi.org/10.1093/nar/gkaa383">DNATCO, Černý et al. 2020, NAR 48:6367</a>. Colours: <a target="_blank" rel="noopener" href="https://github.com/molstar/molstar/blob/master/packages/extensions/dnatco/src/color.ts">DNATCO's colouring in Mol*</a>.</p>
+                                        <p class="guide_source">Classes and their meaning: <a target="_blank" rel="noopener" href="https://doi.org/10.1093/nar/gkaa383">DNATCO, Černý et al. 2020, NAR 48:6367</a>. Colours: <a target="_blank" rel="noopener" href="https://dnatco.datmos.org">DNATCO, as on its own site</a>.</p>
                                     </div>
                                 </details>
                             <% for (const f of t.families) { %>
@@ -199,10 +196,13 @@
                         <% if (bp.noncanonical.length) { %>
                             <details id="bp-all" class="pair_list">
                                 <summary>Show the <%= bp.noncanonical.length.toLocaleString("en-GB") %> other pairs</summary>
+                                <%# Linked to the 1D view: a pair is shown there, and a
+                                    nucleotide there finds its row here (public/views.js). %>
+                                <p class="pair_hint">Select a pair to show it in the 1D view.</p>
                                 <div class="molecule_scroll">
-                                <table class="molecule_table">
+                                <table class="molecule_table pair_table">
                                     <tr><th>Chain</th><th>Pair</th><th>Family</th></tr>
-                                    <% for (const p of bp.noncanonical) { %><tr><td><%= p.chain %></td><td><%= p.pair %></td><td title="<%= p.name %>"><%= p.family %></td></tr><% } %>
+                                    <% for (const p of bp.noncanonical) { %><tr data-a="<%= p.ends[0] %>" data-b="<%= p.ends[1] %>"><td><%= p.chain %></td><td><a class="pair_show" href="#views"><%= p.pair %></a></td><td title="<%= p.name %>"><%= p.family %></td></tr><% } %>
                                 </table>
                                 </div>
                             </details>
@@ -262,7 +262,7 @@
                                 </details>
                                 <% } %>
                                 <div class="citation_actions">
-                                    <%- include("includes/cite_save.ejs", { where: "section", dl }) %>
+                                    <%- include("includes/cite_save.ejs", { where: "section" }) %>
                                     <button type="button" class="sequence_copy cite_copy" data-text="<%= cite_text %>" title="Copy the citation as text" aria-label="Copy the citation as text"><svg class="icon_copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><svg class="icon_done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Copy</button>
                                     <% if (c.doi_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.doi_url %>">DOI <%= c.doi %></a><% } %>
                                     <% if (c.pubmed_url) { %><a class="detail_link" target="_blank" rel="noopener" href="<%= c.pubmed_url %>">PubMed <%= c.pubmed %></a><% } %>
@@ -271,10 +271,12 @@
                         <% } %>
 
                         <% if (s.id === "links") { %>
+                            <div class="link_files">
+                                <% if (molecules.fasta.all) { %><a class="download" href="<%= fasta_url %>" download>Sequences as FASTA</a><% } %>
+                                <% if (base_pairs) { %><a class="download" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download>Base pairs as CSV</a><% } %>
+                            </div>
                             <ul class="link_list">
                                 <li><a target="_blank" rel="noopener" href="https://www.rcsb.org/structure/<%= entry.pdb_id %>">View on rcsb.org</a></li>
-                                <% if (molecules.fasta.all) { %><li><a href="<%= fasta_url %>" download>Sequences as FASTA</a></li><% } %>
-                                <% if (base_pairs) { %><li><a href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download>Base pairs as CSV</a></li><% } %>
                                 <li><a href="/report<%= rail_query %>">Report of this entry, as CSV or Excel</a></li>
                                 <li><a href="/api/entries/<%= entry.pdb_id %>">This entry as JSON</a></li>
                             </ul>
@@ -331,7 +333,7 @@
             let more = button.closest("table").querySelector(".more_rows");
             more.hidden = !more.hidden;
             button.setAttribute("aria-expanded", String(!more.hidden));
-            button.textContent = more.hidden ? button.dataset.more : button.dataset.less;
+            button.firstElementChild.textContent = more.hidden ? button.dataset.more : button.dataset.less;
         });
 
         // A download menu (FASTA, Save reference) closes once a file is
@@ -361,9 +363,43 @@
             if (section) fold(section, false);
 
             // Only one help note open at a time, and a click elsewhere shuts it.
-            for (const help of document.querySelectorAll(".band_help[open]")) {
+            for (const help of document.querySelectorAll(".help[open]")) {
                 if (!help.contains(event.target)) help.open = false;
             }
+        });
+
+        // Escape shuts an open help note and hands focus back to its "?".
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
+            for (const help of document.querySelectorAll(".help[open]")) {
+                help.open = false;
+                help.querySelector("summary").focus();
+            }
+        });
+
+        // The sidebar slides away and back, and is kept that way for the
+        // next structure.
+        const nav_fold = document.querySelector(".nav_handle");
+        const nav_page = document.querySelector(".structure_page");
+        const nav_list = document.querySelector(".section_nav");
+        const nav_strip = matchMedia("(max-width: 1023px)");
+        function nav_folded(on) {
+            nav_page.classList.toggle("nav_folded", on);
+            // Out of sight, its links leave the tab order, as the filters do.
+            // Only beside the page: the strip on a narrow screen never folds.
+            nav_list.inert = on && !nav_strip.matches;
+            let label = on ? "Show the sections" : "Hide the sections";
+            nav_fold.setAttribute("aria-expanded", String(!on));
+            nav_fold.setAttribute("aria-label", label);
+            nav_fold.title = label;
+        }
+        let nav_now = () => nav_folded(nav_page.classList.contains("nav_folded"));
+        nav_now();
+        nav_strip.addEventListener("change", nav_now);
+        nav_fold.addEventListener("click", () => {
+            let on = !nav_page.classList.contains("nav_folded");
+            nav_folded(on);
+            try { localStorage.setItem("section_nav", on ? "folded" : "open"); } catch {}
         });
 
         // The sidebar follows the reading position: the current section is the

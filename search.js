@@ -6,9 +6,9 @@ import { query } from "./db.js";
 import { dot_bracket_record } from "./detail.js";
 import { clean_title, pdb_author } from "./cite.js";
 import { sequence_key, compare_chains, best_rank } from "./sameseq.js";
-import { taxa_named, taxa_exactly_named, taxon, is_common_name } from "./taxonomy.js";
+import { taxa_named, taxa_exactly_named, taxon, is_common_name, lineage_of, name_key } from "./taxonomy.js";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
-         page_size_from, match_mode, RESOLUTION_SQL, BROWSE,
+         page_size_from, match_mode, RESOLUTION_SQL, BROWSE, browse_row,
          REPORT_TABLES, report_fields, MOLECULE_COLUMNS, LIGAND_COLUMNS,
          modified_sql } from "./filters.js";
 
@@ -236,6 +236,13 @@ const KINDS = {
 };
 
 
+// A common name searches its taxon alone: the text branch gets NULL, which
+// ILIKE never matches.
+const text_param_of = (filter, rule, value) =>
+    filter.common_name_is_taxon && is_common_name(value) ? null : rule.param(value);
+
+export const NOT = "not_";
+
 export function build_where(query_params) {
     let f = query_to_filters(query_params);
 
@@ -307,8 +314,30 @@ export function build_where(query_params) {
         return `(${found.join("\n      OR ")})`;
     };
 
-    for (const filter of FILTERS) {
-        let value = f[filter.key];
+    // not_<key> asks the opposite of that one filter: not_source_organism=
+    // Bacteria is every entry with no bacterial molecule. The filter's own
+    // clause is built as usual, then turned round; COALESCE so an entry the
+    // clause cannot judge (no resolution, say) counts as not matching. Many
+    // values in one not_ are "none of them", as many in one filter are "any".
+    // The search box has no not_: Excludes already turns the whole search.
+    let excluded = query_to_filters(Object.fromEntries(Object.entries(query_params)
+        .filter(([k]) => k.startsWith(NOT) && k !== NOT + "q").map(([k, v]) => [k.slice(NOT.length), v])));
+    let asked = [...FILTERS.map((filter) => ({ filter, value: f[filter.key], not: false })),
+                 ...FILTERS.map((filter) => ({ filter, value: excluded[filter.key], not: true }))];
+
+    // Where the tests of the filter being turned round begin.
+    let turning = null;
+    const turn = () => {
+        if (turning === null) return;
+        let own = tests.splice(turning).map((sql) => sql.replace(/^\s*AND\s+/, ""));
+        if (own.length) tests.push(`AND NOT COALESCE((${own.join("\n    AND ")}), FALSE)`);
+        turning = null;
+    };
+
+    for (const { filter, value: asked_value, not } of asked) {
+        turn();
+        if (not) turning = tests.length;
+        let value = asked_value;
 
         // The search box: each word its own clause, any spelling of it will do,
         // and each quoted phrase its own exact clause.
@@ -357,11 +386,27 @@ export function build_where(query_params) {
             continue;
         }
 
-        // A common name searches its taxon alone: the text branch gets NULL,
-        // which ILIKE never matches.
-        let text_param = filter.common_name_is_taxon && is_common_name(value) ? null : rule.param(value);
-        add(filter.where, text_param, rule.normalised && rule.normalised(value), value);
+        // A list of codes ("MG,ZN") or of taxa ("Eukaryota,Bacteria"), as
+        // ticked on the landing page: any of them, each read exactly as if
+        // typed alone. Only when every part is a code, or names a taxon, so a
+        // name holding a comma (1,2-ETHANEDIOL) is still one name.
+        let is_part = filter.code_list ? (p) => /^[A-Za-z0-9]{1,5}$/.test(p)
+                    : filter.taxon_list ? (p) => taxa_named(p).length > 0
+                    : null;
+        if (is_part) {
+            let parts = value.split(",").map((p) => p.trim());
+            if (parts.length > 1 && parts.every(is_part)) {
+                let either = parts.map((p) => bind(filter.where, text_param_of(filter, rule, p),
+                                                   rule.normalised && rule.normalised(p), p)
+                                              .replace(/^\s*AND\s+/, ""));
+                tests.push(`AND (${either.join("\n         OR ")})`);
+                continue;
+            }
+        }
+
+        add(filter.where, text_param_of(filter, rule, value), rule.normalised && rule.normalised(value), value);
     }
+    turn();
 
     // Nothing was asked, so there is nothing to invert either: excluding
     // nothing leaves the whole table.
@@ -540,23 +585,66 @@ export async function count_entries(query_params) {
 }
 
 
-// The landing page's BROWSE rows with their counts, each counted by the very
-// query its link runs. Kept for ten minutes: the data changes only on a load.
+// The landing page's BROWSE cards with their counts, each row counted by the
+// query its Yes runs, so a row and its results cannot disagree. Each row's
+// options are filled in: a kingdom's organisms, a filter's 10 most frequent
+// codes (read from the same lists the Full search boxes suggest from), or its
+// fixed choices, each counted too. Each bar is a row's count against the
+// largest in its own list. Kept for ten minutes: the data changes only on a
+// load.
 const BROWSE_TTL_MS = 10 * 60 * 1000;
+export const BROWSE_TOP = 10;
+const TOP_SOURCES = { ligand: ligand_suggestions, nonstandard_residue: nonstandard_suggestions };
 let browse_cache = null;
+
+const counted = (rows) => Promise.all(rows.map(async (row) => ({ ...row, count: await count_entries(row.params) })));
+function with_share(rows) {
+    let most = Math.max(...rows.map((r) => r.count), 1);
+    return rows.map((r) => ({ ...r, share: r.count / most }));
+}
+
+// A kingdom's most frequent source organisms, from the list the Source
+// organism box suggests from. A strain already counted under its species
+// listed above it is left out, so E. coli is not listed twice, and so is a
+// name NCBI files as unclassified ("bacterium"), which is no one organism.
+// The note is the first common name.
+export function kingdom_organisms(organisms, within, n = BROWSE_TOP) {
+    let chosen = [];
+    for (const o of organisms) {
+        let lineage = lineage_of(o.code);
+        if (!lineage.includes(name_key(within))) continue;
+        if (lineage.some((l) => l.startsWith("unclassified ") || l === "environmental samples")) continue;
+        if (chosen.some((c) => lineage.includes(name_key(c.code)))) continue;
+        chosen.push(o);
+        if (chosen.length === n) break;
+    }
+    return chosen;
+}
+
+// A row's options as rows of their own, before counting.
+async function options_of(row) {
+    if (row.within) {
+        let chosen = kingdom_organisms(await organism_suggestions("source_organisms"), row.within);
+        return chosen.map((o) => browse_row(o.code, "source_organism", [o.code], o.name.split(", ")[0] || null));
+    }
+    if (row.top) {
+        let codes = (await TOP_SOURCES[row.top]()).slice(0, BROWSE_TOP);
+        return codes.map((c) => browse_row(c.code, row.top, [c.code], c.name));
+    }
+    return row.choices ?? [];
+}
 
 export async function browse_counts() {
     if (browse_cache && Date.now() - browse_cache.at < BROWSE_TTL_MS) return browse_cache.groups;
 
     let groups = await Promise.all(BROWSE.map(async (group) => ({
         ...group,
-        rows: await Promise.all(group.rows.map(async (row) =>
-            ({ ...row, count: await count_entries(row.params) })))
+        rows: with_share(await Promise.all(group.rows.map(async (row) => ({
+            ...row,
+            count: await count_entries(row.params),
+            options: with_share(await counted(await options_of(row)))
+        }))))
     })));
-    for (let group of groups) {
-        let most = Math.max(...group.rows.map((r) => r.count), 1);
-        for (let row of group.rows) row.share = row.count / most;
-    }
     browse_cache = { at: Date.now(), groups };
     return groups;
 }

@@ -177,16 +177,16 @@ function draw_panel(st) {
             <p class="ss_facts"><span class="ss_ab ss_ab_a">A</span> ${html(d.a)} <span class="ss_ab ss_ab_b">B</span> ${html(d.b)}${
                 s.facts.length ? ` <span class="ss_dot">·</span> ${s.facts.map(html).join(` <span class="ss_dot">·</span> `)}` : ""}</p>
         </div>
-        <details class="ss_how">
+        <details class="guide ss_how">
             <summary>How to read the picture</summary>
-            <ul>
+            <div class="guide_body"><ul class="guide_rules">
                 <li><b>Backbone:</b> A's steps stand up from the sequence, B's hang down. Colour is the shape, in DNATCO's NtC colours (5′ half, 3′ half), height is how sure (confal).</li>
                 <li><b>Base pairs:</b> the pairs of both chains in dot-bracket rows, in the colours of the sequence map.
                     <span class="ss_swatch ss_only_a">( )</span> only in A, <span class="ss_swatch ss_only_b">( )</span> only in B,
                     <span class="ss_swatch ss_na">( )</span> cannot be compared, one of its nucleotides is not modelled in the other chain.</li>
                 <li><b>Red numbers</b> mark each difference. The list under the picture says what each one is.</li>
                 <li><b>Brackets and colours</b> read as in the sequence map: <a href="#sequence-map-guide" class="ss_guide_link">How to read the map</a>.</li>
-            </ul>
+            </ul></div>
         </details>
         <div class="ss_stage">
             <div class="ss_chart">

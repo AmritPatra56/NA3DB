@@ -15,7 +15,6 @@
   ];
   const open = locals.view ?? "1d";
   const id = entry.pdb_id;
-  const lower = encodeURIComponent(id.toLowerCase());
 %>
 <div class="views">
     <div class="view_tiles" role="tablist" aria-label="Views of the nucleic acids">
@@ -41,12 +40,7 @@
     <div class="view_panel" role="tabpanel" id="view-3d" aria-labelledby="view-3d-tab"<% if (open !== "3d") { %> hidden<% } %>>
         <div class="view_slot">
             <svg class="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- tiles[2].glyph %></svg>
-            <p>The 3D viewer will open here. Until then, <%= id %> can be turned and zoomed on these sites:</p>
-            <ul class="view_slot_links">
-                <li><a class="detail_link" target="_blank" rel="noopener" href="https://www.rcsb.org/3d-view/<%= encodeURIComponent(id) %>">RCSB PDB 3D view</a></li>
-                <li><a class="detail_link" target="_blank" rel="noopener" href="https://www.ebi.ac.uk/pdbe/entry/pdb/<%= lower %>">PDBe entry with Mol*</a></li>
-                <li><a class="detail_link" target="_blank" rel="noopener" href="https://molstar.org/viewer/?pdb=<%= lower %>">Mol* viewer</a></li>
-            </ul>
+            <p>The 3D viewer of the structure will be shown here.</p>
         </div>
     </div>
 </div>

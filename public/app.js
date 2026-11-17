@@ -2,12 +2,21 @@
 // and error states. It never decides which entries match.
 
 
-// Clicking a category header folds that section of the form open or shut.
+// Clicking a category header, or Enter or Space on it, folds that section of
+// the form open or shut; aria-expanded turns its arrow.
 let cat_heads = document.querySelectorAll(".category_header");
 
+function toggle_category(header) {
+    let open = !header.parentElement.classList.toggle("collapsed");
+    header.setAttribute("aria-expanded", String(open));
+}
+
 cat_heads.forEach(function (header) {
-    header.addEventListener("click", function () {
-        this.parentElement.classList.toggle("collapsed");
+    header.addEventListener("click", () => toggle_category(header));
+    header.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        toggle_category(header);
     });
 });
 
@@ -45,7 +54,7 @@ function unfold_pills(field, open) {
     if (!more) return;
     field.querySelectorAll(".pill_extra").forEach((pill) => { pill.hidden = !open; });
     more.setAttribute("aria-expanded", String(open));
-    more.textContent = open ? more.dataset.less : more.dataset.more;
+    more.firstElementChild.textContent = open ? more.dataset.less : more.dataset.more;
 }
 
 document.querySelectorAll(".pill_more").forEach(function (more) {
@@ -101,6 +110,10 @@ function read_pills(name) {
         });
 }
 
+// The filters the URL turns round (shared.js NOT). Kept as the URL gave them
+// until a chip removes one.
+let excluded = {};
+
 // The whole form as one filters object. The only screen-to-data function.
 function read_filters() {
     let filters = {};
@@ -113,7 +126,7 @@ function read_filters() {
         filters[key] = read_pills(key);
     });
 
-    return filters;
+    return Object.assign(filters, excluded);
 }
 
 // Selects exactly these pills in one group and clears every other pill in it.
@@ -127,9 +140,11 @@ function select_pills(name, values) {
 
 // The form set to what the query string says. A field the URL omits is reset.
 function params_to_form(params) {
+    excluded = excluded_in(params);
     let shape = read_filters();
 
     Object.keys(shape).forEach(function (key) {
+        if (key.startsWith(NOT)) return;
         let value = params.get(key);
 
         if (Array.isArray(shape[key])) {
@@ -239,7 +254,7 @@ function card_html(entry) {
                 ${brief.length ? `<p class="card_cite">${escape_html(brief.join(" · "))}</p>` : ""}
                 ${chips ? `<p class="card_chips">${chips}</p>` : ""}
                 <div class="card_actions">
-                    <button type="button" class="card_more" aria-expanded="false">More ▾</button>
+                    <button type="button" class="card_more" aria-expanded="false"><span>More</span> <i class="arrow" aria-hidden="true"></i></button>
                 </div>
             </div>
             <div class="card_rest">${rows}</div>
@@ -624,7 +639,7 @@ results_list.addEventListener("click", function (e) {
     if (more) {
         let open = more.closest(".result_card").classList.toggle("show_more");
         more.setAttribute("aria-expanded", open);
-        more.textContent = open ? "Less ▴" : "More ▾";
+        more.firstElementChild.textContent = open ? "Less" : "More";
         return;
     }
     if (e.target.closest("a")) return;
@@ -758,7 +773,7 @@ if (typeof box_suggest === "function") box_suggest(top_box, {
         return params;
     },
     picked(item) {
-        // A residue or ligand code goes in its own filter, the box emptied.
+        // An organism, residue or ligand goes in its own filter, the box emptied.
         if (item.filter) document.getElementById(item.filter).value = item.value;
         box_readout.textContent = "";
         run_search(1);
@@ -975,6 +990,18 @@ function paint_chips(filters) {
     let chips = [];
 
     Object.entries(filters).forEach(function ([key, value]) {
+        // A turned-round filter reads "Source organism: not Bacteria", one
+        // chip per value, as the filter itself shows them.
+        if (key.startsWith(NOT)) {
+            let f = FILTER_BY_KEY[key.slice(NOT.length)];
+            value.split(",").forEach(function (v) {
+                let text = chip_text(f, v);
+                text = text.includes(": ") ? text.replace(": ", ": not ") : "Not " + text;
+                chips.push({ key, value: v, text });
+            });
+            return;
+        }
+
         let f = FILTER_BY_KEY[key];
         if (!f || f.prominent) return;
 
@@ -997,7 +1024,11 @@ chips_bar.addEventListener("click", function (e) {
 
     let { key, value } = chip.dataset;
 
-    if (PILL_FILTERS.includes(key)) {
+    if (key.startsWith(NOT)) {
+        let left = excluded[key].split(",").filter((v) => v !== value);
+        if (left.length) excluded[key] = left.join(",");
+        else delete excluded[key];
+    } else if (PILL_FILTERS.includes(key)) {
         let left = read_pills(key).filter((v) => v !== value);
         select_pills(key, left.length ? left : ["any"]);
         sync_revealed(false, key);

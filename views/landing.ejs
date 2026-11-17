@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NA3DB</title>
-    <link rel="icon" href="/assets/favicon.ico">
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/assets/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
     <link rel="stylesheet" href="/style.css">
 <%- include("includes/theme.ejs") %>
 </head>
@@ -28,32 +30,57 @@
 
                 <p class="landing_count"></p>
 
-                <%# Six ways in for someone with no term in mind. Every row
-                    is a filter link; its number and bar come from the same
-                    query (search.js browse_counts). %>
+                <%# Five ways in for someone with no term in mind, each
+                    placed by its filters.js BROWSE area. Every row is a
+                    question with a Yes and a No, each a filter link; its
+                    number and bar come from the query Yes runs
+                    (search.js browse_counts). %>
                 <p class="browse_lead">Not sure what to type? Start from what you know.</p>
+                <%# An option under a row: a link, number, tick box and bar.
+                    Its note is a chemical or common name, cut to one line,
+                    with the whole of it on hover. %>
+                <% const browse_option = (o) => { %>
+                                    <li><a href="<%= o.url %>"<% if (o.say) { %> data-say="<%= o.say %>"<% } %>>
+                                        <span class="browse_name"><%= o.label %><% if (o.note) { %> <small title="<%= o.note %>"><%= o.note %></small><% } %></span>
+                                        <span class="browse_count"><%= o.count.toLocaleString("en-GB") %></span>
+                                        <span class="browse_tick" aria-hidden="true"></span>
+                                        <span class="browse_bar" style="--share: <%= o.share.toFixed(3) %>"></span>
+                                    </a></li>
+                <% } %>
                 <div class="browse">
-                    <% browse.forEach((group, i) => { %>
-                    <% if (i % 2 === 0) { %><div class="browse_col"><% } %>
-                    <section class="browse_card">
+                    <% for (const group of browse) { %>
+                    <section class="browse_card" style="grid-area: <%= group.area %>">
                         <h2><%= group.question %></h2>
                         <p class="browse_hint"><%= group.hint %></p>
-                        <ul>
+                        <ul class="browse_rows">
                             <% for (const row of group.rows) { %>
-                            <li<% if (row.sub) { %> class="browse_sub"<% } %>><a href="<%= row.url %>">
-                                <span class="browse_name"><%= row.label %><% if (row.note) { %> <small><%= row.note %></small><% } %></span>
-                                <span class="browse_count"><%= row.count.toLocaleString("en-GB") %></span>
-                                <span class="browse_bar" style="--share: <%= row.share.toFixed(3) %>"></span>
-                            </a></li>
+                            <li class="browse_row">
+                                <a class="browse_link" href="<%= row.url %>">
+                                    <span class="browse_name"><%= row.label %></span>
+                                    <span class="browse_count"><%= row.count.toLocaleString("en-GB") %></span>
+                                    <span class="browse_bar" style="--share: <%= row.share.toFixed(3) %>"></span>
+                                </a>
+                                <span class="browse_answer" role="group" aria-label="<%= row.label %>">
+                                    <a class="browse_yes" href="<%= row.url %>" data-say="<%= row.say_yes %>">Yes</a>
+                                    <a class="browse_no" href="<%= row.no_url %>" data-say="<%= row.say_no %>">No</a>
+                                </span>
+                                <%# Opened by pick.js while Yes is on. %>
+                                <% if (row.options.length) { %>
+                                <div class="browse_options" hidden>
+                                    <p class="browse_options_name"><%= row.options_name ?? `${row.options.length} most frequent` %> <small>Tick any to narrow it down</small></p>
+                                    <ul aria-label="<%= row.label %>, <%= (row.options_name ?? "most frequent").toLowerCase() %>">
+                                        <% for (const o of row.options) browse_option(o) %>
+                                    </ul>
+                                </div>
+                                <% } %>
+                            </li>
                             <% } %>
                         </ul>
                         <% if (group.foot) { %>
-                        <p class="browse_foot"><%= group.foot.text %><% if (group.foot.link) { %>
-                            <a href="<%= group.foot.link.href %>" rel="noopener"><%= group.foot.link.label %></a><% } %></p>
+                        <p class="browse_foot"><%= group.foot.text %></p>
                         <% } %>
                     </section>
-                    <% if (i % 2 === 1) { %></div><% } %>
-                    <% }) %>
+                    <% } %>
                 </div>
 
                 <a class="landing_advanced" href="/search?panel=open">Full search</a>
@@ -65,6 +92,16 @@
                 </p>
             </div>
         </div>
+
+        <%# Shown by pick.js once a row is ticked: what is ticked, how many
+            structures that finds, and the search that runs it. Last in the
+            scroller, so it sticks to the bottom of the view. %>
+        <div class="pick_bar" hidden>
+            <p class="pick_what"></p>
+            <p class="pick_count" aria-live="polite"></p>
+            <button type="button" class="pick_clear">Clear</button>
+            <button type="button" class="pick_search">Search</button>
+        </div>
         </div>
     </div>
     <%- include("includes/footer.ejs") %>
@@ -72,6 +109,7 @@
     <%# An addition, not a dependency: the form above is a plain GET and works
         with or without this. %>
     <script src="/box_suggest.js"></script>
+    <script src="/pick.js"></script>
     <script src="/landing.js"></script>
 </body>
 </html>

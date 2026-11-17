@@ -1,15 +1,16 @@
 // NtC colours and CANA class names, shared by the sequence map in the
 // browser and the Conformation section the server renders.
 //
-// The colours are DNATCO's own, copied exactly from DNATCO's colouring in
-// Mol* (packages/extensions/dnatco/src/color.ts, MIT licence, by M. Malý and J. Černý):
-// https://github.com/molstar/molstar/blob/master/packages/extensions/dnatco/src/color.ts
+// The colours are DNATCO's own, as its live site draws them
+// (https://dnatco.datmos.org, its NtC class palette, checked 2026-11-17).
+// The older copy in Mol* (packages/extensions/dnatco/src/color.ts) still has
+// the earlier A (#FFC1C1) and SYN (#FFFF01); follow DNATCO, not that copy.
 // Each NtC is drawn in two halves, the 5′ nucleotide's side and the 3′ one,
 // and each half takes the colour of its conformer class. AB01 is A then B,
 // BB07 is BII on both sides.
 export const NTC_CLASS_COLOURS = {
-    A: "#FFC1C1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
-    IC: "#FA5CFB", OPN: "#E90000", SYN: "#FFFF01", N: "#F2F2F2"
+    A: "#FFEBA1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
+    IC: "#FA5CFB", OPN: "#E90000", SYN: "#FF8222", N: "#F2F2F2"
 };
 export const NTC_CLASS_NAMES = {
     A: "A-form", B: "B-form", BII: "BII", miB: "minor B", Z: "Z-form",

@@ -6,6 +6,19 @@
 let TEXT_FILTERS = REGISTRY.text_filters;
 let PILL_FILTERS = REGISTRY.pill_filters;
 
+// not_<key> turns one filter round: not_source_organism=Bacteria is every
+// entry with no bacterial molecule. Set from the landing page; the panel has
+// no control for it, so each page keeps the ones the URL asks, as text.
+const NOT = "not_";
+function excluded_in(params) {
+    let out = {};
+    [...TEXT_FILTERS, ...PILL_FILTERS].forEach(function (key) {
+        let value = key === "q" ? null : params.get(NOT + key);
+        if (value) out[NOT + key] = value;
+    });
+    return out;
+}
+
 
 // Makes one value safe for HTML. Needed on everything reaching innerHTML.
 // & goes first or it re-escapes the replacements. Quotes are included because
@@ -37,7 +50,7 @@ function params_to_filters(params) {
         filters[key] = value === null ? [] : value.split(",");
     });
 
-    return filters;
+    return Object.assign(filters, excluded_in(params));
 }
 
 // The filters object as a query string, leaving out anything left blank.

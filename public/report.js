@@ -445,16 +445,32 @@ async function download_all() {
 
 document.getElementById("zip_button").addEventListener("click", download_all);
 
-// Opening or closing the field list. The choice goes in the URL beside the
+// Opening or closing the field list: the handle on its edge, or on a phone
+// the Fields button over the table. The choice goes in the URL beside the
 // search, so a shared link opens the way the sender left it.
-let fields_toggle = document.querySelector(".fields_toggle");
+let fields_toggles = document.querySelectorAll(".fields_toggle, .fields_handle");
 let fields_panel = document.querySelector(".query_panel");
 
-fields_toggle.addEventListener("click", function () {
-    let open = fields_panel.classList.contains("hidden");
+// On a phone the field list sits above the table, and twenty boxes would
+// push the table off the screen, so it starts shut unless the link says
+// otherwise. The tabs and the Download button stay on screen either way.
+const phone = window.matchMedia("(max-width: 640px)");
 
-    fields_panel.classList.toggle("hidden", !open);
-    fields_toggle.setAttribute("aria-expanded", String(open));
+function set_fields(open) {
+    fields_panel.classList.toggle("folded", !open);
+    // Out of sight beside the table, the whole panel leaves the tab order;
+    // on a phone the Download buttons stay, and the list is gone anyway.
+    fields_panel.inert = !open && !phone.matches;
+    let label = open ? "Hide the fields" : "Show the fields";
+    for (const b of fields_toggles) b.setAttribute("aria-expanded", String(open));
+    let handle = document.querySelector(".fields_handle");
+    handle.setAttribute("aria-label", label);
+    handle.title = label;
+}
+
+for (const b of fields_toggles) b.addEventListener("click", function () {
+    let open = fields_panel.classList.contains("folded");
+    set_fields(open);
 
     let params = new URLSearchParams(location.search);
 
@@ -467,16 +483,9 @@ fields_toggle.addEventListener("click", function () {
     sync_rail_links();
 });
 
-
-// On a phone the field list sits above the table, and twenty boxes would
-// push the table off the screen, so it starts shut unless the link says
-// otherwise. The tabs and the Download button stay on screen either way.
-const phone = window.matchMedia("(max-width: 640px)");
-
-if (phone.matches && !new URLSearchParams(location.search).has("fields")) {
-    fields_panel.classList.add("hidden");
-    fields_toggle.setAttribute("aria-expanded", "false");
-}
+if (phone.matches && !new URLSearchParams(location.search).has("fields")) set_fields(false);
+else set_fields(!fields_panel.classList.contains("folded"));
+phone.addEventListener("change", () => set_fields(!fields_panel.classList.contains("folded")));
 
 sync_rail_links();
 if (SOURCES[table.key]) load_table(table.key);

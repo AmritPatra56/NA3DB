@@ -175,11 +175,12 @@ The page has the same guide under **How to read the map**, with a picture.
 
 Every step between two neighbouring nucleotides gets an NtC class (like
 `AA00`), and every NtC class belongs to one of 15 shape groups (CANA). The
-colours are NA3DB's own, chosen to stay readable for colour-blind readers.
+colours are DNATCO's, as https://dnatco.datmos.org draws them, so a figure
+means the same here as there (`public/cana.js`).
 
-- **Colour is the family:** blue A-form, orange B-form, green Z-form, pink
-  intercalated, black opened, yellow syn.
-- **A paler shade, stripes or dots** mark a variant of that family.
+- **Colour is the conformer class:** yellow A-form, pale blue B-form, deep
+  blue BII, cyan minor B, green Z-form, magenta intercalated, red opened,
+  orange syn, light grey no class.
 - **Two halves** mark a transition, read 5′ to 3′ (`A-B` is A then B).
 - **An empty box** is a step with no class.
 

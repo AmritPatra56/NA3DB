@@ -2,7 +2,6 @@
 // return, as data. Server only: it holds the SQL. The browser gets the safe
 // fields from public_registry() via GET /api/fields.
 
-import { NAKB_TOPICS, NAKB_SOURCE, topic_ids } from "./nakb.js";
 
 // Asked in the SELECT and in the WHERE, so a result cannot contradict its page.
 // One pass over the entry's entity_poly rows sets all four flags. Separate
@@ -88,6 +87,46 @@ export const RESOLUTION_SQL =
               (SELECT rfn.ls_d_res_high FROM refine rfn WHERE rfn.entry_id = e.id),
               (SELECT rf.d_resolution_high FROM reflns rf WHERE rf.entry_id = e.id))`;
 
+// Resolution bands in Å, lower end in, upper end out, one set per method
+// the landing page offers them under. Chosen on the data in November 2026:
+// X-ray (865 entries) 52, 171, 229, 223, 163 and 27; EM (497) 36, 113, 147,
+// 101, 63 and 37. EM runs coarser, so its bands sit higher. A band is an
+// option of the method filter, "X-RAY DIFFRACTION:1.5-2", so a band of X-ray
+// and EM on its own are one either, as two methods are.
+const band = (method, short, lo, hi) => {
+    let words = hi === null ? `${lo} Å or worse` : lo === 0 ? `better than ${hi} Å` : `${lo} to ${hi} Å`;
+    return {
+        value: `${method}:${hi === null ? `${lo} and over` : lo === 0 ? `under ${hi}` : `${lo}-${hi}`}`,
+        label: `${short} ${words}`, short: words[0].toUpperCase() + words.slice(1),
+        method, lo, hi: hi ?? "'Infinity'::numeric"
+    };
+};
+const bands_of = (method, short, edges) =>
+    edges.slice(0, -1).map((lo, i) => band(method, short, lo, edges[i + 1]));
+export const RESOLUTION_BANDS = {
+    "X-RAY DIFFRACTION":   bands_of("X-RAY DIFFRACTION", "X-ray", [0, 1.5, 2, 2.5, 3, 4, null]),
+    "ELECTRON MICROSCOPY": bands_of("ELECTRON MICROSCOPY", "EM", [0, 2.5, 3, 3.5, 4, 6, null])
+};
+const ALL_BANDS = Object.values(RESOLUTION_BANDS).flat();
+
+// The methods, as the method filter offers them.
+const METHOD_OPTIONS = [
+    { value: "X-RAY DIFFRACTION",        label: "X-ray" },
+    { value: "ELECTRON MICROSCOPY",      label: "EM" },
+    { value: "SOLUTION NMR",             label: "NMR" },
+    { value: "SOLID-STATE NMR",          label: "Solid NMR" },
+    { value: "NEUTRON DIFFRACTION",      label: "Neutron" },
+    { value: "ELECTRON CRYSTALLOGRAPHY", label: "Electron cryst." },
+    { value: "POWDER DIFFRACTION",       label: "Powder" },
+    { value: "FIBER DIFFRACTION",        label: "Fiber" },
+    { value: "SOLUTION SCATTERING",      label: "Scattering" },
+    "EPR",
+    { value: "FLUORESCENCE TRANSFER",    label: "FRET" },
+    { value: "INFRARED SPECTROSCOPY",    label: "IR" },
+    { value: "THEORETICAL MODEL",        label: "Model" }
+].map(option);
+const METHOD_VALUES = METHOD_OPTIONS.map((o) => o.value);
+
 // The methods that measure a resolution: diffraction and electron microscopy.
 const RESOLUTION_METHODS = ["X-RAY DIFFRACTION", "ELECTRON MICROSCOPY", "NEUTRON DIFFRACTION",
                             "ELECTRON CRYSTALLOGRAPHY", "POWDER DIFFRACTION", "FIBER DIFFRACTION"];
@@ -105,8 +144,7 @@ export const GROUPS = [
 ];
 
 
-// The chemical modifications offered on the landing page and as pills in the
-// panel, each by the PDB codes that are that modification on a nucleic acid
+// The chemical modifications offered as pills in the panel, each by the PDB codes that are that modification on a nucleic acid
 // chain (chem_comp mon_nstd_flag 'n'). 7MG is how many tRNAs write m7G46
 // (1EHZ). 5MC is the RNA m5C; 5CM is DNA's 5-methyl-dC, kept apart.
 export const MODIFICATIONS = [
@@ -122,59 +160,84 @@ export const MODIFICATIONS = [
 export const modification_codes = (values) =>
     values.flatMap((v) => MODIFICATIONS.find((m) => m.value === v)?.codes ?? []);
 
-// The landing page's six ways in, one question each, in three columns of
-// two: the sample (made of, organism), the molecule (which one, how
-// modified), the experiment (method, what is bound in the model). Listed
-// column by column, which is also the order a phone stacks them in.
+// The landing page's five ways in, one question each, laid out 2-1-2: the
+// molecule on the left (made of, modified), where it comes from in the
+// middle, the experiment on the right (method, what was modelled bound to
+// it). Cards facing each other share a row, so their tops line up. `area`
+// names each card's place in the .browse grid (style.css). Listed in reading
+// order, which is the order a phone stacks them in.
 // Every row is a filter link, counted with the very query the link runs
 // (search.js browse_counts), so a row and its results cannot disagree. Made
 // of and method each cover every entry once: an entry has one polymer type
 // and one method. The other cards can count an entry twice, and say so.
-// `sub` draws a row under the one above it; `foot` is a line under the card.
-const browse_row = (label, key, values, note = null, sub = false) =>
-    ({ label, note, sub, params: { [key]: values },
+// An option row is a plain filter link (browse_row); `say` is how it reads in
+// the landing page's bar when its label alone would not ("EM 3 to 3.5 Å").
+// `foot` is a line under the card.
+export const browse_row = (label, key, values, note = null, say = null) =>
+    ({ label, note, say, params: { [key]: values },
        url: "/search?" + key + "=" + values.map(encodeURIComponent).join(",") });
+// A row of a card: its name, how many entries it finds, and two buttons.
+// Yes asks `yes`; No asks `no`, or else not_<key> of the same values (see
+// search.js NOT). `say_yes` and `say_no` are how each reads in the landing
+// page's bar. Once Yes is on, a row may offer options, narrower rows
+// that stand in for Yes once ticked: a kingdom's organisms (`within`, filled
+// by search.js browse_counts), the most frequent codes of a filter (`top`),
+// or a fixed list (`choices`). `params` is what Yes asks, so a row is counted
+// with the very query its Yes runs.
+// The bar reads as one sentence, "X-ray and not modified": a word, not a
+// name, starts in lower case there. Its first letter is raised by style.css.
+const in_sentence = (text) => text[0].toLowerCase() + text.slice(1);
+const browse_ask = (label, key, yes, more = {}) => {
+    let no = more.no ? { key, values: more.no } : { key: "not_" + key, values: yes };
+    return {
+        label, note: null,
+        say_yes: more.no ? in_sentence(label) : label, say_no: more.no ? `not ${in_sentence(label)}` : label,
+        ...more,
+        params: { [key]: yes }, no_params: { [no.key]: no.values },
+        url: browse_row(label, key, yes).url, no_url: browse_row(label, no.key, no.values).url
+    };
+};
+const band_choices = (method) => RESOLUTION_BANDS[method].map((b) =>
+    browse_row(b.short, "experimental_method", [b.value], null, b.label));
 
 export const BROWSE = [
-    { question: "What is it made of?", hint: "The molecules in the entry", rows: [
-        browse_row("DNA", "polymer_type", ["DNA"]),
-        browse_row("RNA", "polymer_type", ["RNA"]),
-        browse_row("DNA and RNA", "polymer_type", ["DNA/RNA"]),
-        browse_row("Protein with DNA", "polymer_type", ["Protein/DNA"]),
-        browse_row("Protein with RNA", "polymer_type", ["Protein/RNA"]),
-        browse_row("Protein with DNA and RNA", "polymer_type", ["Protein/DNA/RNA"])
+    { area: "made", question: "What is it made of?", hint: "The molecules in the entry", rows: [
+        browse_ask("DNA", "polymer_type", ["DNA"]),
+        browse_ask("RNA", "polymer_type", ["RNA"]),
+        browse_ask("DNA and RNA", "polymer_type", ["DNA/RNA"]),
+        browse_ask("Protein with DNA", "polymer_type", ["Protein/DNA"]),
+        browse_ask("Protein with RNA", "polymer_type", ["Protein/RNA"]),
+        browse_ask("Protein with DNA and RNA", "polymer_type", ["Protein/DNA/RNA"])
     ] },
-    { question: "Where is it from?", hint: "The organism of any of its molecules", rows: [
-        browse_row("Eukaryotes", "source_organism", ["Eukaryota"]),
-        browse_row("Human", "source_organism", ["human"], null, true),
-        browse_row("Bacteria", "source_organism", ["Bacteria"]),
-        browse_row("Archaea", "source_organism", ["Archaea"]),
-        browse_row("Viruses", "source_organism", ["Viruses"]),
-        browse_row("Chemically synthesised", "source_kind", ["Synthetic"])
+    { area: "from", question: "Where is it from?", hint: "The organism of any of its molecules", rows: [
+        browse_ask("Eukaryotes", "source_organism", ["Eukaryota"], { within: "Eukaryota" }),
+        browse_ask("Bacteria", "source_organism", ["Bacteria"], { within: "Bacteria" }),
+        browse_ask("Archaea", "source_organism", ["Archaea"], { within: "Archaea" }),
+        browse_ask("Viruses", "source_organism", ["Viruses"], { within: "Viruses" }),
+        browse_ask("Chemically synthesised", "synthetic", ["Synthetic"], { no: ["Not synthetic"] })
     ], foot: { text: "A human protein on synthetic DNA counts under both." } },
-    { question: "Which molecule?", hint: "As labelled by NAKB",
-      rows: NAKB_TOPICS.map((t) => browse_row(t.value, "topic", [t.value], t.note)),
-      foot: { text: "Labels from the Nucleic Acid Knowledgebase, curated by its team.",
-              link: { href: NAKB_SOURCE, label: "nakb.org" } } },
-    { question: "Is it modified?", hint: "Chemically modified nucleotides", rows: [
-        browse_row("Any modified nucleotide", "monomer_flag", ["Non-Standard"]),
-        ...MODIFICATIONS.map((m) => browse_row(m.label, "modification", [m.value], m.codes.join(" · ")))
-    ], foot: { text: "An entry with several modifications counts under each." } },
-    { question: "How was it solved?", hint: "The experimental method", rows: [
-        browse_row("X-ray", "experimental_method", ["X-RAY DIFFRACTION"]),
-        browse_row("Electron microscopy", "experimental_method", ["ELECTRON MICROSCOPY"]),
-        browse_row("NMR", "experimental_method", ["SOLUTION NMR", "SOLID-STATE NMR"])
+    { area: "method", question: "How was it solved?", hint: "The experimental method", rows: [
+        browse_ask("X-ray", "experimental_method", ["X-RAY DIFFRACTION"],
+                   { choices: band_choices("X-RAY DIFFRACTION"), options_name: "Resolution" }),
+        browse_ask("Electron microscopy", "experimental_method", ["ELECTRON MICROSCOPY"],
+                   { choices: band_choices("ELECTRON MICROSCOPY"), options_name: "Resolution" }),
+        browse_ask("NMR", "experimental_method", ["SOLUTION NMR", "SOLID-STATE NMR"], { choices: [
+            browse_row("Solution", "experimental_method", ["SOLUTION NMR"], null, "Solution NMR"),
+            browse_row("Solid-state", "experimental_method", ["SOLID-STATE NMR"], null, "Solid-state NMR")
+        ], options_name: "Kind" })
     ] },
-    { question: "What is bound to it?", hint: "Ions, small molecules and water", rows: [
-        browse_row("Any ligand", "has_ligand", ["With ligands"]),
-        browse_row("Magnesium (Mg²⁺)", "ligand", ["MG"], "MG"),
-        browse_row("Zinc (Zn²⁺)", "ligand", ["ZN"], "ZN"),
-        browse_row("Sodium (Na⁺)", "ligand", ["NA"], "NA"),
-        browse_row("Potassium (K⁺)", "ligand", ["K"], "K"),
-        browse_row("Calcium (Ca²⁺)", "ligand", ["CA"], "CA"),
-        browse_row("Water molecules", "has_water", ["With water"], "HOH · where modelled")
+    { area: "modified", question: "Is it modified?", hint: "Chemically modified nucleotides", rows: [
+        browse_ask("Modified nucleotides", "monomer_flag", ["Non-Standard"],
+                   { no: ["Standard"], say_yes: "modified", say_no: "not modified", top: "nonstandard_residue" })
+    ], foot: { text: "An entry with several modifications counts under each." } },
+    { area: "bound", question: "What is bound to it?", hint: "Ions, small molecules and water", rows: [
+        browse_ask("Ligands", "has_ligand", ["With ligands"],
+                   { no: ["Without ligands"], say_yes: "with ligands", say_no: "without ligands", top: "ligand" }),
+        browse_ask("Water", "has_water", ["With water"],
+                   { no: ["Without water"], say_yes: "with water", say_no: "without water" })
     ], foot: { text: "Manganese, spermine and more from the search box. An entry with several counts under each." } }
 ];
+
 
 // One object per searchable question. `kind` decides how the value is read and
 // drawn; `where` is SQL with ? for the value; `clause` is the escape hatch for
@@ -274,31 +337,27 @@ export const FILTERS = [
                               AND ca.name ILIKE ALL (?))`
     },
 
-    // = ANY(?) takes the whole array as one parameter, however many pills are
-    // on. IN (...) would need a changing number of placeholders.
-    //
     // `first`: how many options are always shown. The rest wait behind a
     // "more" button, since 99.9% of entries use the first four.
     {
         key: "experimental_method", label: "Experimental method",
         group: "Demographics", kind: "pills", any: true, first: 4,
-        options: [
-            { value: "X-RAY DIFFRACTION",        label: "X-ray" },
-            { value: "ELECTRON MICROSCOPY",      label: "EM" },
-            { value: "SOLUTION NMR",             label: "NMR" },
-            { value: "SOLID-STATE NMR",          label: "Solid NMR" },
-            { value: "NEUTRON DIFFRACTION",      label: "Neutron" },
-            { value: "ELECTRON CRYSTALLOGRAPHY", label: "Electron cryst." },
-            { value: "POWDER DIFFRACTION",       label: "Powder" },
-            { value: "FIBER DIFFRACTION",        label: "Fiber" },
-            { value: "SOLUTION SCATTERING",      label: "Scattering" },
-            "EPR",
-            { value: "FLUORESCENCE TRANSFER",    label: "FRET" },
-            { value: "INFRARED SPECTROSCOPY",    label: "IR" },
-            { value: "THEORETICAL MODEL",        label: "Model" }
-        ].map(option),
-        where: `AND EXISTS (SELECT 1 FROM exptl x
-                            WHERE x.entry_id = e.id AND x.method = ANY(?))`
+        options: METHOD_OPTIONS.concat(ALL_BANDS.map(({ value, label }) => ({ value, label, band: true }))),
+        // Plain methods, and methods within resolution bands (RESOLUTION_BANDS),
+        // any of them. Only known values reach the SQL, so they are written in.
+        clause: (v) => {
+            if (v.length === 0) return null;
+            let plain = METHOD_VALUES.filter((m) => v.includes(m));
+            let either = plain.length ? [`x.method IN (${plain.map((m) => `'${m}'`).join(", ")})`] : [];
+            for (const [method, bands] of Object.entries(RESOLUTION_BANDS)) {
+                let asked = bands.filter((b) => v.includes(b.value) && !plain.includes(method));
+                if (asked.length === 0) continue;
+                let within = asked.map((b) => `(z.r >= ${b.lo} AND z.r < ${b.hi})`).join(" OR ");
+                either.push(`(x.method = '${method}' AND EXISTS (SELECT 1 FROM (SELECT ${RESOLUTION_SQL} AS r) z WHERE ${within}))`);
+            }
+            if (either.length === 0) return "AND FALSE";
+            return `AND EXISTS (SELECT 1 FROM exptl x WHERE x.entry_id = e.id AND (${either.join(" OR ")}))`;
+        }
     },
 
     // The resolution as the cards show it (RESOLUTION_SQL), between two
@@ -362,6 +421,8 @@ export const FILTERS = [
         group: "Structure Components", kind: "text", suggest: "source_organisms",
         placeholder: "e.g. mouse or Mus musculus",
         common_name_is_taxon: true,
+        // "Eukaryota,Bacteria" is either, as ticked on the landing page.
+        taxon_list: true,
         // Or any taxon the text names (taxonomy.js): mouse, E. coli, yeast.
         // IN, not = ANY(ARRAY(...)): the ids are hashed once per search instead
         // of scanned per entry: 12 ms rather than 185 for Bacteria.
@@ -416,6 +477,8 @@ export const FILTERS = [
     {
         key: "nonstandard_residue", label: "Non-standard residue",
         group: "Structure Components", kind: "text", suggest: "nonstandard_residues",
+        // "PSU,5MC" is either code, as ticked on the landing page.
+        code_list: true,
         placeholder: "e.g. PSU or pseudouridine",
         // A code is matched whole, so MA6 finds MA6 and not every code holding
         // MA; a name loosely, from three letters up, but only when the text is
@@ -444,6 +507,8 @@ export const FILTERS = [
     {
         key: "ligand", label: "Ligand", answered_by: "ligands",
         group: "Structure Components", kind: "text", suggest: "ligands",
+        // "MG,ZN" is either code, as ticked on the landing page.
+        code_list: true,
         placeholder: "e.g. SAM or adenosyl",
         where: `AND EXISTS (SELECT 1 FROM pdbx_entity_nonpoly n
                             WHERE n.entry_id = e.id
@@ -454,15 +519,6 @@ export const FILTERS = [
                                          OR (length(?) >= 5 AND cc.name ILIKE ?
                                              AND NOT EXISTS (SELECT 1 FROM chem_comp c2
                                                              WHERE upper(c2.id) = upper(substr(?, 2, length(?) - 2))))))))`
-    },
-
-    // See nakb.js. ? is the PDB ids NAKB gives the chosen labels.
-    {
-        key: "topic", label: "Molecule",
-        group: "Structure Components", kind: "pills", any: true,
-        options: NAKB_TOPICS.map((t) => option(t.value)),
-        expand: topic_ids,
-        where: `AND e.id = ANY(?::text[])`
     },
 
     // See MODIFICATIONS. The codes each entry holds come ready made from the
@@ -506,6 +562,22 @@ export const FILTERS = [
                                WHERE n.entry_id = e.id AND n.comp_id = 'HOH')`;
             if (v[0] === "With water")    return `AND ${any}`;
             if (v[0] === "Without water") return `AND NOT ${any}`;
+            return null;
+        }
+    },
+
+    // Chemically synthesised or not, as the landing page asks it. Obtained
+    // above can only say what an entry has, so it cannot ask "none of it
+    // synthesised": an entry with synthetic DNA and an expressed protein
+    // would still answer Natural or Expressed.
+    {
+        key: "synthetic", label: "Chemically synthesised",
+        group: "Structure Components", kind: "pills", any: false,
+        options: ["Synthetic", "Not synthetic"].map(option),
+        clause: (v) => {
+            if (v.length !== 1) return null;
+            if (v[0] === "Synthetic")     return `AND ${has_source(SOURCE_TABLES.Synthetic)}`;
+            if (v[0] === "Not synthetic") return `AND NOT ${has_source(SOURCE_TABLES.Synthetic)}`;
             return null;
         }
     },

@@ -105,3 +105,10 @@ export function taxon(taxid) {
     let t = taxa[taxid];
     return t ? { name: t.name, common: t.common } : null;
 }
+
+// The tree above a taxon, by its scientific name, as name keys: Homo sapiens
+// gives [..., "eukaryota", ..., "homo"]. Empty for a name NCBI does not know.
+const LINEAGES = new Map(Object.values(taxa).map((t) => [name_key(t.name), t.lineage.map(name_key)]));
+export function lineage_of(name) {
+    return LINEAGES.get(name_key(name ?? "")) ?? [];
+}

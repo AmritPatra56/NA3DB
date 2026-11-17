@@ -42,8 +42,9 @@ test("every token in use is defined, and every token defined is used", () => {
                    "views/includes/map_guide.ejs"].map(read).join("\n");
     let used = new Set([...(rest + scripts).matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]));
     // Set and read inside a rule (the category dot, a section's colours), not
-    // themes; footer-h is a size, the same in both.
-    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h"]);
+    // themes; footer-h, viewer and rows (the structure page's Views column
+    // and the sections beside it) are sizes, the same in both.
+    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h", "viewer", "rows"]);
     for (const name of used) {
         if (!local.has(name)) assert.ok(name in LIGHT, `--${name} is used but never defined`);
     }
@@ -83,7 +84,7 @@ const contrast = (a, b) => {
 const TEXT_PAIRS = [
     ["text", "bg-primary"], ["text", "bg-secondary"], ["text", "row-hover"],
     ["text-muted", "bg-primary"], ["text-muted", "bg-secondary"],
-    ["accent", "bg-primary"], ["accent", "bg-secondary"], ["accent", "accent-wash"], ["on-accent", "accent"],
+    ["accent", "bg-primary"], ["accent", "bg-secondary"], ["accent", "accent-wash"], ["on-accent", "accent"], ["on-accent", "accent-ink"],
     ["danger", "bg-secondary"], ["accent-ink", "accent-tint"], ["ok-ink", "ok-tint"],
     ["ok-badge-ink", "ok-badge-tint"], ["ink-blue", "tint-blue"], ["ink-amber", "tint-amber"],
     ["ink-teal", "tint-teal"], ["ink-gray", "tint-gray"],
@@ -91,20 +92,47 @@ const TEXT_PAIRS = [
     ["on-pair-mod", "pair-mod"]
 ];
 
-test("dark-theme text is readable: at least 4.5:1 against its ground", () => {
-    for (const [fg, bg] of TEXT_PAIRS) {
-        let ratio = contrast(DARK[fg], DARK[bg]);
-        assert.ok(ratio >= 4.5, `--${fg} on --${bg}: ${ratio.toFixed(2)}`);
+const THEMES = [["light", LIGHT], ["dark", DARK]];
+
+test("text is readable in both themes: at least 4.5:1 against its ground", () => {
+    for (const [name, theme] of THEMES) {
+        for (const [fg, bg] of TEXT_PAIRS) {
+            let ratio = contrast(theme[fg], theme[bg]);
+            assert.ok(ratio >= 4.5, `${name}: --${fg} on --${bg}: ${ratio.toFixed(2)}`);
+        }
     }
 });
 
 // Lines and marks that carry meaning need 3:1 (WCAG 1.4.11).
 const GRAPHICS = ["pair-wc", "pair-gu", "pair-nc", "pair-mod", "strand", "ntc-nan-line", "ntc-edge", "text-dim"];
-test("dark-theme base pairs, NtC marks and hints stand out: at least 3:1", () => {
-    for (const name of GRAPHICS) {
-        let ratio = contrast(DARK[name], DARK["bg-secondary"]);
-        assert.ok(ratio >= 3, `--${name}: ${ratio.toFixed(2)}`);
+test("base pairs, NtC marks and hints stand out in both themes: at least 3:1", () => {
+    for (const [theme_name, theme] of THEMES) {
+        for (const name of GRAPHICS) {
+            let ratio = contrast(theme[name], theme["bg-secondary"]);
+            assert.ok(ratio >= 3, `${theme_name}: --${name}: ${ratio.toFixed(2)}`);
+        }
     }
+});
+
+// The edge of a field or tick box is what shows it is there (WCAG 1.4.11).
+test("field and tick-box edges are visible in both themes: at least 3:1", () => {
+    for (const [name, theme] of THEMES) {
+        for (const ground of ["bg-primary", "bg-secondary"]) {
+            let ratio = contrast(theme["input-border"], theme[ground]);
+            assert.ok(ratio >= 3, `${name}: --input-border on --${ground}: ${ratio.toFixed(2)}`);
+        }
+    }
+});
+
+// Calm lab (Round 1 identity): one ink-blue interface colour; focus rings and
+// ticks use it too, so every bright colour left on a page is data.
+test("the interface has one accent colour, the Calm lab ink blue", () => {
+    assert.equal(LIGHT["accent"].toLowerCase(), "#24508f");
+    assert.equal(DARK["accent"].toLowerCase(), "#86a9e2");
+    assert.equal(LIGHT["bg-primary"].toLowerCase(), "#f5f6f8");
+    assert.equal(DARK["bg-primary"].toLowerCase(), "#11161d");
+    for (const theme of [LIGHT, DARK]) assert.equal(theme["focus"], theme["accent"], "focus is the accent");
+    assert.match(CSS, /accent-color: var\(--accent\);/);
 });
 
 // The NtC colours are DNATCO's, the same in both themes, so a figure means
@@ -112,8 +140,10 @@ test("dark-theme base pairs, NtC marks and hints stand out: at least 3:1", () =>
 // the outline there: the pale A, B and N on light, the deep BII on dark.
 test("NtC colours are DNATCO's exact palette; a dim one is outlined", async () => {
     let { NTC_CLASS_COLOURS, ntc_classes } = await import("./public/cana.js");
-    assert.deepEqual(NTC_CLASS_COLOURS, { A: "#FFC1C1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
-                                          IC: "#FA5CFB", OPN: "#E90000", SYN: "#FFFF01", N: "#F2F2F2" });
+    // As dnatco.datmos.org draws them (checked 2026-11-17); A and SYN changed
+    // there after the copy in Mol*'s color.ts.
+    assert.deepEqual(NTC_CLASS_COLOURS, { A: "#FFEBA1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
+                                          IC: "#FA5CFB", OPN: "#E90000", SYN: "#FF8222", N: "#F2F2F2" });
     assert.deepEqual([ntc_classes("AB01"), ntc_classes("BA08"), ntc_classes("BB07"), ntc_classes("OP1S"),
                       ntc_classes("NANT"), ntc_classes(null)],
                      [["A", "B"], ["BII", "A"], ["BII", "BII"], ["OPN", "SYN"], ["N", "N"], ["N", "N"]]);
@@ -211,4 +241,76 @@ test("a change in another tab is followed", () => {
     store.set("na3db-theme", "dark");
     listeners.storage({ key: "na3db-theme" });
     assert.equal(root.dataset.theme, "dark");
+});
+
+// --- the fonts -------------------------------------------------------------
+
+// IBM Plex, served from NA3DB itself (no font host sees our visitors),
+// under the SIL Open Font License kept beside the files.
+test("IBM Plex is self-hosted: every face the CSS names is on disk", () => {
+    let faces = [...CSS.matchAll(/@font-face \{([\s\S]*?)\}/g)].map((m) => m[1]);
+    let have = faces.map((f) => `${f.match(/font-family: "([^"]+)"/)[1]} ${f.match(/font-weight: (\d+)/)[1]}`);
+    assert.deepEqual(have.sort(), ["IBM Plex Mono 400", "IBM Plex Mono 500", "IBM Plex Mono 600",
+                                   "IBM Plex Sans 400", "IBM Plex Sans 500", "IBM Plex Sans 600", "IBM Plex Sans 700"]);
+    for (const face of faces) {
+        let url = face.match(/url\("([^"]+)"\) format\("woff2"\)/)[1];
+        assert.ok(url.startsWith("/assets/fonts/"), url);
+        assert.ok(readFileSync(new URL(`./public${url}`, import.meta.url)).length > 10000, `${url} is missing`);
+        assert.match(face, /font-display: swap;/);
+    }
+    assert.match(read("./public/assets/fonts/license.txt"), /SIL Open Font License, Version 1\.1/);
+});
+
+test("all text uses Plex: the body and every monospace stack", () => {
+    assert.match(CSS, /body \{\s*font-family: "IBM Plex Sans", system-ui, sans-serif;/);
+    for (const m of CSS.matchAll(/font-family:([^;]+);/g)) {
+        if (/monospace/.test(m[1])) assert.match(m[1], /^\s*"IBM Plex Mono",/, m[1]);
+    }
+    assert.ok(!/\bInter\b/.test(CSS), "Inter is never loaded; do not name it");
+});
+
+test("no page loads fonts from another site", () => {
+    let pages = readdirSync(new URL("./views", import.meta.url)).filter((f) => f.endsWith(".ejs")).map((f) => read(`./views/${f}`))
+        .concat(readdirSync(new URL("./views/includes", import.meta.url)).map((f) => read(`./views/includes/${f}`)), CSS);
+    for (const page of pages) assert.ok(!/fonts\.(googleapis|gstatic)\.com|use\.typekit|fonts\.bunny/.test(page));
+});
+
+// --- the logo --------------------------------------------------------------
+
+// The mark: one turn of a right-handed double helix wrapped as a database
+// cylinder (an oval lid, a curved base). Drawn in the accent, so it follows
+// the theme; the favicon is the fixed light version.
+const RAIL = read("./views/includes/rail.ejs");
+
+test("the rail carries the helix mark and the name reads left to right", () => {
+    assert.match(RAIL, /<svg class="mark"/);
+    assert.match(RAIL, /<span class="rail-name">NA<i>3<\/i>DB<\/span>/);
+    assert.ok(!RAIL.includes("rail-brand"), "the sideways name is gone");
+    assert.ok(!/writing-mode:\s*vertical/.test(CSS), "no vertical text anywhere");
+    assert.match(CSS, /\.mark_tile \{ fill: var\(--accent\); \}/);
+});
+
+// Real DNA and A-RNA are right-handed: seen from the side, the strand nearer
+// the viewer runs "/" (down to the left). A mirrored logo would be wrong.
+test("the mark is a right-handed helix, in the rail and the favicon", () => {
+    for (const svg of [RAIL, read("./public/assets/favicon.svg")]) {
+        let front = [...svg.matchAll(/<path class="mark_front" d="M([\d.]+) ([\d.]+)[^"]*?([\d.]+) ([\d.]+)"/g)];
+        let back = [...svg.matchAll(/<path class="mark_back" d="M([\d.]+) ([\d.]+)[^"]*?([\d.]+) ([\d.]+)"/g)];
+        assert.equal(front.length, 2);
+        assert.equal(back.length, 2);
+        for (const m of front) assert.ok(+m[3] < +m[1] && +m[4] > +m[2], "a front strand runs down to the left");
+        for (const m of back) assert.ok(+m[3] > +m[1] && +m[4] > +m[2], "a back strand runs down to the right");
+    }
+});
+
+test("every page shows the mark as its favicon", () => {
+    for (const file of readdirSync(new URL("./views", import.meta.url)).filter((f) => f.endsWith(".ejs"))) {
+        let head = read(`./views/${file}`).split("</head>")[0];
+        assert.match(head, /<link rel="icon" href="\/assets\/favicon\.svg" type="image\/svg\+xml">/, file);
+        assert.match(head, /<link rel="icon" href="\/assets\/favicon\.ico" sizes="32x32">/, file);
+        assert.match(head, /<link rel="apple-touch-icon" href="\/assets\/apple-touch-icon\.png">/, file);
+    }
+    for (const f of ["favicon.ico", "apple-touch-icon.png"]) {
+        assert.ok(readFileSync(new URL(`./public/assets/${f}`, import.meta.url)).length > 200, f);
+    }
 });

@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NA3DB report</title>
-    <link rel="icon" href="/assets/favicon.ico">
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/assets/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
     <link rel="stylesheet" href="/style.css">
 <%- include("includes/theme.ejs") %>
 </head>
 <body>
     <div class="interface">
         <%- include("includes/rail.ejs") %>
-        <div class="query_panel <%= fields_open ? "" : "hidden" %>">
+        <div class="query_panel <%= fields_open ? "" : "folded" %>" id="report_panel">
             <div class="query_panel_header">
                 <h1>Report</h1>
             </div>
@@ -24,30 +26,38 @@
                         aria-selected="<%= on %>"<% if (!on) { %> tabindex="-1"<% } %>><%= t.name %></button>
                 <% } %>
             </div>
-            <details class="report_why">
+            <details class="guide report_why">
                 <summary>Why three tables?</summary>
-                <p>A structure holds many molecules and ligands. In a single table, its
-                   title and paper would repeat on every line and counts would go wrong.
-                   So each table has one kind of row, and Entry ID links them, ready to
-                   join in Excel, R or pandas.</p>
+                <div class="guide_body"><p><%= help["report-tables"] %></p></div>
             </details>
             <div class="query_panel_body" id="report_fields" role="tabpanel" aria-labelledby="table-<%= table %>"></div>
             <div class="query_panel_footer">
                 <div class="report_downloads">
-                    <button type="button" class="search" id="export_button">Download CSV</button>
-                    <button type="button" class="search" id="zip_button">Download all (ZIP)</button>
+                    <button type="button" class="download" id="export_button">Download CSV</button>
+                    <button type="button" class="download" id="zip_button">Download all (ZIP)</button>
                 </div>
             </div>
+        </div>
+<%# The full search's drawer handle on the list's edge: folded, the list
+    slides away and the handle stays on the page's edge. A phone has the
+    Fields button over the table instead. The state goes in the URL, so a
+    link opens the way it was left. %>
+        <div class="panel_edge">
+            <button type="button" class="panel_handle fields_handle" aria-controls="report_panel"
+                    aria-expanded="<%= fields_open %>"
+                    aria-label="<%= fields_open ? "Hide the fields" : "Show the fields" %>"
+                    title="<%= fields_open ? "Hide the fields" : "Show the fields" %>">
+                <i class="arrow arrow_side" aria-hidden="true"></i>
+            </button>
         </div>
         <div class="results_area">
             <div class="results_area_header">
                 <h1 class="report_count"><%= registry.report_tables.find((t) => t.key === table).name %></h1>
-<%# Collapses the field list so the table has the whole width. The state goes
-    in the URL, so a link opens the way it was left. %>
+<%# On a phone, opens or shuts the field list above the table. %>
                 <button type="button" class="fields_toggle"
                         aria-expanded="<%= fields_open %>"
                         aria-label="Show or hide the fields">
-                    <img src="/assets/arrow.svg" alt="">
+                    <i class="arrow arrow_side" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="results_area_body report_body">

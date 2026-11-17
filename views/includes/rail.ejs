@@ -1,11 +1,26 @@
 <div class="rail">
     <div class="rail-icons">
         <a href="/" class="rail-logo" title="NA3DB home" aria-label="NA3DB home">
-            <svg viewBox="0 0 34 34" aria-hidden="true">
-                <rect width="34" height="34" rx="8" fill="#2563eb"/>
-                <text x="17" y="15" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">NA</text>
-                <text x="17" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#bfdbfe">3D</text>
+            <%# The mark: one turn of a right-handed double helix wrapped as a
+                database cylinder. Coloured by the theme (style.css, .mark_*). %>
+            <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+                <rect class="mark_tile" width="48" height="48" rx="11"/>
+                <g class="mark_lines" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path class="mark_back" d="M15.00 9.00C15.11 9.17 15.25 9.68 15.69 10.05C16.12 10.42 16.82 10.79 17.64 11.22C18.45 11.65 19.50 12.11 20.56 12.63C21.62 13.15 22.85 13.71 24.00 14.34C25.15 14.96 26.38 15.65 27.44 16.38C28.50 17.11 29.55 17.90 30.36 18.72C31.18 19.54 31.88 20.42 32.31 21.30C32.75 22.18 32.89 23.55 33.00 24.00" stroke-width="2.6"/>
+                <path class="mark_back" d="M15.00 24.00C15.11 24.17 15.25 24.68 15.69 25.05C16.12 25.42 16.82 25.79 17.64 26.22C18.45 26.65 19.50 27.11 20.56 27.63C21.62 28.15 22.85 28.71 24.00 29.34C25.15 29.96 26.38 30.65 27.44 31.38C28.50 32.11 29.55 32.90 30.36 33.72C31.18 34.54 31.88 35.42 32.31 36.30C32.75 37.18 32.89 38.55 33.00 39.00" stroke-width="2.6"/>
+                <path class="mark_gap" d="M31.28 28.27C31.04 28.52 30.38 29.28 29.85 29.77C29.31 30.25 28.71 30.72 28.09 31.17C27.46 31.63 26.78 32.06 26.10 32.48C25.42 32.89 24.70 33.28 24.00 33.66C23.30 34.03 22.58 34.39 21.90 34.73C21.22 35.06 20.54 35.38 19.91 35.67C19.29 35.97 18.69 36.25 18.15 36.52C17.62 36.78 16.96 37.14 16.72 37.27" stroke-width="6.4" stroke-linecap="butt"/>
+                <path class="mark_gap" d="M31.28 13.27C31.04 13.52 30.38 14.28 29.85 14.77C29.31 15.25 28.71 15.72 28.09 16.17C27.46 16.63 26.78 17.06 26.10 17.48C25.42 17.89 24.70 18.29 24.00 18.66C23.30 19.04 22.58 19.39 21.90 19.73C21.22 20.06 20.54 20.38 19.91 20.67C19.29 20.97 18.69 21.25 18.15 21.52C17.62 21.78 16.96 22.14 16.72 22.27" stroke-width="6.4" stroke-linecap="butt"/>
+                <path class="mark_rung" d="M17.64 11.22L30.36 14.28" stroke-width="1.6" opacity="0.8"/>
+                <path class="mark_rung" d="M30.36 18.72L17.64 21.78" stroke-width="1.6" opacity="0.8"/>
+                <path class="mark_rung" d="M30.36 29.28L17.64 26.22" stroke-width="1.6" opacity="0.8"/>
+                <path class="mark_rung" d="M17.64 36.78L30.36 33.72" stroke-width="1.6" opacity="0.8"/>
+                <ellipse class="mark_lid" cx="24" cy="9" rx="9" ry="2.16" stroke-width="2"/>
+                <path class="mark_front" d="M33.00 24.00C32.89 24.45 32.75 25.82 32.31 26.70C31.88 27.58 31.18 28.46 30.36 29.28C29.55 30.10 28.50 30.89 27.44 31.62C26.38 32.35 25.15 33.03 24.00 33.66C22.85 34.28 21.62 34.85 20.56 35.37C19.50 35.89 18.45 36.35 17.64 36.78C16.82 37.21 16.12 37.58 15.69 37.95C15.25 38.32 15.11 38.83 15.00 39.00" stroke-width="2.6"/>
+                <path class="mark_front" d="M33.00 9.00C32.89 9.45 32.75 10.82 32.31 11.70C31.88 12.58 31.18 13.46 30.36 14.28C29.55 15.10 28.50 15.89 27.44 16.62C26.38 17.35 25.15 18.04 24.00 18.66C22.85 19.29 21.62 19.85 20.56 20.37C19.50 20.89 18.45 21.35 17.64 21.78C16.82 22.21 16.12 22.58 15.69 22.95C15.25 23.32 15.11 23.83 15.00 24.00" stroke-width="2.6"/>
+                <path class="mark_base" d="M15 39A9 2.16 0 0 0 33 39" stroke-width="2"/>
+                </g>
             </svg>
+            <span class="rail-name">NA<i>3</i>DB</span>
         </a>
 <%# rail_query is for the pages that load no script of their own: the structure
     page cannot run sync_rail_links, so its links are built here. %>
@@ -31,5 +46,4 @@
         <svg class="theme_light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <svg class="theme_dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     </button>
-    <div class="rail-brand">NA3DB</div>
 </div>
