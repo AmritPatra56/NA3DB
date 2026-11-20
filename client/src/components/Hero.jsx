@@ -9,6 +9,10 @@ function Hero() {
                placeholder="Search an id, molecule, author or organism" />
         <button type="submit">Search</button>
       </form>
+
+      {/* Filled with a live count as you type in Phase 6. Empty but always
+          in the flow, so the cards below never jump when a number appears. */}
+      <p className="landing_count"></p>
     </>
   );
 }
