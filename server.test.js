@@ -6,7 +6,7 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS, RESOLUTION_BANDS } from "./filters.js";
 import { once } from "node:events";
 import { readFileSync } from "node:fs";
-import app, { cited_rows, asked_view } from "./server.js";
+import app, { cited_rows, asked_view, viewer_installed } from "./server.js";
 import { close as close_db, query } from "./db.js";
 import { find_entry, entry_contents, entry_residues, entry_citation, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
 import { lineage_of, name_key } from "./taxonomy.js";
@@ -1554,6 +1554,121 @@ test("?view= opens that view; anything else opens 1D; the 3D slot is a place kep
         assert.equal(asked_view(asked), "1d", `${JSON.stringify(asked)} opens 1D`);
     }
     assert.equal((await fetch(base + "/structure/4TNA?view=%3Cb%3E")).status, 200, "a bad view is no error");
+});
+
+test("the 3D view frames our own viewer, lazily, and the page is isolated so coot can run", async () => {
+    // Rendered both ways round: a server with a viewer build in viewer/ and
+    // one without. page_with_arcs leaves `viewer` unset, which is the second
+    // of those, so the kept-place assertions above cover a bare checkout.
+    let entry = await find_entry("4TNA");
+    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
+    let page = { entry, rows: detail_rows(entry), citation: null, base_pairs: null, arcs: null,
+                 molecules: molecule_groups(contents, residues), nucleic_chains: 2, same_entries: 0 };
+    let with_viewer = await render("structure", { ...page, page: "search", sections: structure_sections(page),
+                                                 PAGE_GROUPS, rail_query: "", view: "3d", viewer: true });
+    let slot = section(with_viewer, "views");
+    slot = slot.slice(slot.indexOf('id="view-3d"'));
+
+    assert.match(slot, /<div class="view_3d" data-src="\/viewer\/\?embed=1&amp;id=4TNA" data-entry="4TNA">/,
+                 "the frame's address is our own viewer, with the entry to show");
+    assert.ok(!/<iframe/.test(slot),
+              "and it is not in the HTML: the frame downloads and annotates the entry, so it waits for the tile");
+    assert.ok(!/<a |rcsb|pdbe|molstar/i.test(slot), "still sends no one to another viewer");
+    assert.ok(!/\u2014/.test(slot), "no em dash in the new words");
+
+    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
+    assert.match(js, /mount_3d/, "the script makes the frame");
+    assert.match(js, /box\.dataset\.mounted/, "once only, so a second click never restarts the run");
+
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(css, /\.view_3d_frame \{[^}]*height: 100%/, "the frame fills the box it is given");
+    // The box itself takes the height the reading area has left, and only
+    // while 3D is open: 1D is a few lines and must not be stretched.
+    assert.match(css, /#views > \.section_body:has\(#view-3d:not\(\[hidden\]\)\) \{[^}]*height: calc\(100vh - 146px - var\(--footer-h\)\);/);
+    assert.match(css, /#views > \.section_body:has\(#view-3d:not\(\[hidden\]\)\) \.view_3d \{ height: auto; \}/,
+                 "inside that chain the fixed fallback height gives way");
+    assert.match(css, /height: calc\(100vh - 191px - var\(--footer-h\)\);/,
+                 "and 45px less again where the sections list is a strip across the top");
+
+    // Selected by a scroll, 3D offers itself rather than starting: the page
+    // must not download and annotate an entry because someone read past
+    // Conformation on their way to the citations.
+    assert.match(slot, /<button type="button" class="view_3d_start">/);
+    assert.match(js, /view === "3d" && !auto/, "an automatic switch makes no frame");
+    assert.match(js, /document\.addEventListener\("na3db:section", \(e\) => \{\s*if \(chosen\) return;/,
+                 "a view the reader picked is never taken away; every width follows otherwise");
+    // The page's own scroll spy is the one that knows the section; both
+    // files have to name the same event or the Views never hear it.
+    let spy = readFileSync(new URL("./views/structure.ejs", import.meta.url), "utf8");
+    let event = js.match(/addEventListener\("(na3db:[a-z]+)"/)[1];
+    assert.ok(spy.includes(`new CustomEvent("${event}"`), "the spy announces what the Views listen for");
+
+    // Moorhen's coot needs SharedArrayBuffer, which the browser grants only a
+    // cross-origin-isolated page -- and a frame is isolated only when the
+    // document around it is, so these are the structure page's own headers.
+    let res = await fetch(base + "/structure/4TNA");
+    assert.equal(res.headers.get("cross-origin-opener-policy"), "same-origin");
+    assert.equal(res.headers.get("cross-origin-embedder-policy"), "require-corp");
+    // Not the whole site: require-corp would block any cross-origin image or
+    // script a page added later without CORS or CORP.
+    assert.equal((await fetch(base + "/search")).headers.get("cross-origin-embedder-policy"), null);
+
+    if (viewer_installed) {
+        let frame = await fetch(base + "/viewer/?embed=1&id=4TNA");
+        assert.equal(frame.status, 200);
+        assert.equal(frame.headers.get("cross-origin-embedder-policy"), "require-corp",
+                     "the framed document has to agree to being isolated too");
+        assert.equal(frame.headers.get("cross-origin-resource-policy"), "same-origin");
+        assert.match(await frame.text(), /<div id="root">/, "the viewer's own page");
+        assert.equal((await fetch(base + "/viewer/napair.wasm")).headers.get("content-type"), "application/wasm");
+    } else {
+        // No build installed: the 3D view says so rather than framing a 404.
+        let bare = await render("structure", { ...page, page: "search", sections: structure_sections(page),
+                                              PAGE_GROUPS, rail_query: "", view: "3d", viewer: false });
+        let kept = section(bare, "views");
+        assert.match(kept.slice(kept.indexOf('id="view-3d"')), /will be shown here/);
+        assert.equal((await fetch(base + "/viewer/")).status, 404);
+    }
+});
+
+test("one handle in the gutter swaps which column is the wide one", async () => {
+    let html = await page_with_arcs(null, 2);
+    let views = section(html, "views");
+
+    assert.match(views, /<button type="button" class="download download_small band_swap" aria-pressed="false">/,
+                 "the same button as the FASTA and CSV ones beside it, and off to begin with");
+    assert.equal((html.match(/class="download download_small band_swap"/g) || []).length, 1,
+                 "one of them on the page: the other sections share the row, they do not own it");
+    let sheet = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(sheet, /\.band_swap::before \{[^}]*mask-image/,
+                 "its own glyph in place of the download arrow");
+    assert.match(views, /<span class="band_swap_say">Enlarge views<\/span>/,
+                 "it says what the click does, so it is not a shape to work out");
+    assert.match(views, /band_tools[\s\S]{0,900}band_swap/, "in the Views band, with the other tools");
+    assert.match(views, /aria-label="Give the views the wide column"/, "it says which way it goes");
+
+    // Applied before the page is drawn, or the columns are laid out one way
+    // and swapped a frame later, in front of the reader.
+    assert.match(html, /localStorage\.getItem\("views_wide"\) === "on"/);
+    assert.ok(html.indexOf('localStorage.getItem("views_wide")') < html.indexOf('<div class="detail_body"'),
+              "the class is set above the body it changes");
+    assert.match(html, /localStorage\.setItem\("views_wide", on \? "on" : "off"\)/, "and remembered");
+
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
+    let side = js.match(/const SIDE = "([^"]+)"/)[1];
+    let wide = css.slice(css.indexOf(`@media ${side} {`));
+    wide = wide.slice(0, wide.indexOf("\n}\n"));
+
+    assert.match(wide, /grid-template-columns: minmax\(0, 1fr\) var\(--viewer\);/, "the row as it starts");
+    assert.match(wide, /\.structure_page\.views_wide \.detail_body \{\s*grid-template-columns: var\(--viewer\) minmax\(0, 1fr\);/,
+                 "swapped, the two widths trade places and nothing moves sideways");
+    assert.match(wide, /\.band_swap \{ display: inline-flex; \}/,
+                 "shown only where there are two columns to swap");
+    let page = readFileSync(new URL("./views/structure.ejs", import.meta.url), "utf8");
+    assert.match(page, /textContent = on \? "Shrink views" : "Enlarge views"/, "and the words follow the state");
+    assert.match(css, /\.band_swap \{[^}]*display: none;/, "and hidden everywhere else");
+    assert.ok(!/\u2014/.test(views), "no em dash in the new words");
 });
 
 test("the structure page has a Sequence map section after Conformation, drawn by its own script", async () => {

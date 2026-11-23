@@ -232,6 +232,41 @@ async function load(box, strands = []) {
     }
 }
 
+// Which view a section of the page is about, or null for a section that is
+// about none of them.
+//
+// Deliberately short. Scrolling through Overview, Molecules, Sources,
+// Ligands, Citations and Links leaves the open view alone: those sections say
+// nothing about the shape of the nucleic acid, and a panel that changed under
+// every one of them would be movement for its own sake. 2D is in no mapping
+// at all while it is a place kept rather than a view.
+export function view_for_section(id) {
+    if (id === "base-pairs" || id === "sequence-map") return "1d";
+    if (id === "conformation") return "3d";
+    return null;
+}
+
+// The 3D view's frame, made the first time that view is opened.
+//
+// Everything behind it costs time and memory -- the coordinates, coot, the
+// annotation of every base pair -- and most readers of a structure page never
+// leave 1D, so the frame is not in the HTML and nothing is fetched until the
+// tile is clicked. Made once: a second click must not restart a run that is
+// already minutes old, and hiding the panel leaves the frame alone.
+export function mount_3d(box) {
+    if (!box || box.dataset.mounted) return null;
+    box.dataset.mounted = "1";
+    let frame = document.createElement("iframe");
+    frame.className = "view_3d_frame";
+    frame.title = `3D viewer of ${box.dataset.entry}`;
+    frame.src = box.dataset.src;
+    // The waiting words underneath stay until the frame has something of its
+    // own to say, which is its load event and not its first paint.
+    frame.addEventListener("load", () => box.classList.add("view_3d_ready"));
+    box.append(frame);
+    return frame;
+}
+
 // The address with ?view= set to the open view; the first view is the
 // default, so it leaves no ?view=. Other parameters and the #section stay.
 export function view_url(href, view, first) {
@@ -255,13 +290,25 @@ export function next_tile(key, at, count) {
 
 if (typeof document !== "undefined") {
     const tiles = [...document.querySelectorAll(".view_tile")];
-    const show = (view) => {
+    // Whether the reader has picked a view. From then on the page stops
+    // choosing for them: a view they asked for must not be taken away by the
+    // next scroll, and there is no way to ask for it a second time.
+    let chosen = false;
+
+    // `auto` is the page following the reading position rather than the
+    // reader asking. Two things are a click's alone: starting the 3D frame,
+    // which downloads the entry and annotates it, and writing ?view= to the
+    // address, which records a choice and should not record a scroll.
+    const show = (view, auto = false) => {
+        if (view === "3d" && !auto) mount_3d(document.querySelector(".view_3d"));
         for (const tile of tiles) {
             let on = tile.dataset.view === view;
             tile.setAttribute("aria-selected", String(on));
             tile.tabIndex = on ? 0 : -1;
             document.getElementById(tile.getAttribute("aria-controls")).hidden = !on;
         }
+        if (auto) return;
+        chosen = true;
         history.replaceState(history.state, "", view_url(location.href, view, tiles[0].dataset.view));
     };
     tiles.forEach((tile, at) => {
@@ -274,6 +321,38 @@ if (typeof document !== "undefined") {
             show(tiles[n].dataset.view);
         });
     });
+
+    // The open view follows the section being read, which structure.ejs
+    // announces as it moves the sidebar and the #section in the address.
+    //
+    // At every width, not only where the Views sit beside the page. Narrower
+    // than that they are a section at the top and the switch happens out of
+    // sight -- but it costs nothing (an automatic 3D never starts the frame)
+    // and the view is then the right one when the reader scrolls back up.
+    document.addEventListener("na3db:section", (e) => {
+        if (chosen) return;
+        let view = view_for_section(e.detail);
+        if (view !== null) show(view, true);
+    });
+
+    // Starting the frame after the page selected 3D on its own: the tile was
+    // opened by a scroll, so the work waits for someone to ask for it.
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".view_3d_start")) return;
+        // As deliberate as clicking the tile, and more so: it is a button
+        // that says what it costs. Scrolling on must not then put the view
+        // away before the model has finished arriving.
+        chosen = true;
+        let box = document.querySelector(".view_3d");
+        box.querySelector(".view_3d_offer")?.replaceChildren("Opening the 3D viewer\u2026");
+        mount_3d(box);
+    });
+    // Opened straight into 3D by ?view=3d, the frame is wanted now; the
+    // click handler above never runs for the view the page arrived on.
+    if (tiles.find((t) => t.getAttribute("aria-selected") === "true")?.dataset.view === "3d") {
+        mount_3d(document.querySelector(".view_3d"));
+    }
+
     const box = document.querySelector(".lbn");
     let ready = box ? load(box) : null;
 

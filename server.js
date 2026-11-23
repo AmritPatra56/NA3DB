@@ -1,5 +1,6 @@
 import express from "express";
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { search_entries, export_entries, export_molecules, export_ligands, export_dot_brackets, find_entry, query_problem,
          count_entries, entry_citation, entry_contents, entry_base_pairs, entry_sequence_tracks,
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
@@ -24,6 +25,50 @@ app.param("id", (req, res, next, id) => {
 });
 
 app.use(express.static(path.join(import.meta.dirname, "public")));
+
+// ------------------------------------------------------------- the 3D viewer
+// The 3D view of a structure page is the NAPAIR browser's Moorhen pane
+// (BASEPAIRING_WEB/napair_browser), built once and served here as static
+// files, framed by views/includes/views.ejs. It is not in git: coot, the
+// monomer dictionaries and the curated reference library come to 117 MB. The
+// README says how to put a build in viewer/; VIEWER_DIR names one elsewhere.
+const viewer_dir = process.env.VIEWER_DIR
+    ? path.resolve(process.env.VIEWER_DIR)
+    : path.join(import.meta.dirname, "viewer");
+
+// Looked for once, at boot. A build that appears later needs a restart, which
+// is no loss: the alternative is a file check on every structure page.
+export const viewer_installed = existsSync(path.join(viewer_dir, "index.html"));
+
+// Moorhen's coot build needs SharedArrayBuffer, which a browser hands only to
+// a cross-origin-isolated page -- and a frame counts as isolated only when
+// the page around it is isolated too, so the same two headers go on
+// /structure/:id. Everything that page loads is its own (fonts, CSS, scripts,
+// SVG), so require-corp costs it nothing; an image or script from another
+// origin added there later would be blocked unless it sends CORP or CORS.
+function isolate(res) {
+    res.set("Cross-Origin-Opener-Policy", "same-origin");
+    res.set("Cross-Origin-Embedder-Policy", "require-corp");
+}
+
+if (viewer_installed) {
+    app.use("/viewer", express.static(viewer_dir, {
+        setHeaders: (res, file) => {
+            isolate(res);
+            // The frame is a subresource of the structure page, and under
+            // require-corp a subresource has to agree to being embedded.
+            res.set("Cross-Origin-Resource-Policy", "same-origin");
+            // Everything else is fingerprinted or never changes without a
+            // rebuild, but index.html is the one file that names the
+            // fingerprints -- held for an hour it sends readers to the chunks
+            // of the build before the last one, which are gone.
+            if (file.endsWith(".html")) res.set("Cache-Control", "no-cache");
+        },
+        // The wasm, the monomer dictionaries and the curated library are tens
+        // of megabytes that change only when the viewer is rebuilt.
+        maxAge: "1h"
+    }));
+}
 
 // views/ sits outside public/, so the template source is never downloadable.
 app.set("view engine", "ejs");
@@ -212,9 +257,15 @@ app.get("/structure/:id", async (req, res) => {
         nucleic_chains: nucleic_chain_count(contents.entities)
     };
 
+    // Isolated for the 3D view's sake, whether or not that view is the one
+    // open: the headers are the document's, and a frame cannot be isolated
+    // after the fact.
+    isolate(res);
+
     // The rail on this page has no script to rewrite its links, so it is given
     // the one filter that makes sense from here: this structure.
     res.render("structure", {
+        viewer: viewer_installed,
         ...page,
         page: "search",
         sections: structure_sections(page),
