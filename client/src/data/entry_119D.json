@@ -261,5 +261,6 @@
     "pages": "198-208",
     "doi_url": "https://doi.org/10.1006/jmbi.1993.1574",
     "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/8230199/"
-  }
+  },
+  "viewer": true
 }

@@ -19,7 +19,7 @@ const PAGE_GROUPS = [
   { key: "references", label: "References" },
 ];
 
-function Section({ id, title, group, empty, children }) {
+function Section({ id, title, group, empty, tools, children }) {
   const groupLabel = PAGE_GROUPS.find((g) => g.key === group).label;
   return (
     <section id={id} className={`page_section group_${group}${empty ? " empty" : ""}`} aria-labelledby={`${id}-title`}>
@@ -29,6 +29,7 @@ function Section({ id, title, group, empty, children }) {
           {title !== groupLabel && <><span className="band_group">{groupLabel}</span>{" "}</>}
           <h2 id={`${id}-title`}>{title}</h2>
         </div>
+        <div className="band_tools">{tools}</div>
       </div>
       <div className="section_body" id={`${id}-body`}>
         {children}
@@ -67,8 +68,24 @@ function navWasFolded() {
   }
 }
 
+// The Views wide or narrow as last time (structure.ejs, views_wide).
+function viewsWereWide() {
+  try {
+    return localStorage.getItem("views_wide") === "on";
+  } catch {
+    return false;
+  }
+}
+
 function Structure({ entry, molecules }) {
   const [navFolded, setNavFolded] = useState(navWasFolded);
+  const [viewsWide, setViewsWide] = useState(viewsWereWide);
+
+  function toggleWide() {
+    const wide = !viewsWide;
+    setViewsWide(wide);
+    try { localStorage.setItem("views_wide", wide ? "on" : "off"); } catch { /* storage blocked */ }
+  }
 
   function toggleNav() {
     const folded = !navFolded;
@@ -94,7 +111,14 @@ function Structure({ entry, molecules }) {
   const sections = [
     // Without nucleic chains the Views stay listed, marked empty, with no tiles (structure.ejs).
     { id: "views", title: "Views", group: "views", empty: nucleicChains === 0,
-      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} /> },
+      // Which column is the wide one. The words say what the click does, not
+      // what is on screen; style.css shows it only where there are two columns.
+      tools: (
+        <button type="button" className="download download_small band_swap" aria-pressed={viewsWide} onClick={toggleWide}>
+          <span className="band_swap_say">{viewsWide ? "Shrink views" : "Enlarge views"}</span>
+        </button>
+      ),
+      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} /> },
     { id: "overview", title: "Overview", group: "overview",
       body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} /> },
     { id: "molecules", title: "Molecules", group: "composition",
@@ -111,7 +135,7 @@ function Structure({ entry, molecules }) {
         <h1>{entry.pdb_id}</h1>
       </div>
       <div className="results_area_body">
-        <div className={`structure_page${navFolded ? " nav_folded" : ""}`}>
+        <div className={`structure_page${navFolded ? " nav_folded" : ""}${viewsWide ? " views_wide" : ""}`}>
           <SectionNav sections={sections} inert={navInert} />
           {/* The fold handle: the sidebar slides away and the handle stays on the edge. */}
           <div className="nav_edge">
@@ -123,7 +147,7 @@ function Structure({ entry, molecules }) {
           {/* --rows: how many grid rows the sections take on a wide screen (style.css). */}
           <div className="detail_body" style={{ "--rows": sections.length }}>
             {sections.map((s) => (
-              <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty}>{s.body}</Section>
+              <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} tools={s.tools}>{s.body}</Section>
             ))}
           </div>
         </div>
