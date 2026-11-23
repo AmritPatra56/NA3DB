@@ -109,6 +109,12 @@ test("/api/entries/:id returns that one entry", async () => {
     assert.equal(body.pdb_id, "4TNA");
 });
 
+test("an entry says whether the 3D viewer is installed, as its page does", async () => {
+    let body = await (await fetch(base + "/api/entries/4TNA")).json();
+
+    assert.strictEqual(body.viewer, viewer_installed);
+});
+
 test("an unknown id is 404 with a readable message", async () => {
     let res = await fetch(base + "/api/entries/ZZZZ");
 

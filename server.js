@@ -435,7 +435,9 @@ app.get("/api/entries/:id", async (req, res) => {
     let contents = await entry_contents(entry.pdb_id);
     res.json({ ...entry, rows: detail_rows(entry),
                entities: contents.entities, modified_nucleotides: contents.modified,
-               citation: await entry_citation(entry.pdb_id) });
+               citation: await entry_citation(entry.pdb_id),
+               // Whether /viewer/ is served, so a client page can offer 3D as structure.ejs does.
+               viewer: viewer_installed });
 });
 
 // Every base pair of one entry, first model, as the page lists them.
