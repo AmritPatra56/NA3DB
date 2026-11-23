@@ -28,11 +28,20 @@ function nextTile(key, at) {
   }
 }
 
-function Views({ pdbId }) {
+function Views({ pdbId, viewer }) {
   const [open, setOpen] = useState(askedView);
+  // The 3D frame downloads the model and annotates every pair in WebAssembly,
+  // so it is made only once 3D is asked for, and then kept (views.js mount_3d):
+  // a second click must not restart a run that may be minutes old.
+  // Opened straight into 3D by ?view=3d, it is wanted at once.
+  const [mounted, setMounted] = useState(() => viewer && askedView() === "3d");
+  const [ready, setReady] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const viewerSrc = `/viewer/?embed=1&id=${encodeURIComponent(pdbId)}`;
 
   function show(view) {
     setOpen(view);
+    if (view === "3d" && viewer) setMounted(true);
     // Keep the choice in the address, so a reload or a shared link opens it too.
     // The first view is the default and leaves no ?view=.
     const url = new URL(location.href);
@@ -76,10 +85,30 @@ function Views({ pdbId }) {
         </div>
       </div>
       <div className="view_panel" role="tabpanel" id="view-3d" aria-labelledby="view-3d-tab" hidden={open !== "3d"}>
-        <div className="view_slot">
-          <svg className="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true">{TILES[2].glyph}</svg>
-          <p>The 3D viewer of the structure will be shown here.</p>
-        </div>
+        {viewer ? (
+          <div className={`view_3d${ready ? " view_3d_ready" : ""}`} data-src={viewerSrc} data-entry={pdbId}
+               data-mounted={mounted ? "1" : undefined}>
+            {/* The offer, for when the page selects 3D by itself (task 6.7): the
+                download and the annotation wait for this button. style.css hides
+                the button once the frame is made. */}
+            <div className="view_slot">
+              <svg className="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true">{TILES[2].glyph}</svg>
+              <p className="view_3d_offer">
+                {opening ? "Opening the 3D viewer\u2026" : "The model is downloaded and its base pairs annotated in your browser."}
+              </p>
+              <button type="button" className="view_3d_start"
+                      onClick={() => { setOpening(true); setMounted(true); }}>Show the 3D model</button>
+            </div>
+            {/* The waiting words underneath stay until the frame has loaded. */}
+            {mounted && <iframe className="view_3d_frame" title={`3D viewer of ${pdbId}`} src={viewerSrc}
+                                onLoad={() => setReady(true)} />}
+          </div>
+        ) : (
+          <div className="view_slot">
+            <svg className="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true">{TILES[2].glyph}</svg>
+            <p>The 3D viewer of the structure will be shown here.</p>
+          </div>
+        )}
       </div>
     </div>
   );
