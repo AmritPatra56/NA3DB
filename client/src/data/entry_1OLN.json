@@ -1,0 +1,348 @@
+{
+  "pdb_id": "1OLN",
+  "title": "Model for thiostrepton antibiotic binding to L11 substrate from 50S ribosomal RNA",
+  "method": "SOLUTION NMR",
+  "deposition_date": "2003-08-08",
+  "resolution": null,
+  "author": "Lentzen, G.",
+  "all_authors": "Lentzen, G., Klinck, R., Matassova, N., Aboul-Ela, F., Murchie, A.I.H.",
+  "published": "Chem.Biol. 2003",
+  "polymer_type": "Protein/RNA",
+  "entity_name": "RNA; 50S RIBOSOMAL PROTEIN L11; THIOSTREPTON",
+  "source_organism": "THERMOTOGA MARITIMA; STREPTOMYCES AZUREUS",
+  "source_taxonomy": "146537, 2336",
+  "source_kind": "Natural",
+  "expression_host": null,
+  "nonstandard_residue": "",
+  "ligands": null,
+  "confal_score": 54.3,
+  "assigned_ntc": "AA00, AA01, AA08, AA09, NANT, OP01, OP04, OP13, OP18, ZZ01",
+  "monomer_flag": "Standard",
+  "doi": "10.1016/S1074-5521(03)00173-X",
+  "pubmed": 12954336,
+  "polymer_composition": "polypeptide(L), polyribonucleotide",
+  "chain_count": 3,
+  "residue_count": 217,
+  "nucleotide_count": 58,
+  "atom_count": 2350,
+  "confal_percentile": 68,
+  "ntc_step_count": 57,
+  "ntc_classes": "AA00, AA01, AA08, AA09, OP01, OP04, OP13, OP18, ZZ01",
+  "rows": [
+    {
+      "key": "title",
+      "label": "Title",
+      "value": "Model for thiostrepton antibiotic binding to L11 substrate from 50S ribosomal RNA",
+      "searched": false
+    },
+    {
+      "key": "method",
+      "label": "Experimental method",
+      "value": "SOLUTION NMR",
+      "searched": false
+    },
+    {
+      "key": "deposition_date",
+      "label": "Deposition date",
+      "value": "2003-08-08",
+      "searched": false
+    },
+    {
+      "key": "all_authors",
+      "label": "Authors",
+      "value": "Lentzen, G., Klinck, R., Matassova, N., Aboul-ela, F., Murchie, A.I.H.",
+      "searched": false
+    },
+    {
+      "key": "published",
+      "label": "Published",
+      "value": "Chem Biol 2003",
+      "searched": false
+    },
+    {
+      "key": "polymer_type",
+      "label": "Polymer type",
+      "value": "Protein/RNA",
+      "searched": false
+    },
+    {
+      "key": "confal_score",
+      "label": "Overall confal score",
+      "value": "54.3",
+      "searched": false
+    },
+    {
+      "key": "assigned_ntc",
+      "label": "Assigned NtC",
+      "value": "AA00, AA01, AA08, AA09, NANT, OP01, OP04, OP13, OP18, ZZ01",
+      "searched": false
+    },
+    {
+      "key": "monomer_flag",
+      "label": "Monomer standard flag",
+      "value": "Standard",
+      "searched": false
+    },
+    {
+      "key": "chain_count",
+      "label": "Chains",
+      "value": "3",
+      "searched": false
+    },
+    {
+      "key": "residue_count",
+      "label": "Residues",
+      "value": "217",
+      "searched": false
+    },
+    {
+      "key": "nucleotide_count",
+      "label": "Nucleotides",
+      "value": "58",
+      "searched": false
+    },
+    {
+      "key": "atom_count",
+      "label": "Atoms",
+      "value": "2,350",
+      "searched": false
+    },
+    {
+      "key": "confal_percentile",
+      "label": "Confal percentile",
+      "value": "68",
+      "searched": false
+    },
+    {
+      "key": "ntc_step_count",
+      "label": "NtC steps",
+      "value": "57",
+      "searched": false
+    },
+    {
+      "key": "ntc_classes",
+      "label": "NtC classes",
+      "value": "AA00, AA01, AA08, AA09, OP01, OP04, OP13, OP18, ZZ01",
+      "searched": false
+    }
+  ],
+  "entities": [
+    {
+      "id": "3",
+      "kind": "RNA",
+      "type": "polymer",
+      "poly_type": "polyribonucleotide",
+      "description": "RNA",
+      "copies": 1,
+      "formula_weight": 18693.145,
+      "comp_id": null,
+      "sequence": "GCUGGGAUGUUGGCUUAGAAGCAGCCAUCAUUUAAAGAGUGCGUAACAGCUCACCAGC",
+      "length": 58,
+      "chains": [
+        {
+          "auth": "C",
+          "label": "C",
+          "total": 58,
+          "modelled": 58,
+          "first": "1051",
+          "last": "1108",
+          "missing": []
+        }
+      ],
+      "source": {
+        "kind": "Natural",
+        "segments": [
+          {
+            "organism": "THERMOTOGA MARITIMA",
+            "taxid": 2336,
+            "from": null,
+            "to": null,
+            "common_name": null,
+            "strain": null,
+            "gene": null,
+            "cell_line": null,
+            "details": null
+          }
+        ],
+        "host": null
+      },
+      "references": []
+    },
+    {
+      "id": "1",
+      "kind": "Protein",
+      "type": "polymer",
+      "poly_type": "polypeptide(L)",
+      "description": "50S RIBOSOMAL PROTEIN L11",
+      "copies": 1,
+      "formula_weight": 14980.726,
+      "comp_id": null,
+      "sequence": "AKKVAAQIKLQLPAGKATPAPPVGPALGQHGVNIMEFCKRFNAETADKAGMILPVVITVYEDKSFTFIIKTPPASFLLKKAAGIEKGSSEPKRKIVGKVTRKQIEEIAKTKMPDLNANSLEAAMKIIEGTAKSMGIEVVD",
+      "length": 140,
+      "chains": [
+        {
+          "auth": "A",
+          "label": "A",
+          "total": 140,
+          "modelled": 133,
+          "first": "2",
+          "last": "141",
+          "missing": [
+            {
+              "from": "2",
+              "from_mon": "ALA",
+              "to": "7",
+              "to_mon": "ALA",
+              "count": 6
+            },
+            {
+              "from": "141",
+              "from_mon": "ASP",
+              "to": "141",
+              "to_mon": "ASP",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "source": {
+        "kind": "Natural",
+        "segments": [
+          {
+            "organism": "THERMOTOGA MARITIMA",
+            "taxid": 2336,
+            "from": null,
+            "to": null,
+            "common_name": null,
+            "strain": null,
+            "gene": null,
+            "cell_line": null,
+            "details": null
+          }
+        ],
+        "host": null
+      },
+      "references": [
+        {
+          "db": "UNP",
+          "code": "P29395",
+          "label": "UniProt",
+          "url": "https://www.uniprot.org/uniprotkb/P29395"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "kind": "Protein",
+      "type": "polymer",
+      "poly_type": "polypeptide(L)",
+      "description": "THIOSTREPTON",
+      "copies": 1,
+      "formula_weight": 1805.985,
+      "comp_id": null,
+      "sequence": "XIASASCTTCICTCSCSSX",
+      "length": 19,
+      "chains": [
+        {
+          "auth": "B",
+          "label": "B",
+          "total": 19,
+          "modelled": 19,
+          "first": "0",
+          "last": "18",
+          "missing": []
+        }
+      ],
+      "source": {
+        "kind": "Natural",
+        "segments": [
+          {
+            "organism": "STREPTOMYCES AZUREUS",
+            "taxid": 146537,
+            "from": null,
+            "to": null,
+            "common_name": null,
+            "strain": null,
+            "gene": null,
+            "cell_line": null,
+            "details": null
+          }
+        ],
+        "host": null
+      },
+      "references": [
+        {
+          "db": "UNP",
+          "code": "P0C8P8",
+          "label": "UniProt",
+          "url": "https://www.uniprot.org/uniprotkb/P0C8P8"
+        }
+      ]
+    }
+  ],
+  "modified_nucleotides": [],
+  "citation": {
+    "from": [
+      "pubmed",
+      "crossref"
+    ],
+    "type": "article",
+    "title": "Structural Basis for Contrasting Activities of Ribosome Binding Thiazole Antibiotics",
+    "authors": [
+      {
+        "family": "Lentzen",
+        "given": "Georg",
+        "initials": "G",
+        "suffix": null,
+        "orcid": null
+      },
+      {
+        "family": "Klinck",
+        "given": "Roscoe",
+        "initials": "R",
+        "suffix": null,
+        "orcid": null
+      },
+      {
+        "family": "Matassova",
+        "given": "Natalia",
+        "initials": "N",
+        "suffix": null,
+        "orcid": null
+      },
+      {
+        "family": "Aboul-ela",
+        "given": "Fareed",
+        "initials": "F",
+        "suffix": null,
+        "orcid": null
+      },
+      {
+        "family": "Murchie",
+        "given": "Alastair I. H.",
+        "initials": "AI",
+        "suffix": null,
+        "orcid": null
+      }
+    ],
+    "journal": "Chemistry & Biology",
+    "journal_abbrev": "Chem Biol",
+    "volume": "10",
+    "issue": "8",
+    "page_first": "769",
+    "page_last": "778",
+    "year": 2003,
+    "issn": "1074-5521",
+    "book_title": null,
+    "isbn": null,
+    "doi": "10.1016/S1074-5521(03)00173-X",
+    "pubmed": "12954336",
+    "publisher": "Elsevier BV",
+    "abstract": "Thiostrepton and micrococcin inhibit protein synthesis by binding to the L11 binding domain (L11BD) of 23S ribosomal RNA. The two compounds are structurally related, yet they produce different effects on ribosomal RNA in footprinting experiments and on elongation factor-G (EF-G)-dependent GTP hydrolysis. Using NMR and an assay based on A1067 methylation by thiostrepton-resistance methyltransferase, we show that the related thiazoles, nosiheptide and siomycin, also bind to this region. The effect of all four antibiotics on EF-G-dependent GTP hydrolysis and EF-G-GDP-ribosome complex formation was studied. Our NMR and biochemical data demonstrate that thiostrepton, nosiheptide, and siomycin share a common profile, which differs from that of micrococcin. We have generated a three-dimensional (3D) model for the interaction of thiostrepton with L11BD RNA. The model rationalizes the differences between micrococcin and the thiostrepton-like antibiotics interacting with L11BD.",
+    "keywords": null,
+    "source": "reference",
+    "pages": "769-778",
+    "doi_url": "https://doi.org/10.1016/S1074-5521(03)00173-X",
+    "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12954336/"
+  }
+}
