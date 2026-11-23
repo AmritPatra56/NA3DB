@@ -466,7 +466,7 @@
             // The Views follow the reading position too, where they sit
             // beside the page. Announced rather than done here: which view a
             // section is about, and what a view costs to open, are
-            // public/views.js's business, and it is the one file that knows
+            // views.js's business (in public), and it is the one file that knows
             // whether the reader has already chosen a view for themselves.
             document.dispatchEvent(new CustomEvent("na3db:section", { detail: here.id }));
         }

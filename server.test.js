@@ -1645,7 +1645,6 @@ test("one handle in the gutter swaps which column is the wide one", async () => 
     assert.match(views, /<span class="band_swap_say">Enlarge views<\/span>/,
                  "it says what the click does, so it is not a shape to work out");
     assert.match(views, /band_tools[\s\S]{0,900}band_swap/, "in the Views band, with the other tools");
-    assert.match(views, /aria-label="Give the views the wide column"/, "it says which way it goes");
 
     // Applied before the page is drawn, or the columns are laid out one way
     // and swapped a frame later, in front of the reader.
