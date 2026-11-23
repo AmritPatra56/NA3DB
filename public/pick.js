@@ -2,9 +2,9 @@
 //
 // An addition, never a dependency: without it each row's name and Yes are a
 // plain link to its own search, and No another. With it Yes and No are
-// buttons, a bar at the bottom says what is asked and how many structures
-// match, and Search (the bar's or the box's) runs the box and the answers
-// together.
+// buttons, a line under the search box says what is asked and how many
+// structures match, and the box's own Search runs the box and the answers
+// together. There is only ever one search on this page.
 //
 // Yes on a row opens its options, if it has any (a kingdom's organisms, a
 // method's resolution bands, the most frequent ligands): ticked, they stand
@@ -65,10 +65,17 @@ const pick_words = (n) => n === 0 ? "No structures match"
 if (typeof document !== "undefined" && document.querySelector(".browse")) {
     let browse = document.querySelector(".browse");
     let box = document.querySelector(".landing_search input");
-    let bar = document.querySelector(".pick_bar");
-    let what = bar.querySelector(".pick_what");
-    let count = bar.querySelector(".pick_count");
-    let go = bar.querySelector(".pick_search");
+    let line = document.querySelector(".picked_line");
+    let what = line.querySelector(".pick_what");
+    // In the search box, not in the line: the number belongs to the search
+    // that is about to run (views/landing.ejs).
+    let count = document.querySelector(".landing_search .pick_count");
+    // The box's own Search is the only one: it says when the picks find
+    // nothing, which is what a second button used to do.
+    let go = box.form.querySelector("button[type=submit]");
+    // What the box says with nothing ticked. While rows are answered the
+    // picks stand in its place, so it is put back rather than written twice.
+    let invite = box.placeholder;
     let full = document.querySelector(".landing_advanced");
     let full_base = full.getAttribute("href");
 
@@ -130,11 +137,16 @@ if (typeof document !== "undefined" && document.querySelector(".browse")) {
 
     function update() {
         let now = picked();
-        bar.hidden = now.length === 0;
+        line.hidden = now.length === 0;
+        box.placeholder = now.length ? "" : invite;
+        if (now.length === 0) go.disabled = false;
         document.body.classList.toggle("picked", now.length > 0);
         full.href = now.length ? full_base + "&" + pick_url("", "", now) : full_base;
-        if (now.length === 0) { wanted = ""; return; }
+        // Nothing ticked: no count belongs in the box, and a reply still on
+        // its way is no longer wanted.
+        if (now.length === 0) { wanted = ""; count.textContent = ""; return; }
         what.textContent = pick_summary(now, text());
+        what.title = what.textContent;
         recount();
     }
 
@@ -185,8 +197,7 @@ if (typeof document !== "undefined" && document.querySelector(".browse")) {
         location.href = "/search?" + pick_url("", extra ? "" : text(), picked(), extra);
     };
 
-    go.addEventListener("click", () => search());
-    bar.querySelector(".pick_clear").addEventListener("click", () => {
+    line.querySelector(".pick_clear").addEventListener("click", () => {
         for (const row of rows) answer(row, "off");
     });
 

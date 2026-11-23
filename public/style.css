@@ -70,6 +70,12 @@
     --ntc-edge: #858a93;
     --swatch-edge: rgba(0, 0, 0, 0.25);
 
+    /* The logo's two strands. Deep on a light page; both step up on a dark
+       one, or the deep strand sits at 1.1:1 against the card and half the
+       mark disappears. */
+    --mark-deep: #0f2a47;
+    --mark-light: #3f7fc8;
+
     --icon-filter: invert(1);
     --shadow-rgb: 15 23 42;
     --backdrop: rgba(15, 23, 42, 0.55);
@@ -133,6 +139,9 @@
         --ntc-nan-line: #7c889a;
         --ntc-edge: #7c889a;
         --swatch-edge: rgba(227, 232, 239, 0.35);
+
+        --mark-deep: #4f7fc2;
+        --mark-light: #a3cbef;
 
         --icon-filter: none;
         --shadow-rgb: 0 0 0;
@@ -198,6 +207,9 @@
         --ntc-nan-line: #7c889a;
         --ntc-edge: #7c889a;
         --swatch-edge: rgba(227, 232, 239, 0.35);
+
+        --mark-deep: #4f7fc2;
+        --mark-light: #a3cbef;
 
         --icon-filter: none;
         --shadow-rgb: 0 0 0;
@@ -277,8 +289,16 @@ body {
     /* The footer is fixed below it on every page, so the pages end above it. */
     height: calc(100vh - var(--footer-h));
     width: 100%;
-    
+
+    /* How tall the bar across the top of the page is. The rail's logo cell is
+       the same height, so the first line across the page is one line and the
+       rail's dividers then sit on the same rhythm as the rows beside them.
+       The search pages put .top_search up there, which is taller than the
+       plain header, so it is named once here and used by both. */
+    --topbar-h: 60px;
 }
+
+.interface:has(.top_search) { --topbar-h: 78px; }
 
 
 .query_panel {
@@ -394,29 +414,26 @@ body {
 /* The mark over the name. The mark is drawn inline so it takes the theme:
    an accent tile with the lines in the accent's own text colour. */
 .rail-logo {
-    height: 72px;
+    height: var(--topbar-h);
     flex-direction: column;
     gap: 4px;
 }
 
+/* The lockup is as wide as it is tall, and the wordmark takes the right
+   half of it, so it is given the rail's whole width less its padding. */
 .rail-logo svg {
     display: block;
-    width: 34px;
-    height: 34px;
+    width: 48px;
+    height: auto;
 }
 
-.mark_tile { fill: var(--accent); }
-.mark_lines { stroke: var(--on-accent); }
-.mark_gap { stroke: var(--accent); }
-
-.rail-name {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    line-height: 1;
-}
-
-.rail-name i { font-style: normal; color: var(--accent); }
+/* The mark is a square window onto a longer helix, so the ribbons run out of
+   the viewBox on every side and the SVG viewport does the cropping. */
+.mark_deep { fill: var(--mark-deep); }
+.mark_light { fill: var(--mark-light); }
+/* The letters are not a strand: their own class, so the wordmark can be
+   recoloured without touching the ribbons. */
+.mark_word { fill: var(--mark-deep); }
 
 .rail-item img {
     display: block;
@@ -777,6 +794,20 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .download_small { padding: 4px 9px; font-size: 12px; gap: 5px; }
 .download_small::before { width: 13px; height: 13px; }
+
+/* The same button, drawn in outline: for a way on that sits beside the one
+   the page is really asking for, not in competition with it. */
+.download_quiet {
+    background: none;
+    border-color: var(--border-dark);
+    color: var(--text-muted);
+}
+
+.download_quiet:hover:not(:disabled) {
+    background: var(--accent-wash);
+    border-color: var(--accent);
+    color: var(--accent);
+}
 
 @media (prefers-reduced-motion: reduce) {
     .download { transition: none; }
@@ -1398,9 +1429,16 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 
 .landing_title {
-    font-size: 40px;
-    font-weight: 700;
-    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* The wordmark is 4.3 times as wide as it is tall, so it is sized by width
+   and takes about the room the 40px heading took. */
+.landing_wordmark {
+    display: block;
+    width: clamp(165px, 25.5vw, 270px);
+    height: auto;
+    margin: 0 auto;
 }
 
 .landing_tagline {
@@ -1416,32 +1454,42 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     margin: 32px auto 0;
 
     display: flex;
+    align-items: flex-start;
     gap: 8px;
 }
 
+/* The box. It is this that is drawn, not the input inside it, because what
+   is ticked is written in the box beside the typing and the two belong in one
+   border. Also the frame the count and the suggestions hang off. */
+.landing_field {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+
+    border-radius: 6px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--input-border);
+}
+
+.landing_field:hover { border-color: var(--input-border-hover); }
+.landing_field:focus-within { border-color: var(--focus); }
+
 .landing_search input {
     flex-grow: 1;
+    min-width: 0;
     padding: 12px 14px;
-    border-radius: 6px;
 
     font: inherit;
     font-size: 14px;
 
-    background-color: var(--bg-secondary);
+    background: none;
     color: inherit;
-    border: 1px solid var(--input-border);
+    border: none;
     outline: none;
 }
 
-.landing_search input:hover {
-    border-color: var(--input-border-hover);
-}
-
-.landing_search input:focus {
-    border-color: var(--focus);
-}
-
-.landing_search button {
+.landing_search > button[type="submit"] {
     padding: 12px 22px;
     border-radius: 6px;
 
@@ -1456,7 +1504,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     cursor: pointer;
 }
 
-.landing_search button:hover {
+.landing_search > button[type="submit"]:hover {
     filter: brightness(1.08);
 }
 
@@ -1682,94 +1730,80 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 .picking .browse_link { cursor: pointer; }
 
-/* While rows are ticked, the bar below holds the count, so the line under
-   the box keeps its place but goes quiet rather than show a second number. */
+/* While rows are ticked, the line under the box says what they find, so the
+   count that was there keeps its place but goes quiet rather than show a
+   second number. */
 .picked .landing_count { visibility: hidden; }
 
-/* What is ticked and what it finds, held at the bottom of the view while the
-   page scrolls under it. Last in the landing's own scroller, so it never
-   covers the footer. */
-.pick_bar {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    width: min(760px, calc(100% - 32px));
-    margin: 0 auto 12px;
-    padding: 10px 10px 10px 16px;
-    box-sizing: border-box;
-
+/* What is ticked, in the box where the invitation to type was: once rows are
+   answered, that is what the box asks, and Search runs it. */
+.picked_line {
     display: flex;
     align-items: center;
-    gap: 12px;
-
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--bg-primary);
-    box-shadow: 0 6px 24px rgb(var(--shadow-rgb) / 0.14);
-}
-.pick_bar[hidden] { display: none; }
-
-.pick_what {
-    flex: 1;
+    gap: 8px;
     min-width: 0;
+    padding-left: 14px;
+    font-size: 13px;
+    text-align: left;
+}
+
+.picked_line[hidden] { display: none; }
+
+/* One line, cut with an ellipsis rather than pushing the typing out of the
+   box; the whole of it is on hover. */
+.pick_what {
+    margin: 0;
+    min-width: 0;
+    color: var(--text);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 14px;
-    color: var(--text);
 }
-/* The bar's sentence starts with a capital, whatever its first answer. */
+
 .pick_what::first-letter { text-transform: uppercase; }
 
+/* Inside the box, against its right edge: the number belongs to the search
+   that is about to run, not to a line of its own. Never in the way of the
+   caret, which is why the box is given room for it while rows are ticked. */
 .pick_count {
-    font-size: 14px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--accent);
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
     white-space: nowrap;
+    pointer-events: none;
 }
 
-.pick_bar button {
-    padding: 9px 18px;
-    border-radius: 6px;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
+.picked .landing_search input {
+    padding-left: 8px;
+    padding-right: 116px;
+    min-width: 4ch;
 }
 
 .pick_clear {
-    color: var(--accent);
+    padding: 2px 10px;
+    border: 1px solid var(--border-dark);
+    border-radius: 999px;
     background: none;
-    border: 1px solid transparent;
-}
-.pick_clear:hover { background: var(--accent-wash); }
-
-.pick_search {
-    color: var(--on-accent);
-    background: var(--accent);
-    border: 1px solid var(--accent);
-}
-.pick_search:hover { background: var(--accent-ink); border-color: var(--accent-ink); }
-.pick_search:disabled { opacity: 0.45; cursor: default; }
-.pick_search:disabled:hover { background: var(--accent); border-color: var(--accent); }
-
-/* Quiet on purpose: most visitors want the box, and the ones who want the
-   filters are looking for this. */
-.landing_advanced {
-    display: inline-block;
-    margin-top: 34px;
-
-    font-size: 15px;
     color: var(--text-muted);
-    text-decoration: none;
-    border-bottom: 1px solid var(--border-dark);
-    padding-bottom: 2px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
 }
 
-.landing_advanced:hover {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+.pick_clear:hover { background: var(--accent-wash); color: var(--accent); }
+.pick_clear:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* A button like the others, in the quiet outline: most visitors want the box,
+   and the ones who want the filters are looking for this. */
+.landing_advanced { margin-top: 34px; }
+
+/* Sliders, not the download arrow: this one opens the filter panel. */
+.landing_advanced::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M4 7h10M18 7h2M4 17h4M12 17h8'/%3E%3Ccircle cx='16' cy='7' r='2.2'/%3E%3Ccircle cx='10' cy='17' r='2.2'/%3E%3C/svg%3E");
 }
 
 /* <---------------------top search---------------------------> */
@@ -1797,7 +1831,9 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
    the right would push the box left by half its own width. */
 .top_search {
     flex-shrink: 0;
-    min-height: 72px;
+    /* Its own content decides the rest; --topbar-h is what the rail matches,
+       so if this bar grows past it, change the variable, not this line. */
+    min-height: var(--topbar-h);
     padding: 8px 24px;
     border-bottom: 1px solid var(--border);
 
@@ -2819,7 +2855,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .rail-logo svg { width: 30px; height: 30px; }
 
-    .rail-name { font-size: 18px; }
 
     .rail-item { order: 2; }
     .rail-theme { order: 3; margin-top: 0; border-top: 0; }
@@ -3078,13 +3113,14 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 @media (max-width: 640px) {
     .landing { padding: 16px; align-items: flex-start; }
     .landing_inner { margin: 12vh 0 0; }
-    .landing_title { font-size: 40px; }
+    .landing_wordmark { width: min(56vw, 225px); }
 
-    .landing_search { flex-direction: column; }
+    /* Stacked, so the box and Search each take the full width again. */
+    .landing_search { flex-direction: column; align-items: stretch; }
     .landing_search input { font-size: 16px; }
-    .landing_search button { min-height: 48px; }
+    .landing_search > button[type="submit"] { min-height: 48px; }
 
-    .landing_advanced { display: inline-block; padding: 10px 4px; }
+    .landing_advanced { padding: 10px 16px; }
 
     .browse_lead { margin-top: 12px; }
     .browse {
@@ -3096,15 +3132,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .browse_card .browse_answer a { min-width: 46px; padding: 7px 10px; font-size: 14px; }
 
     /* The page scrolls as one document on a phone, under a fixed footer. */
-    .pick_bar {
-        bottom: calc(var(--footer-h) + 8px);
-        flex-wrap: wrap;
-        row-gap: 8px;
-        padding: 10px 12px;
-    }
-    .pick_what { flex-basis: 100%; white-space: normal; }
-    .pick_count { flex: 1; }
-    .pick_bar button { min-height: 44px; }
 
     .empty_state .detail_link { padding: 10px 4px; font-size: 15px; }
 }
@@ -3316,6 +3343,23 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 
 .band_fold:hover { background: var(--accent-wash); }
+
+/* Swap which column is the wide one: the same button as the FASTA and CSV
+   ones beside it (.download .download_small), with its own glyph in place of
+   the download arrow. The filled block is the column the views would take,
+   so the picture says what the words say. Only drawn where there are two
+   columns to swap, so it is hidden until the wide layout (below). */
+.band_swap { display: none; }
+
+.band_swap::before {
+    width: 15px;
+    height: 10px;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16' fill='none' stroke='black' stroke-width='1.8'%3E%3Crect x='0.9' y='0.9' width='7' height='14.2' rx='1.8'/%3E%3Crect x='11' y='0.9' width='12.1' height='14.2' rx='1.8' fill='black'/%3E%3C/svg%3E");
+}
+
+.band_swap[aria-pressed="true"]::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16' fill='none' stroke='black' stroke-width='1.8'%3E%3Crect x='0.9' y='0.9' width='12.1' height='14.2' rx='1.8' fill='black'/%3E%3Crect x='16.1' y='0.9' width='7' height='14.2' rx='1.8'/%3E%3C/svg%3E");
+}
 
 
 .help { position: relative; }
@@ -4292,6 +4336,83 @@ path.arc_nc { stroke: var(--pair-nc); }
 .view_slot p { margin: 0; max-width: 46ch; font-size: 14px; }
 .view_slot_glyph { width: 72px; height: 36px; fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; }
 .view_slot_glyph .view_pair { stroke: var(--pair-wc); }
+/* 3D: our own viewer, in a frame (views/includes/views.ejs).
+
+   A fixed height and not an aspect ratio: the frame holds a toolbar over a
+   canvas, and a square-ish box on a narrow screen would leave the model a
+   strip. 70vh beside the page is bounded by the Views' own max-height above,
+   which is what keeps the column inside the window. */
+/* The 3D view takes whatever height the reading area has left, rather than a
+   fixed box that wastes a tall window and overflows a short one. The chain of
+   definite heights starts at the section body and the frame is the last link,
+   so the tiles can be any height they like and the box still ends where the
+   page does.
+
+   Only while 3D is the open view: 1D is a few lines of text, and stretching
+   it would be a tall empty box with a dot-bracket at the top. The same
+   arithmetic as the sticky panel's max-height in the wide layout, and the
+   same here because the chrome above is the same: the 60px header, 16px over
+   the section, its 44px band and the 10px under it, 16px at the foot. */
+#views > .section_body:has(#view-3d:not([hidden])) {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 146px - var(--footer-h));
+    min-height: 420px;
+}
+/* Narrower than the sidebar layout, the sections list is a 45px strip across
+   the top of the reading area instead of a column beside it, and it takes
+   that much of the height the view is measuring itself against. */
+@media (max-width: 1023px) {
+    #views > .section_body:has(#view-3d:not([hidden])) {
+        height: calc(100vh - 191px - var(--footer-h));
+    }
+}
+
+#views > .section_body:has(#view-3d:not([hidden])) .views,
+#views > .section_body:has(#view-3d:not([hidden])) > .views > #view-3d {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.view_3d {
+    position: relative;
+    flex: 1;
+    height: min(70vh, 620px);
+    min-height: 240px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-primary);
+}
+/* Over the waiting words until the frame has drawn something of its own, so
+   nothing flashes blank; the slot inside keeps its dashes off, being framed
+   already. */
+#views > .section_body:has(#view-3d:not([hidden])) .view_3d { height: auto; }
+.view_3d .view_slot { position: absolute; inset: 0; border: 0; border-radius: 0; }
+/* The offer, where the page selected 3D by itself. Styled like a download
+   button because it is the same kind of promise: this one fetches the model
+   and annotates it. */
+.view_3d_start {
+    padding: 7px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.view_3d_start:hover { filter: brightness(1.08); }
+.view_3d_start:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Once the frame exists the slot behind it is history; the button must not
+   be reachable under a frame that has not finished drawing. */
+.view_3d[data-mounted] .view_3d_start { display: none; }
+.view_3d_frame { position: relative; z-index: 1; display: block; width: 100%; height: 100%; border: 0; background: transparent; }
+.view_3d:not(.view_3d_ready) .view_3d_frame { opacity: 0; }
+
 /* 1D: the column under the pointer and its partners, behind the text. */
 .lbn_lines { position: relative; isolation: isolate; cursor: crosshair; }
 .lbn_band { position: absolute; top: 0; bottom: 0; z-index: -1; background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent); pointer-events: none; }
@@ -4322,6 +4443,14 @@ path.arc_nc { stroke: var(--pair-nc); }
         max-width: calc(1100px + 40px + var(--viewer));
         /* A scrolling box here would hold the Views still against itself. */
         overflow: visible;
+    }
+    .band_swap { display: inline-flex; }
+    /* Swapped: the sections take the column the views had and the views take
+       the sections'. Only the widths trade places -- the sections stay on the
+       left and the views on the right, so nothing a reader is looking at
+       jumps across the page, and the row as a whole is the width it was. */
+    .structure_page.views_wide .detail_body {
+        grid-template-columns: var(--viewer) minmax(0, 1fr);
     }
     .structure_page .detail_body > .page_section { grid-column: 1; }
     .structure_page .detail_body > #views {

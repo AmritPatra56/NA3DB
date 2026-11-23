@@ -1,7 +1,7 @@
 // views.test.js - the 1D view's plain layered dot-bracket lines.
 import test from "node:test";
 import assert from "node:assert";
-import { lbn_lines, view_url, next_tile, column_words, column_key, pair_key } from "./public/views.js";
+import { lbn_lines, view_url, next_tile, column_words, column_key, pair_key, mount_3d, view_for_section } from "./public/views.js";
 
 const MAP = { names: ["A", "B′"], seq: "GCGCA&UGCGC",
               rows: [{ name: "WC", text: "((((.&.))))" }, { name: "tWH", text: "....(&)...." }] };
@@ -66,4 +66,40 @@ test("a column's key is its strand's token and its position; a pair is the same 
     assert.deepEqual([0, 1, 2, 3, 4].map((i) => column_key(map, i)), ["A 1", "A 2", null, "B:2_755 1", "B:2_755 2"]);
     assert.equal(pair_key("B:2_755 1", "A 2"), pair_key("A 2", "B:2_755 1"));
     assert.notEqual(pair_key("A 1", "A 12"), pair_key("A 11", "A 2"), "the ends stay apart");
+});
+
+// The 3D view's frame. Made here rather than in the HTML because behind it
+// are the coordinates, coot and the annotation of every base pair.
+test("the 3D frame is made once, from the address the page put on the box", () => {
+    let made = [];
+    // Enough of a document for mount_3d: it asks for one element and appends.
+    globalThis.document = { createElement: (tag) => { let el = { tag, dataset: {},
+        classList: { add() {} }, addEventListener() {} }; made.push(el); return el; } };
+    let box = { dataset: { src: "/viewer/?embed=1&id=4TNA", entry: "4TNA" }, children: [],
+                classList: { add() {} }, append(el) { this.children.push(el); } };
+
+    let frame = mount_3d(box);
+    assert.equal(frame.tag, "iframe");
+    assert.equal(frame.src, "/viewer/?embed=1&id=4TNA");
+    assert.equal(frame.title, "3D viewer of 4TNA");
+    assert.equal(box.children.length, 1);
+
+    // A second click must not restart a run that may be a minute old.
+    assert.equal(mount_3d(box), null);
+    assert.equal(box.children.length, 1);
+    assert.equal(made.length, 1);
+    assert.equal(mount_3d(null), null, "no box, nothing to make");
+    delete globalThis.document;
+});
+
+// The open view follows the section being read (structure.ejs announces it).
+test("a section about the pairs opens 1D, conformation opens 3D, the rest leave the view alone", () => {
+    assert.equal(view_for_section("base-pairs"), "1d");
+    assert.equal(view_for_section("sequence-map"), "1d");
+    assert.equal(view_for_section("conformation"), "3d");
+    // Nothing maps to 2D while it is a place kept rather than a view.
+    for (const id of ["views", "overview", "molecules", "sources", "modified-nucleotides",
+                      "ligands", "same-sequence", "citations", "links", "nonsense"]) {
+        assert.equal(view_for_section(id), null, `${id} changes nothing`);
+    }
 });

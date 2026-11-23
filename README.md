@@ -360,6 +360,64 @@ new one instead. Three-digit numbers, so they sort in order.
 
 Passwords live only on the server, never in git.
 
+### The 3D viewer
+
+The structure page's **3D** view frames our own viewer: the Moorhen pane of the
+NAPAIR browser (`BASEPAIRING_WEB/napair_browser`), which downloads the entry
+from RCSB and annotates every base pair in WebAssembly inside the reader's
+tab. Nothing of it is in this repository: a build is 117 MB of coot, monomer
+dictionaries and the curated reference library.
+
+```bash
+cd ../napair_browser
+npm install && npm run build          # writes dist/
+rm -rf ../na3db/viewer                # a rebuild cannot empty a live one
+cp -R dist ../na3db/viewer
+```
+
+`viewer/` is gitignored and goes into the image with everything else, so
+shipping it is the ordinary `deploy/update.sh`. `VIEWER_DIR=/some/other/dist`
+names a build elsewhere instead, which is the easy way to point a dev server
+at `napair_browser/dist` without copying anything.
+
+- **Found once, at boot.** No build, no frame: the 3D view says the viewer is
+  not installed and nothing 404s. Install one and restart.
+- **`/structure/:id` sends `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp`,** and so does `/viewer/`.
+  Moorhen's coot needs `SharedArrayBuffer`, which a browser grants only a
+  cross-origin-isolated page, and a frame counts as isolated only when the
+  document around it is. **This is why a cross-origin image, script or font
+  cannot be added to the structure page** unless it sends CORP or CORS: today
+  that page loads nothing but its own files. The rest of the site is not
+  isolated.
+- **The frame is made by `public/views.js` when the tile is first clicked**,
+  never by the HTML, and once only. A reader who stays in 1D downloads none of
+  it; a second click does not restart a run that is already under way.
+- **The open view follows the section being read**, at every width. Base pairs
+  and Sequence map open 1D, Conformation opens 3D; every other section leaves
+  the view as it was. Below 1360px the Views are a section at the top rather
+  than a panel beside the page, so the switch happens above the fold and is
+  there when the reader scrolls back up.
+  `views/structure.ejs` already tracks the current section for the sidebar and
+  the `#section` in the address, so it announces it as `na3db:section` and
+  `public/views.js` decides what that means.
+- **The 3D view is as tall as the reading area allows**, not a fixed box: the
+  section body takes `100vh` less the chrome above it (and 45px less again
+  below 1023px, where the sections list is a strip across the top), and a
+  flex chain hands what is left to the frame. Only while 3D is open, since 1D
+  is a few lines of text that should not be stretched to fill a column.
+- **A handle in the gutter between the two columns swaps which is the wide
+  one** (1360px and wider), shaped like the sidebar's handle because it is the
+  same kind of control. The sections and the Views trade widths and stay where they are,
+  so the model gets about 775px of a 1500px window and nothing jumps across
+  the page. Remembered in `localStorage` as `views_wide` and applied before
+  the first paint, like the folded sidebar beside it.
+- **A view selected by a scroll only offers 3D, it does not start it**: the
+  panel shows what it costs and a button. Starting the frame, and writing
+  `?view=` to the address, are a reader's own click. And once they have
+  clicked a tile or that button, scrolling stops changing the view for the
+  rest of the visit: a view somebody asked for is never taken away.
+
 ---
 
 # How it works inside
@@ -415,7 +473,11 @@ the browser draws.** What counts as a match, the order, the page size: all in
 | `seqmap.js` | the sequence map |
 | `sameseq.js` | the Same sequence comparison |
 | `cana.js` | the 15 CANA colours and names, shared by the server and the browser |
+| `views.js` | the Views tiles: the 1D dot-bracket, and the frame the 3D view puts the viewer in |
 | `api.js`, `shared.js` | talking to the server, and small helpers |
+
+**The 3D viewer**, in `viewer/`: a build of the NAPAIR browser, gitignored and
+installed by hand (section 9). Served at `/viewer/`, cross-origin isolated.
 
 ## 11. Adding a filter or a column
 
@@ -550,7 +612,11 @@ The database takes 9.6 GB, 7.6 GB of it atom coordinates.
 - **Typos find nothing.** `ribozime` returns none of the 20 ribozymes.
 - **Some molecule names miss a space** (`DNA-directedRNA polymerase`, 47 rows),
   as in the source data.
-- **No 3D viewer yet.** The atom coordinates are loaded.
+- **The 3D view fetches its own coordinates.** The viewer in it downloads the
+  entry from RCSB and annotates it in WebAssembly, so it ignores the 7.6 GB of
+  atoms in our own database. A precalculated library served from here would
+  save both the download and the compute.
+- **The 3D viewer is light only**, so it stays white inside a dark page.
 - **The first arc picture of an entry takes about 18 ms to work out**, then it
   is cached for an hour.
 - **`public/app.js` is about 850 lines doing eight jobs.** It is the next file

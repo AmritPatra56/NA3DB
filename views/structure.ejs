@@ -48,6 +48,7 @@
                     <%# Folded or not as last time, before the page is drawn. %>
                     <script>
                         try { if (localStorage.getItem("section_nav") === "folded") document.querySelector(".structure_page").classList.add("nav_folded"); } catch {}
+                        try { if (localStorage.getItem("views_wide") === "on") document.querySelector(".structure_page").classList.add("views_wide"); } catch {}
                     </script>
 
                 <%# --rows: the sections beside the Views on a wide screen, where the
@@ -74,6 +75,16 @@
                                     <a class="download download_small" href="<%= fasta_url %>" download title="Download <%= molecules.fasta.all === 1 ? "the sequence" : "all " + molecules.fasta.all + " sequences" %> as FASTA">FASTA</a>
                                 <% } else if (s.id === "base-pairs" && base_pairs) { %>
                                     <a class="download download_small" href="/api/entries/<%= entry.pdb_id %>/base_pairs?format=csv" download title="Download every pair as CSV">CSV</a>
+                                <% } %>
+                                <%# Which column is the wide one. In the band rather than on
+                                    the line between the columns: a handle out there was a
+                                    shape nobody read. Says what the click does, not what is
+                                    on screen. Only where there are two columns to swap
+                                    (style.css). %>
+                                <% if (s.id === "views") { %>
+                                    <button type="button" class="download download_small band_swap" aria-pressed="false">
+                                        <span class="band_swap_say">Enlarge views</span>
+                                    </button>
                                 <% } %>
                                 <%- include("includes/help", { key: s.id }) %>
                                 <button type="button" class="band_fold" aria-expanded="true" aria-controls="<%= s.id %>-body" title="Fold this section"><i class="arrow" aria-hidden="true"></i></button>
@@ -402,6 +413,21 @@
             try { localStorage.setItem("section_nav", on ? "folded" : "open"); } catch {}
         });
 
+        // Which column is the wide one. The button lives on the Views band and
+        // the class on .structure_page, because the grid that has to change is
+        // the one both columns are in.
+        const swap = document.querySelector(".band_swap");
+        swap?.addEventListener("click", () => {
+            let on = document.querySelector(".structure_page").classList.toggle("views_wide");
+            swap.setAttribute("aria-pressed", String(on));
+            swap.querySelector(".band_swap_say").textContent = on ? "Shrink views" : "Enlarge views";
+            try { localStorage.setItem("views_wide", on ? "on" : "off"); } catch {}
+        });
+        if (swap && document.querySelector(".structure_page").classList.contains("views_wide")) {
+            swap.setAttribute("aria-pressed", "true");
+            swap.querySelector(".band_swap_say").textContent = "Shrink views";
+        }
+
         // The sidebar follows the reading position: the current section is the
         // last one whose band has passed the top of the reading area. The
         // address follows too, so a copied link opens at the same place.
@@ -436,6 +462,13 @@
                 nav.scrollLeft = item.offsetLeft - nav.clientWidth / 2 + item.offsetWidth / 2;
             }
             if (scrollY + scroller.scrollTop > 0) history.replaceState(null, "", "#" + here.id);
+
+            // The Views follow the reading position too, where they sit
+            // beside the page. Announced rather than done here: which view a
+            // section is about, and what a view costs to open, are
+            // views.js's business (in public), and it is the one file that knows
+            // whether the reader has already chosen a view for themselves.
+            document.dispatchEvent(new CustomEvent("na3db:section", { detail: here.id }));
         }
 
         document.addEventListener("scroll", () => {

@@ -38,9 +38,34 @@
         </div>
     </div>
     <div class="view_panel" role="tabpanel" id="view-3d" aria-labelledby="view-3d-tab"<% if (open !== "3d") { %> hidden<% } %>>
-        <div class="view_slot">
-            <svg class="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- tiles[2].glyph %></svg>
-            <p>The 3D viewer of the structure will be shown here.</p>
-        </div>
+        <%# Our own viewer: the NAPAIR browser's Moorhen pane, which server.js
+            serves at /viewer/ when a build is installed there. In a frame
+            because it is cross-origin isolated for coot's SharedArrayBuffer
+            and brings React, Moorhen and the NAPAIR wasm with it; the page
+            around it stays the page it was.
+
+            data-src and not src: the frame reads the coordinates and
+            annotates every base pair in WebAssembly, tens of seconds of work
+            for a large structure, so public/views.js makes the frame when
+            this view is first opened and never for a reader who stays in 1D. %>
+        <% if (locals.viewer) { %>
+            <div class="view_3d" data-src="/viewer/?embed=1&amp;id=<%= encodeURIComponent(id) %>" data-entry="<%= id %>">
+                <%# Two ways in, and they cost different things. Clicking the
+                    3D tile starts the frame at once (public/views.js); the
+                    page selecting 3D by itself, because you scrolled into
+                    Conformation, only offers it -- the download and the
+                    annotation wait for this button. %>
+                <div class="view_slot">
+                    <svg class="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- tiles[2].glyph %></svg>
+                    <p class="view_3d_offer">The model is downloaded and its base pairs annotated in your browser.</p>
+                    <button type="button" class="view_3d_start">Show the 3D model</button>
+                </div>
+            </div>
+        <% } else { %>
+            <div class="view_slot">
+                <svg class="view_slot_glyph" viewBox="0 0 48 24" aria-hidden="true"><%- tiles[2].glyph %></svg>
+                <p>The 3D viewer of the structure will be shown here.</p>
+            </div>
+        <% } %>
     </div>
 </div>
