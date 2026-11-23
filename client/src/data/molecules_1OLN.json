@@ -1,0 +1,246 @@
+{
+  "groups": [
+    {
+      "kind": "RNA",
+      "rows": [
+        {
+          "entity_id": "3",
+          "name": "RNA",
+          "links": [],
+          "length": "58 nt",
+          "chains": [
+            {
+              "name": "C",
+              "title": null
+            }
+          ],
+          "modelled": "58 / 58",
+          "missing": null,
+          "numbering": "1051\u20131108",
+          "sequence": {
+            "lines": [
+              {
+                "start": 1,
+                "runs": [
+                  {
+                    "text": "GCUGGGAUGU UGGCUUAGAA GCAGCCAUCA UUUAAAGAGU GCGUAACAGC UCACCAGC",
+                    "mark": null,
+                    "title": null
+                  }
+                ]
+              }
+            ],
+            "length": 58,
+            "modified": false,
+            "unmodelled": false
+          }
+        }
+      ],
+      "polymer": true,
+      "modified": false,
+      "folded": false,
+      "title": "RNA"
+    },
+    {
+      "kind": "Protein",
+      "rows": [
+        {
+          "entity_id": "1",
+          "name": "50S RIBOSOMAL PROTEIN L11",
+          "links": [
+            {
+              "text": "UniProt P29395",
+              "url": "https://www.uniprot.org/uniprotkb/P29395"
+            }
+          ],
+          "length": "140 aa",
+          "chains": [
+            {
+              "name": "A",
+              "title": null
+            }
+          ],
+          "modelled": "133 / 140",
+          "missing": "2\u20137 (6), ASP141",
+          "numbering": "2\u2013141",
+          "sequence": {
+            "lines": [
+              {
+                "start": 1,
+                "runs": [
+                  {
+                    "text": "AKKVAA",
+                    "mark": "unmodelled",
+                    "title": "ALA2\u2013ALA7: not modelled"
+                  },
+                  {
+                    "text": "QIKL QLPAGKATPA PPVGPALGQH GVNIMEFCKR FNAETADKAG MILPVVITVY",
+                    "mark": null,
+                    "title": null
+                  }
+                ]
+              },
+              {
+                "start": 61,
+                "runs": [
+                  {
+                    "text": "EDKSFTFIIK TPPASFLLKK AAGIEKGSSE PKRKIVGKVT RKQIEEIAKT KMPDLNANSL",
+                    "mark": null,
+                    "title": null
+                  }
+                ]
+              },
+              {
+                "start": 121,
+                "runs": [
+                  {
+                    "text": "EAAMKIIEGT AKSMGIEVV",
+                    "mark": null,
+                    "title": null
+                  },
+                  {
+                    "text": "D",
+                    "mark": "unmodelled",
+                    "title": "ASP141: not modelled"
+                  }
+                ]
+              }
+            ],
+            "length": 140,
+            "modified": false,
+            "unmodelled": true
+          }
+        },
+        {
+          "entity_id": "2",
+          "name": "THIOSTREPTON",
+          "links": [
+            {
+              "text": "UniProt P0C8P8",
+              "url": "https://www.uniprot.org/uniprotkb/P0C8P8"
+            }
+          ],
+          "length": "19 aa",
+          "chains": [
+            {
+              "name": "B",
+              "title": null
+            }
+          ],
+          "modelled": "19 / 19",
+          "missing": null,
+          "numbering": "0\u201318",
+          "sequence": {
+            "lines": [
+              {
+                "start": 1,
+                "runs": [
+                  {
+                    "text": "XIASASCTTC ICTCSCSSX",
+                    "mark": null,
+                    "title": null
+                  }
+                ]
+              }
+            ],
+            "length": 19,
+            "modified": false,
+            "unmodelled": false
+          }
+        }
+      ],
+      "polymer": true,
+      "modified": false,
+      "folded": false,
+      "title": "Protein"
+    }
+  ],
+  "summary": "1 RNA \u00b7 2 protein",
+  "sources": {
+    "legend": [
+      {
+        "kind": "Natural",
+        "text": "purified from the organism"
+      },
+      {
+        "kind": "Expressed",
+        "text": "gene cloned and produced in a host"
+      },
+      {
+        "kind": "Synthetic",
+        "text": "made chemically; the organism is where the sequence comes from"
+      }
+    ],
+    "rows": [
+      {
+        "kind": "Natural",
+        "molecules": [
+          {
+            "name": "RNA",
+            "chains": [
+              "C"
+            ]
+          },
+          {
+            "name": "50S RIBOSOMAL PROTEIN L11",
+            "chains": [
+              "A"
+            ]
+          }
+        ],
+        "listed": true,
+        "chain_count": 2,
+        "segments": [
+          {
+            "range": null,
+            "organism": {
+              "name": "Thermotoga maritima",
+              "italic": true,
+              "common": null
+            },
+            "taxon": {
+              "id": 2336,
+              "url": "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=2336"
+            },
+            "notes": null
+          }
+        ],
+        "host": null
+      },
+      {
+        "kind": "Natural",
+        "molecules": [
+          {
+            "name": "THIOSTREPTON",
+            "chains": [
+              "B"
+            ]
+          }
+        ],
+        "listed": true,
+        "chain_count": 1,
+        "segments": [
+          {
+            "range": null,
+            "organism": {
+              "name": "Streptomyces azureus",
+              "italic": true,
+              "common": null
+            },
+            "taxon": {
+              "id": 146537,
+              "url": "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=146537"
+            },
+            "notes": null
+          }
+        ],
+        "host": null
+      }
+    ],
+    "notes": false
+  },
+  "fasta": {
+    "all": 3,
+    "na": 1
+  }
+}
