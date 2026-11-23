@@ -1,10 +1,14 @@
+import { useState } from "react";
 import StructureFacts from "./StructureFacts.jsx";
 import Molecules from "./Molecules.jsx";
+import Views from "./Views.jsx";
 
 // Rows the page shows another way (detail.js SHOWN_ELSEWHERE), and the rows
 // that sit under Conformation rather than Overview.
 const SHOWN_ELSEWHERE = new Set(["nonstandard_residue", "monomer_flag", "ligands", "assigned_ntc", "ntc_classes"]);
 const CONFORMATION = new Set(["confal_score", "confal_percentile", "ntc_step_count"]);
+// detail.js NUCLEIC_KINDS: the Views draw only these chains.
+const NUCLEIC_KINDS = new Set(["RNA", "DNA", "DNA/RNA hybrid"]);
 
 // detail.js PAGE_GROUPS: the nav's groups, in page order.
 const PAGE_GROUPS = [
@@ -34,9 +38,9 @@ function Section({ id, title, group, empty, children }) {
 }
 
 // The sidebar: each group's sections, a group of one section being its own link.
-function SectionNav({ sections }) {
+function SectionNav({ sections, inert }) {
   return (
-    <nav className="section_nav" id="section_nav" aria-label="Sections of this page">
+    <nav className="section_nav" id="section_nav" aria-label="Sections of this page" inert={inert}>
       {PAGE_GROUPS.map((group) => {
         const inGroup = sections.filter((s) => s.group === group.key);
         if (inGroup.length === 0) return null;
@@ -54,13 +58,43 @@ function SectionNav({ sections }) {
   );
 }
 
+// The nav folded or open as last time, kept for the next structure (structure.ejs).
+function navWasFolded() {
+  try {
+    return localStorage.getItem("section_nav") === "folded";
+  } catch {
+    return false;
+  }
+}
+
 function Structure({ entry, molecules }) {
+  const [navFolded, setNavFolded] = useState(navWasFolded);
+
+  function toggleNav() {
+    const folded = !navFolded;
+    setNavFolded(folded);
+    try { localStorage.setItem("section_nav", folded ? "folded" : "open"); } catch { /* storage blocked */ }
+  }
+
+  // Out of sight, the nav's links leave the tab order. Only beside the page:
+  // on a narrow screen the nav is a strip that never folds. Read at each
+  // render; following a resize as it happens needs useEffect (Phase 6).
+  const navInert = navFolded && !matchMedia("(max-width: 1023px)").matches;
+  const navLabel = navFolded ? "Show the sections" : "Hide the sections";
+
   const shown = entry.rows.filter((row) => !SHOWN_ELSEWHERE.has(row.key));
   const conformation = shown.filter((row) => CONFORMATION.has(row.key));
 
   // One list drives both the nav and the page. JSX is a value, so each
   // section's body can sit in the list like any other field.
+  const nucleicChains = entry.entities
+    .filter((e) => NUCLEIC_KINDS.has(e.kind))
+    .reduce((n, e) => n + e.chains.length, 0);
+
   const sections = [
+    // Without nucleic chains the Views stay listed, marked empty, with no tiles (structure.ejs).
+    { id: "views", title: "Views", group: "views", empty: nucleicChains === 0,
+      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} /> },
     { id: "overview", title: "Overview", group: "overview",
       body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} /> },
     { id: "molecules", title: "Molecules", group: "composition",
@@ -77,12 +111,12 @@ function Structure({ entry, molecules }) {
         <h1>{entry.pdb_id}</h1>
       </div>
       <div className="results_area_body">
-        <div className="structure_page">
-          <SectionNav sections={sections} />
-          {/* The fold handle; folding it needs state (Phase 3). */}
+        <div className={`structure_page${navFolded ? " nav_folded" : ""}`}>
+          <SectionNav sections={sections} inert={navInert} />
+          {/* The fold handle: the sidebar slides away and the handle stays on the edge. */}
           <div className="nav_edge">
             <button type="button" className="panel_handle nav_handle" aria-controls="section_nav"
-                    aria-expanded="true" aria-label="Hide the sections" title="Hide the sections">
+                    aria-expanded={!navFolded} aria-label={navLabel} title={navLabel} onClick={toggleNav}>
               <i className="arrow arrow_side" aria-hidden="true"></i>
             </button>
           </div>
