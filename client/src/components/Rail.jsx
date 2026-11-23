@@ -1,3 +1,5 @@
+import ThemeButton from "./ThemeButton.jsx";
+
 function Rail() {
   return (
     <div className="rail">
@@ -29,6 +31,7 @@ function Rail() {
           <img src="/assets/Q.png" alt="Questions" className="icon-narrow" />
         </a>
       </div>
+      <ThemeButton />
     </div>
   );
 }

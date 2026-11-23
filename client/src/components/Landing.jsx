@@ -15,7 +15,8 @@ function Landing() {
         <div className="landing_inner">
           <Hero />
           <p className="browse_lead">Not sure what to type? Start from what you know.</p>
-          <div className="browse">
+          {/* picking: the rows answer Yes and No here instead of following their links (style.css). */}
+          <div className="browse picking">
             {COLUMNS.map((column) => (
               <div className="browse_column" key={column.join("+")}>
                 {column

@@ -1,8 +1,12 @@
 import { Fragment } from "react";
+import CopyButton from "./CopyButton.jsx";
 
 // A polymer's sequence in lines of 60, as sequence_lines() in detail.js
 // sends it: each line a list of runs, plain letters or a marked span.
 function Sequence({ pdbId, entityId, sequence }) {
+  // What Copy puts on the clipboard: the letters only, no numbers, no spaces.
+  const letters = sequence.lines.flatMap((line) => line.runs.map((run) => run.text)).join("").replace(/\s/g, "");
+
   return (
     <details className="sequence">
       <summary>Show sequence</summary>
@@ -23,10 +27,7 @@ function Sequence({ pdbId, entityId, sequence }) {
         {sequence.modified && <span><span className="sequence_modified">G</span> modified, shown as its parent; hover for the code</span>}
         {sequence.unmodelled && <span><span className="sequence_unmodelled">C</span> not modelled in any chain</span>}
         <span className="sequence_actions">
-          <button type="button" className="sequence_copy" title="Copy sequence" aria-label="Copy sequence">
-            <svg className="icon_copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
-            <svg className="icon_done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
-          </button>
+          <CopyButton text={letters} title="Copy sequence" />
           <a className="download download_small" href={`/structure/${pdbId}/fasta/${entityId}`} download title="Download as FASTA">FASTA</a>
         </span>
       </div>
