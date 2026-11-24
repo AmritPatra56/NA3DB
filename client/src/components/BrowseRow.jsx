@@ -7,20 +7,33 @@ const opensElsewhere = (e) => e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
 function BrowseRow({ row }) {
   // "off", "yes" or "no". Pressing the one already on turns it off.
   const [answer, setAnswer] = useState("off");
+  // The labels of the options ticked under Yes, in the order ticked.
+  const [ticked, setTicked] = useState([]);
   const hasOptions = row.options.length > 0;
+
+  // Off, Yes or No. Leaving Yes empties its ticks (pick.js answer).
+  const give = (target) => {
+    const next = answer === target ? "off" : target;
+    setAnswer(next);
+    if (next !== "yes") setTicked([]);
+  };
+
+  // A new array every time: in with spread, out with filter.
+  const toggle = (label) =>
+    setTicked((prev) => prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]);
 
   // One handler maker for Yes, No and the name, each told which answer it gives.
   const press = (target) => ({
     onClick: (e) => {
       if (opensElsewhere(e)) return;
       e.preventDefault();
-      setAnswer((current) => (current === target ? "off" : target));
+      give(target);
     },
     // Space presses a button; Enter already arrives as a click.
     onKeyDown: (e) => {
       if (e.key !== " ") return;
       e.preventDefault();
-      setAnswer((current) => (current === target ? "off" : target));
+      give(target);
     },
   });
 
@@ -47,7 +60,8 @@ function BrowseRow({ row }) {
           </p>
           <ul aria-label={`${row.label}, ${(row.options_name ?? "most frequent").toLowerCase()}`}>
             {row.options.map((option) => (
-              <BrowseOption key={option.label} option={option} />
+              <BrowseOption key={option.label} option={option}
+                            on={ticked.includes(option.label)} onToggle={() => toggle(option.label)} />
             ))}
           </ul>
         </div>
