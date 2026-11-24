@@ -8,3 +8,4 @@ __pycache__/
 *.pyc
 db/citation_cache/
 viewer/
+.DS_Store

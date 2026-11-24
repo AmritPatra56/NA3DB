@@ -296,6 +296,10 @@ body {
        The search pages put .top_search up there, which is taller than the
        plain header, so it is named once here and used by both. */
     --topbar-h: 60px;
+
+    /* How tall a cell of the rail is. The filter panel's footer is the same
+       height, so the last line across the page is one line too. */
+    --railcell-h: 60px;
 }
 
 .interface:has(.top_search) { --topbar-h: 78px; }
@@ -313,6 +317,7 @@ body {
 }
 
 .results_area {
+    position: relative;   /* the page buttons float over its list */
     flex-grow: 1;
     background-color: var(--bg-primary);
 
@@ -390,7 +395,7 @@ body {
 
 .rail-logo,
 .rail-item {
-    height: 60px;
+    height: var(--railcell-h);
     border-bottom: 1px solid var(--border);
     text-decoration: none;
     color: inherit;
@@ -687,10 +692,17 @@ input::placeholder {
 /* <--------------search footer-----------------------------> */
 
 
+/* The height of a rail cell, so its rule and the rail's last one are the same
+   line across the page; 24px at the sides, the same as .category_body above
+   it, so the button's edges line up with the fields'. */
 .query_panel_footer {
     flex-shrink: 0;
-    padding: 16px;
+    height: var(--railcell-h);
+    padding: 0 24px;
     border-top: 1px solid var(--border);
+
+    display: flex;
+    align-items: center;
 }
 
 .search {
@@ -1253,7 +1265,9 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .sort_field select {
     font-weight: 600;
-    padding: 6px 8px;
+    /* More room on the right than the left: the browser draws its own chevron
+       in there, and at 8px it sits on the border. */
+    padding: 6px 22px 6px 10px;
     border-radius: 5px;
 
     font: inherit;
@@ -1349,27 +1363,48 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 
 
+/* The pages float over the foot of the list rather than standing on a bar of
+   their own: the entries keep scrolling under them, so nothing is hidden by a
+   strip that is mostly empty. Only the buttons take the mouse; the gaps
+   between them belong to the list behind. */
 .pagination {
-    height: 48px;
-    flex-shrink: 0;
-    border-top: 1px solid var(--border-dark);
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 14px;
+    z-index: 5;
+    pointer-events: none;
 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
 }
 
+.pagination:empty { display: none; }
+
+/* Room at the foot of the list, so its last entry can be scrolled out from
+   under the buttons. Only where there are buttons: the structure and report
+   pages share this scroller and have none. */
+.results_area:has(.pagination:not(:empty)) .results_area_body {
+    padding-bottom: 58px;
+}
+
+/* Each one its own button, frosted so what is under it still shows. */
 .page_num,
 .page_arrow {
+    pointer-events: auto;
+    min-width: 30px;
+    padding: 5px 9px;
     font: inherit;
-    background-color: transparent;
-    border: none;
     color: var(--text-muted);
-    padding: 4px 8px;
-    border-radius: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background-color: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 1px 4px rgb(var(--shadow-rgb) / 0.1);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .page_num {
@@ -1378,26 +1413,32 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .page_arrow {
     font-size: 14px;
+    line-height: 1;
 }
 
-.page_num:hover {
-    background-color: var(--bg-secondary);
-}
-
-.page_num.active {
-    background-color: var(--border);
+.page_num:hover:not(.active),
+.page_arrow:hover:not(:disabled) {
+    border-color: var(--input-border-hover);
     color: var(--text);
 }
 
+.page_num.active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+}
+
 .page_arrow:disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: default;
 }
 
 .page_dots {
     font-size: 12px;
     color: var(--text-dim);
-    padding: 0 4px;
+    padding: 0 2px;
+    text-shadow: 0 0 4px var(--bg-primary);
 }
 
 .page_num:focus-visible,
@@ -1655,6 +1696,28 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     cursor: pointer;
 }
 .browse_card .browse_answer a + a { border-left: 1px solid var(--input-border); }
+
+/* A row with options says so on its Yes: a small chevron, pointing right while
+   the shelf is shut and down while it is open (the shared .arrow rules turn it
+   by aria-expanded). Without pick.js nothing opens, so nothing is promised. */
+.browse_yes .arrow { display: none; }
+
+.picking .browse_yes {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+}
+
+.picking .browse_yes .arrow {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    vertical-align: 0;
+}
+
+/* On the filled Yes the chevron takes the colour the word does. */
+.browse_card .browse_yes[aria-pressed="true"] .arrow { background: var(--bg-primary); }
 .browse_card .browse_yes:hover { color: var(--accent); background: var(--accent-wash); }
 .browse_card .browse_no:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, transparent); }
 .browse_card .browse_yes[aria-pressed="true"] { color: var(--bg-primary); background: var(--accent); }
@@ -2016,17 +2079,17 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     justify-content: center;
 
     color: var(--text);
-    background-color: var(--bg-primary);
-    border: 0;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-dark);
     border-radius: 8px;
     cursor: pointer;
 
-    transition: left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s;
+    transition: left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s, border-color 0.2s;
 }
 
-/* A bare arrow, no outline: the page colour behind it only hides the seam
-   it sits on, and a pale tint shows it is pressable. */
-.panel_handle:hover { background-color: var(--accent-wash); }
+/* Drawn as a control rather than a bare arrow: sitting on the seam between
+   two panels, an outline is what tells it from the join. */
+.panel_handle:hover { background-color: var(--accent-wash); border-color: var(--accent); }
 .panel_handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* Folded, the handle becomes a tab on the page's edge, with a count of the
@@ -2925,7 +2988,8 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .field input,
     .range_row input { font-size: 16px; padding: 10px; }
 
-    .query_panel_footer { padding: 12px; }
+    /* Stacked, with no rail beside it to line up with. */
+    .query_panel_footer { height: auto; padding: 12px 16px; }
     .query_panel_footer .search,
     .query_panel_footer .download { width: 100%; min-height: 48px; font-size: 15px; }
 
@@ -2948,7 +3012,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .result_row { padding: 12px; }
 
-    .pagination { height: 60px; }
+    .pagination { bottom: 10px; gap: 8px; }
 
     .page_num,
     .page_arrow { min-width: 40px; min-height: 40px; font-size: 14px; }
@@ -4077,7 +4141,8 @@ path.arc_nc { stroke: var(--pair-nc); }
 .ss_pick select {
     min-width: 0;
     max-width: 260px;
-    padding: 4px 8px;
+    /* Room on the right for the browser's own chevron, as .sort_field. */
+    padding: 4px 22px 4px 10px;
     font: inherit;
     color: var(--text);
     background: var(--bg-secondary);

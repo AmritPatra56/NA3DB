@@ -45,7 +45,7 @@ test("every token in use is defined, and every token defined is used", () => {
     // themes; footer-h, topbar-h (the bar across the top, which the rail's
     // logo cell matches), viewer and rows (the structure page's Views column
     // and the sections beside it) are sizes, the same in both.
-    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h", "topbar-h", "viewer", "rows"]);
+    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h", "topbar-h", "railcell-h", "viewer", "rows"]);
     for (const name of used) {
         if (!local.has(name)) assert.ok(name in LIGHT, `--${name} is used but never defined`);
     }
