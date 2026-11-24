@@ -87,7 +87,10 @@
                                     <span class="browse_bar" style="--share: <%= row.share.toFixed(3) %>"></span>
                                 </a>
                                 <span class="browse_answer" role="group" aria-label="<%= row.label %>">
-                                    <a class="browse_yes" href="<%= row.url %>" data-say="<%= row.say_yes %>">Yes</a>
+                                    <%# The chevron says this row has more inside: Yes opens its options.
+                                        Only rows that have any carry it, and style.css keeps it out of
+                                        sight until pick.js is there to open anything. %>
+                                    <a class="browse_yes" href="<%= row.url %>" data-say="<%= row.say_yes %>">Yes<% if (row.options.length) { %><i class="arrow" aria-hidden="true"></i><% } %></a>
                                     <a class="browse_no" href="<%= row.no_url %>" data-say="<%= row.say_no %>">No</a>
                                 </span>
                                 <%# Opened by pick.js while Yes is on. %>
