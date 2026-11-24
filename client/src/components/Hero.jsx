@@ -22,28 +22,6 @@ function Hero() {
         </svg>
       </h1>
       <p className="landing_tagline">Nucleic Acid 3D Database</p>
-
-      {/* A plain GET form: the box works before any script runs, and
-          submitting lands on a real, shareable /search?q= address. */}
-      <form className="landing_search" action="/search" method="get">
-        <div className="landing_field">
-          {/* Once a row is ticked (Phase 4): what is ticked, and the way to
-              drop it, standing where the invitation to type stands. */}
-          <div className="picked_line" hidden>
-            <p className="pick_what"></p>
-            <button type="button" className="pick_clear">Clear</button>
-          </div>
-          <input type="text" name="q" autoFocus autoComplete="off"
-                 placeholder="Search an id, molecule, author or organism" />
-          {/* How many structures the ticked rows find (Phase 4). */}
-          <p className="pick_count" aria-live="polite"></p>
-        </div>
-        <button type="submit">Search</button>
-      </form>
-
-      {/* Filled with a live count as you type in Phase 6. Empty but always
-          in the flow, so the cards below never jump when a number appears. */}
-      <p className="landing_count"></p>
     </>
   );
 }

@@ -1,56 +1,28 @@
-import { useState } from "react";
 import BrowseOption from "./BrowseOption.jsx";
+import { press } from "../press.js";
+import { number } from "../format.js";
 
-// A click meant to open the link elsewhere (Ctrl, Cmd, Shift, Alt) still does.
-const opensElsewhere = (e) => e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
-
-function BrowseRow({ row }) {
-  // "off", "yes" or "no". Pressing the one already on turns it off.
-  const [answer, setAnswer] = useState("off");
-  // The labels of the options ticked under Yes, in the order ticked.
-  const [ticked, setTicked] = useState([]);
+// One row: its name, Yes, No and, under Yes, its options. Landing keeps the
+// answer and the ticks (lifting state up); the row shows them and asks.
+function BrowseRow({ row, answer, ticked, onAnswer, onTick }) {
   const hasOptions = row.options.length > 0;
-
-  // Off, Yes or No. Leaving Yes empties its ticks (pick.js answer).
-  const give = (target) => {
-    const next = answer === target ? "off" : target;
-    setAnswer(next);
-    if (next !== "yes") setTicked([]);
-  };
-
-  // A new array every time: in with spread, out with filter.
-  const toggle = (label) =>
-    setTicked((prev) => prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]);
-
-  // One handler maker for Yes, No and the name, each told which answer it gives.
-  const press = (target) => ({
-    onClick: (e) => {
-      if (opensElsewhere(e)) return;
-      e.preventDefault();
-      give(target);
-    },
-    // Space presses a button; Enter already arrives as a click.
-    onKeyDown: (e) => {
-      if (e.key !== " ") return;
-      e.preventDefault();
-      give(target);
-    },
-  });
 
   return (
     <li className="browse_row">
       {/* The name presses Yes for a mouse; the keyboard has Yes itself. */}
-      <a className="browse_link" href={row.url} tabIndex={-1} {...press("yes")}>
+      <a className="browse_link" href={row.url} tabIndex={-1} {...press(() => onAnswer("yes"))}>
         <span className="browse_name">{row.label}</span>
-        <span className="browse_count">{row.count.toLocaleString("en-GB")}</span>
+        <span className="browse_count">{number(row.count)}</span>
         <span className="browse_bar" style={{ "--share": row.share.toFixed(3) }}></span>
       </a>
       <span className="browse_answer" role="group" aria-label={row.label}>
         <a className="browse_yes" href={row.url} data-say={row.say_yes} role="button"
-           aria-pressed={answer === "yes"} {...press("yes")}
-           aria-expanded={hasOptions ? answer === "yes" : undefined}>Yes</a>
+           aria-pressed={answer === "yes"} {...press(() => onAnswer("yes"))}
+           aria-expanded={hasOptions ? answer === "yes" : undefined}>
+          Yes{hasOptions && <i className="arrow" aria-hidden="true"></i>}
+        </a>
         <a className="browse_no" href={row.no_url} data-say={row.say_no} role="button"
-           aria-pressed={answer === "no"} {...press("no")}>No</a>
+           aria-pressed={answer === "no"} {...press(() => onAnswer("no"))}>No</a>
       </span>
       {/* The options show only while Yes is on: one more thing worked out from answer. */}
       {hasOptions && (
@@ -61,7 +33,7 @@ function BrowseRow({ row }) {
           <ul aria-label={`${row.label}, ${(row.options_name ?? "most frequent").toLowerCase()}`}>
             {row.options.map((option) => (
               <BrowseOption key={option.label} option={option}
-                            on={ticked.includes(option.label)} onToggle={() => toggle(option.label)} />
+                            on={ticked.includes(option.label)} onToggle={() => onTick(option.label)} />
             ))}
           </ul>
         </div>
