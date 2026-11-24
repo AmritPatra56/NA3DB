@@ -83,9 +83,17 @@ test("every landing link asks one filter, which the script reads", () => {
 
 test("the page carries the buttons, the picked line and the script, and the line starts hidden", () => {
     let page = readFileSync(new URL("./views/landing.ejs", import.meta.url), "utf8");
-    assert.match(page, /<a class="browse_yes" href="<%= row\.url %>" data-say="<%= row\.say_yes %>">Yes<\/a>/);
+    assert.match(page, /<a class="browse_yes" href="<%= row\.url %>" data-say="<%= row\.say_yes %>">Yes</);
     assert.match(page, /<a class="browse_no" href="<%= row\.no_url %>" data-say="<%= row\.say_no %>">No<\/a>/);
     assert.match(page, /<div class="browse_options" hidden>/, "options wait for Yes");
+    // Only a row with options promises any: the chevron is on its Yes, inside
+    // the same test the shelf is.
+    assert.match(page, /data-say="<%= row\.say_yes %>">Yes<% if \(row\.options\.length\) \{ %><i class="arrow" aria-hidden="true"><\/i><% \} %><\/a>/,
+                 "the Yes of a row with options carries the shared chevron");
+    let look = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(look, /\n\.browse_yes \.arrow \{ display: none; \}/,
+                 "without pick.js nothing opens, so nothing is promised");
+    assert.match(look, /\.picking \.browse_yes \.arrow \{/);
     assert.match(page, /<span class="browse_tick" aria-hidden="true"><\/span>/);
     assert.match(page, /<div class="picked_line" hidden>/);
     assert.match(page, /class="pick_count" aria-live="polite"/);
