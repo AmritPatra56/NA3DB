@@ -2,95 +2,25 @@ import { useState } from "react";
 import StructureFacts from "./StructureFacts.jsx";
 import Molecules from "./Molecules.jsx";
 import Views from "./Views.jsx";
-
-// Rows the page shows another way (detail.js SHOWN_ELSEWHERE), and the rows
-// that sit under Conformation rather than Overview.
-const SHOWN_ELSEWHERE = new Set(["nonstandard_residue", "monomer_flag", "ligands", "assigned_ntc", "ntc_classes"]);
-const CONFORMATION = new Set(["confal_score", "confal_percentile", "ntc_step_count"]);
-// detail.js NUCLEIC_KINDS: the Views draw only these chains.
-const NUCLEIC_KINDS = new Set(["RNA", "DNA", "DNA/RNA hybrid"]);
-
-// detail.js PAGE_GROUPS: the nav's groups, in page order.
-const PAGE_GROUPS = [
-  { key: "views", label: "Views" },
-  { key: "overview", label: "Overview" },
-  { key: "composition", label: "Composition" },
-  { key: "structure", label: "Structure" },
-  { key: "references", label: "References" },
-];
-
-function Section({ id, title, group, empty, tools, children }) {
-  const groupLabel = PAGE_GROUPS.find((g) => g.key === group).label;
-  return (
-    <section id={id} className={`page_section group_${group}${empty ? " empty" : ""}`} aria-labelledby={`${id}-title`}>
-      <div className="section_band">
-        <div className="band_title">
-          {/* JSX drops the line break EJS has here, so the space is written. */}
-          {title !== groupLabel && <><span className="band_group">{groupLabel}</span>{" "}</>}
-          <h2 id={`${id}-title`}>{title}</h2>
-        </div>
-        <div className="band_tools">{tools}</div>
-      </div>
-      <div className="section_body" id={`${id}-body`}>
-        {children}
-      </div>
-    </section>
-  );
-}
-
-// The sidebar: each group's sections, a group of one section being its own link.
-function SectionNav({ sections, inert }) {
-  return (
-    <nav className="section_nav" id="section_nav" aria-label="Sections of this page" inert={inert}>
-      {PAGE_GROUPS.map((group) => {
-        const inGroup = sections.filter((s) => s.group === group.key);
-        if (inGroup.length === 0) return null;
-        return (
-          <div className={`nav_group group_${group.key}`} key={group.key}>
-            {inGroup[0].title !== group.label && <div className="nav_group_label">{group.label}</div>}
-            {inGroup.map((s) => (
-              <a href={`#${s.id}`} key={s.id}
-                 className={`nav_item${s.title === group.label ? " nav_solo" : ""}${s.empty ? " empty" : ""}`}>{s.title}</a>
-            ))}
-          </div>
-        );
-      })}
-    </nav>
-  );
-}
-
-// The nav folded or open as last time, kept for the next structure (structure.ejs).
-function navWasFolded() {
-  try {
-    return localStorage.getItem("section_nav") === "folded";
-  } catch {
-    return false;
-  }
-}
-
-// The Views wide or narrow as last time (structure.ejs, views_wide).
-function viewsWereWide() {
-  try {
-    return localStorage.getItem("views_wide") === "on";
-  } catch {
-    return false;
-  }
-}
+import Section from "./Section.jsx";
+import SectionNav from "./SectionNav.jsx";
+import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS } from "../structure.js";
+import { remembered, remember } from "../remember.js";
 
 function Structure({ entry, molecules }) {
-  const [navFolded, setNavFolded] = useState(navWasFolded);
-  const [viewsWide, setViewsWide] = useState(viewsWereWide);
+  const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
+  const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
 
   function toggleWide() {
     const wide = !viewsWide;
     setViewsWide(wide);
-    try { localStorage.setItem("views_wide", wide ? "on" : "off"); } catch { /* storage blocked */ }
+    remember("views_wide", wide ? "on" : "off");
   }
 
   function toggleNav() {
     const folded = !navFolded;
     setNavFolded(folded);
-    try { localStorage.setItem("section_nav", folded ? "folded" : "open"); } catch { /* storage blocked */ }
+    remember("section_nav", folded ? "folded" : "open");
   }
 
   // Out of sight, the nav's links leave the tab order. Only beside the page:

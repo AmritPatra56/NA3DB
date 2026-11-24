@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { recall, remember, forget } from "../remember.js";
 
 // The theme button in the rail: Auto (follow the device), Light, Dark, in turn.
 // Same storage key as the EJS site, so both remember one choice.
@@ -11,12 +12,8 @@ const SAYS = {
 };
 
 function stored() {
-  try {
-    const t = localStorage.getItem(KEY);
-    return t === "light" || t === "dark" ? t : "auto";
-  } catch {
-    return "auto";
-  }
+  const t = recall(KEY);
+  return t === "light" || t === "dark" ? t : "auto";
 }
 
 function ThemeButton() {
@@ -25,12 +22,8 @@ function ThemeButton() {
 
   function handleClick() {
     const next = NEXT[choice];
-    try {
-      if (next === "auto") localStorage.removeItem(KEY);
-      else localStorage.setItem(KEY, next);
-    } catch {
-      // Storage blocked: the choice still holds for this page.
-    }
+    if (next === "auto") forget(KEY);
+    else remember(KEY, next);
     // <html> is outside React's #root, so the click sets it directly.
     if (next === "auto") delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = next;

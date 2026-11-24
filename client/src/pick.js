@@ -6,6 +6,8 @@
 // (DNA or RNA); a not_ key, none of them; different keys must all match.
 // That is how /search reads them, so the count is what Search finds.
 
+import { number } from "./format.js";
+
 const NOT = "not_";
 
 // What the picks ask, one key at a time: values merged in the order picked,
@@ -49,4 +51,4 @@ export function pickUrl(base, text, picks, extra = {}) {
 
 export const pickWords = (n) => n === 0 ? "No structures match"
                               : n === 1 ? "1 structure"
-                              : `${n.toLocaleString("en-GB")} structures`;
+                              : `${number(n)} structures`;

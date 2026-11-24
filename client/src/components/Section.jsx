@@ -1,0 +1,23 @@
+import { PAGE_GROUPS } from "../structure.js";
+
+// One section of the structure page: its band (group, title, tools) and body.
+function Section({ id, title, group, empty, tools, children }) {
+  const groupLabel = PAGE_GROUPS.find((g) => g.key === group).label;
+  return (
+    <section id={id} className={`page_section group_${group}${empty ? " empty" : ""}`} aria-labelledby={`${id}-title`}>
+      <div className="section_band">
+        <div className="band_title">
+          {/* JSX drops the line break EJS has here, so the space is written. */}
+          {title !== groupLabel && <><span className="band_group">{groupLabel}</span>{" "}</>}
+          <h2 id={`${id}-title`}>{title}</h2>
+        </div>
+        <div className="band_tools">{tools}</div>
+      </div>
+      <div className="section_body" id={`${id}-body`}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+export default Section;
