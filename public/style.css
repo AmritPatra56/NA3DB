@@ -693,29 +693,17 @@ input::placeholder {
     border-top: 1px solid var(--border);
 }
 
+/* The panel's own Search, which says how many entries it would show. A button
+   like every other (.download carries the shape); it is the whole width of the
+   footer because it is the one thing to do there. */
 .search {
     width: 100%;
-    padding: 8px 0;
-    border-radius: 5px;
-    font: inherit;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background-color: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--input-border);
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
+    padding: 9px 14px;
 }
 
-.search:hover:not(:disabled) {
-    border-color: var(--input-border-hover);
-    background-color: var(--bg-primary);
-}
-
-.search:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+/* A magnifier, not the download arrow: this one runs the search. */
+.search::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M16 16l4 4'/%3E%3C/svg%3E");
 }
 
 
