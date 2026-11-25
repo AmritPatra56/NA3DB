@@ -14,11 +14,11 @@ const under = (input) => ({ left: `${input.offsetLeft}px`, top: `${input.offsetT
 // where the list sits, and the text it was closed for (Escape, a pick, a
 // search; typing on opens it again).
 //
-// text: the box as typed. pathFor(text): the request for its names.
+// text: the box as typed. getPath(text): the request for its names.
 // onPick(item): a name picked.
 // Returns list (SuggestList's props), input (the box's combobox props) and
 // typed(e), for the box's onChange.
-export function useBoxSuggest(text, pathFor, onPick) {
+export function useBoxSuggest(text, getPath, onPick) {
   const [focused, setFocused] = useState(false);
   const [closedFor, setClosedFor] = useState(null);
   const [active, setActive] = useState({ for: null, at: -1 });
@@ -28,7 +28,7 @@ export function useBoxSuggest(text, pathFor, onPick) {
   const [ask, setAsk] = useState({ path: null, round: 0 });
   const askFor = (typed) => {
     const t = typed.trim();
-    setAsk({ path: suggestable(t) ? pathFor(t) : null, round: ask.round + 1 });
+    setAsk({ path: suggestable(t) ? getPath(t) : null, round: ask.round + 1 });
   };
 
   const trimmed = text.trim();

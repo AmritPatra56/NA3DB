@@ -4,8 +4,8 @@ import MeantList from "./MeantList.jsx";
 // each a real link with the count it gives (update_empty_state). Never
 // applied without a click; a plain click searches in place, a ctrl-click or
 // middle click opens the link as usual.
-// hrefOf(s): the link's address. onPick(s): search it here.
-function DidYouMean({ suggestions, hrefOf, onPick }) {
+// getHref(s): the link's address. onPick(s): search it here.
+function DidYouMean({ suggestions, getHref, onPick }) {
   if (suggestions.length === 0) return <p className="did_you_mean hidden"></p>;
 
   function pick(e, s) {
@@ -17,7 +17,7 @@ function DidYouMean({ suggestions, hrefOf, onPick }) {
   return (
     <p className="did_you_mean">
       <MeantList suggestions={suggestions} renderItem={(s) => (
-        <a href={hrefOf(s)} data-field={s.field} data-value={s.value} onClick={(e) => pick(e, s)}>{s.value}</a>
+        <a href={getHref(s)} data-field={s.field} data-value={s.value} onClick={(e) => pick(e, s)}>{s.value}</a>
       )} />
     </p>
   );

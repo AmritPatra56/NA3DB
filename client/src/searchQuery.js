@@ -22,6 +22,14 @@ export function filtersFromParams(params, registry) {
   return filters;
 }
 
+// The filters an /api/entries request asked for, read back from its query
+// string as from an address, so the chips name what was searched.
+export const filtersOfPath = (path, registry) =>
+  filtersFromParams(new URLSearchParams(path.slice(path.indexOf("?") + 1)), registry);
+
+// Every value an address names: a pill no entry has still shows if the link picked it.
+export const askedValues = (search) => [...new URLSearchParams(search).values()].flatMap((v) => v.split(","));
+
 // The not_<key> filters of a search, kept through every change to the panel.
 export const excludedOf = (filters) => Object.fromEntries(Object.entries(filters).filter(([k]) => k.startsWith(NOT)));
 
