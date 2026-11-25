@@ -62,3 +62,21 @@ export function cardParts(entry) {
     rows: entry.card.filter((row) => !CARD_HEAD.has(row.key) || row.searched),
   };
 }
+
+// The structure page of one entry, for every view's link.
+export const entryHref = (id) => "/structure/" + encodeURIComponent(id);
+
+// What a line says (app.js row_html): the full deposition date, the resolution.
+export function lineParts(entry) {
+  return {
+    method: methodLabel(entry.method),
+    resolution: entry.resolution === null ? "" : resolutionText(entry.resolution),
+    date: entry.deposition_date ?? "",
+  };
+}
+
+// A grid tile's one line of facts (app.js tile_html): method, resolution, year.
+export function tileFacts(entry) {
+  return [methodLabel(entry.method), resolutionText(entry.resolution), yearOf(entry.deposition_date) || null]
+    .filter(Boolean).join(" · ");
+}

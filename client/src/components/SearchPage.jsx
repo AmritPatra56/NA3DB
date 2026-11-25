@@ -21,7 +21,7 @@ const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 // ├─ FilterPanel        the categories (7.7) and Search
 // ├─ PanelHandle        folds the panel (7.8)
 // ├─ ResultsHeader      Entries (n), page size, layout, order, range
-// ├─ ResultsList → ResultCard ×n
+// ├─ ResultsList → ResultCard | ResultLine | GridTile ×n
 // ├─ ResultsState       spinner, error, No entries found
 // └─ Pagination         arrows and page buttons
 function SearchPage() {
@@ -62,14 +62,16 @@ function SearchPage() {
         <FilterPanel busy={busy} />
         <PanelHandle />
         <div className="results_area">
-          {/* A new order or page size is a new first page. */}
+          {/* A new order or page size is a new first page. A new layout redraws
+              the page already here: the request leaves view out, so none is sent. */}
           {query && <ResultsHeader registry={registry.data} query={query}
                                    total={results.total} start={start} shown={results.results.length}
                                    onSort={(sort) => search({ ...query, sort, page: 1 })}
-                                   onPerPage={(perPage) => search({ ...query, perPage, page: 1 })} />}
+                                   onPerPage={(perPage) => search({ ...query, perPage, page: 1 })}
+                                   onView={(view) => search({ ...query, view, page: results.page })} />}
           <p className="search_note hidden" aria-live="polite"></p>
           <div className="results_area_body">
-            <ResultsList entries={results.results} hidden={busy} />
+            <ResultsList entries={results.results} view={query?.view ?? "cards"} hidden={busy} />
             <ResultsState busy={busy} error={error?.message} empty={!busy && !error && results.total === 0} />
           </div>
           <Pagination page={results.page} pages={results.pages}

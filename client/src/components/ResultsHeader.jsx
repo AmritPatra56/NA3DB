@@ -3,9 +3,8 @@ import { perPageFrom } from "../searchQuery.js";
 
 // Above the results (search.ejs results_area_header): how many, the page size,
 // the layout, the order and which ones are shown (app.js update_header).
-// onSort(key), onPerPage(n): hand a new choice up to SearchPage. The layout
-// switch acts in 7.4.
-function ResultsHeader({ registry, query, total, start, shown, onSort, onPerPage }) {
+// onSort(key), onPerPage(n), onView(view): hand a new choice up to SearchPage.
+function ResultsHeader({ registry, query, total, start, shown, onSort, onPerPage, onView }) {
   const perPageBox = useRef(null);
   const sortBox = useRef(null);
 
@@ -45,7 +44,8 @@ function ResultsHeader({ registry, query, total, start, shown, onSort, onPerPage
       <div className="results_tools">
         <div className="view_switch" role="group" aria-label="Result layout">
           {[["grid", "Grid"], ["cards", "Cards"], ["lines", "Lines"]].map(([view, label]) => (
-            <button type="button" key={view} data-view={view} aria-pressed={query.view === view}>{label}</button>
+            <button type="button" key={view} data-view={view} aria-pressed={query.view === view}
+                    onClick={() => view !== query.view && onView(view)}>{label}</button>
           ))}
         </div>
         <label className="sort_field">
