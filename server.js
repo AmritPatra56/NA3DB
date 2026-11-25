@@ -99,10 +99,25 @@ app.get("/api/health", async (req, res) => {
 
 // How many entries the database holds, asked fresh so a load shows up at once.
 app.get("/api/stats", async (req, res) => {
-    let result = await query("SELECT count(*) FROM entry");
+    res.json(await database_stats());
+});
 
-    // pg returns bigint as a string so nothing is silently rounded.
-    res.json({ total: Number(result.rows[0].count) });
+// The landing page's five questions with their counts, for a client that draws
+// them itself. Only the fields a card shows go out, so the server's own keys
+// (params, choices, within, top) can change without breaking a client.
+app.get("/api/browse", async (req, res) => {
+    let groups = await browse_counts();
+    let option = ({ label, note, url, say, count, share }) =>
+        ({ label, note: note ?? null, url, say: say ?? null, count, share });
+
+    res.json(groups.map((g) => ({
+        area: g.area, question: g.question, hint: g.hint, foot: g.foot ?? null,
+        rows: g.rows.map((r) => ({
+            label: r.label, count: r.count, share: r.share, url: r.url, no_url: r.no_url,
+            say_yes: r.say_yes, say_no: r.say_no, options_name: r.options_name ?? null,
+            options: r.options.map(option)
+        }))
+    })));
 });
 
 
@@ -432,12 +447,29 @@ app.get("/api/entries/:id", async (req, res) => {
 
     // The raw fields and the display rows, never one instead of the other:
     // entry.resolution stays 2.2, rows has it as "2.20 Å".
-    let contents = await entry_contents(entry.pdb_id);
-    res.json({ ...entry, rows: detail_rows(entry),
-               entities: contents.entities, modified_nucleotides: contents.modified,
-               citation: await entry_citation(entry.pdb_id),
+    // Rows as the structure page has them: Published and Authors from the
+    // checked reference (cited_rows), so a client drawing the page from JSON
+    // shows what the EJS page shows.
+    let [contents, citation] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id)]);
+    res.json({ ...entry, rows: cited_rows(detail_rows(entry), citation),
+               entities: contents.entities, modified_nucleotides: contents.modified, citation,
                // Whether /viewer/ is served, so a client page can offer 3D as structure.ejs does.
                viewer: viewer_installed });
+});
+
+// The structure page's Molecules, Modified nucleotides and Ligands tables,
+// finished: modelled counts, numbering and sequence lines need the residues,
+// and the formatting lives in detail.js, so a client draws what arrives.
+app.get("/api/entries/:id/molecules", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let [contents, residues] = await Promise.all([entry_contents(entry.pdb_id), entry_residues(entry.pdb_id)]);
+    res.json(molecule_groups(contents, residues));
 });
 
 // Every base pair of one entry, first model, as the page lists them.
