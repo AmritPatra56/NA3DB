@@ -7,3 +7,6 @@ export function countLabel(total) {
   if (total === 1) return "Show 1 result";
   return `Show ${total.toLocaleString("en-GB")} results`;
 }
+
+// The line under the top box (paint_box_count), when the count finds some.
+export const structures = (total) => (total === 1 ? "1 structure" : `${total.toLocaleString("en-GB")} structures`);

@@ -8,7 +8,8 @@ import ResultsState from "./ResultsState.jsx";
 import Pagination from "./Pagination.jsx";
 import SearchNote from "./SearchNote.jsx";
 import { useApi } from "../hooks/useApi.js";
-import { queryFromAddress, entriesPath, countPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
+import { queryFromAddress, entriesPath, countPath, boxSuggestPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
+import { searchable } from "../query.js";
 import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelForm.js";
 import { chipsOf, withoutChip } from "../chips.js";
 import ChipsBar from "./ChipsBar.jsx";
@@ -128,16 +129,42 @@ function SearchPage({ onAddress }) {
   const start = (results.page - 1) * results.page_size;
   // The number the button shows: whichever answered last, a search or a count.
   // A failed count says plain Search; a failed search leaves it.
-  const [total, setTotal] = useState({ reply: null, count: null, value: null });
+  // box: the count under the top box, from the same counts (paint_box_count),
+  // while the box holds a search; a search answered clears it.
+  const [total, setTotal] = useState({ reply: null, count: null, value: null, box: null });
   const counted = count.data ?? count.error;
-  if (reply.data && reply.data !== total.reply) setTotal({ ...total, reply: reply.data, value: reply.data.total });
-  else if (counted && counted !== total.count) setTotal({ ...total, count: counted, value: count.data?.total ?? null });
+  const boxed = searchable(panel?.values.q.trim() ?? "");
+  if (reply.data && reply.data !== total.reply) setTotal({ ...total, reply: reply.data, value: reply.data.total, box: null });
+  else if (counted && counted !== total.count) {
+    setTotal({ ...total, count: counted, value: count.data?.total ?? null, box: boxed ? count.data : null });
+  }
+  const clearBox = () => setTotal({ ...total, box: null });
+
+  // The top box typed in: under two letters its count goes at once.
+  function onBox(name, value) {
+    onValue(name, value);
+    if (!searchable(value.trim())) clearBox();
+  }
+  // A name under the box picked: an organism, residue or ligand goes in its own
+  // filter, the box emptied; anything else fills the box. Then it is searched.
+  function onBoxPick(item) {
+    if (item.href) {
+      window.location.href = item.href;
+      return;
+    }
+    clearBox();
+    search({ page: 1 }, item.filter ? withValue(withValue(panel, "q", ""), item.filter, item.value) : withValue(panel, "q", item.value));
+  }
 
   return (
     <div className="workspace">
       {/* A different answer, so back to its first page. */}
-      {query && <TopSearch registry={registry.data} query={query} values={panel.values} onValue={onValue}
-                           onMatch={(match) => search({ match, page: 1 })} />}
+      {query && <TopSearch registry={registry.data} query={query} values={panel.values} onValue={onBox}
+                           onMatch={(match) => search({ match, page: 1 })}
+                           suggestPath={(text) => boxSuggestPath({ filters: filtersOf(panel), match: query.match }, text)}
+                           onPick={onBoxPick}
+                           count={total.box}
+                           onSuggest={(s) => { clearBox(); search({ page: 1 }, withValue(panel, s.field, s.value)); }} />}
       {/* Chips of the search last answered; a removal searches the whole form. */}
       <ChipsBar chips={registry.data ? chipsOf(painted.filters, registry.data) : []}
                 onRemove={(chip) => {

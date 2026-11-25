@@ -3,7 +3,9 @@ import { GROUP_LABELS, LIST_ID, optionId, marked } from "../suggest.js";
 
 // The names under the box, grouped, each with what picking it finds. Shows
 // what SearchBox gives it; a press on a name is handed back up.
-function SuggestList({ reply, open, active, place, onPick }) {
+// selecting: the arrows have moved in this list; until then no name says
+// whether it is on, as the old list draws them.
+function SuggestList({ reply, open, active, selecting, place, onPick }) {
   let i = -1;
   return (
     <ul id={LIST_ID} className="box_suggest" role="listbox" aria-label="Suggestions" hidden={!open} style={place}>
@@ -15,7 +17,7 @@ function SuggestList({ reply, open, active, place, onPick }) {
           const at = i;
           const [before, mark, after] = marked(item.label, reply.text);
           return (
-            <li role="option" id={optionId(at)} aria-selected={at === active} key={`${group.kind} ${item.value}`}
+            <li role="option" id={optionId(at)} aria-selected={selecting ? at === active : undefined} key={`${group.kind} ${item.value}`}
                 // mousedown, not click: click comes after the box's blur closes the list.
                 onMouseDown={(e) => { e.preventDefault(); onPick(item); }}>
               <span className="box_suggest_name">{before}{mark !== undefined && <mark>{mark}</mark>}{after}</span>
