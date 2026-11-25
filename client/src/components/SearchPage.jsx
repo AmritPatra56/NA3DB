@@ -21,7 +21,7 @@ const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 //
 // SearchPage            the search and the reply
 // ├─ TopSearch          Contains/Excludes, the box, its count
-// ├─ FilterPanel        the form → Category ×3 → TextField | NumberField | RangeField | PillGroup
+// ├─ FilterPanel        the form → Category ×3 → TextField | SuggestField → NameList | NumberField | RangeField | PillGroup
 // ├─ PanelHandle        folds the panel; the count of filters in use
 // ├─ ResultsHeader      Entries (n), page size, layout, order, range
 // ├─ SearchNote         how the box was read; the exact-phrase offer
