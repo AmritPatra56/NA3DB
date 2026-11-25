@@ -15,7 +15,9 @@ function TopSearch({ registry, query }) {
       <div className="top_search_box">
         {registry.filters.filter((f) => f.prominent).map((f) => (
           <Fragment key={f.key}>
-            <input type="text" id={f.key} name={f.key} form="query_form" autoComplete="off"
+            {/* Keyed by its value, so a search chosen elsewhere (a suggestion, the
+                exact phrase) shows up in the box. */}
+            <input key={query.filters[f.key]} type="text" id={f.key} name={f.key} form="query_form" autoComplete="off"
                    placeholder="Search an id, molecule, author or organism" defaultValue={query.filters[f.key]} />
             <button type="submit" form="query_form">Search</button>
           </Fragment>

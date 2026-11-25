@@ -106,3 +106,17 @@ export function entriesPath(query) {
   params.set("match", query.match);
   return "/api/entries?" + params.toString();
 }
+
+// The link for one close search under No entries found (update_empty_state):
+// this search's address with that field set and the page dropped. Only a
+// ctrl-click or a new tab follows it; a plain click searches in place.
+export function suggestionHref(query, registry, suggestion) {
+  const params = new URLSearchParams(addressOf(query, registry));
+  params.set(suggestion.field, suggestion.value);
+  params.delete("page");
+  return "/search?" + params.toString().replaceAll("+", "%20");
+}
+
+// The same search with one text filter set, from page 1: what picking a
+// suggestion or the exact-phrase offer asks for.
+export const withFilter = (query, key, value) => ({ ...query, filters: { ...query.filters, [key]: value }, page: 1 });
