@@ -10,7 +10,8 @@ import SearchNote from "./SearchNote.jsx";
 import { useApi } from "../hooks/useApi.js";
 import { queryFromAddress, entriesPath, countPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
 import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelForm.js";
-import { chipsOf } from "../chips.js";
+import { chipsOf, withoutChip } from "../chips.js";
+import ChipsBar from "./ChipsBar.jsx";
 import { countLabel } from "../countLabel.js";
 
 const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
@@ -23,6 +24,7 @@ const COUNT_SETTLE_MS = 250;
 //
 // SearchPage            the search and the reply
 // ├─ TopSearch          Contains/Excludes, the box, its count
+// ├─ ChipsBar           the filters in use, each one removable
 // ├─ FilterPanel        the form → Category ×3 → TextField | SuggestField → NameList | NumberField | RangeField | PillGroup
 // ├─ PanelHandle        folds the panel; the count of filters in use
 // ├─ ResultsHeader      Entries (n), page size, layout, order, range
@@ -58,9 +60,10 @@ function SearchPage() {
   // into the address unless it already is that search, then searched.
   // form: the form as this change leaves it. redraw: only a new layout, so the
   // address takes the form but nothing is asked again (as the old page does).
-  const filtersOf = (form) => ({ ...filtersOfPanel(form, registry.data), ...excludedOf(query.filters) });
-  function search(change, form = panel, redraw = false) {
-    const next = { ...query, ...change, filters: filtersOf(form) };
+  const filtersOf = (form, excluded = excludedOf(query.filters)) => ({ ...filtersOfPanel(form, registry.data), ...excluded });
+  // excluded: the not_ filters this search keeps; only removing a chip changes them.
+  function search(change, form = panel, redraw = false, excluded = undefined) {
+    const next = { ...query, ...change, filters: filtersOf(form, excluded) };
     const url = window.location.pathname + addressOf(next, registry.data);
     if (url !== window.location.pathname + window.location.search) window.history.pushState(null, "", url);
     setEdited(form);
@@ -106,7 +109,12 @@ function SearchPage() {
       {/* A different answer, so back to its first page. */}
       {query && <TopSearch registry={registry.data} query={query} values={panel.values} onValue={onValue}
                            onMatch={(match) => search({ match, page: 1 })} />}
-      <div className="active_filters" role="group" aria-label="Filters in use"></div>
+      {/* Chips of the search last answered; a removal searches the whole form. */}
+      <ChipsBar chips={registry.data ? chipsOf(painted.filters, registry.data) : []}
+                onRemove={(chip) => {
+                  const { form, excluded } = withoutChip(panel, excludedOf(query.filters), registry.data, chip);
+                  search({ page: 1 }, form, false, excluded);
+                }} />
       <div className="workspace_body">
         <FilterPanel registry={registry.data} panel={panel} counts={counts.data} asked={asked}
                      open={query?.panelOpen ?? true} busy={busy} label={countLabel(total.value)}

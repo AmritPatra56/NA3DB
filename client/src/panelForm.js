@@ -62,8 +62,12 @@ export function withPill(panel, registry, key, value) {
   const next = value === "any" ? ["any"]
              : now.includes(value) ? now.filter((v) => v !== value && v !== "any")
              : [...now.filter((v) => v !== "any"), value];
-  return syncRevealed(withValue(panel, key, next), registry, key, false);
+  return withPills(panel, registry, key, next);
 }
+
+// One group set to exactly these pills (select_pills), and the field it
+// reveals following it.
+export const withPills = (panel, registry, key, values) => syncRevealed(withValue(panel, key, values), registry, key, false);
 
 // The pills one group draws, in order: its options (one no entry has is left
 // out, unless the link picked it) and the resolution bands, shown only while on.
