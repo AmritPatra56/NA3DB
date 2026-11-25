@@ -32,3 +32,11 @@ export function keepView(view) {
   else url.searchParams.set("view", view);
   history.replaceState(history.state, "", url.pathname + url.search + url.hash);
 }
+
+// The view a section is about (views.js view_for_section): the 1D lines for
+// Base pairs and the Sequence map, the model for Conformation, none otherwise.
+export function viewForSection(id) {
+  if (id === "base-pairs" || id === "sequence-map") return "1d";
+  if (id === "conformation") return "3d";
+  return null;
+}

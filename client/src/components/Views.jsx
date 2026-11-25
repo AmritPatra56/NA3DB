@@ -5,17 +5,23 @@ import View3D from "./View3D.jsx";
 import { askedView, keepView } from "../views.js";
 
 // views.ejs: 1D, 2D and 3D tiles over one panel each, one open at a time.
-// Views owns which is open and whether the 3D frame is made; the rest show it.
-function Views({ pdbId, viewer }) {
-  const [open, setOpen] = useState(askedView);
+// Views owns which view the reader chose and whether the 3D frame is made;
+// the rest show it. follow: the view the section being read asks for.
+function Views({ pdbId, viewer, follow }) {
+  const [start] = useState(askedView);
+  // The view the reader picked. From then on the page stops choosing for
+  // them: a view they asked for must not be taken away by the next scroll.
+  const [chosen, setChosen] = useState(null);
   // The 3D frame downloads the model and annotates every pair in WebAssembly,
   // so it is made only once 3D is asked for, and then kept (views.js mount_3d):
   // a second click must not restart a run that may be minutes old.
-  // Opened straight into 3D by ?view=3d, it is wanted at once.
-  const [mounted, setMounted] = useState(() => viewer && askedView() === "3d");
+  // Opened straight into 3D by ?view=3d, it is wanted at once. A scroll that
+  // opens 3D only offers it.
+  const [mounted, setMounted] = useState(() => viewer && start === "3d");
+  const open = chosen ?? follow ?? start;
 
   function show(view) {
-    setOpen(view);
+    setChosen(view);
     if (view === "3d" && viewer) setMounted(true);
     keepView(view);
   }
@@ -35,7 +41,7 @@ function Views({ pdbId, viewer }) {
       </div>
       <div className="view_panel" role="tabpanel" id="view-3d" aria-labelledby="view-3d-tab" hidden={open !== "3d"}>
         {viewer
-          ? <View3D pdbId={pdbId} mounted={mounted} onStart={() => setMounted(true)} />
+          ? <View3D pdbId={pdbId} mounted={mounted} onStart={() => { setChosen("3d"); setMounted(true); }} />
           : <ViewSlot view="3d"><p>The 3D viewer of the structure will be shown here.</p></ViewSlot>}
       </div>
     </div>
