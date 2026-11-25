@@ -58,7 +58,9 @@ function SearchPage() {
 
   return (
     <div className="workspace">
-      {query && <TopSearch registry={registry.data} query={query} />}
+      {/* A different answer, so back to its first page. */}
+      {query && <TopSearch registry={registry.data} query={query}
+                           onMatch={(match) => search({ ...query, match, page: 1 })} />}
       <div className="active_filters" role="group" aria-label="Filters in use"></div>
       <div className="workspace_body">
         <FilterPanel busy={busy} />

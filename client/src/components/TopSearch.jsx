@@ -2,14 +2,17 @@ import { Fragment } from "react";
 
 // The bar above the panel (search.ejs top_search): Contains or Excludes, the
 // prominent box with its Search button, and the count as you type. Drawn from
-// the address for now; the switch works in 7.6, the box and count in 7.13.
-function TopSearch({ registry, query }) {
+// the address; the box and count work in 7.13.
+// onMatch(mode): Contains or Excludes picked. Excludes turns the whole search
+// round: every entry the filters would not find.
+function TopSearch({ registry, query, onMatch }) {
   return (
     <div className="top_search">
       <div className="match_switch" role="group" aria-label="How the search matches">
         {registry.match_modes.map((mode) => (
           <button type="button" key={mode.key} data-match={mode.key}
-                  aria-pressed={query.match === mode.key}>{mode.label}</button>
+                  aria-pressed={query.match === mode.key}
+                  onClick={() => mode.key !== query.match && onMatch(mode.key)}>{mode.label}</button>
         ))}
       </div>
       <div className="top_search_box">
