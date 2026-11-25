@@ -3,8 +3,8 @@ import DidYouMean from "./DidYouMean.jsx";
 // What the results area says instead of results (search.ejs): the spinner
 // while searching, the server's message when it fails, No entries found when
 // nothing matches, with any close searches under it.
-// suggestions, hrefOf, onPick: passed on to DidYouMean.
-function ResultsState({ busy, error, empty, suggestions, hrefOf, onPick }) {
+// suggestions, getHref, onPick: passed on to DidYouMean.
+function ResultsState({ busy, error, empty, suggestions, getHref, onPick }) {
   return (
     <>
       <div className={busy ? "loading_state" : "loading_state hidden"}>
@@ -22,7 +22,7 @@ function ResultsState({ busy, error, empty, suggestions, hrefOf, onPick }) {
           <path d="M11 8v6M8 11h6" />
         </svg>
         <span>No entries found</span>
-        <DidYouMean suggestions={empty ? suggestions : []} hrefOf={hrefOf} onPick={onPick} />
+        <DidYouMean suggestions={empty ? suggestions : []} getHref={getHref} onPick={onPick} />
       </div>
     </>
   );

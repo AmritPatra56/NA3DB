@@ -9,11 +9,11 @@ import { BOX_PLACEHOLDER } from "../constants.js";
 // onMatch(mode): Contains or Excludes picked. Excludes turns the whole search
 // round: every entry the filters would not find.
 // values, onValue: the panel's form, as the box is part of it.
-// suggestPath(text): the request for the box's names, counted with every
+// getSuggestPath(text): the request for the box's names, counted with every
 // other filter. onPick(item): a name picked. count, onSuggest: BoxCount's.
-function TopSearch({ registry, query, values, onValue, onMatch, suggestPath, onPick, count, onSuggest }) {
+function TopSearch({ registry, query, values, onValue, onMatch, getSuggestPath, onPick, count, onSuggest }) {
   const box = registry.filters.find((f) => f.prominent);
-  const names = useBoxSuggest(values[box.key], suggestPath, onPick);
+  const names = useBoxSuggest(values[box.key], getSuggestPath, onPick);
   return (
     <div className="top_search">
       <div className="match_switch" role="group" aria-label="How the search matches">
