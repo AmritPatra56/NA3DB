@@ -108,3 +108,13 @@ export function countPath(query) {
   params.set("match", query.match);
   return "/api/count?" + params.toString();
 }
+
+// The request for the top box's names (box_suggest params): counted with every
+// other filter in use, the box itself being the text asked about.
+export function boxSuggestPath(query, text) {
+  const params = filtersToParams(query.filters);
+  params.delete("q");
+  params.set("match", query.match);
+  params.set("q", text);
+  return "/api/box_suggestions?" + params.toString();
+}
