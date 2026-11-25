@@ -8,7 +8,8 @@ import ResultsState from "./ResultsState.jsx";
 import Pagination from "./Pagination.jsx";
 import SearchNote from "./SearchNote.jsx";
 import { useApi } from "../hooks/useApi.js";
-import { queryFromAddress, entriesPath, addressOf, suggestionHref, withFilter } from "../searchQuery.js";
+import { queryFromAddress, entriesPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
+import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelForm.js";
 
 const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 
@@ -19,7 +20,7 @@ const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 //
 // SearchPage            the search and the reply
 // ├─ TopSearch          Contains/Excludes, the box, its count
-// ├─ FilterPanel        the categories (7.7) and Search
+// ├─ FilterPanel        the form → Category ×3 → TextField | NumberField | RangeField | PillGroup
 // ├─ PanelHandle        folds the panel (7.8)
 // ├─ ResultsHeader      Entries (n), page size, layout, order, range
 // ├─ SearchNote         how the box was read; the exact-phrase offer
@@ -34,19 +35,35 @@ function SearchPage() {
   // and update_url writes it out): a link's odd sort stays "none" on page 2.
   const [chosen, setChosen] = useState(null);
   const query = chosen ?? (registry.data ? queryFromAddress(window.location.search, registry.data) : null);
-  const reply = useApi(query ? entriesPath(query) : null);
+  // Every search asks again, even one the same as the last (run_search).
+  const [round, setRound] = useState(0);
+  const reply = useApi(query ? entriesPath(query) : null, 0, round);
+  const counts = useApi("/api/pill_counts");
+  // The panel's form (the top box is part of it), set from the address until
+  // it is first changed. Every search is read from it, typed-in edits too.
+  const [edited, setEdited] = useState(null);
+  const panel = edited ?? (registry.data ? panelFromParams(new URLSearchParams(window.location.search), registry.data) : null);
+  // Every value the page was opened with: a pill no entry has still shows if
+  // the link picked it.
+  const [asked] = useState(() => [...new URLSearchParams(window.location.search).values()].flatMap((v) => v.split(",")));
 
   useEffect(() => {
     document.title = "NA3DB · Full search";
   }, []);
 
-  // A changed search (update_url): into the address unless it already is
-  // that search, then searched.
-  function search(next) {
+  // A changed search (update_url), its filters read from the form (read_filters):
+  // into the address unless it already is that search, then searched.
+  // form: the form as this change leaves it. redraw: only a new layout, so the
+  // address takes the form but nothing is asked again (as the old page does).
+  function search(change, form = panel, redraw = false) {
+    const next = { ...query, ...change, filters: { ...filtersOfPanel(form, registry.data), ...excludedOf(query.filters) } };
     const url = window.location.pathname + addressOf(next, registry.data);
     if (url !== window.location.pathname + window.location.search) window.history.pushState(null, "", url);
-    setChosen(next);
+    setEdited(form);
+    setChosen(redraw ? { ...next, filters: query.filters } : next);
+    if (!redraw) setRound(round + 1);
   }
+  const onValue = (name, value) => setEdited(withValue(panel, name, value));
 
   const error = registry.error ?? reply.error;
   const busy = !error && !reply.data;
@@ -59,31 +76,34 @@ function SearchPage() {
   return (
     <div className="workspace">
       {/* A different answer, so back to its first page. */}
-      {query && <TopSearch registry={registry.data} query={query}
-                           onMatch={(match) => search({ ...query, match, page: 1 })} />}
+      {query && <TopSearch registry={registry.data} query={query} values={panel.values} onValue={onValue}
+                           onMatch={(match) => search({ match, page: 1 })} />}
       <div className="active_filters" role="group" aria-label="Filters in use"></div>
       <div className="workspace_body">
-        <FilterPanel busy={busy} />
+        <FilterPanel registry={registry.data} panel={panel} counts={counts.data} asked={asked} busy={busy}
+                     onValue={onValue}
+                     onPill={(key, value) => setEdited(withPill(panel, registry.data, key, value))}
+                     onSubmit={() => search({ page: 1 })} />
         <PanelHandle />
         <div className="results_area">
           {/* A new order or page size is a new first page. A new layout redraws
               the page already here: the request leaves view out, so none is sent. */}
           {query && <ResultsHeader registry={registry.data} query={query}
                                    total={results.total} start={start} shown={results.results.length}
-                                   onSort={(sort) => search({ ...query, sort, page: 1 })}
-                                   onPerPage={(perPage) => search({ ...query, perPage, page: 1 })}
-                                   onView={(view) => search({ ...query, view, page: results.page })} />}
+                                   onSort={(sort) => search({ sort, page: 1 })}
+                                   onPerPage={(perPage) => search({ perPage, page: 1 })}
+                                   onView={(view) => search({ view, page: results.page }, panel, true)} />}
           <SearchNote reply={error ? null : reply.data ?? reply.stale}
-                      onPhrase={(phrase) => search(withFilter(query, "q", phrase))} />
+                      onPhrase={(phrase) => search({ page: 1 }, withValue(panel, "q", phrase))} />
           <div className="results_area_body">
             <ResultsList entries={results.results} view={query?.view ?? "cards"} hidden={busy} />
             <ResultsState busy={busy} error={error?.message} empty={!busy && !error && results.total === 0}
                           suggestions={results.suggestions ?? []}
                           hrefOf={(s) => suggestionHref(query, registry.data, s)}
-                          onPick={(s) => search(withFilter(query, s.field, s.value))} />
+                          onPick={(s) => search({ page: 1 }, withValue(panel, s.field, s.value))} />
           </div>
           <Pagination page={results.page} pages={results.pages}
-                      onPage={(page) => search({ ...query, page })} />
+                      onPage={(page) => search({ page })} />
         </div>
       </div>
     </div>
