@@ -8,11 +8,10 @@ import { useApi } from "../hooks/useApi.js";
 import { answerRow, toggleTick, picksOf } from "../answers.js";
 import { pickSummary, pickUrl, pickWords } from "../pick.js";
 import { searchable } from "../query.js";
+import { go } from "../address.js";
+import { COUNT_SETTLE_MS } from "../constants.js";
 
 const FULL = "/search?panel=open";
-// landing.js: long enough that a typed word is one request rather than six,
-// short enough that the number feels like it is keeping up.
-const SETTLE_MS = 250;
 
 // The one owner of the landing's state: what is typed and how each row is
 // answered. It asks the server for the cards and the counts; everything
@@ -39,19 +38,19 @@ function Landing() {
 
   // Two counts, each asked once the typing settles: the typed text alone,
   // and the picks with it. useApi drops an answer to an older question.
-  const typedCount = useApi(searchable(typed) ? "/api/count?q=" + encodeURIComponent(typed) : null, SETTLE_MS);
-  const pickCount = useApi(picks.length ? "/api/count?" + pickUrl("", typed, picks) : null, SETTLE_MS);
+  const typedCount = useApi(searchable(typed) ? "/api/count?q=" + encodeURIComponent(typed) : null, COUNT_SETTLE_MS);
+  const pickCount = useApi(picks.length ? "/api/count?" + pickUrl("", typed, picks) : null, COUNT_SETTLE_MS);
   const pickTotal = pickCount.data?.total;
 
   const answer = (label, target) => setAnswers((prev) => answerRow(prev, label, target));
   const tick = (label, option) => setAnswers((prev) => toggleTick(prev, label, option));
-  const go = (query) => { window.location.href = "/search?" + query; };
+  const toSearch = (query) => go("/search?" + query);
 
   // With nothing picked the form goes on as the plain GET it is.
   const search = (e) => {
     if (picks.length === 0) return;
     e.preventDefault();
-    go(pickUrl("", typed, picks));
+    toSearch(pickUrl("", typed, picks));
   };
 
   // A name picked under the box is that search. An organism, residue or
@@ -59,13 +58,13 @@ function Landing() {
   // text it came from is left out.
   const pickName = (item) => {
     if (item.href) {
-      window.location.href = item.href;
+      go(item.href);
       return;
     }
     setText(item.filter ? "" : item.value);
-    if (item.filter) go(picks.length ? pickUrl("", "", picks, { [item.filter]: item.value })
-                                     : new URLSearchParams({ [item.filter]: item.value }).toString());
-    else go(picks.length ? pickUrl("", item.value, picks) : new URLSearchParams({ q: item.value }).toString());
+    if (item.filter) toSearch(picks.length ? pickUrl("", "", picks, { [item.filter]: item.value })
+                                           : new URLSearchParams({ [item.filter]: item.value }).toString());
+    else toSearch(picks.length ? pickUrl("", item.value, picks) : new URLSearchParams({ q: item.value }).toString());
   };
 
   return (

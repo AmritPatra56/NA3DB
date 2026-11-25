@@ -1,8 +1,7 @@
 import PickedLine from "./PickedLine.jsx";
 import SuggestList from "./SuggestList.jsx";
 import { useBoxSuggest } from "../hooks/useBoxSuggest.js";
-
-const INVITE = "Search an id, molecule, author or organism";
+import { BOX_PLACEHOLDER } from "../constants.js";
 
 // The landing search box. Landing owns the text and the picks; the box shows
 // them and reports typing, Clear, Search and a picked name back up. The name
@@ -19,7 +18,7 @@ function SearchBox({ text, onText, summary, count, blocked, onClear, onSearch, o
         <PickedLine summary={summary} onClear={onClear} />
         {/* While rows are answered the picks stand in for the invitation. */}
         <input type="text" name="q" autoFocus autoComplete="off"
-               placeholder={summary ? "" : INVITE}
+               placeholder={summary ? "" : BOX_PLACEHOLDER}
                {...names.input}
                value={text}
                onChange={(e) => { names.typed(e); onText(e.target.value); }} />

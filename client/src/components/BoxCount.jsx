@@ -1,5 +1,5 @@
-import { Fragment } from "react";
-import { structures } from "../countLabel.js";
+import MeantList from "./MeantList.jsx";
+import { structures } from "../format.js";
 
 // The count under the top box (paint_box_count), with the panel's count: how
 // many structures the box finds with every other filter. None: what it might
@@ -13,16 +13,11 @@ function BoxCount({ count, onSuggest }) {
       {count?.total === 0 && "no structures match"}
       {count?.total === 0 && s.length > 0 && (
         <>
-          . Did you mean{" "}
-          {s.map((x, i) => (
-            <Fragment key={x.field + "\n" + x.value}>
-              {i > 0 && (i === s.length - 1 ? " or " : ", ")}
-              <button type="button" className="link_button" data-field={x.field} data-value={x.value}
-                      onClick={() => onSuggest(x)}>{x.value}</button>
-              {` (${x.total.toLocaleString("en-GB")})`}
-            </Fragment>
-          ))}
-          ?
+          {". "}
+          <MeantList suggestions={s} renderItem={(x) => (
+            <button type="button" className="link_button" data-field={x.field} data-value={x.value}
+                    onClick={() => onSuggest(x)}>{x.value}</button>
+          )} />
         </>
       )}
     </p>

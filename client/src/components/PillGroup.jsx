@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { number } from "../format.js";
 
 // One pill group. Its first options always show, the rest behind "N more"
 // (unfolded when the page opens with one of them picked; a picked one keeps
@@ -20,7 +21,7 @@ function PillGroup({ filter, pills, picked, onPill }) {
         {pills.options.map((o) => (
           <button type="button" key={o.value} className={`pill${o.extra ? " pill_extra" : ""}${on(o.value)}`}
                   data-value={o.value} hidden={o.extra && !open} onClick={() => onPill(filter.key, o.value)}>
-            {o.label}{o.count !== null && <> <span className="pill_count">{o.count.toLocaleString("en-GB")}</span></>}
+            {o.label}{o.count !== null && <> <span className="pill_count">{number(o.count)}</span></>}
           </button>
         ))}
         {pills.bands.map((o) => (

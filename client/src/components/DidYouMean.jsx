@@ -1,5 +1,4 @@
-import { Fragment } from "react";
-import { number } from "../format.js";
+import MeantList from "./MeantList.jsx";
 
 // Under No entries found: searches the server found close to what was typed,
 // each a real link with the count it gives (update_empty_state). Never
@@ -17,15 +16,9 @@ function DidYouMean({ suggestions, hrefOf, onPick }) {
 
   return (
     <p className="did_you_mean">
-      Did you mean{" "}
-      {suggestions.map((s, i) => (
-        <Fragment key={s.field + s.value}>
-          {i > 0 && (i === suggestions.length - 1 ? " or " : ", ")}
-          <a href={hrefOf(s)} data-field={s.field} data-value={s.value} onClick={(e) => pick(e, s)}>{s.value}</a>
-          {` (${number(s.total)})`}
-        </Fragment>
-      ))}
-      ?
+      <MeantList suggestions={suggestions} renderItem={(s) => (
+        <a href={hrefOf(s)} data-field={s.field} data-value={s.value} onClick={(e) => pick(e, s)}>{s.value}</a>
+      )} />
     </p>
   );
 }

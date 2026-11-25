@@ -14,9 +14,10 @@ import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelFo
 import { chipsOf, withoutChip } from "../chips.js";
 import ChipsBar from "./ChipsBar.jsx";
 import { countLabel } from "../countLabel.js";
+import { here, go, pushAddress, onHistory } from "../address.js";
+import { COUNT_SETTLE_MS } from "../constants.js";
 
 const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
-const COUNT_SETTLE_MS = 250;
 
 // /search: the one owner of the search, as WeatherApp owns the weather. The
 // search is read from the address, and every change is written back there
@@ -41,7 +42,7 @@ function SearchPage({ onAddress }) {
   // chosen, and the address only follows it (as the old form is the search
   // and update_url writes it out): a link's odd sort stays "none" on page 2.
   const [chosen, setChosen] = useState(null);
-  const query = chosen ?? (registry.data ? queryFromAddress(window.location.search, registry.data) : null);
+  const query = chosen ?? (registry.data ? queryFromAddress(here().search, registry.data) : null);
   // Every search asks again, even one the same as the last (run_search).
   const [round, setRound] = useState(0);
   const reply = useApi(query ? entriesPath(query) : null, 0, round);
@@ -49,10 +50,10 @@ function SearchPage({ onAddress }) {
   // The panel's form (the top box is part of it), set from the address until
   // it is first changed. Every search is read from it, typed-in edits too.
   const [edited, setEdited] = useState(null);
-  const panel = edited ?? (registry.data ? panelFromParams(new URLSearchParams(window.location.search), registry.data) : null);
+  const panel = edited ?? (registry.data ? panelFromParams(new URLSearchParams(here().search), registry.data) : null);
   // Every value the page was opened with: a pill no entry has still shows if
   // the link picked it.
-  const [asked] = useState(() => [...new URLSearchParams(window.location.search).values()].flatMap((v) => v.split(",")));
+  const [asked] = useState(() => [...new URLSearchParams(here().search).values()].flatMap((v) => v.split(",")));
 
   useEffect(() => {
     document.title = "NA3DB · Full search";
@@ -61,10 +62,7 @@ function SearchPage({ onAddress }) {
   // Into the address with a history entry, unless it already is that search;
   // the rail's search link follows (sync_rail_links).
   function toAddress(search) {
-    const url = window.location.pathname + search;
-    if (url === window.location.pathname + window.location.search) return;
-    window.history.pushState(null, "", url);
-    onAddress(window.location.search);
+    if (pushAddress(here().path + search)) onAddress(here().search);
   }
 
   // A changed search (update_url), its filters read from the form (read_filters):
@@ -99,7 +97,7 @@ function SearchPage({ onAddress }) {
   // On load the address is written out as the search reads it, as run_search
   // does at once: an odd link (page=1, a sort the menu lacks) is tidied.
   useEffect(() => {
-    if (registry.data) toAddress(addressOf(queryFromAddress(window.location.search, registry.data), registry.data));
+    if (registry.data) toAddress(addressOf(queryFromAddress(here().search, registry.data), registry.data));
   }, [registry.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Back and Forward: the address has changed already, so the form is refilled
@@ -107,13 +105,12 @@ function SearchPage({ onAddress }) {
   // the old page leaves it, so the address may take panel=closed again.
   useEffect(() => {
     function back() {
-      const was = queryFromAddress(window.location.search, registry.data);
-      search({ ...was, panelOpen: query.panelOpen }, panelFromParams(new URLSearchParams(window.location.search), registry.data),
+      const was = queryFromAddress(here().search, registry.data);
+      search({ ...was, panelOpen: query.panelOpen }, panelFromParams(new URLSearchParams(here().search), registry.data),
              false, excludedOf(was.filters));
     }
     if (!query) return;
-    window.addEventListener("popstate", back);
-    return () => window.removeEventListener("popstate", back);
+    return onHistory(back);
   });
 
   const error = registry.error ?? reply.error;
@@ -149,7 +146,7 @@ function SearchPage({ onAddress }) {
   // filter, the box emptied; anything else fills the box. Then it is searched.
   function onBoxPick(item) {
     if (item.href) {
-      window.location.href = item.href;
+      go(item.href);
       return;
     }
     clearBox();

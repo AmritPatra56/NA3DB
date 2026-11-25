@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useApi } from "./useApi.js";
 import { suggestable } from "../query.js";
 import { LIST_ID, optionId, nextActive } from "../suggest.js";
-
-// box_suggest.js: short enough to keep up, long enough that a typed word is one request.
-const SUGGEST_MS = 150;
+import { SUGGEST_MS } from "../constants.js";
 
 // Exactly under the box, as wide as it, whatever sits beside it.
 const under = (input) => ({ left: `${input.offsetLeft}px`, top: `${input.offsetTop + input.offsetHeight + 4}px`,
