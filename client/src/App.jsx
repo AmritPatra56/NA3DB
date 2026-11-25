@@ -4,29 +4,29 @@ import StructurePage from "./components/StructurePage.jsx";
 import SearchPage from "./components/SearchPage.jsx";
 import { useState } from "react";
 import Footer from "./components/Footer.jsx";
+import { routeOf, railOf } from "./route.js";
 
-// Until React Router (Phase 8): /structure/<id> shows that entry, /search the
-// full search, every other path the landing page. Each page asks the server
-// for its own data.
-const path = window.location.pathname;
-const entryId = path.match(/^\/structure\/([^/]+)/)?.[1];
+// Each page asks the server for its own data.
+const route = routeOf(window.location.pathname);
 
-// onAddress: the search page's address changed.
-function Page({ onAddress }) {
-  if (entryId) return <StructurePage id={decodeURIComponent(entryId)} />;
-  if (path === "/search") return <SearchPage onAddress={onAddress} />;
+// onAddress: the search page's address changed. onFailed: the page shows an error.
+function Page({ onAddress, onFailed }) {
+  if (route.name === "structure") return <StructurePage id={route.id} onFailed={onFailed} />;
+  if (route.name === "search") return <SearchPage onAddress={onAddress} />;
   return <Landing />;
 }
 
 function App() {
-  // The search the rail's search link carries, so going back to it from
-  // another page keeps it: the search page's address, as it last wrote it.
-  const [railSearch, setRailSearch] = useState(path === "/search" ? window.location.search : "");
+  // The search the rail's links carry, so going back to it from another page
+  // keeps it: the search page's address, as it last wrote it.
+  const [railSearch, setRailSearch] = useState(route.name === "search" ? window.location.search : "");
+  // The page in view shows an error instead (error.ejs).
+  const [failed, setFailed] = useState(false);
   return (
     <>
       <div className="interface">
-        <Rail search={railSearch} />
-        <Page onAddress={setRailSearch} />
+        <Rail {...railOf(failed ? { name: "error" } : route, railSearch)} />
+        <Page onAddress={setRailSearch} onFailed={setFailed} />
       </div>
       <Footer />
     </>

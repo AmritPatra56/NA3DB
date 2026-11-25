@@ -1,8 +1,11 @@
 import ThemeButton from "./ThemeButton.jsx";
 import { MARK_LIGHT, MARK_DEEP, LETTER } from "../logo.js";
 
-// search: the query string the search link carries (sync_rail_links).
-function Rail({ search }) {
+// The rail (rail.ejs), drawn from railOf in route.js.
+// active: the lit section ("search" or null). report: whether Report is
+// offered. carry: the query the Full search and Report links carry.
+function Rail({ active, report, carry }) {
+  const item = (name) => `rail-item ${active === name ? "active" : ""}`;
   return (
     <div className="rail">
       <div className="rail-icons">
@@ -16,12 +19,18 @@ function Rail({ search }) {
               {["N", "A", "D", "B", "THREE"].map((l) => <path className="mark_word" d={LETTER[l]} key={l} />)}
             </svg>
         </a>
-        <a href={"/search" + search} className="rail-item" data-page="/search" title="Full search" aria-label="Full search">
+        <a href={"/search" + carry} className={item("search")} data-page="/search" title="Full search" aria-label="Full search">
           <img src="/assets/search.svg" alt="Search" />
         </a>
         <a href="#" className="rail-item" title="Questions">
           <img src="/assets/Q.png" alt="Questions" className="icon-narrow" />
         </a>
+        {/* A report covers a search, so it is not offered before there is one. */}
+        {report && (
+          <a href={"/report" + carry} className={item("report")} data-page="/report" title="Report">
+            <img src="/assets/report.svg" alt="Report" />
+          </a>
+        )}
       </div>
       <ThemeButton />
     </div>
