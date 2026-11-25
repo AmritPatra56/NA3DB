@@ -12,11 +12,17 @@ import { errorHeading } from "../api.js";
 // └─ Structure    (owns the page's folds and where the reader is)
 //    ├─ SectionNav
 //    └─ Section ×n → Views, Overview, Molecules, ...
-function StructurePage({ id }) {
+// onFailed(failed): whether the page shows an error, so the rail can be the
+// error page's (server.js renders it with page "none").
+function StructurePage({ id, onFailed }) {
   const path = "/api/entries/" + encodeURIComponent(id);
   const entry = useApi(path);
   const molecules = useApi(path + "/molecules");
   const error = entry.error ?? molecules.error;
+  const failed = Boolean(error);
+  useEffect(() => {
+    onFailed(failed);
+  }, [failed, onFailed]);
 
   // The tab's title, as the EJS pages write it: the page's one effect on <head>.
   const title = error ? errorHeading(error) : entry.data?.pdb_id ?? id.toUpperCase();
