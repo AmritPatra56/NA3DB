@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cardParts } from "../resultCard.js";
+import { cardParts, entryHref } from "../resultCard.js";
 
 // One result as a card (app.js card_html): a blank picture slot, kept for a
 // snapshot of the 3D structure; the id and title; the numbers a reader
@@ -9,7 +9,7 @@ import { cardParts } from "../resultCard.js";
 function ResultCard({ entry }) {
   const [more, setMore] = useState(false);
   const p = cardParts(entry);
-  const href = "/structure/" + encodeURIComponent(entry.pdb_id);
+  const href = entryHref(entry.pdb_id);
 
   function open(e) {
     // A link inside the card is its own destination; More only unfolds the card.
