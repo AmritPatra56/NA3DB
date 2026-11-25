@@ -10,6 +10,7 @@ import SearchNote from "./SearchNote.jsx";
 import { useApi } from "../hooks/useApi.js";
 import { queryFromAddress, entriesPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
 import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelForm.js";
+import { chipsOf } from "../chips.js";
 
 const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 
@@ -21,7 +22,7 @@ const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 // SearchPage            the search and the reply
 // ├─ TopSearch          Contains/Excludes, the box, its count
 // ├─ FilterPanel        the form → Category ×3 → TextField | NumberField | RangeField | PillGroup
-// ├─ PanelHandle        folds the panel (7.8)
+// ├─ PanelHandle        folds the panel; the count of filters in use
 // ├─ ResultsHeader      Entries (n), page size, layout, order, range
 // ├─ SearchNote         how the box was read; the exact-phrase offer
 // ├─ ResultsList → ResultCard | ResultLine | GridTile ×n
@@ -71,6 +72,10 @@ function SearchPage() {
   // only hidden), as the old page leaves it until the new one comes; an
   // error clears it.
   const results = error ? NOTHING : reply.data ?? reply.stale ?? NOTHING;
+  // The filters of the last search answered (paint_chips): kept while the next
+  // one loads, and when it fails.
+  const [painted, setPainted] = useState({ data: null, filters: {} });
+  if (reply.data && reply.data !== painted.data) setPainted({ data: reply.data, filters: query.filters });
   const start = (results.page - 1) * results.page_size;
 
   return (
@@ -80,11 +85,14 @@ function SearchPage() {
                            onMatch={(match) => search({ match, page: 1 })} />}
       <div className="active_filters" role="group" aria-label="Filters in use"></div>
       <div className="workspace_body">
-        <FilterPanel registry={registry.data} panel={panel} counts={counts.data} asked={asked} busy={busy}
+        <FilterPanel registry={registry.data} panel={panel} counts={counts.data} asked={asked}
+                     open={query?.panelOpen ?? true} busy={busy}
                      onValue={onValue}
                      onPill={(key, value) => setEdited(withPill(panel, registry.data, key, value))}
                      onSubmit={() => search({ page: 1 })} />
-        <PanelHandle />
+        {/* A fold only goes in the address (set_panel): the page stays as it is. */}
+        {query && <PanelHandle open={query.panelOpen} count={chipsOf(painted.filters, registry.data).length}
+                               onToggle={() => search({ panelOpen: !query.panelOpen, page: results.page }, panel, true)} />}
         <div className="results_area">
           {/* A new order or page size is a new first page. A new layout redraws
               the page already here: the request leaves view out, so none is sent. */}

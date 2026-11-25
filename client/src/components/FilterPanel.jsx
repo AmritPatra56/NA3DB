@@ -8,8 +8,9 @@ import { fieldsOf, pillsOf } from "../panelForm.js";
 // The filter panel (search.ejs query_panel), drawn from the registry: nothing
 // here names a filter. It only shows the form it is given and calls back up.
 // panel: the form (panelForm.js). counts: /api/pill_counts. asked: every value
-// the page was opened with. onSubmit: Search pressed (or Enter in a box).
-function FilterPanel({ registry, panel, counts, asked, busy, onValue, onPill, onSubmit }) {
+// the page was opened with. open: false while folded by the handle, when
+// nothing in it can be reached. onSubmit: Search pressed (or Enter in a box).
+function FilterPanel({ registry, panel, counts, asked, open, busy, onValue, onPill, onSubmit }) {
   function field(f) {
     if (f.kind === "text") return <TextField key={f.key} filter={f} value={panel.values[f.key]} onValue={onValue} />;
     if (f.kind === "number") return <NumberField key={f.key} filter={f} value={panel.values[f.key]} onValue={onValue} />;
@@ -18,7 +19,7 @@ function FilterPanel({ registry, panel, counts, asked, busy, onValue, onPill, on
   }
 
   return (
-    <form className="query_panel" id="query_form"
+    <form className={`query_panel${open ? "" : " folded"}`} id="query_form" inert={!open}
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
