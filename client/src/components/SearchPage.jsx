@@ -6,8 +6,9 @@ import ResultsHeader from "./ResultsHeader.jsx";
 import ResultsList from "./ResultsList.jsx";
 import ResultsState from "./ResultsState.jsx";
 import Pagination from "./Pagination.jsx";
+import SearchNote from "./SearchNote.jsx";
 import { useApi } from "../hooks/useApi.js";
-import { queryFromAddress, entriesPath, addressOf } from "../searchQuery.js";
+import { queryFromAddress, entriesPath, addressOf, suggestionHref, withFilter } from "../searchQuery.js";
 
 const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 
@@ -21,8 +22,9 @@ const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
 // ├─ FilterPanel        the categories (7.7) and Search
 // ├─ PanelHandle        folds the panel (7.8)
 // ├─ ResultsHeader      Entries (n), page size, layout, order, range
+// ├─ SearchNote         how the box was read; the exact-phrase offer
 // ├─ ResultsList → ResultCard | ResultLine | GridTile ×n
-// ├─ ResultsState       spinner, error, No entries found
+// ├─ ResultsState       spinner, error, No entries found → DidYouMean
 // └─ Pagination         arrows and page buttons
 function SearchPage() {
   // What the panel offers, from the same registry search.ejs is drawn from.
@@ -69,10 +71,14 @@ function SearchPage() {
                                    onSort={(sort) => search({ ...query, sort, page: 1 })}
                                    onPerPage={(perPage) => search({ ...query, perPage, page: 1 })}
                                    onView={(view) => search({ ...query, view, page: results.page })} />}
-          <p className="search_note hidden" aria-live="polite"></p>
+          <SearchNote reply={error ? null : reply.data ?? reply.stale}
+                      onPhrase={(phrase) => search(withFilter(query, "q", phrase))} />
           <div className="results_area_body">
             <ResultsList entries={results.results} view={query?.view ?? "cards"} hidden={busy} />
-            <ResultsState busy={busy} error={error?.message} empty={!busy && !error && results.total === 0} />
+            <ResultsState busy={busy} error={error?.message} empty={!busy && !error && results.total === 0}
+                          suggestions={results.suggestions ?? []}
+                          hrefOf={(s) => suggestionHref(query, registry.data, s)}
+                          onPick={(s) => search(withFilter(query, s.field, s.value))} />
           </div>
           <Pagination page={results.page} pages={results.pages}
                       onPage={(page) => search({ ...query, page })} />
