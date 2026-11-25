@@ -127,6 +127,12 @@ app.get("/api/fields", (req, res) => {
     res.json(public_registry());
 });
 
+// How many entries each pill finds, keyed by filter then value: the numbers
+// search.ejs prints beside the pills, for the React panel to print too.
+app.get("/api/pill_counts", async (req, res) => {
+    res.json(await pill_counts());
+});
+
 
 // The front door. A bare visit gets the landing page; a visit carrying a
 // search is a bookmark from before the split, so it is sent to the page that
