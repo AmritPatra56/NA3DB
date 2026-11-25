@@ -1,5 +1,6 @@
 import Category from "./Category.jsx";
 import TextField from "./TextField.jsx";
+import SuggestField from "./SuggestField.jsx";
 import NumberField from "./NumberField.jsx";
 import RangeField from "./RangeField.jsx";
 import PillGroup from "./PillGroup.jsx";
@@ -12,6 +13,7 @@ import { fieldsOf, pillsOf } from "../panelForm.js";
 // nothing in it can be reached. onSubmit: Search pressed (or Enter in a box).
 function FilterPanel({ registry, panel, counts, asked, open, busy, onValue, onPill, onSubmit }) {
   function field(f) {
+    if (f.kind === "text" && f.suggest) return <SuggestField key={f.key} filter={f} value={panel.values[f.key]} onValue={onValue} />;
     if (f.kind === "text") return <TextField key={f.key} filter={f} value={panel.values[f.key]} onValue={onValue} />;
     if (f.kind === "number") return <NumberField key={f.key} filter={f} value={panel.values[f.key]} onValue={onValue} />;
     if (f.kind === "range") return <RangeField key={f.key} filter={f} values={panel.values} shown={panel.shown[f.key]} onValue={onValue} />;
