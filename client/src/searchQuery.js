@@ -5,41 +5,25 @@
 // query: { filters, page, sort, perPage, match, view }
 // filters: { [text filter]: "text", [pill filter]: [values], not_<key>: "text" }
 
+import { panelFromParams, filtersOfPanel } from "./panelForm.js";
+
 const NOT = "not_";
 const VIEWS = ["cards", "lines", "grid"];
 
-// What an <input type="number"> keeps of a value: a valid number or nothing.
-const NUMBER = /^-?(\d+(\.\d+)?|\.\d+)([eE][-+]?\d+)?$/;
-
-// The pill values the panel can show for one filter, in the order it draws
-// them: the options, then the resolution bands. A value it has no pill for is
-// dropped, as selecting pills on the old page drops it.
-function pillValues(filter, asked) {
-  const drawn = [...filter.options.filter((o) => !o.band), ...filter.options.filter((o) => o.band)];
-  return drawn.map((o) => o.value).filter((v) => v !== "any" && asked.includes(v));
-}
-
-// The filters a query string asks for, as the panel would hold them.
+// The filters a query string asks for: the panel as the link sets it, plus
+// not_<key>, which turns a filter round. The panel has no control for that, so
+// it is kept as the address gives it.
 export function filtersFromParams(params, registry) {
-  const byKey = Object.fromEntries(registry.filters.map((f) => [f.key, f]));
-  const filters = {};
-
-  for (const key of registry.text_filters) {
-    const value = (params.get(key) ?? "").trim();
-    filters[key] = byKey[key].kind === "range" && !NUMBER.test(value) ? "" : value;
-  }
-  for (const key of registry.pill_filters) {
-    const value = params.get(key);
-    filters[key] = value === null ? [] : pillValues(byKey[key], value.split(","));
-  }
-  // not_<key> turns a filter round; the panel has no control for it, so it is
-  // kept as the address gives it.
+  const filters = filtersOfPanel(panelFromParams(params, registry), registry);
   for (const key of [...registry.text_filters, ...registry.pill_filters]) {
     const value = key === "q" ? null : params.get(NOT + key);
     if (value) filters[NOT + key] = value;
   }
   return filters;
 }
+
+// The not_<key> filters of a search, kept through every change to the panel.
+export const excludedOf = (filters) => Object.fromEntries(Object.entries(filters).filter(([k]) => k.startsWith(NOT)));
 
 // The filters as a query string, leaving out anything left blank.
 export function filtersToParams(filters) {
@@ -116,7 +100,3 @@ export function suggestionHref(query, registry, suggestion) {
   params.delete("page");
   return "/search?" + params.toString().replaceAll("+", "%20");
 }
-
-// The same search with one text filter set, from page 1: what picking a
-// suggestion or the exact-phrase offer asks for.
-export const withFilter = (query, key, value) => ({ ...query, filters: { ...query.filters, [key]: value }, page: 1 });

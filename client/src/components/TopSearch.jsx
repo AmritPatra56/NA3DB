@@ -5,7 +5,8 @@ import { Fragment } from "react";
 // the address; the box and count work in 7.13.
 // onMatch(mode): Contains or Excludes picked. Excludes turns the whole search
 // round: every entry the filters would not find.
-function TopSearch({ registry, query, onMatch }) {
+// values, onValue: the panel's form, as the box is part of it.
+function TopSearch({ registry, query, values, onValue, onMatch }) {
   return (
     <div className="top_search">
       <div className="match_switch" role="group" aria-label="How the search matches">
@@ -18,10 +19,9 @@ function TopSearch({ registry, query, onMatch }) {
       <div className="top_search_box">
         {registry.filters.filter((f) => f.prominent).map((f) => (
           <Fragment key={f.key}>
-            {/* Keyed by its value, so a search chosen elsewhere (a suggestion, the
-                exact phrase) shows up in the box. */}
-            <input key={query.filters[f.key]} type="text" id={f.key} name={f.key} form="query_form" autoComplete="off"
-                   placeholder="Search an id, molecule, author or organism" defaultValue={query.filters[f.key]} />
+            <input type="text" id={f.key} name={f.key} form="query_form" autoComplete="off"
+                   placeholder="Search an id, molecule, author or organism"
+                   value={values[f.key]} onChange={(e) => onValue(e.target.name, e.target.value)} />
             <button type="submit" form="query_form">Search</button>
           </Fragment>
         ))}
