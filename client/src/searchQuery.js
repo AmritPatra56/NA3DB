@@ -100,3 +100,11 @@ export function suggestionHref(query, registry, suggestion) {
   params.delete("page");
   return "/search?" + params.toString().replaceAll("+", "%20");
 }
+
+// The request for how many entries a search would find (refresh_count): its
+// filters and match, nothing about the page.
+export function countPath(query) {
+  const params = filtersToParams(query.filters);
+  params.set("match", query.match);
+  return "/api/count?" + params.toString();
+}

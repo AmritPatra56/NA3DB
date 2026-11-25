@@ -8,11 +8,13 @@ import ResultsState from "./ResultsState.jsx";
 import Pagination from "./Pagination.jsx";
 import SearchNote from "./SearchNote.jsx";
 import { useApi } from "../hooks/useApi.js";
-import { queryFromAddress, entriesPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
+import { queryFromAddress, entriesPath, countPath, addressOf, suggestionHref, excludedOf } from "../searchQuery.js";
 import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelForm.js";
 import { chipsOf } from "../chips.js";
+import { countLabel } from "../countLabel.js";
 
 const NOTHING = { results: [], total: 0, page: 1, page_size: 0, pages: null };
+const COUNT_SETTLE_MS = 250;
 
 // /search: the one owner of the search, as WeatherApp owns the weather. The
 // search is read from the address, and every change is written back there
@@ -56,15 +58,30 @@ function SearchPage() {
   // into the address unless it already is that search, then searched.
   // form: the form as this change leaves it. redraw: only a new layout, so the
   // address takes the form but nothing is asked again (as the old page does).
+  const filtersOf = (form) => ({ ...filtersOfPanel(form, registry.data), ...excludedOf(query.filters) });
   function search(change, form = panel, redraw = false) {
-    const next = { ...query, ...change, filters: { ...filtersOfPanel(form, registry.data), ...excludedOf(query.filters) } };
+    const next = { ...query, ...change, filters: filtersOf(form) };
     const url = window.location.pathname + addressOf(next, registry.data);
     if (url !== window.location.pathname + window.location.search) window.history.pushState(null, "", url);
     setEdited(form);
     setChosen(redraw ? { ...next, filters: query.filters } : next);
-    if (!redraw) setRound(round + 1);
+    if (!redraw) {
+      setRound(round + 1);
+      // The answer brings its own number; a count still on its way is dropped.
+      setCounting({ form: null, round: counting.round });
+    }
   }
-  const onValue = (name, value) => setEdited(withValue(panel, name, value));
+
+  // The Search button's count (count_soon): every edit asks again once the
+  // typing pauses, the same filters too, as every input or pill click does.
+  const [counting, setCounting] = useState({ form: null, round: 0 });
+  const count = useApi(counting.form ? countPath({ filters: filtersOf(counting.form), match: query.match }) : null,
+                       COUNT_SETTLE_MS, counting.round);
+  function edit(form) {
+    setEdited(form);
+    setCounting({ form, round: counting.round + 1 });
+  }
+  const onValue = (name, value) => edit(withValue(panel, name, value));
 
   const error = registry.error ?? reply.error;
   const busy = !error && !reply.data;
@@ -77,6 +94,12 @@ function SearchPage() {
   const [painted, setPainted] = useState({ data: null, filters: {} });
   if (reply.data && reply.data !== painted.data) setPainted({ data: reply.data, filters: query.filters });
   const start = (results.page - 1) * results.page_size;
+  // The number the button shows: whichever answered last, a search or a count.
+  // A failed count says plain Search; a failed search leaves it.
+  const [total, setTotal] = useState({ reply: null, count: null, value: null });
+  const counted = count.data ?? count.error;
+  if (reply.data && reply.data !== total.reply) setTotal({ ...total, reply: reply.data, value: reply.data.total });
+  else if (counted && counted !== total.count) setTotal({ ...total, count: counted, value: count.data?.total ?? null });
 
   return (
     <div className="workspace">
@@ -86,9 +109,10 @@ function SearchPage() {
       <div className="active_filters" role="group" aria-label="Filters in use"></div>
       <div className="workspace_body">
         <FilterPanel registry={registry.data} panel={panel} counts={counts.data} asked={asked}
-                     open={query?.panelOpen ?? true} busy={busy}
+                     open={query?.panelOpen ?? true} busy={busy} label={countLabel(total.value)}
                      onValue={onValue}
-                     onPill={(key, value) => setEdited(withPill(panel, registry.data, key, value))}
+                     onFill={(name, value) => setEdited(withValue(panel, name, value))}
+                     onPill={(key, value) => edit(withPill(panel, registry.data, key, value))}
                      onSubmit={() => search({ page: 1 })} />
         {/* A fold only goes in the address (set_panel): the page stays as it is. */}
         {query && <PanelHandle open={query.panelOpen} count={chipsOf(painted.filters, registry.data).length}
