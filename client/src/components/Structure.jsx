@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StructureFacts from "./StructureFacts.jsx";
 import Molecules from "./Molecules.jsx";
 import Views from "./Views.jsx";
@@ -6,10 +6,45 @@ import Section from "./Section.jsx";
 import SectionNav from "./SectionNav.jsx";
 import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS } from "../structure.js";
 import { remembered, remember } from "../remember.js";
+import { viewForSection } from "../views.js";
+import { NARROW, sectionBeingRead, hasScrolled } from "../reading.js";
+import { useMedia } from "../hooks/useMedia.js";
 
 function Structure({ entry, molecules }) {
   const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
   const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
+  // The section being read, and the last view a section asked for. Views
+  // follows that until the reader picks a view for themselves.
+  const [reading, setReading] = useState(null);
+  const [followView, setFollowView] = useState(null);
+  const narrow = useMedia(NARROW);
+
+  // The page follows the reading position (structure.ejs): at most once a
+  // frame while scrolling, and on resize. The nav marks the section, the
+  // address gets its #id once the page has moved. Listeners go in cleanup.
+  useEffect(() => {
+    let current = null;
+    let frame = 0;
+    function follow() {
+      frame = 0;
+      const here = sectionBeingRead();
+      if (here === null || here === current) return;
+      current = here;
+      setReading(here);
+      const view = viewForSection(here);
+      if (view !== null) setFollowView(view);
+      if (hasScrolled()) history.replaceState(null, "", "#" + here);
+    }
+    const soon = () => { if (!frame) frame = requestAnimationFrame(follow); };
+    document.addEventListener("scroll", soon, { capture: true, passive: true });
+    addEventListener("resize", follow);
+    soon();
+    return () => {
+      document.removeEventListener("scroll", soon, { capture: true });
+      removeEventListener("resize", follow);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   function toggleWide() {
     const wide = !viewsWide;
@@ -24,9 +59,8 @@ function Structure({ entry, molecules }) {
   }
 
   // Out of sight, the nav's links leave the tab order. Only beside the page:
-  // on a narrow screen the nav is a strip that never folds. Read at each
-  // render; following a resize as it happens needs useEffect (Phase 6).
-  const navInert = navFolded && !matchMedia("(max-width: 1023px)").matches;
+  // on a narrow screen the nav is a strip that never folds.
+  const navInert = navFolded && !narrow;
   const navLabel = navFolded ? "Show the sections" : "Hide the sections";
 
   const shown = entry.rows.filter((row) => !SHOWN_ELSEWHERE.has(row.key));
@@ -48,7 +82,7 @@ function Structure({ entry, molecules }) {
           <span className="band_swap_say">{viewsWide ? "Shrink views" : "Enlarge views"}</span>
         </button>
       ),
-      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} /> },
+      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} follow={followView} /> },
     { id: "overview", title: "Overview", group: "overview",
       body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} /> },
     { id: "molecules", title: "Molecules", group: "composition",
@@ -66,7 +100,7 @@ function Structure({ entry, molecules }) {
       </div>
       <div className="results_area_body">
         <div className={`structure_page${navFolded ? " nav_folded" : ""}${viewsWide ? " views_wide" : ""}`}>
-          <SectionNav sections={sections} inert={navInert} />
+          <SectionNav sections={sections} current={reading} inert={navInert} />
           {/* The fold handle: the sidebar slides away and the handle stays on the edge. */}
           <div className="nav_edge">
             <button type="button" className="panel_handle nav_handle" aria-controls="section_nav"

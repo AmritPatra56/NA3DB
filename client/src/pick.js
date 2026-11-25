@@ -7,6 +7,7 @@
 // That is how /search reads them, so the count is what Search finds.
 
 import { number } from "./format.js";
+import { searchable } from "./query.js";
 
 const NOT = "not_";
 
@@ -32,7 +33,7 @@ export function pickSummary(picks, text = "") {
     const said = labels.length > 1 ? `(${labels.join(" or ")})` : labels[0];
     return key.startsWith(NOT) ? "not " + said : said;
   });
-  if (text.length >= 2) parts.unshift(`“${text}”`);
+  if (searchable(text)) parts.unshift(`“${text}”`);
   return parts.join(" and ");
 }
 
@@ -40,7 +41,7 @@ export function pickSummary(picks, text = "") {
 // suggestion ({ ligand: "MG" }), joined to its key's values, never twice.
 export function pickUrl(base, text, picks, extra = {}) {
   const params = new URLSearchParams(base);
-  if (text.length >= 2) params.set("q", text);
+  if (searchable(text)) params.set("q", text);
   const query = pickQuery(picks);
   for (const [key, value] of Object.entries(extra)) {
     query.set(key, [...new Set([...(query.get(key) ?? []), value])]);
