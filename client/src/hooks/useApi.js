@@ -27,6 +27,7 @@ export function useApi(path, delay = 0) {
     };
   }, [path, delay]);
 
-  if (path === null || reply.path !== path) return { data: null, error: null, loading: path !== null };
+  // stale: the last path's data, for a page that keeps it on screen meanwhile.
+  if (path === null || reply.path !== path) return { data: null, error: null, loading: path !== null, stale: reply.data };
   return { ...reply, loading: false };
 }
