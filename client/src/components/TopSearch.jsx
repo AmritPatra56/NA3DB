@@ -1,6 +1,7 @@
 import SuggestList from "./SuggestList.jsx";
 import BoxCount from "./BoxCount.jsx";
 import { useBoxSuggest } from "../hooks/useBoxSuggest.js";
+import { BOX_PLACEHOLDER } from "../constants.js";
 
 // The bar above the panel (search.ejs top_search): Contains or Excludes, the
 // prominent box with its Search button and its name list, and the count as
@@ -24,7 +25,7 @@ function TopSearch({ registry, query, values, onValue, onMatch, suggestPath, onP
       </div>
       <div className="top_search_box">
         <input type="text" id={box.key} name={box.key} form="query_form" autoComplete="off"
-               placeholder="Search an id, molecule, author or organism"
+               placeholder={BOX_PLACEHOLDER}
                {...names.input}
                value={values[box.key]}
                onChange={(e) => { names.typed(e); onValue(e.target.name, e.target.value); }} />

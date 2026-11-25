@@ -9,6 +9,7 @@ import { remembered, remember } from "../remember.js";
 import { viewForSection } from "../views.js";
 import { NARROW, sectionBeingRead, hasScrolled } from "../reading.js";
 import { useMedia } from "../hooks/useMedia.js";
+import { replaceAddress } from "../address.js";
 
 function Structure({ entry, molecules }) {
   const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
@@ -33,7 +34,7 @@ function Structure({ entry, molecules }) {
       setReading(here);
       const view = viewForSection(here);
       if (view !== null) setFollowView(view);
-      if (hasScrolled()) history.replaceState(null, "", "#" + here);
+      if (hasScrolled()) replaceAddress("#" + here);
     }
     const soon = () => { if (!frame) frame = requestAnimationFrame(follow); };
     document.addEventListener("scroll", soon, { capture: true, passive: true });

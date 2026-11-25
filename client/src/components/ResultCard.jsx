@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cardParts, entryHref } from "../resultCard.js";
+import { go } from "../address.js";
 
 // One result as a card (app.js card_html): a blank picture slot, kept for a
 // snapshot of the 3D structure; the id and title; the numbers a reader
@@ -14,7 +15,7 @@ function ResultCard({ entry }) {
   function open(e) {
     // A link inside the card is its own destination; More only unfolds the card.
     if (e.target.closest("a, .card_more")) return;
-    window.location.href = href;
+    go(href);
   }
 
   return (

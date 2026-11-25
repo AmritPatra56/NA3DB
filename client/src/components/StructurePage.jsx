@@ -3,6 +3,7 @@ import Structure from "./Structure.jsx";
 import ErrorPage from "./ErrorPage.jsx";
 import { useApi } from "../hooks/useApi.js";
 import { errorHeading } from "../api.js";
+import { here } from "../address.js";
 
 // /structure/:id: asks the server for the entry and its molecules, says so
 // while they come, and hands them to Structure, which only draws.
@@ -31,7 +32,7 @@ function StructurePage({ id, onFailed }) {
   }, [title]);
 
   if (error) {
-    const message = error.status === 404 ? `There is nothing at ${window.location.pathname}.` : error.message;
+    const message = error.status === 404 ? `There is nothing at ${here().path}.` : error.message;
     return <ErrorPage heading={errorHeading(error)} message={message} />;
   }
   if (entry.data && molecules.data) return <Structure entry={entry.data} molecules={molecules.data} />;

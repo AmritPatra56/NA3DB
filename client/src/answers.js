@@ -22,7 +22,8 @@ export function toggleTick(answers, label, option) {
 
 // A link's filter, as a pick: its first and only parameter.
 function read(url, label) {
-  const [[key, value]] = new URL(url, window.location.origin).searchParams;
+  // Only the query is read, so any base will do; the page's address is not needed.
+  const [[key, value]] = new URL(url, "http://na3db").searchParams;
   return { key, values: value.split(","), label };
 }
 

@@ -1,24 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { copyText } from "../clipboard.js";
+
+const COPIED_MS = 1500;
 
 // A copy button: copies `text`, then shows a tick and says "Copied" for 1.5 s
 // (structure.ejs). The citation's copy button (task 8.4) will use it too.
 function CopyButton({ text, title, className = "sequence_copy" }) {
   const [copied, setCopied] = useState(false);
 
+  // The tick goes 1.5 s after it came; a page left sooner clears the timer.
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), COPIED_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   async function handleClick() {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // No clipboard permission (an embedded or plain-http page):
-      // copy through a hidden text box instead.
-      const box = Object.assign(document.createElement("textarea"), { value: text });
-      document.body.append(box);
-      box.select();
-      document.execCommand("copy");
-      box.remove();
-    }
+    await copyText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
   }
 
   return (
