@@ -54,7 +54,9 @@ export function filtersToParams(filters) {
   return params;
 }
 
-function perPageFrom(asked, registry) {
+// A page size as the box settles it (per_page_clamped): a whole number from 1
+// to the most allowed, the default when it is no number at all.
+export function perPageFrom(asked, registry) {
   const n = Math.floor(Number(asked));
   if (!Number.isFinite(n) || n < 1) return registry.default_page_size;
   return Math.min(n, registry.max_page_size);
@@ -77,7 +79,22 @@ export function queryFromAddress(search, registry) {
     perPage: perPageFrom(params.get("per_page"), registry),
     match: registry.match_modes.some((m) => m.key === match) ? match : registry.default_match,
     view: VIEWS.includes(view) ? view : "cards",
+    panelOpen: params.get("panel") !== "closed",
   };
+}
+
+// The address for a search, as update_url writes it: only what differs from
+// the defaults, so a plain search keeps a short link.
+export function addressOf(query, registry) {
+  const params = filtersToParams(query.filters);
+  if (query.page > 1) params.set("page", query.page);
+  if (query.sort !== registry.default_sort) params.set("sort", query.sort);
+  if (!query.panelOpen) params.set("panel", "closed");
+  if (query.view !== "cards") params.set("view", query.view);
+  if (query.perPage !== registry.default_page_size) params.set("per_page", query.perPage);
+  if (query.match !== registry.default_match) params.set("match", query.match);
+  const search = params.toString();
+  return search === "" ? "" : "?" + search;
 }
 
 // The request for one page of results, its parameters in search_entries' order.
