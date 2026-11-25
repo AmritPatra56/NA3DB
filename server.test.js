@@ -116,6 +116,27 @@ test("/api/browse sends the landing cards and only what drawing them needs", asy
     }
 });
 
+// The React search panel is drawn from /api/fields and these counts, so they
+// must be the numbers search.ejs prints beside each pill.
+test("/api/pill_counts sends the counts the search panel's pills show", async () => {
+    let res = await fetch(base + "/api/pill_counts");
+    let counts = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(Object.keys(counts), FILTERS.filter((f) => f.count_by).map((f) => f.key));
+
+    let page = await (await fetch(base + "/search")).text();
+    let checked = 0;
+    for (const [key, by_value] of Object.entries(counts)) {
+        let field = page.match(new RegExp(`data-name="${key}">([\\s\\S]*?)</div>`))[1];
+        for (const [, value, n] of field.matchAll(/data-value="([^"]+)"[^>]*>[^<]*<span class="pill_count">([\d,]+)<\/span>/g)) {
+            assert.equal((by_value[value] ?? 0).toLocaleString("en-GB"), n, `${key}=${value}`);
+            checked++;
+        }
+    }
+    assert.ok(checked > 0, "some pills carry a count");
+});
+
 // The React client draws the structure page from /api/entries/:id, so its
 // rows must be the page's rows: Published and Authors from the checked
 // reference (cited_rows), not the PDB's copy.
