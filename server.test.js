@@ -82,6 +82,68 @@ test("/api/stats counts the entries in the database", async () => {
     assert.equal(res.status, 200);
     assert.equal(typeof body.total, "number");
     assert.ok(body.total > 0);
+    // When the data was last loaded: an ISO date, or null before any load.
+    assert.ok(body.updated === null || !Number.isNaN(Date.parse(body.updated)), body.updated);
+});
+
+// The landing page's five questions, for a client that draws them itself.
+test("/api/browse sends the landing cards and only what drawing them needs", async () => {
+    let res = await fetch(base + "/api/browse");
+    let groups = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(groups.map((g) => g.area), ["made", "from", "method", "modified", "bound"]);
+    for (const g of groups) {
+        assert.deepEqual(Object.keys(g).sort(), ["area", "foot", "hint", "question", "rows"]);
+        assert.ok(g.foot === null || typeof g.foot.text === "string");
+        for (const row of g.rows) {
+            assert.deepEqual(Object.keys(row).sort(),
+                ["count", "label", "no_url", "options", "options_name", "say_no", "say_yes", "share", "url"]);
+            assert.equal(typeof row.count, "number");
+            assert.ok(row.share >= 0 && row.share <= 1);
+            assert.match(row.url, /^\/search\?/);
+            assert.match(row.no_url, /^\/search\?/);
+            for (const o of row.options) {
+                assert.deepEqual(Object.keys(o).sort(), ["count", "label", "note", "say", "share", "url"]);
+                assert.match(o.url, /^\/search\?/);
+            }
+        }
+    }
+    // The same numbers the server-drawn page shows.
+    let page = await (await fetch(base + "/")).text();
+    for (const row of groups.flatMap((g) => g.rows)) {
+        assert.ok(page.includes(`<span class="browse_count">${row.count.toLocaleString("en-GB")}</span>`), row.label);
+    }
+});
+
+// The React client draws the structure page from /api/entries/:id, so its
+// rows must be the page's rows: Published and Authors from the checked
+// reference (cited_rows), not the PDB's copy.
+test("/api/entries/:id rows are the rows the structure page shows", async () => {
+    // 1DN8 has a checked reference listing more authors than the PDB's copy.
+    let ids = [...new Set(["1DN8", ...(await (await fetch(base + "/api/entries?per_page=50")).json()).results.map((e) => e.pdb_id)])];
+    let unescape = (t) => t.replaceAll("&#39;", "'").replaceAll("&#34;", '"').replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
+    for (const id of ids) {
+        let body = await (await fetch(base + "/api/entries/" + id)).json();
+        let html = await (await fetch(base + "/structure/" + id)).text();
+        for (const row of body.rows.filter((r) => ["published", "all_authors"].includes(r.key))) {
+            let field = html.match(new RegExp(`<div class="detail_label">${row.label}</div>\\s*<div class="detail_value[^"]*">(?:<span>)?([^<]*)`));
+            assert.equal(unescape(field?.[1].trim() ?? ""), row.value, `${id} ${row.key}`);
+        }
+    }
+});
+
+// The React client draws the Molecules tables from this, so it must be what
+// the structure page draws them from.
+test("/api/entries/:id/molecules is the page's molecule groups", async () => {
+    for (const id of ["1DN8", "4TNA"]) {
+        let body = await (await fetch(base + `/api/entries/${id}/molecules`)).json();
+        let expected = molecule_groups(await entry_contents(id), await entry_residues(id));
+        assert.deepEqual(body, JSON.parse(JSON.stringify(expected)), id);
+        let html = await (await fetch(base + "/structure/" + id)).text();
+        for (const g of body.groups) assert.ok(html.includes(`<summary>${g.title} (${g.rows.length})</summary>`), `${id} ${g.title}`);
+    }
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/molecules")).status, 404);
 });
 
 
