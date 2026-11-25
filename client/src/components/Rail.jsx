@@ -1,7 +1,8 @@
 import ThemeButton from "./ThemeButton.jsx";
 import { MARK_LIGHT, MARK_DEEP, LETTER } from "../logo.js";
 
-function Rail() {
+// search: the query string the search link carries (sync_rail_links).
+function Rail({ search }) {
   return (
     <div className="rail">
       <div className="rail-icons">
@@ -15,7 +16,7 @@ function Rail() {
               {["N", "A", "D", "B", "THREE"].map((l) => <path className="mark_word" d={LETTER[l]} key={l} />)}
             </svg>
         </a>
-        <a href="/search" className="rail-item" data-page="/search" title="Full search" aria-label="Full search">
+        <a href={"/search" + search} className="rail-item" data-page="/search" title="Full search" aria-label="Full search">
           <img src="/assets/search.svg" alt="Search" />
         </a>
         <a href="#" className="rail-item" title="Questions">

@@ -32,7 +32,8 @@ const COUNT_SETTLE_MS = 250;
 // ├─ ResultsList → ResultCard | ResultLine | GridTile ×n
 // ├─ ResultsState       spinner, error, No entries found → DidYouMean
 // └─ Pagination         arrows and page buttons
-function SearchPage() {
+// onAddress(search): the address changed, so the rail's link can carry it.
+function SearchPage({ onAddress }) {
   // What the panel offers, from the same registry search.ejs is drawn from.
   const registry = useApi("/api/fields");
   // The search starts as the address says; after a change it is what was
@@ -56,6 +57,15 @@ function SearchPage() {
     document.title = "NA3DB · Full search";
   }, []);
 
+  // Into the address with a history entry, unless it already is that search;
+  // the rail's search link follows (sync_rail_links).
+  function toAddress(search) {
+    const url = window.location.pathname + search;
+    if (url === window.location.pathname + window.location.search) return;
+    window.history.pushState(null, "", url);
+    onAddress(window.location.search);
+  }
+
   // A changed search (update_url), its filters read from the form (read_filters):
   // into the address unless it already is that search, then searched.
   // form: the form as this change leaves it. redraw: only a new layout, so the
@@ -64,8 +74,7 @@ function SearchPage() {
   // excluded: the not_ filters this search keeps; only removing a chip changes them.
   function search(change, form = panel, redraw = false, excluded = undefined) {
     const next = { ...query, ...change, filters: filtersOf(form, excluded) };
-    const url = window.location.pathname + addressOf(next, registry.data);
-    if (url !== window.location.pathname + window.location.search) window.history.pushState(null, "", url);
+    toAddress(addressOf(next, registry.data));
     setEdited(form);
     setChosen(redraw ? { ...next, filters: query.filters } : next);
     if (!redraw) {
@@ -85,6 +94,26 @@ function SearchPage() {
     setCounting({ form, round: counting.round + 1 });
   }
   const onValue = (name, value) => edit(withValue(panel, name, value));
+
+  // On load the address is written out as the search reads it, as run_search
+  // does at once: an odd link (page=1, a sort the menu lacks) is tidied.
+  useEffect(() => {
+    if (registry.data) toAddress(addressOf(queryFromAddress(window.location.search, registry.data), registry.data));
+  }, [registry.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Back and Forward: the address has changed already, so the form is refilled
+  // from it and searched again. The panel stays folded or open as it is, as
+  // the old page leaves it, so the address may take panel=closed again.
+  useEffect(() => {
+    function back() {
+      const was = queryFromAddress(window.location.search, registry.data);
+      search({ ...was, panelOpen: query.panelOpen }, panelFromParams(new URLSearchParams(window.location.search), registry.data),
+             false, excludedOf(was.filters));
+    }
+    if (!query) return;
+    window.addEventListener("popstate", back);
+    return () => window.removeEventListener("popstate", back);
+  });
 
   const error = registry.error ?? reply.error;
   const busy = !error && !reply.data;
