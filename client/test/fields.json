@@ -1,0 +1,1038 @@
+{
+    "groups": [
+        {
+            "name": "Demographics",
+            "slug": "demographics"
+        },
+        {
+            "name": "3D Features",
+            "slug": "features",
+            "note": "Confal score runs 0 to 96, and NtC assignment is one of 97 conformer classes such as AA00. Both come from DNATCO."
+        },
+        {
+            "name": "Structure Components",
+            "slug": "components"
+        }
+    ],
+    "sorts": [
+        {
+            "key": "best",
+            "label": "Best match"
+        },
+        {
+            "key": "deposition_desc",
+            "label": "Deposition date, newest first"
+        },
+        {
+            "key": "deposition_asc",
+            "label": "Deposition date, oldest first"
+        },
+        {
+            "key": "resolution_asc",
+            "label": "Resolution, best first"
+        },
+        {
+            "key": "resolution_desc",
+            "label": "Resolution, worst first"
+        },
+        {
+            "key": "confal_desc",
+            "label": "Confal score, highest first"
+        },
+        {
+            "key": "confal_asc",
+            "label": "Confal score, lowest first"
+        },
+        {
+            "key": "id_asc",
+            "label": "Entry ID, A to Z"
+        },
+        {
+            "key": "id_desc",
+            "label": "Entry ID, Z to A"
+        }
+    ],
+    "default_sort": "best",
+    "match_modes": [
+        {
+            "key": "contains",
+            "label": "Contains"
+        },
+        {
+            "key": "excludes",
+            "label": "Excludes"
+        }
+    ],
+    "default_match": "contains",
+    "page_size_suggestions": [
+        20,
+        25,
+        50,
+        100
+    ],
+    "default_page_size": 20,
+    "max_page_size": 200,
+    "filters": [
+        {
+            "key": "q",
+            "label": "Search",
+            "group": "Demographics",
+            "kind": "text",
+            "prominent": true
+        },
+        {
+            "key": "entry_id",
+            "label": "Entry ID",
+            "group": "Demographics",
+            "kind": "text"
+        },
+        {
+            "key": "author_name",
+            "label": "Author name",
+            "group": "Demographics",
+            "kind": "text"
+        },
+        {
+            "key": "experimental_method",
+            "label": "Experimental method",
+            "group": "Demographics",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "X-RAY DIFFRACTION",
+                    "label": "X-ray"
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY",
+                    "label": "EM"
+                },
+                {
+                    "value": "SOLUTION NMR",
+                    "label": "NMR"
+                },
+                {
+                    "value": "SOLID-STATE NMR",
+                    "label": "Solid NMR"
+                },
+                {
+                    "value": "NEUTRON DIFFRACTION",
+                    "label": "Neutron"
+                },
+                {
+                    "value": "ELECTRON CRYSTALLOGRAPHY",
+                    "label": "Electron cryst."
+                },
+                {
+                    "value": "POWDER DIFFRACTION",
+                    "label": "Powder"
+                },
+                {
+                    "value": "FIBER DIFFRACTION",
+                    "label": "Fiber"
+                },
+                {
+                    "value": "SOLUTION SCATTERING",
+                    "label": "Scattering"
+                },
+                {
+                    "value": "EPR",
+                    "label": "EPR"
+                },
+                {
+                    "value": "FLUORESCENCE TRANSFER",
+                    "label": "FRET"
+                },
+                {
+                    "value": "INFRARED SPECTROSCOPY",
+                    "label": "IR"
+                },
+                {
+                    "value": "THEORETICAL MODEL",
+                    "label": "Model"
+                },
+                {
+                    "value": "X-RAY DIFFRACTION:under 1.5",
+                    "label": "X-ray better than 1.5 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "X-RAY DIFFRACTION:1.5-2",
+                    "label": "X-ray 1.5 to 2 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "X-RAY DIFFRACTION:2-2.5",
+                    "label": "X-ray 2 to 2.5 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "X-RAY DIFFRACTION:2.5-3",
+                    "label": "X-ray 2.5 to 3 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "X-RAY DIFFRACTION:3-4",
+                    "label": "X-ray 3 to 4 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "X-RAY DIFFRACTION:4 and over",
+                    "label": "X-ray 4 \u00c5 or worse",
+                    "band": true
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY:under 2.5",
+                    "label": "EM better than 2.5 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY:2.5-3",
+                    "label": "EM 2.5 to 3 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY:3-3.5",
+                    "label": "EM 3 to 3.5 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY:3.5-4",
+                    "label": "EM 3.5 to 4 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY:4-6",
+                    "label": "EM 4 to 6 \u00c5",
+                    "band": true
+                },
+                {
+                    "value": "ELECTRON MICROSCOPY:6 and over",
+                    "label": "EM 6 \u00c5 or worse",
+                    "band": true
+                }
+            ],
+            "any": true,
+            "first": 4
+        },
+        {
+            "key": "resolution_min",
+            "label": "Resolution (\u00c5)",
+            "group": "Demographics",
+            "kind": "range",
+            "placeholder": "from, e.g. 2.0",
+            "pair_with": "resolution_max",
+            "revealed_by": {
+                "key": "experimental_method",
+                "values": [
+                    "X-RAY DIFFRACTION",
+                    "ELECTRON MICROSCOPY",
+                    "NEUTRON DIFFRACTION",
+                    "ELECTRON CRYSTALLOGRAPHY",
+                    "POWDER DIFFRACTION",
+                    "FIBER DIFFRACTION"
+                ]
+            }
+        },
+        {
+            "key": "resolution_max",
+            "label": "Resolution (\u00c5)",
+            "group": "Demographics",
+            "kind": "range",
+            "placeholder": "to, e.g. 3.0"
+        },
+        {
+            "key": "confal_min",
+            "label": "Confal score",
+            "group": "3D Features",
+            "kind": "range",
+            "placeholder": "min",
+            "pair_with": "confal_max"
+        },
+        {
+            "key": "confal_max",
+            "label": "Confal score",
+            "group": "3D Features",
+            "kind": "range",
+            "placeholder": "max"
+        },
+        {
+            "key": "assigned_ntc",
+            "label": "Assigned NtC",
+            "group": "3D Features",
+            "kind": "text"
+        },
+        {
+            "key": "entity_name",
+            "label": "Entity name",
+            "group": "Structure Components",
+            "kind": "text"
+        },
+        {
+            "key": "source_organism",
+            "label": "Source organism",
+            "group": "Structure Components",
+            "kind": "text",
+            "placeholder": "e.g. mouse or Mus musculus",
+            "suggest": "source_organisms"
+        },
+        {
+            "key": "taxonomy_id",
+            "label": "Taxonomy ID",
+            "group": "Structure Components",
+            "kind": "number",
+            "placeholder": "e.g. 4932"
+        },
+        {
+            "key": "source_kind",
+            "label": "Obtained",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "Natural",
+                    "label": "Natural"
+                },
+                {
+                    "value": "Expressed",
+                    "label": "Expressed"
+                },
+                {
+                    "value": "Synthetic",
+                    "label": "Synthetic"
+                },
+                {
+                    "value": "Not recorded",
+                    "label": "Not recorded"
+                }
+            ],
+            "any": true
+        },
+        {
+            "key": "expression_host",
+            "label": "Expression host",
+            "group": "Structure Components",
+            "kind": "text",
+            "placeholder": "e.g. E. coli or human",
+            "suggest": "expression_hosts"
+        },
+        {
+            "key": "nonstandard_residue",
+            "label": "Non-standard residue",
+            "group": "Structure Components",
+            "kind": "text",
+            "placeholder": "e.g. PSU or pseudouridine",
+            "suggest": "nonstandard_residues"
+        },
+        {
+            "key": "ligand",
+            "label": "Ligand",
+            "group": "Structure Components",
+            "kind": "text",
+            "placeholder": "e.g. SAM or adenosyl",
+            "suggest": "ligands"
+        },
+        {
+            "key": "modification",
+            "label": "Modification",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "Nm",
+                    "label": "2\u2032-O-methyl (Nm)"
+                },
+                {
+                    "value": "Pseudouridine",
+                    "label": "Pseudouridine (\u03a8)"
+                },
+                {
+                    "value": "m5C",
+                    "label": "5-methylcytidine (m\u2075C)"
+                },
+                {
+                    "value": "m7G",
+                    "label": "7-methylguanosine (m\u2077G)"
+                },
+                {
+                    "value": "m6A",
+                    "label": "N\u2076-methyladenosine (m\u2076A)"
+                },
+                {
+                    "value": "5-methyl-dC",
+                    "label": "5-methyl-dC, in DNA"
+                }
+            ],
+            "any": true
+        },
+        {
+            "key": "has_ligand",
+            "label": "Ligands",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "With ligands",
+                    "label": "With ligands"
+                },
+                {
+                    "value": "Without ligands",
+                    "label": "Without ligands"
+                }
+            ],
+            "any": false
+        },
+        {
+            "key": "has_water",
+            "label": "Water",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "With water",
+                    "label": "With water"
+                },
+                {
+                    "value": "Without water",
+                    "label": "Without water"
+                }
+            ],
+            "any": false
+        },
+        {
+            "key": "synthetic",
+            "label": "Chemically synthesised",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "Synthetic",
+                    "label": "Synthetic"
+                },
+                {
+                    "value": "Not synthetic",
+                    "label": "Not synthetic"
+                }
+            ],
+            "any": false
+        },
+        {
+            "key": "polymer_type",
+            "label": "Polymer type",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "DNA",
+                    "label": "DNA"
+                },
+                {
+                    "value": "RNA",
+                    "label": "RNA"
+                },
+                {
+                    "value": "DNA/RNA",
+                    "label": "DNA/RNA"
+                },
+                {
+                    "value": "Protein/DNA",
+                    "label": "Protein/DNA"
+                },
+                {
+                    "value": "Protein/RNA",
+                    "label": "Protein/RNA"
+                },
+                {
+                    "value": "Protein/DNA/RNA",
+                    "label": "Protein/DNA/RNA"
+                },
+                {
+                    "value": "Protein",
+                    "label": "Protein"
+                },
+                {
+                    "value": "Oligosaccharide",
+                    "label": "Oligosaccharide"
+                },
+                {
+                    "value": "Protein/Oligosaccharide",
+                    "label": "Protein/Oligosaccharide"
+                },
+                {
+                    "value": "Other",
+                    "label": "Other"
+                }
+            ],
+            "any": true
+        },
+        {
+            "key": "monomer_flag",
+            "label": "Monomer standard flag",
+            "group": "Structure Components",
+            "kind": "pills",
+            "options": [
+                {
+                    "value": "Standard",
+                    "label": "Standard"
+                },
+                {
+                    "value": "Non-Standard",
+                    "label": "Non-Standard"
+                }
+            ],
+            "any": false
+        }
+    ],
+    "columns": [
+        {
+            "key": "pdb_id",
+            "label": "Entry ID",
+            "group": "Demographics",
+            "scope": "entry",
+            "show": []
+        },
+        {
+            "key": "title",
+            "label": "Title",
+            "group": "Demographics",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "method",
+            "label": "Experimental method",
+            "group": "Demographics",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "deposition_date",
+            "label": "Deposition date",
+            "group": "Demographics",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "resolution",
+            "label": "Resolution",
+            "group": "Demographics",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "author",
+            "label": "Author name",
+            "group": "Demographics",
+            "scope": "entry",
+            "show": []
+        },
+        {
+            "key": "all_authors",
+            "label": "Authors",
+            "group": "Citation",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "published",
+            "label": "Published",
+            "group": "Citation",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "polymer_type",
+            "label": "Polymer type",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "entity_name",
+            "label": "Entity name",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": [
+                "card"
+            ]
+        },
+        {
+            "key": "source_organism",
+            "label": "Source organism",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": [
+                "card"
+            ]
+        },
+        {
+            "key": "source_taxonomy",
+            "label": "Taxonomy ID",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": []
+        },
+        {
+            "key": "source_kind",
+            "label": "Obtained",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": []
+        },
+        {
+            "key": "expression_host",
+            "label": "Expression host",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": []
+        },
+        {
+            "key": "nonstandard_residue",
+            "label": "Non-standard residues",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "ligands",
+            "label": "Ligands",
+            "group": "Structure Components",
+            "scope": "entry",
+            "show": [
+                "page",
+                "card"
+            ]
+        },
+        {
+            "key": "confal_score",
+            "label": "Overall confal score",
+            "group": "3D Features",
+            "scope": "entry"
+        },
+        {
+            "key": "assigned_ntc",
+            "label": "Assigned NtC",
+            "group": "3D Features",
+            "scope": "entry"
+        },
+        {
+            "key": "monomer_flag",
+            "label": "Monomer standard flag",
+            "group": "Structure Components",
+            "scope": "entry"
+        },
+        {
+            "key": "doi",
+            "label": "DOI",
+            "group": "Citation",
+            "scope": "detail",
+            "show": []
+        },
+        {
+            "key": "pubmed",
+            "label": "PubMed",
+            "group": "Citation",
+            "scope": "detail",
+            "show": []
+        },
+        {
+            "key": "polymer_composition",
+            "label": "Composition",
+            "group": "Contents",
+            "scope": "detail",
+            "show": []
+        },
+        {
+            "key": "chain_count",
+            "label": "Chains",
+            "group": "Contents",
+            "scope": "detail"
+        },
+        {
+            "key": "residue_count",
+            "label": "Residues",
+            "group": "Contents",
+            "scope": "detail"
+        },
+        {
+            "key": "nucleotide_count",
+            "label": "Nucleotides",
+            "group": "Contents",
+            "scope": "detail"
+        },
+        {
+            "key": "atom_count",
+            "label": "Atoms",
+            "group": "Contents",
+            "scope": "detail"
+        },
+        {
+            "key": "confal_percentile",
+            "label": "Confal percentile",
+            "group": "3D Features",
+            "scope": "detail"
+        },
+        {
+            "key": "ntc_step_count",
+            "label": "NtC steps",
+            "group": "3D Features",
+            "scope": "detail"
+        },
+        {
+            "key": "ntc_classes",
+            "label": "NtC classes",
+            "group": "3D Features",
+            "scope": "detail"
+        },
+        {
+            "key": "paper_title",
+            "label": "Paper title",
+            "group": "Citation",
+            "scope": "report",
+            "show": []
+        },
+        {
+            "key": "journal",
+            "label": "Journal",
+            "group": "Citation",
+            "scope": "report",
+            "show": []
+        },
+        {
+            "key": "year",
+            "label": "Year",
+            "group": "Citation",
+            "scope": "report",
+            "show": []
+        },
+        {
+            "key": "r_work",
+            "label": "R-work",
+            "group": "Demographics",
+            "scope": "report",
+            "show": []
+        },
+        {
+            "key": "r_free",
+            "label": "R-free",
+            "group": "Demographics",
+            "scope": "report",
+            "show": []
+        }
+    ],
+    "report_tables": [
+        {
+            "key": "structures",
+            "name": "Structures",
+            "row": "One row per structure",
+            "defaults": [
+                "pdb_id",
+                "title",
+                "method",
+                "resolution",
+                "deposition_date"
+            ],
+            "option": null,
+            "fields": [
+                {
+                    "key": "pdb_id",
+                    "group": "Structure",
+                    "label": "Entry ID"
+                },
+                {
+                    "key": "title",
+                    "group": "Structure",
+                    "label": "Title"
+                },
+                {
+                    "key": "method",
+                    "group": "Structure",
+                    "label": "Experimental method"
+                },
+                {
+                    "key": "resolution",
+                    "group": "Structure",
+                    "label": "Resolution"
+                },
+                {
+                    "key": "r_work",
+                    "group": "Structure",
+                    "label": "R-work"
+                },
+                {
+                    "key": "r_free",
+                    "group": "Structure",
+                    "label": "R-free"
+                },
+                {
+                    "key": "deposition_date",
+                    "group": "Structure",
+                    "label": "Deposition date"
+                },
+                {
+                    "key": "author",
+                    "group": "Paper",
+                    "label": "First author"
+                },
+                {
+                    "key": "all_authors",
+                    "group": "Paper",
+                    "label": "Authors"
+                },
+                {
+                    "key": "paper_title",
+                    "group": "Paper",
+                    "label": "Paper title"
+                },
+                {
+                    "key": "journal",
+                    "group": "Paper",
+                    "label": "Journal"
+                },
+                {
+                    "key": "year",
+                    "group": "Paper",
+                    "label": "Year"
+                },
+                {
+                    "key": "doi",
+                    "group": "Paper",
+                    "label": "DOI"
+                },
+                {
+                    "key": "pubmed",
+                    "group": "Paper",
+                    "label": "PubMed"
+                },
+                {
+                    "key": "polymer_type",
+                    "group": "Contents",
+                    "label": "Polymer types"
+                },
+                {
+                    "key": "chain_count",
+                    "group": "Contents",
+                    "label": "Chains"
+                },
+                {
+                    "key": "nucleotide_count",
+                    "group": "Contents",
+                    "label": "Nucleotides"
+                },
+                {
+                    "key": "monomer_flag",
+                    "group": "Contents",
+                    "label": "Monomer standard flag"
+                },
+                {
+                    "key": "confal_score",
+                    "group": "3D features",
+                    "label": "Confal score"
+                },
+                {
+                    "key": "confal_percentile",
+                    "group": "3D features",
+                    "label": "Confal percentile"
+                },
+                {
+                    "key": "ntc_classes",
+                    "group": "3D features",
+                    "label": "NtC classes"
+                }
+            ]
+        },
+        {
+            "key": "molecules",
+            "name": "Molecules",
+            "row": "One row per molecule in a structure",
+            "defaults": [
+                "pdb_id",
+                "molecule_id",
+                "chains",
+                "molecule_name",
+                "molecule_type",
+                "length",
+                "sequence"
+            ],
+            "option": {
+                "key": "proteins",
+                "label": "Include proteins"
+            },
+            "fields": [
+                {
+                    "key": "pdb_id",
+                    "group": "Molecule",
+                    "label": "Entry ID"
+                },
+                {
+                    "key": "molecule_id",
+                    "group": "Molecule",
+                    "label": "Molecule no."
+                },
+                {
+                    "key": "chains",
+                    "group": "Molecule",
+                    "label": "Chains"
+                },
+                {
+                    "key": "copies",
+                    "group": "Molecule",
+                    "label": "Copies"
+                },
+                {
+                    "key": "molecule_name",
+                    "group": "Molecule",
+                    "label": "Name"
+                },
+                {
+                    "key": "molecule_type",
+                    "group": "Molecule",
+                    "label": "Type"
+                },
+                {
+                    "key": "length",
+                    "group": "Molecule",
+                    "label": "Length"
+                },
+                {
+                    "key": "sequence",
+                    "group": "Sequence",
+                    "label": "Sequence"
+                },
+                {
+                    "key": "modified",
+                    "group": "Sequence",
+                    "label": "Modified residues"
+                },
+                {
+                    "key": "organism",
+                    "group": "Source",
+                    "label": "Organism"
+                },
+                {
+                    "key": "taxonomy_id",
+                    "group": "Source",
+                    "label": "Taxonomy ID"
+                },
+                {
+                    "key": "obtained",
+                    "group": "Source",
+                    "label": "Obtained"
+                },
+                {
+                    "key": "expression_host",
+                    "group": "Source",
+                    "label": "Expression host"
+                }
+            ]
+        },
+        {
+            "key": "ligands",
+            "name": "Ligands",
+            "row": "One row per ligand in a structure",
+            "defaults": [
+                "pdb_id",
+                "ligand_code",
+                "ligand_name",
+                "formula",
+                "ligand_copies"
+            ],
+            "option": {
+                "key": "water",
+                "label": "Include water"
+            },
+            "fields": [
+                {
+                    "key": "pdb_id",
+                    "group": "Ligand",
+                    "label": "Entry ID"
+                },
+                {
+                    "key": "ligand_code",
+                    "group": "Ligand",
+                    "label": "Code"
+                },
+                {
+                    "key": "ligand_name",
+                    "group": "Ligand",
+                    "label": "Name"
+                },
+                {
+                    "key": "ligand_copies",
+                    "group": "Ligand",
+                    "label": "Copies"
+                },
+                {
+                    "key": "formula",
+                    "group": "Chemistry",
+                    "label": "Formula"
+                },
+                {
+                    "key": "charge",
+                    "group": "Chemistry",
+                    "label": "Charge"
+                },
+                {
+                    "key": "weight",
+                    "group": "Chemistry",
+                    "label": "Weight (Da)"
+                },
+                {
+                    "key": "synonyms",
+                    "group": "Chemistry",
+                    "label": "Synonyms"
+                }
+            ]
+        }
+    ],
+    "report_key": "pdb_id",
+    "text_filters": [
+        "q",
+        "entry_id",
+        "author_name",
+        "resolution_min",
+        "resolution_max",
+        "confal_min",
+        "confal_max",
+        "assigned_ntc",
+        "entity_name",
+        "source_organism",
+        "taxonomy_id",
+        "expression_host",
+        "nonstandard_residue",
+        "ligand"
+    ],
+    "pill_filters": [
+        "experimental_method",
+        "source_kind",
+        "modification",
+        "has_ligand",
+        "has_water",
+        "synthetic",
+        "polymer_type",
+        "monomer_flag"
+    ]
+}
