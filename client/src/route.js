@@ -42,8 +42,8 @@ export function redirectOf(pathname, search) {
 // nothing and carries nothing.
 // search: the address's query now, which the search page keeps up to date.
 export function railOf(route, search) {
-  // /report draws the landing page until 8.8, so it has the landing's rail.
-  if (route.name === "landing" || route.name === "report") return { active: null, report: false, carry: "" };
+  if (route.name === "landing") return { active: null, report: false, carry: "" };
+  if (route.name === "report") return { active: "report", report: true, carry: search };
   if (route.name === "error" || route.name === "unwritten") return { active: null, report: true, carry: "" };
   if (route.name === "structure") return { active: "search", report: true, carry: "?entry_id=" + encodeURIComponent(route.id) };
   return { active: "search", report: true, carry: search };
