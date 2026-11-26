@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Link } from "react-router";
+import { useEffect, useState } from "react";
 import Hero from "./Hero.jsx";
 import SearchBox from "./SearchBox.jsx";
 import LandingCount from "./LandingCount.jsx";
@@ -31,6 +32,11 @@ function Landing() {
   const [answers, setAnswers] = useState({});
   const cards = useApi("/api/browse");
 
+  // The tab's title, as landing.ejs writes it: kept when another page set its own.
+  useEffect(() => {
+    document.title = "NA3DB";
+  }, []);
+
   // Worked out from state on every render, never stored twice.
   const typed = text.trim();
   const picks = picksOf(cards.data ?? [], answers);
@@ -46,11 +52,10 @@ function Landing() {
   const tick = (label, option) => setAnswers((prev) => toggleTick(prev, label, option));
   const toSearch = (query) => go("/search?" + query);
 
-  // With nothing picked the form goes on as the plain GET it is.
+  // With nothing picked the form's own GET (/search?q=), drawn in place.
   const search = (e) => {
-    if (picks.length === 0) return;
     e.preventDefault();
-    toSearch(pickUrl("", typed, picks));
+    toSearch(picks.length ? pickUrl("", typed, picks) : new URLSearchParams(new FormData(e.currentTarget)).toString());
   };
 
   // A name picked under the box is that search. An organism, residue or
@@ -90,8 +95,8 @@ function Landing() {
           {/* The box still searches without the cards, so a failure is one quiet line. */}
           {cards.error && <p className="browse_hint">The questions could not be loaded. The search box still works.</p>}
 
-          <a className="download download_quiet landing_advanced"
-             href={picks.length ? FULL + "&" + pickUrl("", "", picks) : FULL}>Full search</a>
+          <Link className="download download_quiet landing_advanced"
+                to={picks.length ? FULL + "&" + pickUrl("", "", picks) : FULL}>Full search</Link>
 
           <Stats />
         </div>

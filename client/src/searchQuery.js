@@ -70,8 +70,9 @@ export function queryFromAddress(search, registry) {
     filters: filtersFromParams(params, registry),
     page: Number.isInteger(page) && page > 0 ? page : 1,
     // A sort the menu does not offer leaves the menu empty, so none is sent.
+    // The tidied address says sort= for that, and reads back the same.
     sort: registry.sorts.some((s) => s.key === params.get("sort")) ? params.get("sort")
-        : params.get("sort") ? "" : registry.default_sort,
+        : params.has("sort") ? "" : registry.default_sort,
     perPage: perPageFrom(params.get("per_page"), registry),
     match: registry.match_modes.some((m) => m.key === match) ? match : registry.default_match,
     view: VIEWS.includes(view) ? view : "cards",

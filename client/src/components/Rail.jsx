@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import ThemeButton from "./ThemeButton.jsx";
 import { MARK_LIGHT, MARK_DEEP, LETTER } from "../logo.js";
 
@@ -9,7 +10,7 @@ function Rail({ active, report, carry }) {
   return (
     <div className="rail">
       <div className="rail-icons">
-        <a href="/" className="rail-logo" title="NA3DB home" aria-label="NA3DB home">
+        <Link to="/" className="rail-logo" title="NA3DB home" aria-label="NA3DB home">
             {/* The logo: the mark and the wordmark as one lockup (rail.ejs). The link
                 carries the name, so the drawing is hidden from screen readers. The
                 colours follow the theme through --mark-deep and --mark-light. */}
@@ -18,18 +19,18 @@ function Rail({ active, report, carry }) {
               {MARK_DEEP.map((d) => <path className="mark_deep" d={d} key={d} />)}
               {["N", "A", "D", "B", "THREE"].map((l) => <path className="mark_word" d={LETTER[l]} key={l} />)}
             </svg>
-        </a>
-        <a href={"/search" + carry} className={item("search")} data-page="/search" title="Full search" aria-label="Full search">
+        </Link>
+        <Link to={"/search" + carry} className={item("search")} data-page="/search" title="Full search" aria-label="Full search">
           <img src="/assets/search.svg" alt="Search" />
-        </a>
+        </Link>
         <a href="#" className="rail-item" title="Questions">
           <img src="/assets/Q.png" alt="Questions" className="icon-narrow" />
         </a>
         {/* A report covers a search, so it is not offered before there is one. */}
         {report && (
-          <a href={"/report" + carry} className={item("report")} data-page="/report" title="Report">
+          <Link to={"/report" + carry} className={item("report")} data-page="/report" title="Report">
             <img src="/assets/report.svg" alt="Report" />
-          </a>
+          </Link>
         )}
       </div>
       <ThemeButton />

@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 function Footer() {
   const firstYear = 2026;
   const thisYear = new Date().getFullYear();
@@ -7,9 +8,9 @@ function Footer() {
     <footer className="site_footer">
       <span className="site_footer_copy">&copy; {years} NA3DB Team</span>
       <nav className="site_footer_links" aria-label="About NA3DB">
-        <a href="/cite">How to cite</a>
-        <a href="/help">Help</a>
-        <a href="/contact">Contact</a>
+        <Link to="/cite">How to cite</Link>
+        <Link to="/help">Help</Link>
+        <Link to="/contact">Contact</Link>
       </nav>
       <span className="site_footer_support">
         <span className="site_footer_support_label">Supported by</span>

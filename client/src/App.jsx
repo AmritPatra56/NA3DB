@@ -1,33 +1,28 @@
+import { useCallback, useState } from "react";
+import { Navigate, Outlet, useLocation } from "react-router";
 import Rail from "./components/Rail.jsx";
-import Landing from "./components/Landing.jsx";
-import StructurePage from "./components/StructurePage.jsx";
-import SearchPage from "./components/SearchPage.jsx";
-import { useState } from "react";
 import Footer from "./components/Footer.jsx";
-import { routeOf, railOf } from "./route.js";
-import { here } from "./address.js";
+import { routeOf, railOf, redirectOf } from "./route.js";
 
-// Each page asks the server for its own data.
-const route = routeOf(here().path);
-
-// onAddress: the search page's address changed. onFailed: the page shows an error.
-function Page({ onAddress, onFailed }) {
-  if (route.name === "structure") return <StructurePage id={route.id} onFailed={onFailed} />;
-  if (route.name === "search") return <SearchPage onAddress={onAddress} />;
-  return <Landing />;
-}
-
+// Round every page: the rail and the footer, with the page the address picks
+// (routes.jsx) in between. It reads the address on every move, so the rail
+// lights and carries what the page in view needs.
 function App() {
-  // The search the rail's links carry, so going back to it from another page
-  // keeps it: the search page's address, as it last wrote it.
-  const [railSearch, setRailSearch] = useState(route.name === "search" ? here().search : "");
-  // The page in view shows an error instead (error.ejs).
-  const [failed, setFailed] = useState(false);
+  const { pathname, search } = useLocation();
+  // The page that shows an error instead (error.ejs): only while it is in view.
+  const [failedAt, setFailedAt] = useState(null);
+  const onFailed = useCallback((failed) => setFailedAt(failed ? pathname : null), [pathname]);
+
+  // An address the server would send elsewhere goes there first, in place.
+  const to = redirectOf(pathname, search);
+  if (to) return <Navigate to={to} replace />;
+
+  const route = failedAt === pathname ? { name: "error" } : routeOf(pathname);
   return (
     <>
       <div className="interface">
-        <Rail {...railOf(failed ? { name: "error" } : route, railSearch)} />
-        <Page onAddress={setRailSearch} onFailed={setFailed} />
+        <Rail {...railOf(route, search)} />
+        <Outlet context={{ onFailed }} />
       </div>
       <Footer />
     </>

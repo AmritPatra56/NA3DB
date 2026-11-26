@@ -8,17 +8,14 @@ import { searchable } from "../query.js";
 import { resultsOf, paintedOf, totalOf } from "../searchAnswer.js";
 import { here, go, pushAddress, onHistory } from "../address.js";
 
-// Into the address with a history entry, unless it already is that search;
-// the rail's search link follows (sync_rail_links).
-function toAddress(search, onAddress) {
-  if (pushAddress(here().path + search)) onAddress(here().search);
-}
+// Into the address with a history entry, unless it already is that search.
+// The rail reads the address, so its search link follows (sync_rail_links).
+const toAddress = (search) => pushAddress(here().path + search);
 
 // The search page's state (search.ejs, app.js), so SearchPage only wires its
 // children. The search is read from the address, and every change is written
 // back there (with a history entry, so Back works) as it is asked for.
-// onAddress(search): the address changed, so the rail's link can carry it.
-export function useSearch(onAddress) {
+export function useSearch() {
   // What the panel offers, from the same registry search.ejs is drawn from.
   const fields = useApi("/api/fields");
   const registry = fields.data;
@@ -47,7 +44,7 @@ export function useSearch(onAddress) {
   // address takes the form but nothing is asked again (as the old page does).
   function search(change, form = panel, redraw = false, excluded = undefined) {
     const next = { ...query, ...change, filters: filtersOf(form, excluded) };
-    toAddress(addressOf(next, registry), onAddress);
+    toAddress(addressOf(next, registry));
     setEdited(form);
     setChosen(redraw ? { ...next, filters: query.filters } : next);
     if (!redraw) {
@@ -63,8 +60,8 @@ export function useSearch(onAddress) {
   // On load the address is written out as the search reads it, as run_search
   // does at once: an odd link (page=1, a sort the menu lacks) is tidied.
   useEffect(() => {
-    if (registry) toAddress(addressOf(queryFromAddress(here().search, registry), registry), onAddress);
-  }, [registry, onAddress]);
+    if (registry) toAddress(addressOf(queryFromAddress(here().search, registry), registry));
+  }, [registry]);
 
   // Back and Forward: the address has changed already, so the form is refilled
   // from it and searched again. The panel stays folded or open as it is, as
