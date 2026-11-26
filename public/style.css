@@ -3012,10 +3012,11 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .result_row { padding: 12px; }
 
-    .pagination { bottom: 10px; gap: 8px; }
+    /* Narrow enough for both arrows and seven pages in 360px; still 40px tall to tap. */
+    .pagination { bottom: 10px; gap: 4px; }
 
     .page_num,
-    .page_arrow { min-width: 40px; min-height: 40px; font-size: 14px; }
+    .page_arrow { min-width: 34px; min-height: 40px; padding: 5px 6px; font-size: 14px; }
 }
 
 /* <---------------------how the box was read---------------------> */
