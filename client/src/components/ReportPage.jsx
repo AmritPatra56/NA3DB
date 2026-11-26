@@ -4,6 +4,7 @@ import ReportFields from "./ReportFields.jsx";
 import ReportPreview from "./ReportPreview.jsx";
 import { useApi } from "../hooks/useApi.js";
 import { useReport } from "../hooks/useReport.js";
+import { useFieldsFold } from "../hooks/useFieldsFold.js";
 import { chosenFields } from "../report.js";
 import { number } from "../format.js";
 
@@ -31,13 +32,13 @@ const ZIP_SAY = { idle: "Download all (ZIP)", busy: "Preparing…", failed: "Dow
 function Report({ registry, why }) {
   const r = useReport(registry);
   const { table, rows } = r;
-  const open = true;
+  const fold = useFieldsFold();
+  const { open, label } = fold;
   const heading = rows.loading ? "Loading…" : rows.data ? `${table.name} (${number(rows.data.total)})` : table.name;
-  const label = open ? "Hide the fields" : "Show the fields";
 
   return (
     <>
-      <div className={`query_panel${open ? "" : " folded"}`} id="report_panel">
+      <div className={`query_panel${open ? "" : " folded"}`} id="report_panel" inert={fold.inert}>
         <div className="query_panel_header">
           <h1>Report</h1>
         </div>
@@ -59,14 +60,15 @@ function Report({ registry, why }) {
       </div>
       <div className="panel_edge">
         <button type="button" className="panel_handle fields_handle" aria-controls="report_panel"
-                aria-expanded={open} aria-label={label} title={label}>
+                aria-expanded={open} aria-label={label} title={label} onClick={fold.onToggle}>
           <i className="arrow arrow_side" aria-hidden="true"></i>
         </button>
       </div>
       <div className="results_area">
         <div className="results_area_header">
           <h1 className="report_count">{heading}</h1>
-          <button type="button" className="fields_toggle" aria-expanded={open} aria-label="Show or hide the fields">
+          <button type="button" className="fields_toggle" aria-expanded={open} aria-label="Show or hide the fields"
+                  onClick={fold.onToggle}>
             <i className="arrow arrow_side" aria-hidden="true"></i>
           </button>
         </div>

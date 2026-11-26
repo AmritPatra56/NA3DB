@@ -24,3 +24,6 @@ export const UNWRITTEN_MESSAGE = "This page is being written.";
 // What an empty section of the structure page says (structure.ejs).
 export const NONE_RECORDED = "None recorded for this entry.";
 export const NO_SAME_SEQUENCE = "No other entry has a chain with exactly this sequence.";
+
+// A phone, where the report's field list sits above the table (style.css).
+export const PHONE = "(max-width: 640px)";
