@@ -8,6 +8,9 @@ const target = process.env.API_TARGET ?? "http://localhost:4000"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // The chunks go in app/, not Vite's assets/: /assets is the site's own
+  // fonts and icons (public/assets), served by Express.
+  build: { assetsDir: "app" },
   server: {
     port: 5173,            // always this port
     strictPort: true,      // if it's busy, stop with an error instead of moving
