@@ -7,8 +7,11 @@ function StructureRoute() {
   const { id } = useParams();
   const { onFailed } = useOutletContext();
   // Which arc view Base pairs draws (?assembly=): a new one redraws only that.
-  const assembly = new URLSearchParams(useLocation().search).get("assembly") ?? "";
-  return <StructurePage key={id} id={id} assembly={assembly} onFailed={onFailed} />;
+  const location = useLocation();
+  const assembly = new URLSearchParams(location.search).get("assembly") ?? "";
+  // Which arc picture is expanded (task 8.3.4): the mark on this history entry.
+  const expandedArc = location.state?.arc ?? null;
+  return <StructurePage key={id} id={id} assembly={assembly} expandedArc={expandedArc} onFailed={onFailed} />;
 }
 
 export default StructureRoute;

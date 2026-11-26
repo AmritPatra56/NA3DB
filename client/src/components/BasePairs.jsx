@@ -5,11 +5,11 @@ import { number, counted } from "../format.js";
 // The Base pairs section (structure.ejs): the arc picture, then the pairs
 // counted by class in a bar, the other families, which chains pair with
 // which, and the other pairs one by one. bp: /pairs' base_pairs.
-function BasePairs({ pdbId, bp, view }) {
+function BasePairs({ pdbId, bp, view, expanded, onExpand, onCollapse }) {
   const extra = bp.links.slice(bp.links_shown);
   return (
     <>
-      {view.arcs && <ArcPicture pdbId={pdbId} view={view} />}
+      {view.arcs && <ArcPicture pdbId={pdbId} view={view} expanded={expanded} onExpand={onExpand} onCollapse={onCollapse} />}
       <div className="jump_to">
         Jump to: <a href="#bp-counts">Counts</a>
         {bp.families.length > 0 && <> · <a href="#bp-families">Families</a></>}

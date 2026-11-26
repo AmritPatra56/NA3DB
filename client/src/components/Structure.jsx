@@ -12,8 +12,9 @@ import { remembered, remember } from "../remember.js";
 import { NARROW } from "../reading.js";
 import { useMedia } from "../hooks/useMedia.js";
 import { useReading } from "../hooks/useReading.js";
+import { pushMark, back } from "../address.js";
 
-function Structure({ entry, molecules, pairs }) {
+function Structure({ entry, molecules, pairs, expandedArc }) {
   const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
   const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
   const { reading, view: followView } = useReading();
@@ -69,7 +70,9 @@ function Structure({ entry, molecules, pairs }) {
     { id: "ligands", title: "Ligands", group: "composition", empty: rowCount(groups.ligands) === 0,
       body: <Molecules sectionId="ligands" pdbId={entry.pdb_id} groups={groups.ligands} /> },
     { id: "base-pairs", title: "Base pairs", group: "structure", empty: !pairs.base_pairs,
-      body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view} /> },
+      body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view}
+                                      expanded={expandedArc === pairs.arc_view.key}
+                                      onExpand={() => pushMark({ arc: pairs.arc_view.key })} onCollapse={back} /> },
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <><StructureFacts rows={conformation} />{pairs.ntc?.families.length > 0 && <NtcFamilies ntc={pairs.ntc} />}</> },
