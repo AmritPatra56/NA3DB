@@ -26,3 +26,7 @@ export function sectionBeingRead() {
 
 // Whether the page has moved at all: at the top the address keeps no #section.
 export const hasScrolled = () => scrollY + (document.querySelector(".results_area_body")?.scrollTop ?? 0) > 0;
+
+// Wide enough for the Views to sit beside the page (style.css): a short
+// window then scrolls the Views inside, and the page stays where it is.
+export const SIDE = "(min-width: 1360px)";
