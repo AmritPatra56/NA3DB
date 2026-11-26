@@ -1,21 +1,25 @@
 import { POLYMER_TYPE_ALIASES, DISPLAY_PARAMS, UNWRITTEN } from "./constants.js";
 
+// A page's path as Express matches it: any case, one slash at the end or none.
+const pageOf = (pathname) => pathname.toLowerCase().replace(/(.)\/$/, "$1");
+
 // Which page an address shows (routes.jsx): /structure/<id> that entry,
 // /search the full search, /report the report, /cite, /help and /contact the
-// footer's unwritten pages, anything else the landing page for now (8.9
-// brings Page not found).
+// footer's unwritten pages, / the landing page, anything else Page not found.
 export function routeOf(pathname) {
-  const id = pathname.match(/^\/structure\/([^/]+)\/?$/)?.[1];
+  const id = pathname.match(/^\/structure\/([^/]+)\/?$/i)?.[1];
   if (id) return { name: "structure", id: decodeURIComponent(id) };
-  if (pathname === "/search") return { name: "search" };
-  if (pathname === "/report") return { name: "report" };
-  if (Object.hasOwn(UNWRITTEN, pathname.slice(1))) return { name: "unwritten" };
-  return { name: "landing" };
+  const page = pageOf(pathname);
+  if (page === "/") return { name: "landing" };
+  if (page === "/search") return { name: "search" };
+  if (page === "/report") return { name: "report" };
+  if (Object.hasOwn(UNWRITTEN, page.slice(1))) return { name: "unwritten" };
+  return { name: "missing" };
 }
 
 // Whether the router draws this path in place; anything else (a FASTA
 // download, a server page) is loaded in full.
-export const isRouted = (pathname) => pathname === "/" || routeOf(pathname).name !== "landing";
+export const isRouted = (pathname) => routeOf(pathname).name !== "missing";
 
 // Where the server would send an address instead (server.js), or null:
 // / with a search is an old bookmark for /search; an old polymer type is put
@@ -23,14 +27,15 @@ export const isRouted = (pathname) => pathname === "/" || routeOf(pathname).name
 // a wrong turn, sent to /search. Each is a 301 there, so a replace here.
 export function redirectOf(pathname, search) {
   const params = new URLSearchParams(search);
-  if (pathname === "/" && search.length > 1) return "/search" + search;
-  if (pathname === "/search") {
+  const page = pageOf(pathname);
+  if (page === "/" && search.length > 1) return "/search" + search;
+  if (page === "/search") {
     const values = params.getAll("polymer_type").flatMap((v) => v.split(","));
     if (!values.some((v) => POLYMER_TYPE_ALIASES[v])) return null;
     params.set("polymer_type", [...new Set(values.flatMap((v) => POLYMER_TYPE_ALIASES[v] ?? [v]))].join(","));
     return "/search?" + params.toString().replaceAll("+", "%20");
   }
-  if (pathname === "/report" && [...params.keys()].every((k) => DISPLAY_PARAMS.includes(k))) return "/search";
+  if (page === "/report" && [...params.keys()].every((k) => DISPLAY_PARAMS.includes(k))) return "/search";
   return null;
 }
 
@@ -38,13 +43,14 @@ export function redirectOf(pathname, search) {
 // page counts as the search, as the server renders it with page "search"),
 // whether Report is offered (not before there is a search), and the query
 // both links carry (sync_rail_links; rail_query on a structure page).
-// An error page (route name "error", page "none" on the server) lights
+// An error page (route name "error" or "missing", page "none" on the server) lights
 // nothing and carries nothing.
 // search: the address's query now, which the search page keeps up to date.
 export function railOf(route, search) {
   if (route.name === "landing") return { active: null, report: false, carry: "" };
   if (route.name === "report") return { active: "report", report: true, carry: search };
-  if (route.name === "error" || route.name === "unwritten") return { active: null, report: true, carry: "" };
-  if (route.name === "structure") return { active: "search", report: true, carry: "?entry_id=" + encodeURIComponent(route.id) };
+  if (route.name === "error" || route.name === "missing" || route.name === "unwritten") return { active: null, report: true, carry: "" };
+  // The server writes the entry's pdb_id, upper case, whatever case the link used.
+  if (route.name === "structure") return { active: "search", report: true, carry: "?entry_id=" + encodeURIComponent(route.id.toUpperCase()) };
   return { active: "search", report: true, carry: search };
 }
