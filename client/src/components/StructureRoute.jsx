@@ -1,4 +1,4 @@
-import { useOutletContext, useParams } from "react-router";
+import { useLocation, useOutletContext, useParams } from "react-router";
 import StructurePage from "./StructurePage.jsx";
 
 // /structure/:id: the id from the address. Keyed by it, so another entry
@@ -6,7 +6,9 @@ import StructurePage from "./StructurePage.jsx";
 function StructureRoute() {
   const { id } = useParams();
   const { onFailed } = useOutletContext();
-  return <StructurePage key={id} id={id} onFailed={onFailed} />;
+  // Which arc view Base pairs draws (?assembly=): a new one redraws only that.
+  const assembly = new URLSearchParams(useLocation().search).get("assembly") ?? "";
+  return <StructurePage key={id} id={id} assembly={assembly} onFailed={onFailed} />;
 }
 
 export default StructureRoute;
