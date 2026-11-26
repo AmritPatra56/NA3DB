@@ -85,7 +85,8 @@ function Structure({ entry, molecules, pairs, expanded }) {
       body: nucleicChains > 0 && <><MapGuide /><SeqMap pdbId={entry.pdb_id} expanded={expanded?.seqmap === true}
                                                         onExpand={() => pushMark({ seqmap: true })} onCollapse={back} /></> },
     { id: "same-sequence", title: "Same sequence", group: "structure", empty: !entry.same_entries, none: NO_SAME_SEQUENCE,
-      body: entry.same_entries > 0 && <SameSeq pdbId={entry.pdb_id} /> },
+      body: entry.same_entries > 0 && <SameSeq pdbId={entry.pdb_id} expanded={expanded?.sameseq}
+                                               onExpand={(ref) => pushMark({ sameseq: ref })} onCollapse={back} /> },
     // The id stays "citations" so old #citations links still land here.
     { id: "citations", title: "Citation", group: "references", empty: !entry.citation,
       body: entry.citation && <Citation pdbId={entry.pdb_id} c={entry.citation} text={entry.cite_text}

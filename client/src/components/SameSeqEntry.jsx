@@ -3,8 +3,9 @@ import { BEST_NOTE, VERDICT_ICON, methodShort, modelled, resolution } from "../s
 
 // One entry of the Same sequence table: a row per chain, the entry's id,
 // title and resolution spanning them. ref: the chain the others are compared
-// with; best: the group's best model.
-function SameSeqEntry({ e, refId, best, hidden }) {
+// with; best: the group's best model; pressed: the chain compared with ref
+// now, or null. onRow(a, b): a row's Compare.
+function SameSeqEntry({ e, refId, best, pressed, hidden, onRow }) {
   const res = resolution(e.resolution);
   return (
     <tbody className={`ss_entry${hidden !== undefined ? " ss_more" : ""}`} hidden={hidden}>
@@ -31,8 +32,8 @@ function SameSeqEntry({ e, refId, best, hidden }) {
               : <span className={`ss_verdict ss_v_${c.summary.verdict}`}><b aria-hidden="true">{VERDICT_ICON[c.summary.verdict]}</b>{c.summary.headline}</span>}
           </td>
           <td className="ss_act">
-            {/* Compares, and shows the pair being compared as pressed, in task 8.5.4. */}
-            {c.id !== refId && <button type="button" className="ss_go" data-a={refId} data-b={c.id} aria-pressed="false">Compare</button>}
+            {c.id !== refId && <button type="button" className="ss_go" data-a={refId} data-b={c.id} aria-pressed={pressed === c.id}
+                                       onClick={() => onRow(refId, c.id)}>Compare</button>}
           </td>
         </tr>
       ))}
