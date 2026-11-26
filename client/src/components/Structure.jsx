@@ -1,25 +1,26 @@
-import { useState } from "react";
 import StructureFacts from "./StructureFacts.jsx";
 import Molecules from "./Molecules.jsx";
 import Views from "./Views.jsx";
 import Sources from "./Sources.jsx";
 import BasePairs from "./BasePairs.jsx";
 import NtcFamilies from "./NtcFamilies.jsx";
+import Citation from "./Citation.jsx";
+import Links from "./Links.jsx";
 import Section from "./Section.jsx";
 import SectionNav from "./SectionNav.jsx";
 import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS, groupsBySection, rowCount } from "../structure.js";
-import { remembered, remember } from "../remember.js";
 import { NARROW } from "../reading.js";
 import { useMedia } from "../hooks/useMedia.js";
 import { useReading } from "../hooks/useReading.js";
+import { useRemembered } from "../hooks/useRemembered.js";
 import { useViewChoice } from "../hooks/useViewChoice.js";
 import { usePairLink } from "../hooks/usePairLink.js";
 import { rowsByPair } from "../lbn.js";
 import { pushMark, back } from "../address.js";
 
 function Structure({ entry, molecules, pairs, expandedArc }) {
-  const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
-  const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
+  const [navFolded, toggleNav] = useRemembered("section_nav", "folded", "open");
+  const [viewsWide, toggleWide] = useRemembered("views_wide", "on", "off");
   const { reading, view: followView } = useReading();
   const narrow = useMedia(NARROW);
   const choice = useViewChoice(entry.viewer, followView);
@@ -29,18 +30,6 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
     choice.onShow("1d");
     link.onShowPair(a, b, row);
   };
-
-  function toggleWide() {
-    const wide = !viewsWide;
-    setViewsWide(wide);
-    remember("views_wide", wide ? "on" : "off");
-  }
-
-  function toggleNav() {
-    const folded = !navFolded;
-    setNavFolded(folded);
-    remember("section_nav", folded ? "folded" : "open");
-  }
 
   // Out of sight, the nav's links leave the tab order. Only beside the page:
   // on a narrow screen the nav is a strip that never folds.
@@ -70,7 +59,7 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
       body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} choice={choice} pin={link.pin}
                                          tableRows={rowsByPair(pairs.base_pairs?.noncanonical ?? [])} onFindRow={link.onFindRow} /> },
     { id: "overview", title: "Overview", group: "overview",
-      body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} /> },
+      body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} pdbId={entry.pdb_id} cited={Boolean(entry.citation)} /> },
     { id: "molecules", title: "Molecules", group: "composition", empty: rowCount(groups.molecules) === 0,
       body: <Molecules sectionId="molecules" pdbId={entry.pdb_id} groups={groups.molecules} summary={molecules.summary} /> },
     { id: "sources", title: "Sources", group: "composition", empty: !molecules.sources?.rows.length,
@@ -88,6 +77,12 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <><StructureFacts rows={conformation} />{pairs.ntc?.families.length > 0 && <NtcFamilies ntc={pairs.ntc} />}</> },
+    // The id stays "citations" so old #citations links still land here.
+    { id: "citations", title: "Citation", group: "references", empty: !entry.citation,
+      body: entry.citation && <Citation pdbId={entry.pdb_id} c={entry.citation} text={entry.cite_text}
+                                        unpublished={entry.cite_unpublished} authors={entry.cite_authors} /> },
+    { id: "links", title: "Links and downloads", group: "references",
+      body: <Links pdbId={entry.pdb_id} fasta={molecules.fasta.all} pairs={Boolean(pairs.base_pairs)} /> },
   ];
 
   return (
