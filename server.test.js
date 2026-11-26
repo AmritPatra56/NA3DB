@@ -12,6 +12,7 @@ import { find_entry, entry_contents, entry_residues, entry_citation, entry_base_
 import { lineage_of, name_key } from "./taxonomy.js";
 import { detail_rows, molecule_groups, structure_sections, pair_arcs, arc_views, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section, ntc_section } from "./detail.js";
 import { full_name } from "./cite.js";
+import help from "./help_texts.js";
 
 let base;
 let server;
@@ -454,6 +455,12 @@ test("/api/fields never ships the SQL", async () => {
                         "STRING_AGG", "ENTITY_POLY_SEQ", "E.ID"]) {
         assert.ok(!body.includes(word), `the response must not contain ${word}`);
     }
+});
+
+test("/api/help is help_texts.js, key for key", async () => {
+    let r = await fetch(base + "/api/help");
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), help);
 });
 
 test("/api/fields describes every filter and column", async () => {

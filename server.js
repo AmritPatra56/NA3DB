@@ -127,6 +127,12 @@ app.get("/api/fields", (req, res) => {
     res.json(public_registry());
 });
 
+// The "?" notes and the report's "Why three tables?", from help_texts.js, so
+// the React pages read the one file the wording is edited in.
+app.get("/api/help", (req, res) => {
+    res.json(help);
+});
+
 // How many entries each pill finds, keyed by filter then value: the numbers
 // search.ejs prints beside the pills, for the React panel to print too.
 app.get("/api/pill_counts", async (req, res) => {
