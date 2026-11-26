@@ -10,6 +10,7 @@ import SameSeq from "./SameSeq.jsx";
 import { NO_SAME_SEQUENCE } from "../constants.js";
 import Citation from "./Citation.jsx";
 import Links from "./Links.jsx";
+import EntryFasta from "./EntryFasta.jsx";
 import Section from "./Section.jsx";
 import SectionNav from "./SectionNav.jsx";
 import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS, groupsBySection, rowCount } from "../structure.js";
@@ -19,6 +20,7 @@ import { useReading } from "../hooks/useReading.js";
 import { useRemembered } from "../hooks/useRemembered.js";
 import { useViewChoice } from "../hooks/useViewChoice.js";
 import { useHelp } from "../hooks/useHelp.js";
+import { useFolds } from "../hooks/useFolds.js";
 import { usePairLink } from "../hooks/usePairLink.js";
 import { rowsByPair } from "../lbn.js";
 import { pushMark, back } from "../address.js";
@@ -32,6 +34,7 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
   const choice = useViewChoice(entry.viewer, followView);
   const link = usePairLink();
   const note = useHelp();
+  const folds = useFolds();
   // A row of the other pairs, selected: the 1D view opens on its pair.
   const showPair = (a, b, row) => {
     choice.onShow("1d");
@@ -68,6 +71,7 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
     { id: "overview", title: "Overview", group: "overview",
       body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} pdbId={entry.pdb_id} cited={Boolean(entry.citation)} /> },
     { id: "molecules", title: "Molecules", group: "composition", empty: rowCount(groups.molecules) === 0,
+      tools: <EntryFasta pdbId={entry.pdb_id} fasta={molecules.fasta} />,
       body: <Molecules sectionId="molecules" pdbId={entry.pdb_id} groups={groups.molecules} summary={molecules.summary} /> },
     { id: "sources", title: "Sources", group: "composition", empty: !molecules.sources?.rows.length,
       body: molecules.sources?.rows.length > 0 && <Sources sources={molecules.sources} /> },
@@ -77,6 +81,7 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
     { id: "ligands", title: "Ligands", group: "composition", empty: rowCount(groups.ligands) === 0,
       body: <Molecules sectionId="ligands" pdbId={entry.pdb_id} groups={groups.ligands} /> },
     { id: "base-pairs", title: "Base pairs", group: "structure", empty: !pairs.base_pairs,
+      tools: pairs.base_pairs && <a className="download download_small" href={`/api/entries/${entry.pdb_id}/base_pairs?format=csv`} download title="Download every pair as CSV">CSV</a>,
       body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view}
                                       expanded={expanded?.arc === pairs.arc_view.key}
                                       onExpand={() => pushMark({ arc: pairs.arc_view.key })} onCollapse={back}
@@ -117,7 +122,8 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
           <div className="detail_body" style={{ "--rows": sections.length }}>
             {sections.map((s) => (
               <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} none={s.none} tools={s.tools}
-                       help={help?.[s.id]} helpOpen={note.open === s.id} onHelp={note.onToggle} onHelpClose={note.onClose}>{s.body}</Section>
+                       help={help?.[s.id]} helpOpen={note.open === s.id} onHelp={note.onToggle} onHelpClose={note.onClose}
+                       folded={folds.folded.has(s.id)} onFold={folds.onFold}>{s.body}</Section>
             ))}
           </div>
         </div>
