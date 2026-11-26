@@ -4,6 +4,8 @@ import Views from "./Views.jsx";
 import Sources from "./Sources.jsx";
 import BasePairs from "./BasePairs.jsx";
 import NtcFamilies from "./NtcFamilies.jsx";
+import MapGuide from "./MapGuide.jsx";
+import SeqMap from "./SeqMap.jsx";
 import Citation from "./Citation.jsx";
 import Links from "./Links.jsx";
 import Section from "./Section.jsx";
@@ -77,6 +79,8 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <><StructureFacts rows={conformation} />{pairs.ntc?.families.length > 0 && <NtcFamilies ntc={pairs.ntc} />}</> },
+    { id: "sequence-map", title: "Sequence map", group: "structure", empty: nucleicChains === 0,
+      body: nucleicChains > 0 && <><MapGuide /><SeqMap pdbId={entry.pdb_id} /></> },
     // The id stays "citations" so old #citations links still land here.
     { id: "citations", title: "Citation", group: "references", empty: !entry.citation,
       body: entry.citation && <Citation pdbId={entry.pdb_id} c={entry.citation} text={entry.cite_text}
