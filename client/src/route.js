@@ -2,7 +2,7 @@ import { POLYMER_TYPE_ALIASES, DISPLAY_PARAMS, UNWRITTEN } from "./constants.js"
 
 // Which page an address shows (routes.jsx): /structure/<id> that entry,
 // /search the full search, /report the report, /cite, /help and /contact the
-// footer's unwritten pages, anything else the landing page for now (8.11
+// footer's unwritten pages, anything else the landing page for now (8.9
 // brings Page not found).
 export function routeOf(pathname) {
   const id = pathname.match(/^\/structure\/([^/]+)\/?$/)?.[1];
@@ -42,7 +42,7 @@ export function redirectOf(pathname, search) {
 // nothing and carries nothing.
 // search: the address's query now, which the search page keeps up to date.
 export function railOf(route, search) {
-  // /report draws the landing page until 8.6, so it has the landing's rail.
+  // /report draws the landing page until 8.8, so it has the landing's rail.
   if (route.name === "landing" || route.name === "report") return { active: null, report: false, carry: "" };
   if (route.name === "error" || route.name === "unwritten") return { active: null, report: true, carry: "" };
   if (route.name === "structure") return { active: "search", report: true, carry: "?entry_id=" + encodeURIComponent(route.id) };

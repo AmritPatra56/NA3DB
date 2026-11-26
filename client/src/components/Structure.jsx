@@ -1,51 +1,21 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import StructureFacts from "./StructureFacts.jsx";
 import Molecules from "./Molecules.jsx";
 import Views from "./Views.jsx";
+import Sources from "./Sources.jsx";
 import Section from "./Section.jsx";
 import SectionNav from "./SectionNav.jsx";
-import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS } from "../structure.js";
+import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS, groupsBySection, rowCount } from "../structure.js";
 import { remembered, remember } from "../remember.js";
-import { viewForSection } from "../views.js";
-import { NARROW, sectionBeingRead, hasScrolled } from "../reading.js";
+import { NARROW } from "../reading.js";
 import { useMedia } from "../hooks/useMedia.js";
-import { replaceAddress } from "../address.js";
+import { useReading } from "../hooks/useReading.js";
 
 function Structure({ entry, molecules }) {
   const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
   const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
-  // The section being read, and the last view a section asked for. Views
-  // follows that until the reader picks a view for themselves.
-  const [reading, setReading] = useState(null);
-  const [followView, setFollowView] = useState(null);
+  const { reading, view: followView } = useReading();
   const narrow = useMedia(NARROW);
-
-  // The page follows the reading position (structure.ejs): at most once a
-  // frame while scrolling, and on resize. The nav marks the section, the
-  // address gets its #id once the page has moved. Listeners go in cleanup.
-  useEffect(() => {
-    let current = null;
-    let frame = 0;
-    function follow() {
-      frame = 0;
-      const here = sectionBeingRead();
-      if (here === null || here === current) return;
-      current = here;
-      setReading(here);
-      const view = viewForSection(here);
-      if (view !== null) setFollowView(view);
-      if (hasScrolled()) replaceAddress("#" + here);
-    }
-    const soon = () => { if (!frame) frame = requestAnimationFrame(follow); };
-    document.addEventListener("scroll", soon, { capture: true, passive: true });
-    addEventListener("resize", follow);
-    soon();
-    return () => {
-      document.removeEventListener("scroll", soon, { capture: true });
-      removeEventListener("resize", follow);
-      cancelAnimationFrame(frame);
-    };
-  }, []);
 
   function toggleWide() {
     const wide = !viewsWide;
@@ -73,6 +43,7 @@ function Structure({ entry, molecules }) {
     .filter((e) => NUCLEIC_KINDS.has(e.kind))
     .reduce((n, e) => n + e.chains.length, 0);
 
+  const groups = groupsBySection(molecules);
   const sections = [
     // Without nucleic chains the Views stay listed, marked empty, with no tiles (structure.ejs).
     { id: "views", title: "Views", group: "views", empty: nucleicChains === 0,
@@ -86,9 +57,15 @@ function Structure({ entry, molecules }) {
       body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} follow={followView} /> },
     { id: "overview", title: "Overview", group: "overview",
       body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} /> },
-    { id: "molecules", title: "Molecules", group: "composition",
-      empty: !molecules.groups.some((g) => g.polymer),
-      body: <Molecules pdbId={entry.pdb_id} molecules={molecules} /> },
+    { id: "molecules", title: "Molecules", group: "composition", empty: rowCount(groups.molecules) === 0,
+      body: <Molecules sectionId="molecules" pdbId={entry.pdb_id} groups={groups.molecules} summary={molecules.summary} /> },
+    { id: "sources", title: "Sources", group: "composition", empty: !molecules.sources?.rows.length,
+      body: molecules.sources?.rows.length > 0 && <Sources sources={molecules.sources} /> },
+    { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",
+      empty: rowCount(groups["modified-nucleotides"]) === 0,
+      body: <Molecules sectionId="modified-nucleotides" pdbId={entry.pdb_id} groups={groups["modified-nucleotides"]} /> },
+    { id: "ligands", title: "Ligands", group: "composition", empty: rowCount(groups.ligands) === 0,
+      body: <Molecules sectionId="ligands" pdbId={entry.pdb_id} groups={groups.ligands} /> },
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <StructureFacts rows={conformation} /> },

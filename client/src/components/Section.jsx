@@ -1,4 +1,5 @@
 import { PAGE_GROUPS } from "../structure.js";
+import { NONE_RECORDED } from "../constants.js";
 
 // One section of the structure page: its band (group, title, tools) and body.
 function Section({ id, title, group, empty, tools, children }) {
@@ -15,6 +16,7 @@ function Section({ id, title, group, empty, tools, children }) {
       </div>
       <div className="section_body" id={`${id}-body`}>
         {children}
+        {empty && <p className="section_none">{NONE_RECORDED}</p>}
       </div>
     </section>
   );

@@ -16,3 +16,25 @@ export const PAGE_GROUPS = [
   { key: "structure", label: "Structure" },
   { key: "references", label: "References" },
 ];
+
+// The molecule groups split by the section that lists them (detail.js
+// structure_sections): polymers under Molecules, then the modified
+// nucleotides and the ligands, each with a section of its own.
+export function groupsBySection(molecules) {
+  const groups = molecules.groups;
+  return {
+    molecules: groups.filter((g) => g.polymer),
+    "modified-nucleotides": groups.filter((g) => g.modified),
+    ligands: groups.filter((g) => !g.polymer && !g.modified),
+  };
+}
+
+// How many rows a section's groups hold together; none makes it empty.
+export const rowCount = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
+
+// A group's anchor inside its section: "molecules-dna-rna-hybrid".
+export const groupAnchor = (sectionId, kind) => `${sectionId}-${kind.toLowerCase().replace(/[^a-z]+/g, "-")}`;
+
+// The colour class of a source kind: "Expressed" becomes "source_expressed"
+// (structure.ejs changes the first space only).
+export const sourceClass = (kind) => `source_${kind.toLowerCase().replace(" ", "_")}`;
