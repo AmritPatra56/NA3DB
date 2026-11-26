@@ -459,6 +459,10 @@ app.get("/api/entries/:id", async (req, res) => {
     let [contents, citation] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id)]);
     res.json({ ...entry, rows: cited_rows(detail_rows(entry), citation),
                entities: contents.entities, modified_nucleotides: contents.modified, citation,
+               // What structure.ejs's Citation section works out from it.
+               cite_text: citation && citation_text(entry.pdb_id, citation),
+               cite_unpublished: citation && unpublished(citation),
+               cite_authors: citation?.authors.map(full_name).join(", "),
                // Whether /viewer/ is served, so a client page can offer 3D as structure.ejs does.
                viewer: viewer_installed });
 });
