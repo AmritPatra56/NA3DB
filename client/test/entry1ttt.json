@@ -1,0 +1,96 @@
+{
+ "pdb_id": "1TTT",
+ "title": "Phe-tRNA, elongation factoR EF-TU:GDPNP ternary complex",
+ "method": "X-RAY DIFFRACTION",
+ "deposition_date": "1995-11-16",
+ "resolution": 2.7,
+ "author": "Nissen, P.",
+ "all_authors": "Nissen, P., Kjeldgaard, M., Thirup, S., Polekhina, G., Reshetnikova, L., Clark, B.F., Nyborg, J.",
+ "published": "Science 1995",
+ "polymer_type": "Protein/RNA",
+ "entity_name": "TRANSFER RIBONUCLEIC ACID (YEAST, PHE); OF ELONGATION FACTOR TU (EF-TU)",
+ "source_organism": "Thermus aquaticus",
+ "source_taxonomy": "271",
+ "source_kind": "Natural, Not recorded",
+ "expression_host": null,
+ "nonstandard_residue": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YYG",
+ "ligands": "GNP, MG, PHE",
+ "confal_score": 35.8,
+ "assigned_ntc": "AA00, AA01, AA03, AA04, AA06, AA08, AA10, AAS1, AB05, IC01, IC05, NANT, OP04, OP11, OP12, OP25",
+ "monomer_flag": "Non-Standard",
+ "card": [
+  {
+   "key": "title",
+   "label": "Title",
+   "value": "Phe-tRNA, elongation factoR EF-TU:GDPNP ternary complex",
+   "searched": false
+  },
+  {
+   "key": "method",
+   "label": "Experimental method",
+   "value": "X-RAY DIFFRACTION",
+   "searched": false
+  },
+  {
+   "key": "deposition_date",
+   "label": "Deposition date",
+   "value": "1995-11-16",
+   "searched": false
+  },
+  {
+   "key": "resolution",
+   "label": "Resolution",
+   "value": "2.70 Å",
+   "searched": false
+  },
+  {
+   "key": "all_authors",
+   "label": "Authors",
+   "value": "Nissen, P., Kjeldgaard, M., Thirup, S., Polekhina, G., Reshetnikova, L., Clark, B.F., Nyborg, J.",
+   "searched": false
+  },
+  {
+   "key": "published",
+   "label": "Published",
+   "value": "Science 1995",
+   "searched": false
+  },
+  {
+   "key": "polymer_type",
+   "label": "Polymer type",
+   "value": "Protein/RNA",
+   "searched": false
+  },
+  {
+   "key": "entity_name",
+   "label": "Entity name",
+   "value": "TRANSFER RIBONUCLEIC ACID (YEAST, PHE); OF ELONGATION FACTOR TU (EF-TU)",
+   "searched": false
+  },
+  {
+   "key": "source_organism",
+   "label": "Source organism",
+   "value": "Thermus aquaticus",
+   "searched": false
+  },
+  {
+   "key": "nonstandard_residue",
+   "label": "Non-standard residues",
+   "value": "1MA, 2MG, 5MC, 5MU, 7MG, H2U, M2G, OMC, OMG, PSU, YYG",
+   "searched": false
+  },
+  {
+   "key": "ligands",
+   "label": "Ligands",
+   "value": "GNP, MG, PHE",
+   "searched": false
+  }
+ ],
+ "arcs": {
+  "strands": 3,
+  "nucleotides": 228,
+  "pairs": 82,
+  "modified": 42,
+  "wc": 59
+ }
+}
