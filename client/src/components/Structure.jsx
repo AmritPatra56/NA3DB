@@ -4,6 +4,7 @@ import Molecules from "./Molecules.jsx";
 import Views from "./Views.jsx";
 import Sources from "./Sources.jsx";
 import BasePairs from "./BasePairs.jsx";
+import NtcFamilies from "./NtcFamilies.jsx";
 import Section from "./Section.jsx";
 import SectionNav from "./SectionNav.jsx";
 import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS, groupsBySection, rowCount } from "../structure.js";
@@ -71,7 +72,7 @@ function Structure({ entry, molecules, pairs }) {
       body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view} /> },
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
-      body: <StructureFacts rows={conformation} /> },
+      body: <><StructureFacts rows={conformation} />{pairs.ntc?.families.length > 0 && <NtcFamilies ntc={pairs.ntc} />}</> },
   ];
 
   return (
