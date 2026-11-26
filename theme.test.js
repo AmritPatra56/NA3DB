@@ -42,9 +42,10 @@ test("every token in use is defined, and every token defined is used", () => {
                    "views/includes/map_guide.ejs"].map(read).join("\n");
     let used = new Set([...(rest + scripts).matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]));
     // Set and read inside a rule (the category dot, a section's colours), not
-    // themes; footer-h, viewer and rows (the structure page's Views column
+    // themes; footer-h, topbar-h (the bar across the top, which the rail's
+    // logo cell matches), viewer and rows (the structure page's Views column
     // and the sections beside it) are sizes, the same in both.
-    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h", "viewer", "rows"]);
+    let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h", "topbar-h", "railcell-h", "viewer", "rows"]);
     for (const name of used) {
         if (!local.has(name)) assert.ok(name in LIGHT, `--${name} is used but never defined`);
     }
@@ -277,29 +278,52 @@ test("no page loads fonts from another site", () => {
 
 // --- the logo --------------------------------------------------------------
 
-// The mark: one turn of a right-handed double helix wrapped as a database
-// cylinder (an oval lid, a curved base). Drawn in the accent, so it follows
-// the theme; the favicon is the fixed light version.
+// The mark: two ribbons of a double helix, cut to a square window out of a
+// taller drawing. The ribbons run out of the viewBox on every side and the
+// SVG viewport crops them, which is what keeps the bands thick at 32px.
+// Drawn in --mark-deep and --mark-light, so it follows the theme; the favicon
+// carries the same two pairs in its own media query.
 const RAIL = read("./views/includes/rail.ejs");
 
 test("the rail carries the helix mark and the name reads left to right", () => {
-    assert.match(RAIL, /<svg class="mark"/);
-    assert.match(RAIL, /<span class="rail-name">NA<i>3<\/i>DB<\/span>/);
+    assert.match(RAIL, /<svg class="mark" viewBox="0 0 2705 2774"/);
+    assert.ok(!RAIL.includes("rail-name"), "the name is drawn in the lockup, not set as text");
+    assert.match(RAIL, /aria-label="NA3DB home"/, "the link still carries the name");
     assert.ok(!RAIL.includes("rail-brand"), "the sideways name is gone");
     assert.ok(!/writing-mode:\s*vertical/.test(CSS), "no vertical text anywhere");
-    assert.match(CSS, /\.mark_tile \{ fill: var\(--accent\); \}/);
+    assert.match(CSS, /\.mark_deep \{ fill: var\(--mark-deep\); \}/);
+    assert.match(CSS, /\.mark_light \{ fill: var\(--mark-light\); \}/);
+});
+
+// The deep ribbon is painted last, so it passes in front at every crossing.
+// On a dark page both steps move up: the deep blue alone sits at about 1.1:1
+// against the card, which would leave half the mark invisible.
+test("the deep ribbon is in front, and both strands lighten for the dark theme", () => {
+    assert.ok(RAIL.lastIndexOf("mark_light") < RAIL.indexOf("mark_deep"),
+              "every light path is drawn before the deep ones");
+    let dark = CSS.slice(CSS.indexOf('[data-theme="dark"]'));
+    assert.match(dark, /--mark-deep: #4f7fc2;/);
+    assert.match(dark, /--mark-light: #a3cbef;/);
 });
 
 // Real DNA and A-RNA are right-handed: seen from the side, the strand nearer
-// the viewer runs "/" (down to the left). A mirrored logo would be wrong.
+// the viewer runs "/" -- up as it goes right, which in these coordinates
+// (y downwards) is a negative slope. A mirrored logo would be wrong.
 test("the mark is a right-handed helix, in the rail and the favicon", () => {
+    const ends = (svg, cls) =>
+        [...svg.matchAll(new RegExp(`<path class="${cls}" d="M (-?[\\d.]+),(-?[\\d.]+) L -?[\\d.]+,-?[\\d.]+ L (-?[\\d.]+),(-?[\\d.]+)`, "g"))]
+            .map((m) => [+m[1], +m[2], +m[3], +m[4]]);
     for (const svg of [RAIL, read("./public/assets/favicon.svg")]) {
-        let front = [...svg.matchAll(/<path class="mark_front" d="M([\d.]+) ([\d.]+)[^"]*?([\d.]+) ([\d.]+)"/g)];
-        let back = [...svg.matchAll(/<path class="mark_back" d="M([\d.]+) ([\d.]+)[^"]*?([\d.]+) ([\d.]+)"/g)];
-        assert.equal(front.length, 2);
-        assert.equal(back.length, 2);
-        for (const m of front) assert.ok(+m[3] < +m[1] && +m[4] > +m[2], "a front strand runs down to the left");
-        for (const m of back) assert.ok(+m[3] > +m[1] && +m[4] > +m[2], "a back strand runs down to the right");
+        let front = ends(svg, "mark_deep");
+        let back = ends(svg, "mark_light");
+        assert.equal(front.length, 3);
+        assert.equal(back.length, 3);
+        for (const [x1, y1, x2, y2] of front) {
+            assert.ok((y2 - y1) / (x2 - x1) < 0, "a front ribbon rises to the right");
+        }
+        for (const [x1, y1, x2, y2] of back) {
+            assert.ok((y2 - y1) / (x2 - x1) > 0, "a back ribbon falls to the right");
+        }
     }
 });
 

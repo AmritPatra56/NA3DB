@@ -1,5 +1,6 @@
 import express from "express";
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { search_entries, export_entries, export_molecules, export_ligands, export_dot_brackets, find_entry, query_problem,
          count_entries, entry_citation, entry_contents, entry_base_pairs, entry_sequence_tracks,
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
@@ -12,7 +13,7 @@ import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES, REPORT_TABLES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
          entry_fasta, base_pair_export, base_pairs_csv, structure_sections, sequence_map, sequence_map_text, nucleic_chain_count, arc_thumbnail, arc_summary,
-         arc_views, PAGE_GROUPS } from "./detail.js";
+         arc_views, ntc_section, PAGE_GROUPS } from "./detail.js";
 
 const app = express();
 
@@ -24,6 +25,50 @@ app.param("id", (req, res, next, id) => {
 });
 
 app.use(express.static(path.join(import.meta.dirname, "public")));
+
+// ------------------------------------------------------------- the 3D viewer
+// The 3D view of a structure page is the NAPAIR browser's Moorhen pane
+// (BASEPAIRING_WEB/napair_browser), built once and served here as static
+// files, framed by views/includes/views.ejs. It is not in git: coot, the
+// monomer dictionaries and the curated reference library come to 117 MB. The
+// README says how to put a build in viewer/; VIEWER_DIR names one elsewhere.
+const viewer_dir = process.env.VIEWER_DIR
+    ? path.resolve(process.env.VIEWER_DIR)
+    : path.join(import.meta.dirname, "viewer");
+
+// Looked for once, at boot. A build that appears later needs a restart, which
+// is no loss: the alternative is a file check on every structure page.
+export const viewer_installed = existsSync(path.join(viewer_dir, "index.html"));
+
+// Moorhen's coot build needs SharedArrayBuffer, which a browser hands only to
+// a cross-origin-isolated page -- and a frame counts as isolated only when
+// the page around it is isolated too, so the same two headers go on
+// /structure/:id. Everything that page loads is its own (fonts, CSS, scripts,
+// SVG), so require-corp costs it nothing; an image or script from another
+// origin added there later would be blocked unless it sends CORP or CORS.
+function isolate(res) {
+    res.set("Cross-Origin-Opener-Policy", "same-origin");
+    res.set("Cross-Origin-Embedder-Policy", "require-corp");
+}
+
+if (viewer_installed) {
+    app.use("/viewer", express.static(viewer_dir, {
+        setHeaders: (res, file) => {
+            isolate(res);
+            // The frame is a subresource of the structure page, and under
+            // require-corp a subresource has to agree to being embedded.
+            res.set("Cross-Origin-Resource-Policy", "same-origin");
+            // Everything else is fingerprinted or never changes without a
+            // rebuild, but index.html is the one file that names the
+            // fingerprints -- held for an hour it sends readers to the chunks
+            // of the build before the last one, which are gone.
+            if (file.endsWith(".html")) res.set("Cache-Control", "no-cache");
+        },
+        // The wasm, the monomer dictionaries and the curated library are tens
+        // of megabytes that change only when the viewer is rebuilt.
+        maxAge: "1h"
+    }));
+}
 
 // views/ sits outside public/, so the template source is never downloadable.
 app.set("view engine", "ejs");
@@ -54,10 +99,25 @@ app.get("/api/health", async (req, res) => {
 
 // How many entries the database holds, asked fresh so a load shows up at once.
 app.get("/api/stats", async (req, res) => {
-    let result = await query("SELECT count(*) FROM entry");
+    res.json(await database_stats());
+});
 
-    // pg returns bigint as a string so nothing is silently rounded.
-    res.json({ total: Number(result.rows[0].count) });
+// The landing page's five questions with their counts, for a client that draws
+// them itself. Only the fields a card shows go out, so the server's own keys
+// (params, choices, within, top) can change without breaking a client.
+app.get("/api/browse", async (req, res) => {
+    let groups = await browse_counts();
+    let option = ({ label, note, url, say, count, share }) =>
+        ({ label, note: note ?? null, url, say: say ?? null, count, share });
+
+    res.json(groups.map((g) => ({
+        area: g.area, question: g.question, hint: g.hint, foot: g.foot ?? null,
+        rows: g.rows.map((r) => ({
+            label: r.label, count: r.count, share: r.share, url: r.url, no_url: r.no_url,
+            say_yes: r.say_yes, say_no: r.say_no, options_name: r.options_name ?? null,
+            options: r.options.map(option)
+        }))
+    })));
 });
 
 
@@ -65,6 +125,18 @@ app.get("/api/stats", async (req, res) => {
 // it. public_registry picks the safe fields, so no SQL leaves the server.
 app.get("/api/fields", (req, res) => {
     res.json(public_registry());
+});
+
+// The "?" notes and the report's "Why three tables?", from help_texts.js, so
+// the React pages read the one file the wording is edited in.
+app.get("/api/help", (req, res) => {
+    res.json(help);
+});
+
+// How many entries each pill finds, keyed by filter then value: the numbers
+// search.ejs prints beside the pills, for the React panel to print too.
+app.get("/api/pill_counts", async (req, res) => {
+    res.json(await pill_counts());
 });
 
 
@@ -212,9 +284,15 @@ app.get("/structure/:id", async (req, res) => {
         nucleic_chains: nucleic_chain_count(contents.entities)
     };
 
+    // Isolated for the 3D view's sake, whether or not that view is the one
+    // open: the headers are the document's, and a frame cannot be isolated
+    // after the fact.
+    isolate(res);
+
     // The rail on this page has no script to rewrite its links, so it is given
     // the one filter that makes sense from here: this structure.
     res.render("structure", {
+        viewer: viewer_installed,
         ...page,
         page: "search",
         sections: structure_sections(page),
@@ -381,11 +459,64 @@ app.get("/api/entries/:id", async (req, res) => {
 
     // The raw fields and the display rows, never one instead of the other:
     // entry.resolution stays 2.2, rows has it as "2.20 Å".
-    let contents = await entry_contents(entry.pdb_id);
-    res.json({ ...entry, rows: detail_rows(entry),
-               entities: contents.entities, modified_nucleotides: contents.modified,
-               citation: await entry_citation(entry.pdb_id) });
+    // Rows as the structure page has them: Published and Authors from the
+    // checked reference (cited_rows), so a client drawing the page from JSON
+    // shows what the EJS page shows.
+    let [contents, citation, same_entries] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id),
+                                                                 same_sequence_count(entry.pdb_id)]);
+    res.json({ ...entry, rows: cited_rows(detail_rows(entry), citation),
+               // How many other entries share a chain's sequence: the page's Same sequence count.
+               same_entries,
+               entities: contents.entities, modified_nucleotides: contents.modified, citation,
+               // What structure.ejs's Citation section works out from it.
+               cite_text: citation && citation_text(entry.pdb_id, citation),
+               cite_unpublished: citation && unpublished(citation),
+               cite_authors: citation?.authors.map(full_name).join(", "),
+               // Whether /viewer/ is served, so a client page can offer 3D as structure.ejs does.
+               viewer: viewer_installed });
 });
+
+// The structure page's Molecules, Modified nucleotides and Ligands tables,
+// finished: modelled counts, numbering and sequence lines need the residues,
+// and the formatting lives in detail.js, so a client draws what arrives.
+app.get("/api/entries/:id/molecules", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let [contents, residues] = await Promise.all([entry_contents(entry.pdb_id), entry_residues(entry.pdb_id)]);
+    res.json(molecule_groups(contents, residues));
+});
+
+// The structure page's Base pairs section, its arc picture (assembly 1 unless
+// ?assembly= names another view) and the NtC families of Conformation, as the
+// page draws them. The arc layout and the asymmetric unit's own arcs stay out:
+// the full-screen viewer asks /arcs for the layout when it opens.
+app.get("/api/entries/:id/pairs", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let [contents, residues, pairs, ntc_classes, assemblies] = await Promise.all([
+        entry_contents(entry.pdb_id), entry_residues(entry.pdb_id), entry_base_pairs(entry.pdb_id),
+        entry_ntc_classes(entry.pdb_id), entry_assemblies(entry.pdb_id)]);
+    let view = arc_views(contents.entities, residues, pairs, assemblies, String(req.query.assembly ?? ""));
+    res.json(pairs_reply(pairs, view, ntc_classes));
+});
+
+// What /pairs sends: the sections as the page has them, the arc view without
+// its layout and the asymmetric unit's arcs, which only the viewer needs.
+export function pairs_reply(pairs, { au, arcs, ...view }, ntc_classes) {
+    let { layout, ...picture } = arcs ?? {};
+    return { base_pairs: base_pair_section(pairs), arc_view: { ...view, arcs: arcs ? picture : null },
+             ntc: ntc_section(ntc_classes) };
+}
 
 // Every base pair of one entry, first model, as the page lists them.
 // ?format=csv gives a file to open in a spreadsheet or pandas.

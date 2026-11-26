@@ -60,7 +60,7 @@ test("the arrow is one rule: one shape, one colour, one size, and fold-outs get 
 });
 
 test("an arrow-only control is just the arrow: no outline, no shadow, no tab edge", () => {
-    for (const name of ["panel_handle", "band_fold", "fields_toggle"]) {
+    for (const name of ["band_fold", "fields_toggle"]) {
         let rules = [...CSS.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter((m) => m[1].includes(`.${name}`));
         assert.ok(rules.length > 0, name);
         for (const [, selector, body] of rules) {
@@ -68,4 +68,13 @@ test("an arrow-only control is just the arrow: no outline, no shadow, no tab edg
             assert.doesNotMatch(body, /box-shadow/, `${selector.trim()} draws a shadow`);
         }
     }
+});
+
+// The one exception: the panel handle sits on the seam between two panels,
+// where an outline is what tells it from the join (PR #4).
+test("the panel handle is drawn as a control, outlined on the seam", () => {
+    let rule = CSS.match(/\n\.panel_handle \{([^{}]*)\}/);
+    assert.ok(rule, ".panel_handle has its own rule");
+    assert.match(rule[1], /border: 1px solid var\(--border-dark\);/);
+    assert.match(CSS, /\n\.panel_handle:hover \{[^}]*border-color: var\(--accent\);/);
 });

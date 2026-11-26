@@ -81,14 +81,40 @@ test("every landing link asks one filter, which the script reads", () => {
     }
 });
 
-test("the page carries the buttons, the bar and the script, and the bar starts hidden", () => {
+test("the page carries the buttons, the picked line and the script, and the line starts hidden", () => {
     let page = readFileSync(new URL("./views/landing.ejs", import.meta.url), "utf8");
-    assert.match(page, /<a class="browse_yes" href="<%= row\.url %>" data-say="<%= row\.say_yes %>">Yes<\/a>/);
+    assert.match(page, /<a class="browse_yes" href="<%= row\.url %>" data-say="<%= row\.say_yes %>">Yes</);
     assert.match(page, /<a class="browse_no" href="<%= row\.no_url %>" data-say="<%= row\.say_no %>">No<\/a>/);
     assert.match(page, /<div class="browse_options" hidden>/, "options wait for Yes");
+    // Only a row with options promises any: the chevron is on its Yes, inside
+    // the same test the shelf is.
+    assert.match(page, /data-say="<%= row\.say_yes %>">Yes<% if \(row\.options\.length\) \{ %><i class="arrow" aria-hidden="true"><\/i><% \} %><\/a>/,
+                 "the Yes of a row with options carries the shared chevron");
+    let look = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(look, /\n\.browse_yes \.arrow \{ display: none; \}/,
+                 "without pick.js nothing opens, so nothing is promised");
+    assert.match(look, /\.picking \.browse_yes \.arrow \{/);
     assert.match(page, /<span class="browse_tick" aria-hidden="true"><\/span>/);
-    assert.match(page, /<div class="pick_bar" hidden>/);
+    assert.match(page, /<div class="picked_line" hidden>/);
     assert.match(page, /class="pick_count" aria-live="polite"/);
+    // One search on the page: the box's. A second button here would be a
+    // second place to run the same query.
+    assert.ok(!page.includes("pick_search"), "no search button beside the picks");
+    assert.equal((page.match(/<button type="submit">Search<\/button>/g) || []).length, 1);
+    assert.ok(page.indexOf('class="picked_line"') > page.indexOf('class="landing_search"'),
+              "the picks report under the box, not above it");
+    assert.match(SOURCE, /let go = box\.form\.querySelector\("button\[type=submit\]"\);/,
+                 "the box's own Search is what goes dim when nothing matches");
+    // The count sits inside the box, so the script must not look for it in
+    // the line beside the picks.
+    assert.match(page, /<div class="landing_field">[\s\S]*?class="pick_count"[\s\S]*?<\/div>/,
+                 "the count is inside the search field");
+    assert.match(SOURCE, /document\.querySelector\("\.landing_search \.pick_count"\)/);
+    // The picks stand where the invitation to type stands, so one goes as the
+    // other comes.
+    assert.match(SOURCE, /box\.placeholder = now\.length \? "" : invite;/);
+    // Clear takes the count with it: it counted the picks, and there are none.
+    assert.match(SOURCE, /if \(now\.length === 0\) \{ wanted = ""; count\.textContent = ""; return; \}/);
     assert.ok(page.indexOf('src="/pick.js"') < page.indexOf('src="/landing.js"'));
     // "Yes" alone would mean nothing in the bar, so each says more.
     assert.match(SOURCE, /label: a\.dataset\.say \|\|/);
@@ -97,7 +123,11 @@ test("the page carries the buttons, the bar and the script, and the bar starts h
     assert.match(SOURCE, /if \(state !== "yes"\) for \(const o of row\.options\) tick\(o, false\)/);
 
     let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
-    assert.match(css, /\n\.pick_bar\[hidden\] \{ display: none; \}/, "the bar's display: flex would show it while hidden");
+    assert.match(css, /\n\.picked_line\[hidden\] \{ display: none; \}/, "its display: flex would show it while hidden");
+    // Clear sits inside the form; unscoped, the box's Search style would make
+    // it a second blue button.
+    assert.ok(!/\n\.landing_search button \{/.test(css),
+              "the Search button's style must name the submit, or Clear takes it too");
     assert.match(css, /\n\.browse_tick \{ display: none; \}/, "without the script no box shows");
     assert.match(css, /\n\.browse_options\[hidden\] \{ display: none; \}/, "the shelf's display would show it while hidden");
 });

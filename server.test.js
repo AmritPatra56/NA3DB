@@ -6,12 +6,13 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS, RESOLUTION_BANDS } from "./filters.js";
 import { once } from "node:events";
 import { readFileSync } from "node:fs";
-import app, { cited_rows, asked_view } from "./server.js";
+import app, { cited_rows, asked_view, viewer_installed, pairs_reply } from "./server.js";
 import { close as close_db, query } from "./db.js";
-import { find_entry, entry_contents, entry_residues, entry_citation, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
+import { find_entry, entry_contents, entry_residues, entry_citation, entry_base_pairs, entry_ntc_classes, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
 import { lineage_of, name_key } from "./taxonomy.js";
-import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section } from "./detail.js";
+import { detail_rows, molecule_groups, structure_sections, pair_arcs, arc_views, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section, ntc_section } from "./detail.js";
 import { full_name } from "./cite.js";
+import help from "./help_texts.js";
 
 let base;
 let server;
@@ -82,6 +83,124 @@ test("/api/stats counts the entries in the database", async () => {
     assert.equal(res.status, 200);
     assert.equal(typeof body.total, "number");
     assert.ok(body.total > 0);
+    // When the data was last loaded: an ISO date, or null before any load.
+    assert.ok(body.updated === null || !Number.isNaN(Date.parse(body.updated)), body.updated);
+});
+
+// The landing page's five questions, for a client that draws them itself.
+test("/api/browse sends the landing cards and only what drawing them needs", async () => {
+    let res = await fetch(base + "/api/browse");
+    let groups = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(groups.map((g) => g.area), ["made", "from", "method", "modified", "bound"]);
+    for (const g of groups) {
+        assert.deepEqual(Object.keys(g).sort(), ["area", "foot", "hint", "question", "rows"]);
+        assert.ok(g.foot === null || typeof g.foot.text === "string");
+        for (const row of g.rows) {
+            assert.deepEqual(Object.keys(row).sort(),
+                ["count", "label", "no_url", "options", "options_name", "say_no", "say_yes", "share", "url"]);
+            assert.equal(typeof row.count, "number");
+            assert.ok(row.share >= 0 && row.share <= 1);
+            assert.match(row.url, /^\/search\?/);
+            assert.match(row.no_url, /^\/search\?/);
+            for (const o of row.options) {
+                assert.deepEqual(Object.keys(o).sort(), ["count", "label", "note", "say", "share", "url"]);
+                assert.match(o.url, /^\/search\?/);
+            }
+        }
+    }
+    // The same numbers the server-drawn page shows.
+    let page = await (await fetch(base + "/")).text();
+    for (const row of groups.flatMap((g) => g.rows)) {
+        assert.ok(page.includes(`<span class="browse_count">${row.count.toLocaleString("en-GB")}</span>`), row.label);
+    }
+});
+
+// The React search panel is drawn from /api/fields and these counts, so they
+// must be the numbers search.ejs prints beside each pill.
+test("/api/pill_counts sends the counts the search panel's pills show", async () => {
+    let res = await fetch(base + "/api/pill_counts");
+    let counts = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.deepEqual(Object.keys(counts), FILTERS.filter((f) => f.count_by).map((f) => f.key));
+
+    let page = await (await fetch(base + "/search")).text();
+    let checked = 0;
+    for (const [key, by_value] of Object.entries(counts)) {
+        let field = page.match(new RegExp(`data-name="${key}">([\\s\\S]*?)</div>`))[1];
+        for (const [, value, n] of field.matchAll(/data-value="([^"]+)"[^>]*>[^<]*<span class="pill_count">([\d,]+)<\/span>/g)) {
+            assert.equal((by_value[value] ?? 0).toLocaleString("en-GB"), n, `${key}=${value}`);
+            checked++;
+        }
+    }
+    assert.ok(checked > 0, "some pills carry a count");
+});
+
+// The React client draws the structure page from /api/entries/:id, so its
+// rows must be the page's rows: Published and Authors from the checked
+// reference (cited_rows), not the PDB's copy.
+test("/api/entries/:id rows are the rows the structure page shows", async () => {
+    // 1DN8 has a checked reference listing more authors than the PDB's copy.
+    let ids = [...new Set(["1DN8", ...(await (await fetch(base + "/api/entries?per_page=50")).json()).results.map((e) => e.pdb_id)])];
+    let unescape = (t) => t.replaceAll("&#39;", "'").replaceAll("&#34;", '"').replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
+    for (const id of ids) {
+        let body = await (await fetch(base + "/api/entries/" + id)).json();
+        let html = await (await fetch(base + "/structure/" + id)).text();
+        for (const row of body.rows.filter((r) => ["published", "all_authors"].includes(r.key))) {
+            let field = html.match(new RegExp(`<div class="detail_label">${row.label}</div>\\s*<div class="detail_value[^"]*">(?:<span>)?([^<]*)`));
+            assert.equal(unescape(field?.[1].trim() ?? ""), row.value, `${id} ${row.key}`);
+        }
+    }
+});
+
+// The React client draws the Molecules tables from this, so it must be what
+// the structure page draws them from.
+test("/api/entries/:id/molecules is the page's molecule groups", async () => {
+    for (const id of ["1DN8", "4TNA"]) {
+        let body = await (await fetch(base + `/api/entries/${id}/molecules`)).json();
+        let expected = molecule_groups(await entry_contents(id), await entry_residues(id));
+        assert.deepEqual(body, JSON.parse(JSON.stringify(expected)), id);
+        let html = await (await fetch(base + "/structure/" + id)).text();
+        for (const g of body.groups) assert.ok(html.includes(`<summary>${g.title} (${g.rows.length})</summary>`), `${id} ${g.title}`);
+    }
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/molecules")).status, 404);
+});
+
+// The React client draws Base pairs, the arc picture and the NtC families
+// from this, so they must be what the structure page draws.
+test("/api/entries/:id/pairs is the page's base pairs, arcs and NtC families", async () => {
+    for (const id of ["1DN8", "4TNA"]) {
+        for (const asked of ["", "au"]) {
+            let body = await (await fetch(base + `/api/entries/${id}/pairs?assembly=${asked}`)).json();
+            let html = await (await fetch(base + `/structure/${id}?assembly=${asked}`)).text();
+            let pairs = await entry_base_pairs(id);
+            assert.deepEqual(body.base_pairs, JSON.parse(JSON.stringify(base_pair_section(pairs))), id);
+            assert.deepEqual(body.ntc, JSON.parse(JSON.stringify(ntc_section(await entry_ntc_classes(id)))), id);
+            assert.equal(body.arc_view.au, undefined);
+            assert.equal(body.arc_view.arcs?.layout, undefined);
+            if (body.base_pairs) assert.ok(html.includes(`${body.base_pairs.total.toLocaleString("en-GB")} ${body.base_pairs.total === 1 ? "pair" : "pairs"}, Leontis`), id);
+            if (body.arc_view.arcs) assert.ok(html.includes(`viewBox="0 0 ${body.arc_view.arcs.width} ${body.arc_view.arcs.height}"`), `${id} ${asked}`);
+            assert.ok(html.includes(`data-arc-view="${body.arc_view.key}"`) || !body.arc_view.arcs, `${id} ${asked}`);
+        }
+    }
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/pairs")).status, 404);
+});
+
+// The test database has no pairs, so the shape is checked on a drawn picture.
+test("/pairs sends the arc picture as the page draws it, without the viewer's layout", () => {
+    let pairs = [arc_pair("A", 1, "B", 6), arc_pair("A", 2, "B", 5, "gu"), arc_pair("A", 3, "B", 4, "nc")];
+    let view = arc_views(dna(["A", "B"], 6), plain(6, [3]), pairs, {}, "");
+    // What the Base pairs section reads besides what the arcs need.
+    let listed = pairs.map((p) => ({ ...p, bases: "AU", chain_1: p.label_1, chain_2: p.label_2 }));
+    let reply = JSON.parse(JSON.stringify(pairs_reply(listed, view, [])));
+    let { layout, ...picture } = JSON.parse(JSON.stringify(view.arcs));
+    assert.ok(layout, "the page's arcs have a layout to leave out");
+    assert.deepEqual(reply.arc_view.arcs, picture);
+    assert.equal(reply.arc_view.au, undefined);
+    assert.deepEqual({ ...reply.arc_view, arcs: null }, JSON.parse(JSON.stringify({ ...view, au: undefined, arcs: null })));
+    assert.deepEqual(reply.base_pairs, JSON.parse(JSON.stringify(base_pair_section(listed))));
 });
 
 
@@ -107,6 +226,12 @@ test("/api/entries/:id returns that one entry", async () => {
     let body = await (await fetch(base + "/api/entries/4tna")).json();
 
     assert.equal(body.pdb_id, "4TNA");
+});
+
+test("an entry says whether the 3D viewer is installed, as its page does", async () => {
+    let body = await (await fetch(base + "/api/entries/4TNA")).json();
+
+    assert.strictEqual(body.viewer, viewer_installed);
 });
 
 test("an unknown id is 404 with a readable message", async () => {
@@ -330,6 +455,12 @@ test("/api/fields never ships the SQL", async () => {
                         "STRING_AGG", "ENTITY_POLY_SEQ", "E.ID"]) {
         assert.ok(!body.includes(word), `the response must not contain ${word}`);
     }
+});
+
+test("/api/help is help_texts.js, key for key", async () => {
+    let r = await fetch(base + "/api/help");
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), help);
 });
 
 test("/api/fields describes every filter and column", async () => {
@@ -1418,6 +1549,8 @@ test("the same sequence API: no groups for an entry that shares none, a 404 for 
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { pdb_id: "4TNA", groups: [] });
     assert.equal((await fetch(base + "/api/entries/ZZZZ/same_sequence")).status, 404);
+    // The entry JSON carries the count the page's nav and empty message use.
+    assert.equal((await (await fetch(base + "/api/entries/4TNA")).json()).same_entries, 0);
 });
 
 test("the compare API takes two different chains as ENTRY:CHAIN", async () => {
@@ -1554,6 +1687,120 @@ test("?view= opens that view; anything else opens 1D; the 3D slot is a place kep
         assert.equal(asked_view(asked), "1d", `${JSON.stringify(asked)} opens 1D`);
     }
     assert.equal((await fetch(base + "/structure/4TNA?view=%3Cb%3E")).status, 200, "a bad view is no error");
+});
+
+test("the 3D view frames our own viewer, lazily, and the page is isolated so coot can run", async () => {
+    // Rendered both ways round: a server with a viewer build in viewer/ and
+    // one without. page_with_arcs leaves `viewer` unset, which is the second
+    // of those, so the kept-place assertions above cover a bare checkout.
+    let entry = await find_entry("4TNA");
+    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
+    let page = { entry, rows: detail_rows(entry), citation: null, base_pairs: null, arcs: null,
+                 molecules: molecule_groups(contents, residues), nucleic_chains: 2, same_entries: 0 };
+    let with_viewer = await render("structure", { ...page, page: "search", sections: structure_sections(page),
+                                                 PAGE_GROUPS, rail_query: "", view: "3d", viewer: true });
+    let slot = section(with_viewer, "views");
+    slot = slot.slice(slot.indexOf('id="view-3d"'));
+
+    assert.match(slot, /<div class="view_3d" data-src="\/viewer\/\?embed=1&amp;id=4TNA" data-entry="4TNA">/,
+                 "the frame's address is our own viewer, with the entry to show");
+    assert.ok(!/<iframe/.test(slot),
+              "and it is not in the HTML: the frame downloads and annotates the entry, so it waits for the tile");
+    assert.ok(!/<a |rcsb|pdbe|molstar/i.test(slot), "still sends no one to another viewer");
+    assert.ok(!/\u2014/.test(slot), "no em dash in the new words");
+
+    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
+    assert.match(js, /mount_3d/, "the script makes the frame");
+    assert.match(js, /box\.dataset\.mounted/, "once only, so a second click never restarts the run");
+
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(css, /\.view_3d_frame \{[^}]*height: 100%/, "the frame fills the box it is given");
+    // The box itself takes the height the reading area has left, and only
+    // while 3D is open: 1D is a few lines and must not be stretched.
+    assert.match(css, /#views > \.section_body:has\(#view-3d:not\(\[hidden\]\)\) \{[^}]*height: calc\(100vh - 146px - var\(--footer-h\)\);/);
+    assert.match(css, /#views > \.section_body:has\(#view-3d:not\(\[hidden\]\)\) \.view_3d \{ height: auto; \}/,
+                 "inside that chain the fixed fallback height gives way");
+    assert.match(css, /height: calc\(100vh - 191px - var\(--footer-h\)\);/,
+                 "and 45px less again where the sections list is a strip across the top");
+
+    // Selected by a scroll, 3D offers itself rather than starting: the page
+    // must not download and annotate an entry because someone read past
+    // Conformation on their way to the citations.
+    assert.match(slot, /<button type="button" class="view_3d_start">/);
+    assert.match(js, /view === "3d" && !auto/, "an automatic switch makes no frame");
+    assert.match(js, /document\.addEventListener\("na3db:section", \(e\) => \{\s*if \(chosen\) return;/,
+                 "a view the reader picked is never taken away; every width follows otherwise");
+    // The page's own scroll spy is the one that knows the section; both
+    // files have to name the same event or the Views never hear it.
+    let spy = readFileSync(new URL("./views/structure.ejs", import.meta.url), "utf8");
+    let event = js.match(/addEventListener\("(na3db:[a-z]+)"/)[1];
+    assert.ok(spy.includes(`new CustomEvent("${event}"`), "the spy announces what the Views listen for");
+
+    // Moorhen's coot needs SharedArrayBuffer, which the browser grants only a
+    // cross-origin-isolated page -- and a frame is isolated only when the
+    // document around it is, so these are the structure page's own headers.
+    let res = await fetch(base + "/structure/4TNA");
+    assert.equal(res.headers.get("cross-origin-opener-policy"), "same-origin");
+    assert.equal(res.headers.get("cross-origin-embedder-policy"), "require-corp");
+    // Not the whole site: require-corp would block any cross-origin image or
+    // script a page added later without CORS or CORP.
+    assert.equal((await fetch(base + "/search")).headers.get("cross-origin-embedder-policy"), null);
+
+    if (viewer_installed) {
+        let frame = await fetch(base + "/viewer/?embed=1&id=4TNA");
+        assert.equal(frame.status, 200);
+        assert.equal(frame.headers.get("cross-origin-embedder-policy"), "require-corp",
+                     "the framed document has to agree to being isolated too");
+        assert.equal(frame.headers.get("cross-origin-resource-policy"), "same-origin");
+        assert.match(await frame.text(), /<div id="root">/, "the viewer's own page");
+        assert.equal((await fetch(base + "/viewer/napair.wasm")).headers.get("content-type"), "application/wasm");
+    } else {
+        // No build installed: the 3D view says so rather than framing a 404.
+        let bare = await render("structure", { ...page, page: "search", sections: structure_sections(page),
+                                              PAGE_GROUPS, rail_query: "", view: "3d", viewer: false });
+        let kept = section(bare, "views");
+        assert.match(kept.slice(kept.indexOf('id="view-3d"')), /will be shown here/);
+        assert.equal((await fetch(base + "/viewer/")).status, 404);
+    }
+});
+
+test("one handle in the gutter swaps which column is the wide one", async () => {
+    let html = await page_with_arcs(null, 2);
+    let views = section(html, "views");
+
+    assert.match(views, /<button type="button" class="download download_small band_swap" aria-pressed="false">/,
+                 "the same button as the FASTA and CSV ones beside it, and off to begin with");
+    assert.equal((html.match(/class="download download_small band_swap"/g) || []).length, 1,
+                 "one of them on the page: the other sections share the row, they do not own it");
+    let sheet = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    assert.match(sheet, /\.band_swap::before \{[^}]*mask-image/,
+                 "its own glyph in place of the download arrow");
+    assert.match(views, /<span class="band_swap_say">Enlarge views<\/span>/,
+                 "it says what the click does, so it is not a shape to work out");
+    assert.match(views, /band_tools[\s\S]{0,900}band_swap/, "in the Views band, with the other tools");
+
+    // Applied before the page is drawn, or the columns are laid out one way
+    // and swapped a frame later, in front of the reader.
+    assert.match(html, /localStorage\.getItem\("views_wide"\) === "on"/);
+    assert.ok(html.indexOf('localStorage.getItem("views_wide")') < html.indexOf('<div class="detail_body"'),
+              "the class is set above the body it changes");
+    assert.match(html, /localStorage\.setItem\("views_wide", on \? "on" : "off"\)/, "and remembered");
+
+    let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
+    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
+    let side = js.match(/const SIDE = "([^"]+)"/)[1];
+    let wide = css.slice(css.indexOf(`@media ${side} {`));
+    wide = wide.slice(0, wide.indexOf("\n}\n"));
+
+    assert.match(wide, /grid-template-columns: minmax\(0, 1fr\) var\(--viewer\);/, "the row as it starts");
+    assert.match(wide, /\.structure_page\.views_wide \.detail_body \{\s*grid-template-columns: var\(--viewer\) minmax\(0, 1fr\);/,
+                 "swapped, the two widths trade places and nothing moves sideways");
+    assert.match(wide, /\.band_swap \{ display: inline-flex; \}/,
+                 "shown only where there are two columns to swap");
+    let page = readFileSync(new URL("./views/structure.ejs", import.meta.url), "utf8");
+    assert.match(page, /textContent = on \? "Shrink views" : "Enlarge views"/, "and the words follow the state");
+    assert.match(css, /\.band_swap \{[^}]*display: none;/, "and hidden everywhere else");
+    assert.ok(!/\u2014/.test(views), "no em dash in the new words");
 });
 
 test("the structure page has a Sequence map section after Conformation, drawn by its own script", async () => {
