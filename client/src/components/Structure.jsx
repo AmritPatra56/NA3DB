@@ -3,6 +3,7 @@ import StructureFacts from "./StructureFacts.jsx";
 import Molecules from "./Molecules.jsx";
 import Views from "./Views.jsx";
 import Sources from "./Sources.jsx";
+import BasePairs from "./BasePairs.jsx";
 import Section from "./Section.jsx";
 import SectionNav from "./SectionNav.jsx";
 import { SHOWN_ELSEWHERE, CONFORMATION, NUCLEIC_KINDS, groupsBySection, rowCount } from "../structure.js";
@@ -11,7 +12,7 @@ import { NARROW } from "../reading.js";
 import { useMedia } from "../hooks/useMedia.js";
 import { useReading } from "../hooks/useReading.js";
 
-function Structure({ entry, molecules }) {
+function Structure({ entry, molecules, pairs }) {
   const [navFolded, setNavFolded] = useState(() => remembered("section_nav", "folded"));
   const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
   const { reading, view: followView } = useReading();
@@ -66,6 +67,8 @@ function Structure({ entry, molecules }) {
       body: <Molecules sectionId="modified-nucleotides" pdbId={entry.pdb_id} groups={groups["modified-nucleotides"]} /> },
     { id: "ligands", title: "Ligands", group: "composition", empty: rowCount(groups.ligands) === 0,
       body: <Molecules sectionId="ligands" pdbId={entry.pdb_id} groups={groups.ligands} /> },
+    { id: "base-pairs", title: "Base pairs", group: "structure", empty: !pairs.base_pairs,
+      body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view} /> },
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <StructureFacts rows={conformation} /> },

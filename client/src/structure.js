@@ -38,3 +38,9 @@ export const groupAnchor = (sectionId, kind) => `${sectionId}-${kind.toLowerCase
 // The colour class of a source kind: "Expressed" becomes "source_expressed"
 // (structure.ejs changes the first space only).
 export const sourceClass = (kind) => `source_${kind.toLowerCase().replace(" ", "_")}`;
+
+// The arc key's kinds, in the order structure.ejs lists them.
+export const ARC_KINDS = [["wc", "cWW Watson–Crick"], ["gu", "cWW G–U"], ["nc", "Others"]];
+
+// Where a strand's name sits under the picture: halfway along, to 0.1.
+export const strandMiddle = (chain) => Math.round((chain.x1 + chain.x2) * 5) / 10;

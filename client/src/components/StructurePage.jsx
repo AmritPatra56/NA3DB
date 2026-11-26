@@ -5,7 +5,8 @@ import { useApi } from "../hooks/useApi.js";
 import { errorHeading } from "../api.js";
 import { here } from "../address.js";
 
-// /structure/:id: asks the server for the entry and its molecules, says so
+// /structure/:id: asks the server for the entry, its molecules and its pairs
+// (the arc picture as ?assembly= picks it), says so
 // while they come, and hands them to Structure, which only draws.
 //
 // StructurePage   (fetches, owns nothing else)
@@ -15,11 +16,14 @@ import { here } from "../address.js";
 //    └─ Section ×n → Views, Overview, Molecules, ...
 // onFailed(failed): whether the page shows an error, so the rail can be the
 // error page's (server.js renders it with page "none").
-function StructurePage({ id, onFailed }) {
+function StructurePage({ id, assembly, onFailed }) {
   const path = "/api/entries/" + encodeURIComponent(id);
   const entry = useApi(path);
   const molecules = useApi(path + "/molecules");
-  const error = entry.error ?? molecules.error;
+  const pairs = useApi(`${path}/pairs?assembly=${encodeURIComponent(assembly)}`);
+  // Another assembly keeps the page drawn, the last picture showing until the new one comes.
+  const pairsData = pairs.data ?? pairs.stale;
+  const error = entry.error ?? molecules.error ?? pairs.error;
   const failed = Boolean(error);
   useEffect(() => {
     onFailed(failed);
@@ -35,7 +39,7 @@ function StructurePage({ id, onFailed }) {
     const message = error.status === 404 ? `There is nothing at ${here().path}.` : error.message;
     return <ErrorPage heading={errorHeading(error)} message={message} />;
   }
-  if (entry.data && molecules.data) return <Structure entry={entry.data} molecules={molecules.data} />;
+  if (entry.data && molecules.data && pairsData) return <Structure entry={entry.data} molecules={molecules.data} pairs={pairsData} />;
 
   return (
     <div className="results_area">
