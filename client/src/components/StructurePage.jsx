@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import Structure from "./Structure.jsx";
 import ErrorPage from "./ErrorPage.jsx";
 import { useApi } from "../hooks/useApi.js";
-import { errorHeading } from "../api.js";
+import { errorHeading, failureOf } from "../api.js";
 import { here } from "../address.js";
 
 // /structure/:id: asks the server for the entry, its molecules and its pairs
@@ -38,8 +38,8 @@ function StructurePage({ id, assembly, expanded, onFailed }) {
   }, [title]);
 
   if (error) {
-    const message = error.status === 404 ? `There is nothing at ${here().path}.` : error.message;
-    return <ErrorPage heading={errorHeading(error)} message={message} />;
+    const { heading, message } = failureOf(error, here().path + here().search);
+    return <ErrorPage heading={heading} message={message} />;
   }
   if (entry.data && molecules.data && pairsData) return <Structure entry={entry.data} molecules={molecules.data} pairs={pairsData} expanded={expanded} help={help.data} />;
 

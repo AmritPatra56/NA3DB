@@ -1,11 +1,13 @@
-import { Link } from "react-router";
+import { Link, useOutletContext } from "react-router";
 import { useEffect, useState } from "react";
 import Hero from "./Hero.jsx";
 import SearchBox from "./SearchBox.jsx";
 import LandingCount from "./LandingCount.jsx";
 import BrowseCard from "./BrowseCard.jsx";
 import Stats from "./Stats.jsx";
+import ErrorPage from "./ErrorPage.jsx";
 import { useApi } from "../hooks/useApi.js";
+import { failureOf } from "../api.js";
 import { answerRow, toggleTick, picksOf } from "../answers.js";
 import { pickSummary, pickUrl, pickWords } from "../pick.js";
 import { searchable } from "../query.js";
@@ -26,16 +28,27 @@ const FULL = "/search?panel=open";
 // ├─ LandingCount  what the typed text finds
 // ├─ BrowseCard ×5 → BrowseRow → BrowseOption          (reads answers)
 // ├─ Full search                                       (reads picks)
-// └─ Stats                                             (asks for its own numbers)
+// └─ Stats                                             (the numbers it is given)
 function Landing() {
   const [text, setText] = useState("");
   const [answers, setAnswers] = useState({});
   const cards = useApi("/api/browse");
+  const stats = useApi("/api/stats");
+  // landing.ejs needs both: without either the server sends error.ejs instead
+  // (503 when the database is away), and so does this page.
+  const error = cards.error ?? stats.error;
+  const failed = Boolean(error);
+  const { onFailed } = useOutletContext();
+  useEffect(() => {
+    onFailed(failed);
+  }, [failed, onFailed]);
 
   // The tab's title, as landing.ejs writes it: kept when another page set its own.
+  const failure = error && failureOf(error, "/");
+  const title = failure ? `NA3DB · ${failure.heading}` : "NA3DB";
   useEffect(() => {
-    document.title = "NA3DB";
-  }, []);
+    document.title = title;
+  }, [title]);
 
   // Worked out from state on every render, never stored twice.
   const typed = text.trim();
@@ -72,6 +85,7 @@ function Landing() {
     else toSearch(picks.length ? pickUrl("", item.value, picks) : new URLSearchParams({ q: item.value }).toString());
   };
 
+  if (failure) return <ErrorPage heading={failure.heading} message={failure.message} />;
   return (
     <div className={picks.length ? "landing_page picked" : "landing_page"}>
       <div className="landing">
@@ -92,13 +106,11 @@ function Landing() {
                           onAnswer={answer} onTick={tick} />
             ))}
           </div>
-          {/* The box still searches without the cards, so a failure is one quiet line. */}
-          {cards.error && <p className="browse_hint">The questions could not be loaded. The search box still works.</p>}
 
           <Link className="download download_quiet landing_advanced"
                 to={picks.length ? FULL + "&" + pickUrl("", "", picks) : FULL}>Full search</Link>
 
-          <Stats />
+          <Stats stats={stats.data} />
         </div>
       </div>
     </div>

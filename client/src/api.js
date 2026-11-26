@@ -19,3 +19,10 @@ export function errorHeading(error) {
   if (error.status === 503) return "Temporarily unavailable";
   return "Something went wrong";
 }
+
+// The heading and line error.ejs shows for a failed reply: a 404 names the
+// address asked for, query and all (req.originalUrl); anything else is the
+// server's own words.
+export function failureOf(error, address) {
+  return { heading: errorHeading(error), message: error.status === 404 ? `There is nothing at ${address}.` : error.message };
+}
