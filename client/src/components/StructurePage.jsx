@@ -21,6 +21,8 @@ function StructurePage({ id, assembly, expanded, onFailed }) {
   const entry = useApi(path);
   const molecules = useApi(path + "/molecules");
   const pairs = useApi(`${path}/pairs?assembly=${encodeURIComponent(assembly)}`);
+  // The "?" notes: the page draws without them until they come.
+  const help = useApi("/api/help");
   // Another assembly keeps the page drawn, the last picture showing until the new one comes.
   const pairsData = pairs.data ?? pairs.stale;
   const error = entry.error ?? molecules.error ?? pairs.error;
@@ -39,7 +41,7 @@ function StructurePage({ id, assembly, expanded, onFailed }) {
     const message = error.status === 404 ? `There is nothing at ${here().path}.` : error.message;
     return <ErrorPage heading={errorHeading(error)} message={message} />;
   }
-  if (entry.data && molecules.data && pairsData) return <Structure entry={entry.data} molecules={molecules.data} pairs={pairsData} expanded={expanded} />;
+  if (entry.data && molecules.data && pairsData) return <Structure entry={entry.data} molecules={molecules.data} pairs={pairsData} expanded={expanded} help={help.data} />;
 
   return (
     <div className="results_area">
