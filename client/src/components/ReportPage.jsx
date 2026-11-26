@@ -20,6 +20,9 @@ function ReportPage() {
   return fields.data && <Report registry={fields.data} why={help.data?.["report-tables"]} />;
 }
 
+// The ZIP button's words in each state (download_all).
+const ZIP_SAY = { idle: "Download all (ZIP)", busy: "Preparing…", failed: "Download failed, try again" };
+
 // ReportPage            waits for the registry
 // └─ Report             the open table and its rows (useReport)
 //    ├─ ReportTabs      one tab per table
@@ -47,8 +50,10 @@ function Report({ registry, why }) {
                       onOption={r.onOption} onTick={r.onTick} />
         <div className="query_panel_footer">
           <div className="report_downloads">
-            <button type="button" className="download" id="export_button" disabled={!rows.data?.results.length}>Download CSV</button>
-            <button type="button" className="download" id="zip_button">Download all (ZIP)</button>
+            <button type="button" className="download" id="export_button" disabled={!rows.data?.results.length}
+                    onClick={r.onCsv}>Download CSV</button>
+            <button type="button" className="download" id="zip_button" disabled={r.zip.state === "busy"}
+                    onClick={r.zip.onZip}>{ZIP_SAY[r.zip.state]}</button>
           </div>
         </div>
       </div>
