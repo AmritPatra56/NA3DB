@@ -13,7 +13,7 @@ import { public_registry, columns_answering, match_mode,
          POLYMER_TYPE_ALIASES, REPORT_TABLES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
          entry_fasta, base_pair_export, base_pairs_csv, structure_sections, sequence_map, sequence_map_text, nucleic_chain_count, arc_thumbnail, arc_summary,
-         arc_views, PAGE_GROUPS } from "./detail.js";
+         arc_views, ntc_section, PAGE_GROUPS } from "./detail.js";
 
 const app = express();
 
@@ -477,6 +477,33 @@ app.get("/api/entries/:id/molecules", async (req, res) => {
     let [contents, residues] = await Promise.all([entry_contents(entry.pdb_id), entry_residues(entry.pdb_id)]);
     res.json(molecule_groups(contents, residues));
 });
+
+// The structure page's Base pairs section, its arc picture (assembly 1 unless
+// ?assembly= names another view) and the NtC families of Conformation, as the
+// page draws them. The arc layout and the asymmetric unit's own arcs stay out:
+// the full-screen viewer asks /arcs for the layout when it opens.
+app.get("/api/entries/:id/pairs", async (req, res) => {
+    let entry = await find_entry(req.params.id);
+
+    if (!entry) {
+        res.status(404).json({ error: `No entry with id ${req.params.id}` });
+        return;
+    }
+
+    let [contents, residues, pairs, ntc_classes, assemblies] = await Promise.all([
+        entry_contents(entry.pdb_id), entry_residues(entry.pdb_id), entry_base_pairs(entry.pdb_id),
+        entry_ntc_classes(entry.pdb_id), entry_assemblies(entry.pdb_id)]);
+    let view = arc_views(contents.entities, residues, pairs, assemblies, String(req.query.assembly ?? ""));
+    res.json(pairs_reply(pairs, view, ntc_classes));
+});
+
+// What /pairs sends: the sections as the page has them, the arc view without
+// its layout and the asymmetric unit's arcs, which only the viewer needs.
+export function pairs_reply(pairs, { au, arcs, ...view }, ntc_classes) {
+    let { layout, ...picture } = arcs ?? {};
+    return { base_pairs: base_pair_section(pairs), arc_view: { ...view, arcs: arcs ? picture : null },
+             ntc: ntc_section(ntc_classes) };
+}
 
 // Every base pair of one entry, first model, as the page lists them.
 // ?format=csv gives a file to open in a spreadsheet or pandas.

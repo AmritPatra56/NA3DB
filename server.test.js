@@ -6,11 +6,11 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS, RESOLUTION_BANDS } from "./filters.js";
 import { once } from "node:events";
 import { readFileSync } from "node:fs";
-import app, { cited_rows, asked_view, viewer_installed } from "./server.js";
+import app, { cited_rows, asked_view, viewer_installed, pairs_reply } from "./server.js";
 import { close as close_db, query } from "./db.js";
-import { find_entry, entry_contents, entry_residues, entry_citation, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
+import { find_entry, entry_contents, entry_residues, entry_citation, entry_base_pairs, entry_ntc_classes, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
 import { lineage_of, name_key } from "./taxonomy.js";
-import { detail_rows, molecule_groups, structure_sections, pair_arcs, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section } from "./detail.js";
+import { detail_rows, molecule_groups, structure_sections, pair_arcs, arc_views, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section, ntc_section } from "./detail.js";
 import { full_name } from "./cite.js";
 
 let base;
@@ -165,6 +165,41 @@ test("/api/entries/:id/molecules is the page's molecule groups", async () => {
         for (const g of body.groups) assert.ok(html.includes(`<summary>${g.title} (${g.rows.length})</summary>`), `${id} ${g.title}`);
     }
     assert.equal((await fetch(base + "/api/entries/ZZZZ/molecules")).status, 404);
+});
+
+// The React client draws Base pairs, the arc picture and the NtC families
+// from this, so they must be what the structure page draws.
+test("/api/entries/:id/pairs is the page's base pairs, arcs and NtC families", async () => {
+    for (const id of ["1DN8", "4TNA"]) {
+        for (const asked of ["", "au"]) {
+            let body = await (await fetch(base + `/api/entries/${id}/pairs?assembly=${asked}`)).json();
+            let html = await (await fetch(base + `/structure/${id}?assembly=${asked}`)).text();
+            let pairs = await entry_base_pairs(id);
+            assert.deepEqual(body.base_pairs, JSON.parse(JSON.stringify(base_pair_section(pairs))), id);
+            assert.deepEqual(body.ntc, JSON.parse(JSON.stringify(ntc_section(await entry_ntc_classes(id)))), id);
+            assert.equal(body.arc_view.au, undefined);
+            assert.equal(body.arc_view.arcs?.layout, undefined);
+            if (body.base_pairs) assert.ok(html.includes(`${body.base_pairs.total.toLocaleString("en-GB")} ${body.base_pairs.total === 1 ? "pair" : "pairs"}, Leontis`), id);
+            if (body.arc_view.arcs) assert.ok(html.includes(`viewBox="0 0 ${body.arc_view.arcs.width} ${body.arc_view.arcs.height}"`), `${id} ${asked}`);
+            assert.ok(html.includes(`data-arc-view="${body.arc_view.key}"`) || !body.arc_view.arcs, `${id} ${asked}`);
+        }
+    }
+    assert.equal((await fetch(base + "/api/entries/ZZZZ/pairs")).status, 404);
+});
+
+// The test database has no pairs, so the shape is checked on a drawn picture.
+test("/pairs sends the arc picture as the page draws it, without the viewer's layout", () => {
+    let pairs = [arc_pair("A", 1, "B", 6), arc_pair("A", 2, "B", 5, "gu"), arc_pair("A", 3, "B", 4, "nc")];
+    let view = arc_views(dna(["A", "B"], 6), plain(6, [3]), pairs, {}, "");
+    // What the Base pairs section reads besides what the arcs need.
+    let listed = pairs.map((p) => ({ ...p, bases: "AU", chain_1: p.label_1, chain_2: p.label_2 }));
+    let reply = JSON.parse(JSON.stringify(pairs_reply(listed, view, [])));
+    let { layout, ...picture } = JSON.parse(JSON.stringify(view.arcs));
+    assert.ok(layout, "the page's arcs have a layout to leave out");
+    assert.deepEqual(reply.arc_view.arcs, picture);
+    assert.equal(reply.arc_view.au, undefined);
+    assert.deepEqual({ ...reply.arc_view, arcs: null }, JSON.parse(JSON.stringify({ ...view, au: undefined, arcs: null })));
+    assert.deepEqual(reply.base_pairs, JSON.parse(JSON.stringify(base_pair_section(listed))));
 });
 
 
