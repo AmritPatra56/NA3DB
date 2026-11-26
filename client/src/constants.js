@@ -23,3 +23,4 @@ export const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact"
 export const UNWRITTEN_MESSAGE = "This page is being written.";
 // What an empty section of the structure page says (structure.ejs).
 export const NONE_RECORDED = "None recorded for this entry.";
+export const NO_SAME_SEQUENCE = "No other entry has a chain with exactly this sequence.";

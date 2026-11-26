@@ -6,6 +6,8 @@ import BasePairs from "./BasePairs.jsx";
 import NtcFamilies from "./NtcFamilies.jsx";
 import MapGuide from "./MapGuide.jsx";
 import SeqMap from "./SeqMap.jsx";
+import SameSeq from "./SameSeq.jsx";
+import { NO_SAME_SEQUENCE } from "../constants.js";
 import Citation from "./Citation.jsx";
 import Links from "./Links.jsx";
 import Section from "./Section.jsx";
@@ -82,6 +84,8 @@ function Structure({ entry, molecules, pairs, expanded }) {
     { id: "sequence-map", title: "Sequence map", group: "structure", empty: nucleicChains === 0,
       body: nucleicChains > 0 && <><MapGuide /><SeqMap pdbId={entry.pdb_id} expanded={expanded?.seqmap === true}
                                                         onExpand={() => pushMark({ seqmap: true })} onCollapse={back} /></> },
+    { id: "same-sequence", title: "Same sequence", group: "structure", empty: !entry.same_entries, none: NO_SAME_SEQUENCE,
+      body: entry.same_entries > 0 && <SameSeq pdbId={entry.pdb_id} /> },
     // The id stays "citations" so old #citations links still land here.
     { id: "citations", title: "Citation", group: "references", empty: !entry.citation,
       body: entry.citation && <Citation pdbId={entry.pdb_id} c={entry.citation} text={entry.cite_text}
@@ -108,7 +112,7 @@ function Structure({ entry, molecules, pairs, expanded }) {
           {/* --rows: how many grid rows the sections take on a wide screen (style.css). */}
           <div className="detail_body" style={{ "--rows": sections.length }}>
             {sections.map((s) => (
-              <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} tools={s.tools}>{s.body}</Section>
+              <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} none={s.none} tools={s.tools}>{s.body}</Section>
             ))}
           </div>
         </div>
