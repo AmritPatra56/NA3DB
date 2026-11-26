@@ -1542,6 +1542,8 @@ test("the same sequence API: no groups for an entry that shares none, a 404 for 
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { pdb_id: "4TNA", groups: [] });
     assert.equal((await fetch(base + "/api/entries/ZZZZ/same_sequence")).status, 404);
+    // The entry JSON carries the count the page's nav and empty message use.
+    assert.equal((await (await fetch(base + "/api/entries/4TNA")).json()).same_entries, 0);
 });
 
 test("the compare API takes two different chains as ENTRY:CHAIN", async () => {
