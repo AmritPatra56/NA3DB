@@ -456,8 +456,11 @@ app.get("/api/entries/:id", async (req, res) => {
     // Rows as the structure page has them: Published and Authors from the
     // checked reference (cited_rows), so a client drawing the page from JSON
     // shows what the EJS page shows.
-    let [contents, citation] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id)]);
+    let [contents, citation, same_entries] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id),
+                                                                 same_sequence_count(entry.pdb_id)]);
     res.json({ ...entry, rows: cited_rows(detail_rows(entry), citation),
+               // How many other entries share a chain's sequence: the page's Same sequence count.
+               same_entries,
                entities: contents.entities, modified_nucleotides: contents.modified, citation,
                // What structure.ejs's Citation section works out from it.
                cite_text: citation && citation_text(entry.pdb_id, citation),
