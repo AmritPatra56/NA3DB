@@ -61,3 +61,16 @@ export function onHistory(onMove) {
     if (state.historyAction === "POP" && state.location.pathname === path) onMove();
   });
 }
+
+// A panel opened in this page (the arc viewer, task 8.3.4): the same address
+// as its own history entry, with mark as its state, so Back closes it, as
+// expand.js does. The page reads the mark back from useLocation().state.
+export function pushMark(mark) {
+  const { path, search, hash } = here();
+  router.navigate(path + search + hash, { state: mark, preventScrollReset: true });
+}
+
+// Closes it: back to the entry under the mark.
+export function back() {
+  router.navigate(-1);
+}
