@@ -65,9 +65,13 @@ export function onHistory(onMove) {
 // A panel opened in this page (the arc viewer, task 8.3.4): the same address
 // as its own history entry, with mark as its state, so Back closes it, as
 // expand.js does. The page reads the mark back from useLocation().state.
-export function pushMark(mark) {
+// A second panel replaces the first: the first's entry loses its mark, so
+// Back from the second lands with none open, as expand.js does.
+export async function pushMark(mark) {
   const { path, search, hash } = here();
-  router.navigate(path + search + hash, { state: mark, preventScrollReset: true });
+  const url = path + search + hash;
+  if (router.state.location.state) await router.navigate(url, { replace: true, state: null, preventScrollReset: true });
+  router.navigate(url, { state: mark, preventScrollReset: true });
 }
 
 // Closes it: back to the entry under the mark.

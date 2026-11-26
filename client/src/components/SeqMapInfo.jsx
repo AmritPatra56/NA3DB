@@ -12,10 +12,11 @@ function Step({ s, a, b, res }) {
 }
 
 // The words under the map (seqmap.js show): the shown column, its pairs with
-// a jump to each partner, and the steps on either side. shown: a column or null.
-function SeqMapInfo({ map, p, shown, onJump }) {
+// a jump to each partner, and the steps on either side. shown: a column or
+// null; then note (a failed ask, in the full screen) or the hint.
+function SeqMapInfo({ map, p, shown, note, onJump }) {
   const c = shown === null ? null : map.cols[shown];
-  if (!c) return <div className="seqmap_info" aria-live="polite"><span className="seqmap_hint">{HINT}</span></div>;
+  if (!c) return <div className="seqmap_info" aria-live="polite">{note ?? <span className="seqmap_hint">{HINT}</span>}</div>;
   const links = p.links[shown];
   return (
     <div className="seqmap_info" aria-live="polite">

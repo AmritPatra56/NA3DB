@@ -54,8 +54,8 @@ function SeqMapDrawing({ map, p, d, w, shown, pinned, svgRef, onPointerMove, onP
         <g>
           <line x1="0" x2={d.width} y1={Y_BASE + 0.5} y2={Y_BASE + 0.5} className="seqmap_base" />
           {d.bars.map((b) => b.rects
-            ? <NtcRects key={b.i} rects={b.rects} />
-            : <rect key={b.i} x={b.thin.x} y={Y_BASE - 3} width={b.thin.width} height="3" className="seqmap_nan_thin" />)}
+            ? <NtcRects key={b.n} rects={b.rects} />
+            : <rect key={b.n} x={b.thin.x} y={Y_BASE - 3} width={b.thin.width} height="3" className="seqmap_nan_thin" />)}
         </g>
         {d.rows.map((r) => d.wide ? (
           <Fragment key={r.k}>
@@ -65,7 +65,8 @@ function SeqMapDrawing({ map, p, d, w, shown, pinned, svgRef, onPointerMove, onP
         ) : (
           <g key={r.k} style={{ fill: r.colour }}>
             {/* A nucleotide pairs once per row, so its place is unique. */}
-            {r.ticks.map((x) => <rect key={x} x={x} y={rowY(r.k) - 4} width={Math.max(0.8, w)} height="8" />)}
+            {/* A column paired twice ticks twice; the list is fixed for a map. */}
+            {r.ticks.map((x, n) => <rect key={n} x={x} y={rowY(r.k) - 4} width={Math.max(0.8, w)} height="8" />)}
           </g>
         ))}
       </svg>

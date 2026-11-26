@@ -22,3 +22,19 @@ export function useSize(ref, after) {
 
   return size;
 }
+
+// The inner width of ref's element (clientWidth: no border, no scrollbar),
+// measured when `after` changes and whenever it resizes. `after` may also
+// stand for a new element in ref (a keyed remount). 0 before the first.
+export function useClientWidth(ref, after) {
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    setWidth(ref.current.clientWidth);
+  }, [ref, after]);
+  useEffect(() => {
+    const observer = new ResizeObserver(([e]) => setWidth(e.target.clientWidth));
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref, after]);
+  return width;
+}

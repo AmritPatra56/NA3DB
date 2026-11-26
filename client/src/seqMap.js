@@ -111,11 +111,12 @@ export function drawingOf(map, p, w) {
   };
 
   // NtC bars, between the two nucleotides of each step, as tall as the confal.
+  // n: the step's place in map.steps, its key (a column may hold two steps).
   const bw = wide ? 10 * Math.min(1, w / W) : Math.max(0.8, w * 0.85);
-  const bars = map.steps.map((st) => {
+  const bars = map.steps.map((st, n) => {
     const h = 4 + (NTC - 6) * Math.max(0, Math.min(100, st.confal ?? 0)) / 100;
     const x = (st.i + 1) * w;
-    return { i: st.i, rects: st.ntc || bw >= 6 ? barRects(x, bw, h, Y_NTC + NTC, st.ntc) : null, thin: { x: x - bw / 2, width: bw } };
+    return { n, i: st.i, rects: st.ntc || bw >= 6 ? barRects(x, bw, h, Y_NTC + NTC, st.ntc) : null, thin: { x: x - bw / 2, width: bw } };
   });
 
   // Rows: brackets over faint dots, or a tick per paired base when narrow.
@@ -141,3 +142,41 @@ export function columnAt(rect, clientX, w, n) {
 
 // How far to scroll so column i sits in the middle of the view.
 export const centreOn = (i, w, viewWidth) => i * w + w / 2 - (viewWidth - LABEL_W) / 2;
+
+// ---- Expanded (seqmap.js open_full) -------------------------------------
+
+export const W_MIN = 0.5, W_MAX = 28;     // the zoom buttons' range; Fit may go narrower
+
+// Narrow enough that every column is on screen, in a scroll area clientWidth wide.
+export const fitWidth = (clientWidth, n) => Math.max(0.02, Math.min(W, (clientWidth - LABEL_W - 4) / n));
+
+// A new column width w, keeping the column at `at` pixels into the view (the
+// pointer, or the middle) where it was. Returns { w, left }: the width as
+// clamped and the scroll that keeps that column put.
+export function zoomed(was, w, left, clientWidth, n, at) {
+  const view = clientWidth - LABEL_W;
+  const there = at ?? view / 2;
+  const next = Math.max(Math.min(W_MIN, fitWidth(clientWidth, n)), Math.min(W_MAX, w));
+  return { w: next, left: (left + there) / was * next - there };
+}
+
+// The overview: each strand a band with its name placed along it, the
+// steps' 5′ colour under them, each step keyed by its place in map.steps.
+export function overviewOf(map, p) {
+  const bands = p.starts.map((s, k) => {
+    let e = s;
+    while (e + 1 < p.n && map.cols[e + 1]) e++;
+    return { s, width: e - s + 1, alt: k % 2 === 1 };
+  });
+  const steps = map.steps.map((s, n) => ({ n, s })).filter(({ s }) => s.ntc).map(({ n, s }) => ({ n, i: s.i, fill: ntc_fill(s.ntc)[0] }));
+  const names = p.starts.map((s, k) => ({ s, name: map.names[k], left: `${(s / p.n * 100).toFixed(3)}%` }));
+  return { bands, steps, names };
+}
+
+// The box on the overview that is the part on screen; none before the
+// scroll area is measured.
+export const viewBox = (left, clientWidth, w, n) => ({ x: Math.max(0, left / w), width: Math.max(0, Math.min(n, (clientWidth - LABEL_W) / w)) });
+
+// The strands All or Pairing with the ticked put on the ruler.
+export const quickPick = (map, pick) => pick === "all" ? map.strands.map((s) => s.key)
+  : map.strands.filter((s) => map.shown.includes(s.key) || s.partners.some((k) => map.shown.includes(k))).map((s) => s.key);

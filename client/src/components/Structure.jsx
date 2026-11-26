@@ -20,7 +20,7 @@ import { usePairLink } from "../hooks/usePairLink.js";
 import { rowsByPair } from "../lbn.js";
 import { pushMark, back } from "../address.js";
 
-function Structure({ entry, molecules, pairs, expandedArc }) {
+function Structure({ entry, molecules, pairs, expanded }) {
   const [navFolded, toggleNav] = useRemembered("section_nav", "folded", "open");
   const [viewsWide, toggleWide] = useRemembered("views_wide", "on", "off");
   const { reading, view: followView } = useReading();
@@ -73,14 +73,15 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
       body: <Molecules sectionId="ligands" pdbId={entry.pdb_id} groups={groups.ligands} /> },
     { id: "base-pairs", title: "Base pairs", group: "structure", empty: !pairs.base_pairs,
       body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view}
-                                      expanded={expandedArc === pairs.arc_view.key}
+                                      expanded={expanded?.arc === pairs.arc_view.key}
                                       onExpand={() => pushMark({ arc: pairs.arc_view.key })} onCollapse={back}
                                       rowOn={link.rowOn} find={link.find} onShowPair={showPair} /> },
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <><StructureFacts rows={conformation} />{pairs.ntc?.families.length > 0 && <NtcFamilies ntc={pairs.ntc} />}</> },
     { id: "sequence-map", title: "Sequence map", group: "structure", empty: nucleicChains === 0,
-      body: nucleicChains > 0 && <><MapGuide /><SeqMap pdbId={entry.pdb_id} /></> },
+      body: nucleicChains > 0 && <><MapGuide /><SeqMap pdbId={entry.pdb_id} expanded={expanded?.seqmap === true}
+                                                        onExpand={() => pushMark({ seqmap: true })} onCollapse={back} /></> },
     // The id stays "citations" so old #citations links still land here.
     { id: "citations", title: "Citation", group: "references", empty: !entry.citation,
       body: entry.citation && <Citation pdbId={entry.pdb_id} c={entry.citation} text={entry.cite_text}

@@ -16,7 +16,7 @@ import { here } from "../address.js";
 //    └─ Section ×n → Views, Overview, Molecules, ...
 // onFailed(failed): whether the page shows an error, so the rail can be the
 // error page's (server.js renders it with page "none").
-function StructurePage({ id, assembly, expandedArc, onFailed }) {
+function StructurePage({ id, assembly, expanded, onFailed }) {
   const path = "/api/entries/" + encodeURIComponent(id);
   const entry = useApi(path);
   const molecules = useApi(path + "/molecules");
@@ -39,7 +39,7 @@ function StructurePage({ id, assembly, expandedArc, onFailed }) {
     const message = error.status === 404 ? `There is nothing at ${here().path}.` : error.message;
     return <ErrorPage heading={errorHeading(error)} message={message} />;
   }
-  if (entry.data && molecules.data && pairsData) return <Structure entry={entry.data} molecules={molecules.data} pairs={pairsData} expandedArc={expandedArc} />;
+  if (entry.data && molecules.data && pairsData) return <Structure entry={entry.data} molecules={molecules.data} pairs={pairsData} expanded={expanded} />;
 
   return (
     <div className="results_area">
