@@ -54,6 +54,10 @@ export function perPageFrom(asked, registry) {
   return Math.min(n, registry.max_page_size);
 }
 
+// Whether an address leaves the panel open. Known before /api/fields answers,
+// so a ?panel=closed link starts folded, as the server writes it.
+export const panelOpenOf = (search) => new URLSearchParams(search).get("panel") !== "closed";
+
 // The whole search an address asks for. Anything it says that the page has no
 // control for falls back to the default, so a hand-edited link still searches.
 export function queryFromAddress(search, registry) {
@@ -71,7 +75,7 @@ export function queryFromAddress(search, registry) {
     perPage: perPageFrom(params.get("per_page"), registry),
     match: registry.match_modes.some((m) => m.key === match) ? match : registry.default_match,
     view: VIEWS.includes(view) ? view : "cards",
-    panelOpen: params.get("panel") !== "closed",
+    panelOpen: panelOpenOf(search),
   };
 }
 

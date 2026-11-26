@@ -46,7 +46,7 @@ function SearchPage({ onAddress }) {
       <ChipsBar chips={s.chips} onRemove={s.onRemove} />
       <div className="workspace_body">
         <FilterPanel registry={registry} panel={panel} counts={s.counts} asked={s.asked}
-                     open={query?.panelOpen ?? true} busy={s.busy} label={countLabel(s.total.value)}
+                     open={s.panelOpen} busy={s.busy} label={countLabel(s.total.value)}
                      onValue={s.onValue} onFill={s.onFill} onPill={s.onPill}
                      onSubmit={() => search({ page: 1 })} />
         {/* A fold only goes in the address (set_panel): the page stays as it is. */}
