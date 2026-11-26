@@ -18,6 +18,8 @@ export const POLYMER_TYPE_ALIASES = {
 // DISPLAY): a /report link with only these has no search.
 export const DISPLAY_PARAMS = ["page", "sort", "view", "per_page", "match", "fields", "panel", "table", "proteins", "water"];
 // The footer's pages, linked before they are written (server.js UNWRITTEN):
-// each answers with its heading and this line until 8.12 writes it.
+// each answers with its heading and this line until 8.10 writes it.
 export const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact" };
 export const UNWRITTEN_MESSAGE = "This page is being written.";
+// What an empty section of the structure page says (structure.ejs).
+export const NONE_RECORDED = "None recorded for this entry.";

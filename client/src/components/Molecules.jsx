@@ -1,24 +1,23 @@
 import { Fragment } from "react";
 import MoleculeGroup from "./MoleculeGroup.jsx";
+import { groupAnchor } from "../structure.js";
 
-// "DNA" becomes "molecules-dna", "DNA/RNA hybrid" "molecules-dna-rna-hybrid".
-const anchor = (kind) => `molecules-${kind.toLowerCase().replace(/[^a-z]+/g, "-")}`;
-
-// The polymer tables; ligands and modified nucleotides have sections of their own.
-function Molecules({ pdbId, molecules }) {
-  const polymers = molecules.groups.filter((group) => group.polymer);
+// The tables of one section (Molecules, Modified nucleotides or Ligands), one
+// per group, with Jump to links when there are several. summary: the line
+// Molecules has over its tables.
+function Molecules({ sectionId, pdbId, groups, summary }) {
   return (
     <>
-      {polymers.length > 1 && (
+      {groups.length > 1 && (
         <div className="jump_to">
-          Jump to: {polymers.map((group, i) => (
-            <Fragment key={group.kind}>{i > 0 && " · "}<a href={`#${anchor(group.kind)}`}>{group.title}</a></Fragment>
+          Jump to: {groups.map((group, i) => (
+            <Fragment key={group.kind}>{i > 0 && " · "}<a href={`#${groupAnchor(sectionId, group.kind)}`}>{group.title}</a></Fragment>
           ))}
         </div>
       )}
-      {molecules.summary && <div className="molecules_summary"><span>{molecules.summary}</span></div>}
-      {polymers.map((group) => (
-        <div id={anchor(group.kind)} key={group.kind}>
+      {summary && <div className="molecules_summary"><span>{summary}</span></div>}
+      {groups.map((group) => (
+        <div id={groupAnchor(sectionId, group.kind)} key={group.kind}>
           <MoleculeGroup pdbId={pdbId} group={group} />
         </div>
       ))}
