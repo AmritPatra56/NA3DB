@@ -18,17 +18,20 @@ import { useMedia } from "../hooks/useMedia.js";
 import { useReading } from "../hooks/useReading.js";
 import { useRemembered } from "../hooks/useRemembered.js";
 import { useViewChoice } from "../hooks/useViewChoice.js";
+import { useHelp } from "../hooks/useHelp.js";
 import { usePairLink } from "../hooks/usePairLink.js";
 import { rowsByPair } from "../lbn.js";
 import { pushMark, back } from "../address.js";
 
-function Structure({ entry, molecules, pairs, expanded }) {
+// help: the "?" notes from /api/help, or null until they come.
+function Structure({ entry, molecules, pairs, expanded, help }) {
   const [navFolded, toggleNav] = useRemembered("section_nav", "folded", "open");
   const [viewsWide, toggleWide] = useRemembered("views_wide", "on", "off");
   const { reading, view: followView } = useReading();
   const narrow = useMedia(NARROW);
   const choice = useViewChoice(entry.viewer, followView);
   const link = usePairLink();
+  const note = useHelp();
   // A row of the other pairs, selected: the 1D view opens on its pair.
   const showPair = (a, b, row) => {
     choice.onShow("1d");
@@ -113,7 +116,8 @@ function Structure({ entry, molecules, pairs, expanded }) {
           {/* --rows: how many grid rows the sections take on a wide screen (style.css). */}
           <div className="detail_body" style={{ "--rows": sections.length }}>
             {sections.map((s) => (
-              <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} none={s.none} tools={s.tools}>{s.body}</Section>
+              <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} none={s.none} tools={s.tools}
+                       help={help?.[s.id]} helpOpen={note.open === s.id} onHelp={note.onToggle} onHelpClose={note.onClose}>{s.body}</Section>
             ))}
           </div>
         </div>
