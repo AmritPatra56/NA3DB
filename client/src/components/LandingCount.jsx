@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import MeantList from "./MeantList.jsx";
 import { structures } from "../format.js";
 
@@ -15,7 +16,7 @@ function LandingCount({ result }) {
       {suggestions.length > 0 && <>
         {". "}
         <MeantList suggestions={suggestions} renderItem={(s) => (
-          <a href={"/search?q=" + encodeURIComponent(s.value)}>{s.value}</a>
+          <Link to={"/search?q=" + encodeURIComponent(s.value)}>{s.value}</Link>
         )} />
       </>}
     </p>

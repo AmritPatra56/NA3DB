@@ -7,3 +7,17 @@ export const COUNT_SETTLE_MS = 250;
 export const SUGGEST_MS = 150;
 // The invitation in both search boxes (landing.ejs, search.ejs).
 export const BOX_PLACEHOLDER = "Search an id, molecule, author or organism";
+// The polymer types links used before DNA and RNA were told apart, each with
+// the values it stands for now (filters.js POLYMER_TYPE_ALIASES). Frozen: they
+// are old links' spellings, so no new ones come.
+export const POLYMER_TYPE_ALIASES = {
+  "Nucleic acid": ["DNA", "RNA", "DNA/RNA"],
+  "Protein/NA": ["Protein/DNA", "Protein/RNA", "Protein/DNA/RNA"],
+};
+// The parameters that set how a page looks, not what it searches (server.js
+// DISPLAY): a /report link with only these has no search.
+export const DISPLAY_PARAMS = ["page", "sort", "view", "per_page", "match", "fields", "panel", "table", "proteins", "water"];
+// The footer's pages, linked before they are written (server.js UNWRITTEN):
+// each answers with its heading and this line until 8.12 writes it.
+export const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact" };
+export const UNWRITTEN_MESSAGE = "This page is being written.";

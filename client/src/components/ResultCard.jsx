@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useState } from "react";
 import { cardParts, entryHref } from "../resultCard.js";
 import { go } from "../address.js";
@@ -23,7 +24,7 @@ function ResultCard({ entry }) {
       <div className="card_picture" aria-hidden="true"></div>
       <div className="card_head">
         <h3 className="card_id">
-          <a href={href}>{entry.pdb_id}</a>
+          <Link to={href}>{entry.pdb_id}</Link>
           {entry.polymer_type && <> <span className="card_badge">{entry.polymer_type}</span></>}
         </h3>
         <p className="card_title">{entry.title}</p>

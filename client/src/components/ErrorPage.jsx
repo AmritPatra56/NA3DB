@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 // error.ejs: a heading, one line saying what happened, and a way on.
 function ErrorPage({ heading, message }) {
   return (
@@ -8,7 +9,7 @@ function ErrorPage({ heading, message }) {
       <div className="results_area_body">
         <div className="empty_state">
           <p className="error_text">{message}</p>
-          <a className="detail_link" href="/search">Back to Full search</a>
+          <Link className="detail_link" to="/search">Back to Full search</Link>
         </div>
       </div>
     </div>

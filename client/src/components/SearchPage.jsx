@@ -26,9 +26,8 @@ import { countLabel } from "../countLabel.js";
 // ├─ ResultsList → ResultCard | ResultLine | GridTile ×n
 // ├─ ResultsState       spinner, error, No entries found → DidYouMean
 // └─ Pagination         arrows and page buttons
-// onAddress(search): the address changed, so the rail's link can carry it.
-function SearchPage({ onAddress }) {
-  const s = useSearch(onAddress);
+function SearchPage() {
+  const s = useSearch();
   const { registry, query, panel, results, search } = s;
 
   useEffect(() => {
