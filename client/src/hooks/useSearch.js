@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { useApi } from "./useApi.js";
 import { useCount } from "./useCount.js";
-import { queryFromAddress, entriesPath, countPath, boxSuggestPath, addressOf, suggestionHref, excludedOf, askedValues } from "../searchQuery.js";
+import { queryFromAddress, entriesPath, countPath, boxSuggestPath, addressOf, suggestionHref, excludedOf, askedValues, panelOpenOf } from "../searchQuery.js";
 import { panelFromParams, filtersOfPanel, withValue, withPill } from "../panelForm.js";
 import { chipsOf, withoutChip } from "../chips.js";
 import { searchable } from "../query.js";
@@ -87,6 +87,7 @@ export function useSearch(onAddress) {
 
   return {
     registry, query, panel, asked, results, error, total,
+    panelOpen: query?.panelOpen ?? panelOpenOf(here().search),
     counts: counts.data,
     busy: !error && !reply.data,
     note: error ? null : reply.data ?? reply.stale,
