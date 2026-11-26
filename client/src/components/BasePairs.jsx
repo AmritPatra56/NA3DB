@@ -4,8 +4,9 @@ import { number, counted } from "../format.js";
 
 // The Base pairs section (structure.ejs): the arc picture, then the pairs
 // counted by class in a bar, the other families, which chains pair with
-// which, and the other pairs one by one. bp: /pairs' base_pairs.
-function BasePairs({ pdbId, bp, view, expanded, onExpand, onCollapse }) {
+// which, and the other pairs one by one. bp: /pairs' base_pairs. rowOn,
+// find, onShowPair: the other pairs' link with the 1D view (usePairLink).
+function BasePairs({ pdbId, bp, view, expanded, onExpand, onCollapse, rowOn, find, onShowPair }) {
   const extra = bp.links.slice(bp.links_shown);
   return (
     <>
@@ -47,7 +48,7 @@ function BasePairs({ pdbId, bp, view, expanded, onExpand, onCollapse }) {
           )}
         </>
       )}
-      {bp.noncanonical.length > 0 && <OtherPairs pairs={bp.noncanonical} />}
+      {bp.noncanonical.length > 0 && <OtherPairs pairs={bp.noncanonical} rowOn={rowOn} find={find} onShowPair={onShowPair} />}
     </>
   );
 }

@@ -12,6 +12,9 @@ import { remembered, remember } from "../remember.js";
 import { NARROW } from "../reading.js";
 import { useMedia } from "../hooks/useMedia.js";
 import { useReading } from "../hooks/useReading.js";
+import { useViewChoice } from "../hooks/useViewChoice.js";
+import { usePairLink } from "../hooks/usePairLink.js";
+import { rowsByPair } from "../lbn.js";
 import { pushMark, back } from "../address.js";
 
 function Structure({ entry, molecules, pairs, expandedArc }) {
@@ -19,6 +22,13 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
   const [viewsWide, setViewsWide] = useState(() => remembered("views_wide", "on"));
   const { reading, view: followView } = useReading();
   const narrow = useMedia(NARROW);
+  const choice = useViewChoice(entry.viewer, followView);
+  const link = usePairLink();
+  // A row of the other pairs, selected: the 1D view opens on its pair.
+  const showPair = (a, b, row) => {
+    choice.onShow("1d");
+    link.onShowPair(a, b, row);
+  };
 
   function toggleWide() {
     const wide = !viewsWide;
@@ -57,7 +67,8 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
           <span className="band_swap_say">{viewsWide ? "Shrink views" : "Enlarge views"}</span>
         </button>
       ),
-      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} follow={followView} /> },
+      body: nucleicChains > 0 && <Views pdbId={entry.pdb_id} viewer={entry.viewer} choice={choice} pin={link.pin}
+                                         tableRows={rowsByPair(pairs.base_pairs?.noncanonical ?? [])} onFindRow={link.onFindRow} /> },
     { id: "overview", title: "Overview", group: "overview",
       body: <StructureFacts rows={shown.filter((row) => !CONFORMATION.has(row.key))} /> },
     { id: "molecules", title: "Molecules", group: "composition", empty: rowCount(groups.molecules) === 0,
@@ -72,7 +83,8 @@ function Structure({ entry, molecules, pairs, expandedArc }) {
     { id: "base-pairs", title: "Base pairs", group: "structure", empty: !pairs.base_pairs,
       body: pairs.base_pairs && <BasePairs pdbId={entry.pdb_id} bp={pairs.base_pairs} view={pairs.arc_view}
                                       expanded={expandedArc === pairs.arc_view.key}
-                                      onExpand={() => pushMark({ arc: pairs.arc_view.key })} onCollapse={back} /> },
+                                      onExpand={() => pushMark({ arc: pairs.arc_view.key })} onCollapse={back}
+                                      rowOn={link.rowOn} find={link.find} onShowPair={showPair} /> },
     { id: "conformation", title: "Conformation", group: "structure",
       empty: conformation.length === 0,
       body: <><StructureFacts rows={conformation} />{pairs.ntc?.families.length > 0 && <NtcFamilies ntc={pairs.ntc} />}</> },
