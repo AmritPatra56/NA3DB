@@ -3,7 +3,7 @@ import ThemeButton from "./ThemeButton.jsx";
 import { MARK_LIGHT, MARK_DEEP, LETTER } from "../logo.js";
 
 // The rail (rail.ejs), drawn from railOf in route.js.
-// active: the lit section ("search" or null). report: whether Report is
+// active: the lit section ("search", "report" or null). report: whether Report is
 // offered. carry: the query the Full search and Report links carry.
 function Rail({ active, report, carry }) {
   const item = (name) => `rail-item ${active === name ? "active" : ""}`;
