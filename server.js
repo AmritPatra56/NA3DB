@@ -70,6 +70,25 @@ if (viewer_installed) {
     }));
 }
 
+// ------------------------------------------------------------- the React app
+// CLIENT_DIR names a React build (cd client && npm run build makes client/dist).
+// With one, every page address answers with its index.html and React draws the
+// page from /api; without, the pages render the EJS templates as before.
+const client_dir = process.env.CLIENT_DIR ? path.resolve(process.env.CLIENT_DIR) : null;
+
+if (client_dir) {
+    // Vite names each chunk by its hash, so a chunk never changes under its name.
+    app.use("/app", express.static(path.join(client_dir, "app"), { immutable: true, maxAge: "1y" }));
+}
+
+// Every page is isolated, not just /structure/:id: React moves to a structure
+// in place, so the page first loaded is the one the 3D frame sits in.
+// no-cache because index.html names the chunks of the current build.
+function send_app(res, status = 200) {
+    isolate(res);
+    res.status(status).set("Cache-Control", "no-cache").sendFile(path.join(client_dir, "index.html"));
+}
+
 // views/ sits outside public/, so the template source is never downloadable.
 app.set("view engine", "ejs");
 app.set("views", path.join(import.meta.dirname, "views"));
@@ -150,6 +169,7 @@ app.get("/", async (req, res) => {
         res.redirect(301, "/search?" + query);
         return;
     }
+    if (client_dir) return send_app(res);
 
     let [stats, browse] = await Promise.all([database_stats(), browse_counts()]);
     res.render("landing", { page: "landing", stats, browse });
@@ -161,6 +181,7 @@ const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact" };
 
 for (const [path, heading] of Object.entries(UNWRITTEN)) {
     app.get("/" + path, (req, res) => {
+        if (client_dir) return send_app(res);
         res.render("error", { page: "none", heading,
                               message: "This page is being written." });
     });
@@ -191,6 +212,7 @@ app.get("/search", async (req, res) => {
         res.redirect(301, "/search?" + rewritten);
         return;
     }
+    if (client_dir) return send_app(res);
 
     // A pill the URL selects is drawn even at 0, or the page script would
     // drop it and silently widen the search.
@@ -235,6 +257,7 @@ app.get("/report", (req, res) => {
         res.redirect("/search");
         return;
     }
+    if (client_dir) return send_app(res);
 
     res.render("report", {
         page: "report",
@@ -256,6 +279,8 @@ export const asked_view = (asked) => VIEWS.includes(asked) ? asked : VIEWS[0];
 app.get("/structure/:id", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
+    // React reads the entry itself; the lookup is only for the status.
+    if (client_dir) return send_app(res, entry ? 200 : 404);
     if (!entry) {
         res.status(404).render("error", {
             page: "none",
@@ -715,6 +740,7 @@ app.use("/api", (req, res) => {
 // Any page that matched nothing. Below the /api catch-all so API paths still
 // get JSON, above the error handler so Express does not mistake it for one.
 app.use((req, res) => {
+    if (client_dir) return send_app(res, 404);
     res.status(404).render("error", {
         page: "none",
         heading: "Page not found",
