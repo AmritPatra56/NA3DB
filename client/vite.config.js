@@ -15,6 +15,8 @@ export default defineConfig({
       "/api": target,
       "/assets": target,
       "/style.css": target,
+      // The files the page offers (FASTA, a citation); the page itself stays React's.
+      "^/structure/[^/]+/(fasta|citation)": target,
     },
   },
 })
