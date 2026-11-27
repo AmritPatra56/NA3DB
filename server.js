@@ -6,6 +6,7 @@ import { search_entries, export_entries, export_molecules, export_ligands, expor
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes, entry_assemblies } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
+import { gate } from "./gate.js";
 import help from "./help_texts.js";
 import { citation_ris, citation_bibtex, citation_text, unpublished, short_name, full_name } from "./cite.js";
 import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
@@ -451,6 +452,17 @@ app.get("/api/same_sequence/compare", async (req, res) => {
     }
     res.json(result);
 });
+
+// A structures export holds 2 of the 10 database connections, the others 1,
+// so 2 at a time leaves at least 6 for everyone browsing. A zip download asks
+// for 4 at once and simply waits its turn; a flood is turned away.
+export const export_gate = gate({
+    slots: 2,
+    queue_max: 20,
+    wait_ms: 15000,
+    message: "Too many downloads at once. Please try again in a few seconds."
+});
+app.use("/api/export", export_gate);
 
 app.get("/api/export", async (req, res) => {
     let problem = query_problem(req.query);
