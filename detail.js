@@ -505,10 +505,6 @@ export function assembly_pairs(assembly, opers, pairs) {
              rank: (label, copy) => rank.get(`${label} ${copy}`) ?? Infinity };
 }
 
-// How many nucleic-acid chains a sequence map can show.
-export const nucleic_chain_count = (entities) =>
-    entities.filter((e) => NUCLEIC_KINDS.has(e.kind)).reduce((n, e) => n + e.chains.length, 0);
-
 // --- which arcs go above the line ------------------------------------------
 // Arcs that cross each other cannot share a side. The ones that do not cross
 // (nested or side by side) go above the line, so a tRNA's cloverleaf reads as
@@ -896,76 +892,6 @@ const csv_cell = (v) => (/[",\r\n]/.test(String(v ?? "")) ? `"${String(v).replac
 export function base_pairs_csv(pairs) {
     return [PAIR_FIELDS, ...pairs.map((p) => PAIR_FIELDS.map((k) => p[k]))]
         .map((row) => row.map(csv_cell).join(",")).join("\n") + "\n";
-}
-
-// --- the sections of the structure page ---------------------------------
-// Read in four groups, in the order a reader asks: what the entry is, what is
-// in it, what shape it takes, where it came from. Each group keeps the colour
-// of the filter-panel category it answers, so a search and the page it leads
-// to look like one thing.
-export const PAGE_GROUPS = [
-    { key: "views",       label: "Views" },
-    { key: "overview",    label: "Overview" },
-    { key: "composition", label: "Composition" },
-    { key: "structure",   label: "Structure" },
-    { key: "references",  label: "References" }
-];
-
-// Rows the page shows another way: the modified nucleotide and ligand codes
-// head the tables that list each one, and the NtC classes are counted in
-// Conformation. Cards and exports still show them as rows.
-export const SHOWN_ELSEWHERE = new Set(["nonstandard_residue", "monomer_flag", "ligands",
-                                 "assigned_ntc", "ntc_classes"]);
-const GROUP_SECTION = { "3D Features": "conformation" };
-
-const sum = (groups) => groups.reduce((n, g) => n + g.rows.length, 0);
-
-// Every section in page order, with what it holds. A section with nothing in
-// it stays listed, marked empty: "none recorded" is a fact about the entry,
-// and a missing heading would read as a field we never had.
-export function structure_sections({ entry, rows, molecules, base_pairs, citation, nucleic_chains = 0,
-                                    same_entries = 0, ntc_classes = [] }) {
-    let group_of = new Map(columns_for("page").map((c) => [c.key, c.group]));
-    let rows_in = { overview: [], conformation: [] };
-
-    for (const r of rows) {
-        if (!SHOWN_ELSEWHERE.has(r.key)) rows_in[GROUP_SECTION[group_of.get(r.key)] ?? "overview"].push(r);
-    }
-
-    let polymers = molecules.groups.filter((g) => g.polymer);
-    let modified = molecules.groups.filter((g) => g.modified);
-    let ligands  = molecules.groups.filter((g) => !g.polymer && !g.modified);
-    let steps    = entry.ntc_step_count ?? null;
-
-    let sections = [
-        // 1D, 2D and 3D views of the nucleic acids, one open at a time: the
-        // first thing the page shows.
-        { id: "views", title: "Views", group: "views", count: nucleic_chains },
-        { id: "overview", title: "Overview", group: "overview", rows: rows_in.overview },
-        { id: "molecules", title: "Molecules", group: "composition", groups: polymers,
-          count: sum(polymers) },
-        { id: "sources", title: "Sources", group: "composition",
-          count: molecules.sources?.rows.length ?? 0 },
-        { id: "modified-nucleotides", title: "Modified nucleotides", group: "composition",
-          groups: modified, count: sum(modified) },
-        { id: "ligands", title: "Ligands", group: "composition", groups: ligands, count: sum(ligands) },
-        { id: "base-pairs", title: "Base pairs", group: "structure",
-          count: base_pairs?.total ?? 0 },
-        { id: "conformation", title: "Conformation", group: "structure", rows: rows_in.conformation,
-          ntc: ntc_section(ntc_classes), count: steps === null ? 0 : Number(steps) },
-        { id: "sequence-map", title: "Sequence map", group: "structure", count: nucleic_chains },
-        { id: "same-sequence", title: "Same sequence", group: "structure", count: same_entries },
-        // The id stays "citations" so old #citations links still land here.
-        { id: "citations", title: "Citation", group: "references",
-          count: citation ? 1 : 0 },
-        { id: "links", title: "Links and downloads", group: "references" }
-    ];
-
-    for (const s of sections) {
-        s.empty = s.id === "conformation" ? !s.rows.length : s.count === 0;
-    }
-
-    return sections;
 }
 
 // The NtC classes of an entry's steps, counted and grouped by CANA class,

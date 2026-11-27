@@ -7,12 +7,12 @@ import assert from "node:assert";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
-const views = (dir = "views") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
-    .flatMap((f) => f.isDirectory() ? views(`${dir}/${f.name}`) : f.name.endsWith(".ejs") ? [`${dir}/${f.name}`] : []);
-const scripts = readdirSync(new URL("public", import.meta.url)).filter((f) => f.endsWith(".js")).map((f) => `public/${f}`);
-const SOURCES = [...views(), ...scripts].map((path) => [path, read(`./${path}`)]);
+// The React pages' own code: every .js and .jsx under client/src.
+const sources = (dir = "client/src") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
+    .flatMap((f) => f.isDirectory() ? sources(`${dir}/${f.name}`) : /\.jsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []);
+const SOURCES = sources().map((path) => [path, read(`./${path}`)]);
 const CSS = read("./public/style.css");
-const ARROW = '<i class="arrow';
+const ARROW = '<i className="arrow';
 
 test("no hand-made markers are left: text triangles, the old arrow image, the striped grip", () => {
     for (const [path, src] of SOURCES) {
@@ -29,22 +29,22 @@ test("no hand-made markers are left: text triangles, the old arrow image, the st
 test("every button that folds something open or shut carries the arrow", () => {
     let has = (path, cls) => {
         let src = read(`./${path}`);
-        let at = src.indexOf(`class="${cls}"`);
+        let at = src.indexOf(`className="${cls}"`);
         assert.ok(at >= 0, `${cls} is in ${path}`);
         assert.ok(src.slice(at, at + 600).includes(ARROW), `${cls} in ${path} has no arrow`);
     };
-    has("views/structure.ejs", "band_fold");
-    has("views/search.ejs", "category_header");
-    has("views/search.ejs", "panel_handle");
-    has("views/report.ejs", "fields_toggle");
-    has("public/app.js", "card_more");
-    has("views/search.ejs", "pill_more");
-    has("views/includes/molecule_group.ejs", "more_rows_toggle");
+    has("client/src/components/Section.jsx", "band_fold");
+    has("client/src/components/Category.jsx", "category_header");
+    has("client/src/components/PanelHandle.jsx", "panel_handle");
+    has("client/src/components/ReportPage.jsx", "fields_toggle");
+    has("client/src/components/ResultCard.jsx", "card_more");
+    has("client/src/components/PillGroup.jsx", "pill_more");
+    has("client/src/components/ModifiedTable.jsx", "more_rows_toggle");
 });
 
 test("the filter group headers say whether they are open, like every other fold", () => {
-    assert.match(read("./views/search.ejs"), /class="category_header" role="button" tabindex="0" aria-expanded="true"/);
-    assert.match(read("./public/app.js"), /header\.setAttribute\("aria-expanded"/);
+    assert.match(read("./client/src/components/Category.jsx"),
+        /className="category_header" role="button" tabIndex=\{0\} aria-expanded=\{!collapsed\}/);
 });
 
 test("the arrow is one rule: one shape, one colour, one size, and fold-outs get it on their own", () => {

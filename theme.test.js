@@ -1,14 +1,19 @@
 // theme.test.js - the light and dark themes: the colour tokens in
-// public/style.css, the theme button in public/theme.js, and that every page
-// carries both. No database needed.
+// public/style.css, that the app's one page sets the theme before it paints,
+// the fonts and the logo. The button itself is client/test/themeButton.test.jsx.
+// No database needed.
 
 import test from "node:test";
 import assert from "node:assert";
 import { readFileSync, readdirSync } from "node:fs";
-import vm from "node:vm";
+import { MARK_LIGHT, MARK_DEEP } from "./client/src/logo.js";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const CSS = read("./public/style.css");
+const SHELL = read("./client/index.html");
+// Every file the React client is written in.
+const CLIENT = readdirSync(new URL("./client/src", import.meta.url), { recursive: true })
+    .filter((f) => /\.jsx?$/.test(f)).map((f) => read(`./client/src/${f}`));
 
 // --- the tokens -----------------------------------------------------------
 
@@ -38,9 +43,10 @@ test("printing stays light", () => {
 
 test("every token in use is defined, and every token defined is used", () => {
     let rest = CSS.replace(LIGHT_BLOCK, "").replace(DARK_BY_CHOICE, "").replace(DARK_BY_DEVICE, "");
-    let scripts = ["public/cana.js", "public/seqmap.js", "public/arc_viewer.js", "detail.js",
-                   "views/includes/map_guide.ejs"].map(read).join("\n");
-    let used = new Set([...(rest + scripts).matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]));
+    let scripts = ["public/cana.js", "detail.js"].map(read).concat(CLIENT).join("\n");
+    // A name ending in "-" is a template's prefix (var(--pair-${kind})); its
+    // whole names are written out elsewhere.
+    let used = new Set([...(rest + scripts).matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]).filter((n) => !n.endsWith("-")));
     // Set and read inside a rule (the category dot, a section's colours), not
     // themes; footer-h, topbar-h (the bar across the top, which the rail's
     // logo cell matches), viewer and rows (the structure page's Views column
@@ -158,90 +164,19 @@ test("NtC colours are DNATCO's exact palette; a dim one is outlined", async () =
 
 // --- every page --------------------------------------------------------
 
-test("every page sets the theme before it paints and has the button", () => {
-    for (const file of readdirSync(new URL("./views", import.meta.url)).filter((f) => f.endsWith(".ejs"))) {
-        let page = read(`./views/${file}`);
-        let head = page.slice(0, page.indexOf("</head>"));
-        assert.ok(head.includes('include("includes/theme.ejs")'), `${file}: no theme in the head`);
-        assert.ok(page.includes('include("includes/rail.ejs")'), `${file}: no rail, so no theme button`);
-    }
-    let snippet = read("./views/includes/theme.ejs");
-    assert.match(snippet, /<meta name="color-scheme" content="light dark">/);
-    assert.match(snippet, /<script>try \{ var t = localStorage\.getItem\("na3db-theme"\)/);
-    assert.match(snippet, /<script src="\/theme\.js" defer><\/script>/);
-    assert.match(read("./views/includes/rail.ejs"), /<button type="button" class="rail-item rail-theme" data-choice="auto" hidden/);
+test("the page sets the theme before it paints and has the button", () => {
+    let head = SHELL.slice(0, SHELL.indexOf("</head>"));
+    assert.match(head, /<meta name="color-scheme" content="light dark">/);
+    assert.match(head, /<script>try \{ var t = localStorage\.getItem\("na3db-theme"\)/);
+    assert.ok(!head.includes('type="module"'), "inline, ahead of the app");
+    assert.match(read("./client/src/components/Rail.jsx"), /<ThemeButton \/>/);
+    assert.match(read("./client/src/components/ThemeButton.jsx"), /<button type="button" className="rail-item rail-theme" data-choice=\{choice\}/);
 });
 
 test("no em dash in anything the theme shows", () => {
-    for (const path of ["./public/theme.js", "./views/includes/theme.ejs", "./views/includes/rail.ejs"]) {
+    for (const path of ["./client/index.html", "./client/src/components/ThemeButton.jsx", "./client/src/hooks/useTheme.js", "./client/src/components/Rail.jsx"]) {
         assert.ok(!read(path).includes("—"), path);
     }
-});
-
-// --- the button ----------------------------------------------------------
-
-// Runs theme.js against a fake page with one button and a fake storage.
-function mount(saved, { blocked = false } = {}) {
-    let store = new Map(saved ? [["na3db-theme", saved]] : []);
-    let listeners = {};
-    let button = {
-        hidden: true, dataset: { choice: "auto" }, title: "", attrs: {},
-        setAttribute(k, v) { this.attrs[k] = v; },
-        addEventListener(name, fn) { this.click = fn; }
-    };
-    let root = { dataset: {} };
-    let localStorage = {
-        getItem: (k) => { if (blocked) throw new Error("blocked"); return store.get(k) ?? null; },
-        setItem: (k, v) => { if (blocked) throw new Error("blocked"); store.set(k, v); },
-        removeItem: (k) => { if (blocked) throw new Error("blocked"); store.delete(k); }
-    };
-    let context = {
-        document: { documentElement: root, querySelectorAll: () => [button] },
-        localStorage,
-        window: { addEventListener: (name, fn) => { listeners[name] = fn; } }
-    };
-    vm.runInNewContext(read("./public/theme.js"), context);
-    return { button, root, store, listeners };
-}
-
-test("the button shows once its script runs, and starts on Auto", () => {
-    let { button, root } = mount();
-    assert.equal(button.hidden, false);
-    assert.equal(button.dataset.choice, "auto");
-    assert.equal(root.dataset.theme, undefined, "Auto leaves the theme to the device");
-    assert.match(button.attrs["aria-label"], /^Theme: auto, follows your device\. Switch to light\.$/);
-});
-
-test("a click goes Auto, Light, Dark, Auto, and is remembered", () => {
-    let { button, root, store } = mount();
-    button.click();
-    assert.equal(root.dataset.theme, "light");
-    assert.equal(store.get("na3db-theme"), "light");
-    button.click();
-    assert.equal(root.dataset.theme, "dark");
-    assert.equal(store.get("na3db-theme"), "dark");
-    button.click();
-    assert.equal(root.dataset.theme, undefined);
-    assert.equal(store.has("na3db-theme"), false, "Auto is the absence of a choice");
-});
-
-test("a remembered choice comes back; a junk one is Auto", () => {
-    assert.equal(mount("dark").root.dataset.theme, "dark");
-    assert.equal(mount("dark").button.dataset.choice, "dark");
-    assert.equal(mount("purple").root.dataset.theme, undefined);
-});
-
-test("blocked storage still lets the button switch the page", () => {
-    let { button, root } = mount(null, { blocked: true });
-    button.click();
-    assert.equal(root.dataset.theme, "light");
-});
-
-test("a change in another tab is followed", () => {
-    let { root, store, listeners } = mount();
-    store.set("na3db-theme", "dark");
-    listeners.storage({ key: "na3db-theme" });
-    assert.equal(root.dataset.theme, "dark");
 });
 
 // --- the fonts -------------------------------------------------------------
@@ -271,8 +206,7 @@ test("all text uses Plex: the body and every monospace stack", () => {
 });
 
 test("no page loads fonts from another site", () => {
-    let pages = readdirSync(new URL("./views", import.meta.url)).filter((f) => f.endsWith(".ejs")).map((f) => read(`./views/${f}`))
-        .concat(readdirSync(new URL("./views/includes", import.meta.url)).map((f) => read(`./views/includes/${f}`)), CSS);
+    let pages = [SHELL, CSS, ...CLIENT];
     for (const page of pages) assert.ok(!/fonts\.(googleapis|gstatic)\.com|use\.typekit|fonts\.bunny/.test(page));
 });
 
@@ -283,10 +217,13 @@ test("no page loads fonts from another site", () => {
 // SVG viewport crops them, which is what keeps the bands thick at 32px.
 // Drawn in --mark-deep and --mark-light, so it follows the theme; the favicon
 // carries the same two pairs in its own media query.
-const RAIL = read("./views/includes/rail.ejs");
+const RAIL = read("./client/src/components/Rail.jsx");
+// The paths as the rail draws them, light ones first.
+const RAIL_SVG = [...MARK_LIGHT.map((d) => `<path class="mark_light" d="${d}"`),
+                  ...MARK_DEEP.map((d) => `<path class="mark_deep" d="${d}"`)].join("\n");
 
 test("the rail carries the helix mark and the name reads left to right", () => {
-    assert.match(RAIL, /<svg class="mark" viewBox="0 0 2705 2774"/);
+    assert.match(RAIL, /<svg className="mark" viewBox="0 0 2705 2774"/);
     assert.ok(!RAIL.includes("rail-name"), "the name is drawn in the lockup, not set as text");
     assert.match(RAIL, /aria-label="NA3DB home"/, "the link still carries the name");
     assert.ok(!RAIL.includes("rail-brand"), "the sideways name is gone");
@@ -313,7 +250,7 @@ test("the mark is a right-handed helix, in the rail and the favicon", () => {
     const ends = (svg, cls) =>
         [...svg.matchAll(new RegExp(`<path class="${cls}" d="M (-?[\\d.]+),(-?[\\d.]+) L -?[\\d.]+,-?[\\d.]+ L (-?[\\d.]+),(-?[\\d.]+)`, "g"))]
             .map((m) => [+m[1], +m[2], +m[3], +m[4]]);
-    for (const svg of [RAIL, read("./public/assets/favicon.svg")]) {
+    for (const svg of [RAIL_SVG, read("./public/assets/favicon.svg")]) {
         let front = ends(svg, "mark_deep");
         let back = ends(svg, "mark_light");
         assert.equal(front.length, 3);
@@ -328,12 +265,10 @@ test("the mark is a right-handed helix, in the rail and the favicon", () => {
 });
 
 test("every page shows the mark as its favicon", () => {
-    for (const file of readdirSync(new URL("./views", import.meta.url)).filter((f) => f.endsWith(".ejs"))) {
-        let head = read(`./views/${file}`).split("</head>")[0];
-        assert.match(head, /<link rel="icon" href="\/assets\/favicon\.svg" type="image\/svg\+xml">/, file);
-        assert.match(head, /<link rel="icon" href="\/assets\/favicon\.ico" sizes="32x32">/, file);
-        assert.match(head, /<link rel="apple-touch-icon" href="\/assets\/apple-touch-icon\.png">/, file);
-    }
+    let head = SHELL.split("</head>")[0];
+    assert.match(head, /<link rel="icon" href="\/assets\/favicon\.svg" type="image\/svg\+xml">/);
+    assert.match(head, /<link rel="icon" href="\/assets\/favicon\.ico" sizes="32x32">/);
+    assert.match(head, /<link rel="apple-touch-icon" href="\/assets\/apple-touch-icon\.png">/);
     for (const f of ["favicon.ico", "apple-touch-icon.png"]) {
         assert.ok(readFileSync(new URL(`./public/assets/${f}`, import.meta.url)).length > 200, f);
     }

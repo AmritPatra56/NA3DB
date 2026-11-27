@@ -1,6 +1,7 @@
 // help.test.js - the one "?" help component and the "How to ..." guides:
 // every help text lives in help_texts.js, every "?" is drawn by
-// views/includes/help.ejs, and every guide shares one look. No database needed.
+// client/src/components/HelpNote.jsx, and every guide shares one look. No
+// database needed.
 
 import test from "node:test";
 import assert from "node:assert";
@@ -8,8 +9,9 @@ import { readFileSync, readdirSync } from "node:fs";
 import help from "./help_texts.js";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
-const views = (dir = "views") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
-    .flatMap((f) => f.isDirectory() ? views(`${dir}/${f.name}`) : f.name.endsWith(".ejs") ? [`${dir}/${f.name}`] : []);
+// The React pages' own code: every .js and .jsx under client/src.
+const sources = (dir = "client/src") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
+    .flatMap((f) => f.isDirectory() ? sources(`${dir}/${f.name}`) : /\.jsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []);
 const CSS = read("./public/style.css");
 
 test("every help text is plain, filled in and free of em dashes", () => {
@@ -21,23 +23,22 @@ test("every help text is plain, filled in and free of em dashes", () => {
 });
 
 test("every structure section has its help text, and no text is left unused", () => {
-    let sections = [...read("./detail.js").matchAll(/\{ id: "([\w-]+)", title:/g)].map((m) => m[1]);
+    let sections = [...read("./client/src/components/Structure.jsx").matchAll(/\{ id: "([\w-]+)", title:/g)].map((m) => m[1]);
     assert.equal(sections.length, 12);
-    let used = [...sections, ...views().flatMap((v) => [...read(`./${v}`).matchAll(/help\["([\w-]+)"\]/g)].map((m) => m[1]))];
+    let used = [...sections, ...sources().flatMap((v) => [...read(`./${v}`).matchAll(/help(?:\.data)?\?\.\["([\w-]+)"\]/g)].map((m) => m[1]))];
     assert.deepEqual([...new Set(used)].sort(), Object.keys(help).sort());
 });
 
-test("every \"?\" is drawn by the one shared template", () => {
-    let help_ejs = read("./views/includes/help.ejs");
-    assert.match(help_ejs, /<details class="help">/);
-    assert.match(help_ejs, /throw new Error/, "an unknown key fails loudly, not as an empty bubble");
-    for (const v of views().filter((v) => !v.endsWith("includes/help.ejs"))) {
+test("every \"?\" is drawn by the one shared component", () => {
+    const NOTE = "client/src/components/HelpNote.jsx";
+    assert.match(read(`./${NOTE}`), /<details ref=\{box\} className="help"/);
+    for (const v of sources().filter((v) => v !== NOTE)) {
         let src = read(`./${v}`);
-        assert.doesNotMatch(src, /class="(band_)?help"/, `${v} draws its own "?"`);
+        assert.doesNotMatch(src, /className="(band_)?help"/, `${v} draws its own "?"`);
         assert.doesNotMatch(src, /<summary[^>]*>\?<\/summary>/, `${v} draws its own "?"`);
     }
-    assert.match(read("./views/structure.ejs"), /include\("includes\/help", \{ key: s\.id \}\)/);
-    assert.doesNotMatch(read("./views/structure.ejs"), /const help = \{/, "the texts live in help_texts.js");
+    assert.match(read("./client/src/components/Section.jsx"), /<HelpNote name=\{id\} text=\{help\}/);
+    assert.match(read("./client/src/components/Structure.jsx"), /help=\{help\?\.\[s\.id\]\}/, "the texts come from /api/help");
     assert.doesNotMatch(CSS, /band_help/);
 });
 
@@ -46,22 +47,20 @@ test("the \"?\" is round, ink blue, and closes on Escape", () => {
     assert.match(rule, /border-radius: 50%/);
     assert.match(rule, /color: var\(--accent\)/);
     assert.match(rule, /border: [\d.]+px solid var\(--accent\)/);
-    let page = read("./views/structure.ejs");
-    assert.match(page, /event\.key !== "Escape"\) return;[\s\S]{0,120}\.help\[open\]/);
+    let note = read("./client/src/components/HelpNote.jsx");
+    assert.match(note, /ev\.key !== "Escape"\) return;\s*onClose\(name\);\s*button\.current\.focus\(\);/);
 });
 
 test("every guide shares one look", () => {
-    let guides = [
-        ...views().flatMap((v) => [...read(`./${v}`).matchAll(/<details class="([^"]*)"[^>]*>\s*<summary>(How |Why )/g)]),
-        ...read("./public/sameseq.js").matchAll(/<details class="([^"]*)"[^>]*>\s*<summary>(How |Why )/g),
-    ].map((m) => m[1]);
+    let guides = sources().flatMap((v) => [...read(`./${v}`).matchAll(/<details className="([^"]*)"[^>]*>\s*<summary>(How |Why )/g)])
+        .map((m) => m[1]);
     assert.equal(guides.length, 4, "colours, map, same-sequence picture, three tables");
     for (const cls of guides) assert.match(cls, /^guide\b/, `${cls} is not a guide`);
     assert.doesNotMatch(CSS, /\.(report_why|ss_how) (summary|p|ul)/, "a guide restyles its own summary or body");
 });
 
 test("the colour guide cites DNATCO's live palette, not the old Mol* copy", () => {
-    let page = read("./views/structure.ejs");
+    let page = read("./client/src/components/NtcGuide.jsx");
     assert.match(page, /href="https:\/\/dnatco\.datmos\.org"/);
     assert.doesNotMatch(page, /dnatco\/src\/color\.ts/);
 });

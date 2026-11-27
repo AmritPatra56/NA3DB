@@ -2,7 +2,8 @@ import { test, expect } from "vitest";
 import { number, structures, listJoin, counted } from "../src/format.js";
 import { searchable, suggestable } from "../src/query.js";
 import { errorHeading, failureOf } from "../src/api.js";
-import { nextTile, viewForSection } from "../src/views.js";
+import { nextTile, viewForSection, keepView, askedView } from "../src/views.js";
+import { attachRouter } from "../src/address.js";
 import { noteParts } from "../src/searchNote.js";
 
 test("numbers as the old pages write them", () => {
@@ -36,4 +37,24 @@ test("the search note's lines", () => {
   expect(noteParts({ phrase: '"a b"', total: 3 })).toEqual([{ phrase: '"a b"' }]);
   expect(noteParts({ phrase: '"a b"', total: 0 })).toEqual([]);
   expect(noteParts({ stored_as: ["Smith, J.", "Smith, J.A."] })).toEqual([{ storedAs: "Smith, J., Smith, J.A." }]);
+});
+
+// A router stand-in at one address: what keepView asks it to go to.
+function at(path, search = "", hash = "") {
+  const went = [];
+  attachRouter({ state: { location: { pathname: path, search, hash } }, navigate: (url) => went.push(url) });
+  return went;
+}
+
+test("the open view is kept in ?view=, the first view leaves none; other parameters and the #section stay", () => {
+  let went = at("/structure/1P8K", "?x=1", "#overview");
+  keepView("2d");
+  expect(went).toEqual(["/structure/1P8K?x=1&view=2d#overview"]);
+  went = at("/structure/1P8K", "?view=2d", "#links");
+  keepView("3d");
+  expect(went).toEqual(["/structure/1P8K?view=3d#links"]);
+  went = at("/structure/1P8K", "?view=3d");
+  keepView("1d");
+  expect(went).toEqual(["/structure/1P8K"]);
+  expect(["?view=2d", "?view=4d", ""].map((q) => (at("/structure/1P8K", q), askedView()))).toEqual(["2d", "1d", "1d"]);
 });

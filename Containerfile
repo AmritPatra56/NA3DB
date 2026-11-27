@@ -12,7 +12,7 @@ WORKDIR /build/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci && npm cache clean --force
 COPY client/ ./
-# seqMap.js imports ../../public/cana.js, the one script both sites share.
+# seqMap.js imports ../../public/cana.js, the one script the server and the client share.
 COPY public/cana.js ../public/
 RUN npm run build
 
@@ -27,8 +27,6 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 COPY --from=client /build/client/dist ./client/dist
-# Pages answer with the React build, not the EJS templates (server.js).
-ENV CLIENT_DIR=client/dist
 
 # The image's own unprivileged user: a break-in gets no root inside.
 USER node

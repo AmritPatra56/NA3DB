@@ -9,11 +9,10 @@ import { query, DatabaseUnavailable } from "./db.js";
 import help from "./help_texts.js";
 import { citation_ris, citation_bibtex, citation_text, unpublished, short_name, full_name } from "./cite.js";
 import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
-import { public_registry, columns_answering, match_mode,
-         POLYMER_TYPE_ALIASES, REPORT_TABLES } from "./filters.js";
+import { public_registry, columns_answering, POLYMER_TYPE_ALIASES } from "./filters.js";
 import { detail_rows, molecule_groups, base_pair_section, fasta_of,
-         entry_fasta, base_pair_export, base_pairs_csv, structure_sections, sequence_map, sequence_map_text, nucleic_chain_count, arc_thumbnail, arc_summary,
-         arc_views, ntc_section, PAGE_GROUPS } from "./detail.js";
+         entry_fasta, base_pair_export, base_pairs_csv, sequence_map, sequence_map_text, arc_thumbnail, arc_summary,
+         arc_views, ntc_section } from "./detail.js";
 
 const app = express();
 
@@ -29,7 +28,7 @@ app.use(express.static(path.join(import.meta.dirname, "public")));
 // ------------------------------------------------------------- the 3D viewer
 // The 3D view of a structure page is the NAPAIR browser's Moorhen pane
 // (BASEPAIRING_WEB/napair_browser), built once and served here as static
-// files, framed by views/includes/views.ejs. It is not in git: coot, the
+// files, framed by the structure page's 3D tile. It is not in git: coot, the
 // monomer dictionaries and the curated reference library come to 117 MB. The
 // README says how to put a build in viewer/; VIEWER_DIR names one elsewhere.
 const viewer_dir = process.env.VIEWER_DIR
@@ -71,15 +70,18 @@ if (viewer_installed) {
 }
 
 // ------------------------------------------------------------- the React app
-// CLIENT_DIR names a React build (cd client && npm run build makes client/dist).
-// With one, every page address answers with its index.html and React draws the
-// page from /api; without, the pages render the EJS templates as before.
-const client_dir = process.env.CLIENT_DIR ? path.resolve(process.env.CLIENT_DIR) : null;
+// Every page address answers with the React build's index.html and React draws
+// the page from /api. cd client && npm run build makes client/dist; CLIENT_DIR
+// names a build elsewhere.
+const client_dir = path.resolve(process.env.CLIENT_DIR ?? path.join(import.meta.dirname, "client", "dist"));
 
-if (client_dir) {
-    // Vite names each chunk by its hash, so a chunk never changes under its name.
-    app.use("/app", express.static(path.join(client_dir, "app"), { immutable: true, maxAge: "1y" }));
+// Checked at boot: without a build every page would be a bare 404 from sendFile.
+if (!existsSync(path.join(client_dir, "index.html"))) {
+    throw new Error(`No React build in ${client_dir}: run npm run build in client/, or set CLIENT_DIR`);
 }
+
+// Vite names each chunk by its hash, so a chunk never changes under its name.
+app.use("/app", express.static(path.join(client_dir, "app"), { immutable: true, maxAge: "1y" }));
 
 // Every page is isolated, not just /structure/:id: React moves to a structure
 // in place, so the page first loaded is the one the 3D frame sits in.
@@ -88,21 +90,6 @@ function send_app(res, status = 200) {
     isolate(res);
     res.status(status).set("Cache-Control", "no-cache").sendFile(path.join(client_dir, "index.html"));
 }
-
-// views/ sits outside public/, so the template source is never downloadable.
-app.set("view engine", "ejs");
-app.set("views", path.join(import.meta.dirname, "views"));
-
-// The registry for a page: an object for the templates, text for the <script>
-// tag. app.locals reaches every res.render, so no route passes it along. Both
-// use the stripped copy, so a template cannot print SQL even by mistake, and
-// < becomes \u003c so a value can never close the <script> tag it sits in.
-app.locals.registry = public_registry();
-app.locals.registry_json =
-    JSON.stringify(app.locals.registry).replaceAll("<", "\\u003c");
-
-// Every help text, for the one "?" template (views/includes/help.ejs).
-app.locals.help = help;
 
 // Whether the app can do its job, which means reaching the database. A server
 // that is up but cannot query is not healthy, it only looks it.
@@ -153,7 +140,7 @@ app.get("/api/help", (req, res) => {
 });
 
 // How many entries each pill finds, keyed by filter then value: the numbers
-// search.ejs prints beside the pills, for the React panel to print too.
+// the search panel prints beside the pills.
 app.get("/api/pill_counts", async (req, res) => {
     res.json(await pill_counts());
 });
@@ -169,10 +156,7 @@ app.get("/", async (req, res) => {
         res.redirect(301, "/search?" + query);
         return;
     }
-    if (client_dir) return send_app(res);
-
-    let [stats, browse] = await Promise.all([database_stats(), browse_counts()]);
-    res.render("landing", { page: "landing", stats, browse });
+    send_app(res);
 });
 
 // The footer's pages, linked before they are written. A 200 that says so,
@@ -180,11 +164,7 @@ app.get("/", async (req, res) => {
 const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact" };
 
 for (const [path, heading] of Object.entries(UNWRITTEN)) {
-    app.get("/" + path, (req, res) => {
-        if (client_dir) return send_app(res);
-        res.render("error", { page: "none", heading,
-                              message: "This page is being written." });
-    });
+    app.get("/" + path, (req, res) => send_app(res));
 }
 
 // The search page: the filter panel, the results and the sort control.
@@ -212,21 +192,7 @@ app.get("/search", async (req, res) => {
         res.redirect(301, "/search?" + rewritten);
         return;
     }
-    if (client_dir) return send_app(res);
-
-    // A pill the URL selects is drawn even at 0, or the page script would
-    // drop it and silently widen the search.
-    let selected = Object.values(req.query).flatMap((v) => String(v).split(","));
-
-    res.render("search", {
-        page: "search",
-        counts: await pill_counts(),
-        selected,
-        panel_open: panel_open(req.query),
-        // "arcs" was the Grid's name while its tiles drew arcs; old links keep working.
-        view: req.query.view === "arcs" ? "grid" : ["grid", "lines"].includes(req.query.view) ? req.query.view : "cards",
-        match: match_mode(req.query.match)
-    });
+    send_app(res);
 });
 
 // The parameters that say how to show results rather than which ones. Both
@@ -238,14 +204,7 @@ function filters_used(query) {
     return Object.keys(query).filter((k) => !DISPLAY.includes(k));
 }
 
-// Open unless the reader folded it.
-function panel_open(query) {
-    return query.panel !== "closed";
-}
-
-
-
-// The report page. Built from views/report.ejs, not served as a file.
+// The report page.
 //
 // A report is about a search, so arriving with no search at all is a wrong
 // turn rather than a request for everything. Those go to /search, where there
@@ -257,22 +216,8 @@ app.get("/report", (req, res) => {
         res.redirect("/search");
         return;
     }
-    if (client_dir) return send_app(res);
-
-    res.render("report", {
-        page: "report",
-        fields_open: req.query.fields !== "closed",
-        table: asked_table(req.query.table)
-    });
+    send_app(res);
 });
-
-// The report table ?table= names, the first when it names none.
-export const asked_table = (asked) =>
-    (REPORT_TABLES.find((t) => t.key === asked) ?? REPORT_TABLES[0]).key;
-
-// The Views tabs; ?view= opens one, so a copied link shows the same view.
-export const VIEWS = ["1d", "2d", "3d"];
-export const asked_view = (asked) => VIEWS.includes(asked) ? asked : VIEWS[0];
 
 // One structure's page. The id is in the path so the address can be cited.
 // An unknown id is a real 404, not a 200 that says "not found".
@@ -280,54 +225,7 @@ app.get("/structure/:id", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
     // React reads the entry itself; the lookup is only for the status.
-    if (client_dir) return send_app(res, entry ? 200 : 404);
-    if (!entry) {
-        res.status(404).render("error", {
-            page: "none",
-            heading: "Page not found",
-            message: `There is nothing at ${req.originalUrl}.`
-        });
-        return;
-    }
-
-    let [contents, residues, pairs, same_entries, ntc_classes, assemblies] = await Promise.all([
-        entry_contents(entry.pdb_id), entry_residues(entry.pdb_id), entry_base_pairs(entry.pdb_id),
-        same_sequence_count(entry.pdb_id), entry_ntc_classes(entry.pdb_id), entry_assemblies(entry.pdb_id)]);
-    // Assembly 1 unless ?assembly= names another, or "au" for the chains as deposited.
-    let arc_view = arc_views(contents.entities, residues, pairs, assemblies, String(req.query.assembly ?? ""));
-    let citation = await entry_citation(entry.pdb_id);
-    let page = {
-        same_entries,
-        ntc_classes,
-        entry,
-        rows: cited_rows(detail_rows(entry), citation),
-        citation,
-        molecules: molecule_groups(contents, residues),
-        base_pairs: base_pair_section(pairs),
-        arcs: arc_view.arcs,
-        arc_view,
-        nucleic_chains: nucleic_chain_count(contents.entities)
-    };
-
-    // Isolated for the 3D view's sake, whether or not that view is the one
-    // open: the headers are the document's, and a frame cannot be isolated
-    // after the fact.
-    isolate(res);
-
-    // The rail on this page has no script to rewrite its links, so it is given
-    // the one filter that makes sense from here: this structure.
-    res.render("structure", {
-        viewer: viewer_installed,
-        ...page,
-        page: "search",
-        sections: structure_sections(page),
-        cite_text: page.citation && citation_text(entry.pdb_id, page.citation),
-        cite_unpublished: page.citation && unpublished(page.citation),
-        full_name,
-        PAGE_GROUPS,
-        rail_query: "?entry_id=" + encodeURIComponent(entry.pdb_id),
-        view: asked_view(req.query.view)
-    });
+    send_app(res, entry ? 200 : 404);
 });
 
 // Published and Authors at the top say what the Citation section says: from
@@ -485,19 +383,18 @@ app.get("/api/entries/:id", async (req, res) => {
     // The raw fields and the display rows, never one instead of the other:
     // entry.resolution stays 2.2, rows has it as "2.20 Å".
     // Rows as the structure page has them: Published and Authors from the
-    // checked reference (cited_rows), so a client drawing the page from JSON
-    // shows what the EJS page shows.
+    // checked reference (cited_rows), so the page shows the checked reference.
     let [contents, citation, same_entries] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id),
                                                                  same_sequence_count(entry.pdb_id)]);
     res.json({ ...entry, rows: cited_rows(detail_rows(entry), citation),
                // How many other entries share a chain's sequence: the page's Same sequence count.
                same_entries,
                entities: contents.entities, modified_nucleotides: contents.modified, citation,
-               // What structure.ejs's Citation section works out from it.
+               // What the Citation section works out from it.
                cite_text: citation && citation_text(entry.pdb_id, citation),
                cite_unpublished: citation && unpublished(citation),
                cite_authors: citation?.authors.map(full_name).join(", "),
-               // Whether /viewer/ is served, so a client page can offer 3D as structure.ejs does.
+               // Whether /viewer/ is served, so the page offers the 3D view only then.
                viewer: viewer_installed });
 });
 
@@ -739,19 +636,12 @@ app.use("/api", (req, res) => {
 
 // Any page that matched nothing. Below the /api catch-all so API paths still
 // get JSON, above the error handler so Express does not mistake it for one.
-app.use((req, res) => {
-    if (client_dir) return send_app(res, 404);
-    res.status(404).render("error", {
-        page: "none",
-        heading: "Page not found",
-        message: `There is nothing at ${req.originalUrl}.`
-    });
-});
+app.use((req, res) => send_app(res, 404));
 
 // Anything that threw above lands here; four arguments is what marks it as an
 // error handler. 503 when the database is away, 500 when our SQL is wrong.
 app.use((err, req, res, next) => {
-    // Logged first, so a failure rendering the error page keeps the cause.
+    // Logged first, so a failure sending the page keeps the cause.
     console.error(err);
 
     if (res.headersSent) return next(err);
@@ -767,11 +657,8 @@ app.use((err, req, res, next) => {
         return;
     }
 
-    res.status(status).render("error", {
-        page: "none",
-        heading: away ? "Temporarily unavailable" : "Something went wrong",
-        message: message
-    });
+    // A page keeps the status; React then asks /api and shows the same message.
+    send_app(res, status);
 });
 
 export default app;

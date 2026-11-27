@@ -6,7 +6,7 @@
 import test from "node:test";
 import assert from "node:assert";
 import { sequence_map, sequence_map_text, MAP_STRANDS, base_pair_section } from "./detail.js";
-import { column_key } from "./public/views.js";
+import { columnKey as column_key } from "./client/src/lbn.js";
 
 const rna = (labels) => [{ id: "1", kind: "RNA", chains: labels.map((label) => ({ label, auth: label })) },
                          { id: "2", kind: "Protein", chains: [{ label: "P", auth: "P" }] }];

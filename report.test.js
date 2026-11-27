@@ -7,7 +7,7 @@ import { once } from "node:events";
 import { COLUMNS, REPORT_TABLES, REPORT_KEY, report_fields, public_registry, LIGAND_COLUMNS } from "./filters.js";
 import { export_entries, export_molecules, export_ligands, export_dot_brackets } from "./search.js";
 import { dot_bracket_record } from "./detail.js";
-import app, { asked_table } from "./server.js";
+import app from "./server.js";
 import { close, query, transaction } from "./db.js";
 
 let base;
@@ -450,34 +450,6 @@ test("/api/export/dbn follows the search and turns away a bad one", async () => 
 
 // --- the page -----------------------------------------------------------
 
-test("asked_table takes a known table and falls back to Structures", () => {
-    assert.equal(asked_table("ligands"), "ligands");
-    for (const bad of [undefined, "", "LIGANDS", "nope", ["ligands"]]) {
-        assert.equal(asked_table(bad), "structures", String(bad));
-    }
-});
-
-test("/report opens on the table ?table= names, Structures otherwise", async () => {
-    let selected = (html) => html.match(/data-table="(\w+)"\s+aria-controls="report_fields"\s+aria-selected="true"/)[1];
-
-    assert.equal(selected(await (await fetch(base + "/report?q=tRNA")).text()), "structures");
-    assert.equal(selected(await (await fetch(base + "/report?q=tRNA&table=molecules")).text()), "molecules");
-    assert.equal(selected(await (await fetch(base + "/report?q=tRNA&table=zzz")).text()), "structures");
-
-    let html = await (await fetch(base + "/report?q=tRNA")).text();
-    assert.equal(html.match(/role="tab"/g).length, 3);
-    assert.match(html, /Download CSV/);
-    assert.match(html, /Download all \(ZIP\)/);
-
-    // The reason for three tables is one closed link, outside the tab list.
-    let why = html.match(/<details class="guide report_why">([\s\S]*?)<\/details>/);
-    assert.ok(why, "the Why three tables note is on the page");
-    assert.match(why[1], /<summary>Why three tables\?<\/summary>/);
-    assert.match(why[1], /Entry ID links them/);
-    assert.doesNotMatch(why[0], /\sopen[\s>]/);
-    assert.doesNotMatch(html, /structure level|entity level|—/i);
-});
-
 test("?table= alone is not a search and does not open the report", async () => {
     let res = await fetch(base + "/report?table=ligands", { redirect: "manual" });
 
@@ -485,22 +457,3 @@ test("?table= alone is not a search and does not open the report", async () => {
 });
 
 
-// --- the page's scripts -------------------------------------------------
-// The report page loads plain scripts that share one global scope, so a name
-// declared twice stops the later script dead: report.js once declared KEY,
-// which theme.js already had, and the theme switch quit on this page.
-test("the report page's scripts declare no top-level name twice", async () => {
-    let { readFileSync } = await import("node:fs");
-    let html = await (await fetch(base + "/report?q=tRNA")).text();
-    let scripts = [...html.matchAll(/<script src="\/([\w.]+\.js)"/g)].map((m) => m[1]);
-    let seen = new Map();
-
-    assert.ok(scripts.includes("report.js") && scripts.includes("theme.js"));
-    for (const file of scripts) {
-        let text = readFileSync(`public/${file}`, "utf8");
-        for (const [, name] of text.matchAll(/^(?:let|const|var|function|async function|class)\s+(\w+)/gm)) {
-            assert.ok(!seen.has(name), `${name} is declared in ${seen.get(name)} and ${file}`);
-            seen.set(name, file);
-        }
-    }
-});

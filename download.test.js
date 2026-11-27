@@ -7,38 +7,39 @@ import assert from "node:assert";
 import { readFileSync, readdirSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
-const views = (dir = "views") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
-    .flatMap((f) => f.isDirectory() ? views(`${dir}/${f.name}`) : f.name.endsWith(".ejs") ? [`${dir}/${f.name}`] : []);
-const scripts = readdirSync(new URL("public", import.meta.url)).filter((f) => f.endsWith(".js")).map((f) => `public/${f}`);
-const SOURCES = [...views(), ...scripts].map((path) => [path, read(`./${path}`)]);
+// The React pages' own code: every .js and .jsx under client/src.
+const sources = (dir = "client/src") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
+    .flatMap((f) => f.isDirectory() ? sources(`${dir}/${f.name}`) : /\.jsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []);
+const SOURCES = sources().map((path) => [path, read(`./${path}`)]);
 const CSS = read("./public/style.css");
 const ICON = "M12 4v11M7 10l5 5 5-5M5 20h14";
 
 test("every link that saves a file is the download button, or sits in its menu", () => {
     let found = 0;
     for (const [path, src] of SOURCES) {
-        // A menu of files counts as one button when its summary is one.
-        let menus = src.replace(/<details(?:<%(?:(?!%>)[\s\S])*%>|[^<>])*>\s*<summary class="download[^"]*"[\s\S]*?<\/details>/g, "");
-        // An EJS tag can sit inside an attribute, and its %> is not the end of the <a>.
-        for (const a of menus.match(/<a\b(?:<%(?:(?!%>)[\s\S])*%>|\$\{[^}]*\}|[^<>$])*>/g) ?? []) {
-            if (!/\sdownload[\s>]/.test(a)) continue;
+        // A menu of files counts as one button: DownloadMenu's summary is one.
+        let menus = src.replace(/<DownloadMenu\b[\s\S]*?<\/DownloadMenu>/g, "");
+        // A JSX value in braces (a template's ${} inside too) can hold a > that is
+        // not the end of the <a>.
+        for (const a of menus.match(/<a\b(?:\{(?:[^{}]|\{[^{}]*\})*\}|[^<>{}])*>/g) ?? []) {
+            if (!/\sdownload[\s>=]/.test(a)) continue;
             found++;
-            assert.match(a, /class="(?:[^"]*\s)?download(?:\s[^"]*)?"/, `${path}: ${a}`);
+            assert.match(a, /className="(?:[^"]*\s)?download(?:\s[^"]*)?"/, `${path}: ${a}`);
         }
     }
     assert.ok(found >= 6, `only ${found} download links found`);
+    assert.match(read("./client/src/components/DownloadMenu.jsx"), /<summary className="download download_small"/);
 });
 
 test("the report's two downloads are the button too", () => {
-    let page = read("./views/report.ejs");
+    let page = read("./client/src/components/ReportPage.jsx");
     for (const id of ["export_button", "zip_button"]) {
-        assert.match(page, new RegExp(`<button type="button" class="download" id="${id}">`));
+        assert.match(page, new RegExp(`<button type="button" className="download" id="${id}"`));
     }
 });
 
 test("the button is drawn once, in CSS, not copied into each place", () => {
     for (const [path, src] of SOURCES) assert.ok(!src.includes(ICON), `${path} draws its own arrow`);
-    assert.doesNotMatch(read("./views/structure.ejs"), /const dl = /);
     for (const old of ["pair_csv", "sequence_fasta", "seqmap_file", "a.entry_fasta", "entry_fasta > summary"]) {
         assert.ok(!CSS.includes(old), `style.css still styles ${old} on its own`);
     }
@@ -51,6 +52,6 @@ test("the button is drawn once, in CSS, not copied into each place", () => {
 });
 
 test("the Links section offers its files as buttons", () => {
-    let links = read("./views/structure.ejs").match(/s\.id === "links"[\s\S]*?<\/ul>/)[0];
-    assert.equal((links.match(/class="download"/g) ?? []).length, 2, "FASTA and base pairs CSV");
+    let links = read("./client/src/components/Links.jsx");
+    assert.equal((links.match(/className="download"/g) ?? []).length, 2, "FASTA and base pairs CSV");
 });
