@@ -25,7 +25,9 @@ function ArcViewer({ pdbId, view, onCollapse }) {
   const size = useSize(svgRef, d);
   const v = useArcView(d, size);
 
+  // show(), as expand.js does: the browser then focuses the first control inside.
   useEffect(() => {
+    box.current.show();
     box.current.scrollIntoView({ block: "start", behavior: "smooth" });
   }, []);
 
@@ -49,7 +51,7 @@ function ArcViewer({ pdbId, view, onCollapse }) {
   const note = arcs.error ? "Could not load the pairs." : !d ? "Loading…" : !drawn ? "No base pairs annotated for this entry." : null;
 
   return (
-    <dialog ref={box} id="arc_viewer" className="arc_viewer in_place" aria-label="Arc picture, expanded" open>
+    <dialog ref={box} id="arc_viewer" className="arc_viewer in_place" aria-label="Arc picture, expanded">
       <div className="av_box">
         <div className="av_top">
           <strong className="av_id">{pdbId}</strong>
