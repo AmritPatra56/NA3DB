@@ -75,9 +75,9 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
 
     # Browsers remember to use https for na3db.org only, never plain http.
-    # Not includeSubDomains: t.na3db.org is someone else's site. Start at one
-    # day; once a day passes with nothing wrong, raise it to 31536000 (a year).
-    add_header Strict-Transport-Security "max-age=86400" always;
+    # Not includeSubDomains: t.na3db.org is someone else's site. One year,
+    # after a trial at one day ran without problems.
+    add_header Strict-Transport-Security "max-age=31536000" always;
 
     listen 443 ssl; # managed by Certbot
     ssl_certificate /etc/letsencrypt/live/na3db.org/fullchain.pem; # managed by Certbot
