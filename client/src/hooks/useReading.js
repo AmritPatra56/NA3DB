@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { viewForSection } from "../views.js";
-import { sectionBeingRead, hasScrolled } from "../reading.js";
-import { replaceAddress } from "../address.js";
+import { sectionBeingRead, hasScrolled, scrollToSection } from "../reading.js";
+import { replaceAddress, here } from "../address.js";
 
 export function useReading() {
   const [reading, setReading] = useState(null);
@@ -23,6 +23,7 @@ export function useReading() {
     const soon = () => { if (!frame) frame = requestAnimationFrame(follow); };
     document.addEventListener("scroll", soon, { capture: true, passive: true });
     addEventListener("resize", follow);
+    scrollToSection(here().hash);
     soon();
     return () => {
       document.removeEventListener("scroll", soon, { capture: true });

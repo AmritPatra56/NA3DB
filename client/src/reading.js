@@ -18,6 +18,13 @@ export function sectionBeingRead() {
   return here.id;
 }
 
+// A link to a section (#base-pairs) opens there once the page has drawn.
+export function scrollToSection(hash) {
+  const target = hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+  target?.scrollIntoView({ block: "start" });
+  return target !== null;
+}
+
 export const hasScrolled = () => scrollY + (document.querySelector(".results_area_body")?.scrollTop ?? 0) > 0;
 
 export const SIDE = "(min-width: 1360px)";
