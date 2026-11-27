@@ -1,6 +1,5 @@
 import { useTheme } from "../hooks/useTheme.js";
 
-// The theme button in the rail; useTheme keeps the choice.
 function ThemeButton() {
   const { choice, label, onNext } = useTheme();
   return (

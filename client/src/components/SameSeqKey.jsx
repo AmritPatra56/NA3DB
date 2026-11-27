@@ -1,8 +1,6 @@
 import NtcClassKey from "./NtcClassKey.jsx";
 import { rowColour } from "../seqMap.js";
 
-// The key under the comparison (sameseq.js draw_chart): the NtC classes
-// either chain's steps use, then the pair rows' colours and the two tints.
 function SameSeqKey({ d }) {
   return (
     <div className="seqmap_key ss_key">

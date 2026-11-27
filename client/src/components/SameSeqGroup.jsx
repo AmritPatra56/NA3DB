@@ -6,24 +6,14 @@ import SameSeqDialog from "./SameSeqDialog.jsx";
 import { useCompare } from "../hooks/useCompare.js";
 import { ROWS_SHOWN, leadText, refName, sortedEntries } from "../sameSeq.js";
 
-// One group of the Same sequence section (sameseq.js draw_group): the lead
-// line, the table with the first ten entries, Show all for the rest, and the
-// comparison of any two chains, in the group or expanded right under it.
-//
-// SameSeqGroup     (owns the comparison: useCompare)
-// ├─ SameSeqEntry   (a row's Compare: onRow)
-// └─ SameSeqCompare (in SameSeqDialog when expanded)
-//    ├─ SameSeqBar
-//    └─ SameSeqPanel ─ SameSeqChart ─ SameSeqInfo, SameSeqKey
 function SameSeqGroup({ group, many, expanded, onExpand, onCollapse }) {
   const [all, setAll] = useState(false);
   const cmp = useCompare(group);
   const box = useRef(null);
   const lead = leadText(group, many);
   const entries = sortedEntries(group);
-  // Expanded only once a comparison is open (a reload keeps the mark, not the pair).
   const full = expanded && cmp.open;
-  // flushSync: the panel shows "Comparing…" before the scroll, as sameseq.js run does.
+  // flushSync: show "Comparing…" before scrolling.
   const onRow = (a, b) => {
     flushSync(() => cmp.onRow(a, b));
     box.current.scrollIntoView({ behavior: "smooth", block: "start" });

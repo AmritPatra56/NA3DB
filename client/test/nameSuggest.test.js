@@ -1,7 +1,6 @@
 import { test, expect } from "vitest";
 import { namesFor, stepped, drawn, closed, CLOSED } from "../src/nameSuggest.js";
 
-// The panel's name lists (app.js draw/rank): best match first, server order within a rank.
 const all = [
   { code: "10515", name: "Human adenovirus 2" },
   { code: "9606", name: "Homo sapiens, human" },
@@ -31,7 +30,6 @@ test("an empty box shows the first eight, and never more than eight", () => {
 
 test("the arrows go round and round; typing starts them again", () => {
   expect(stepped(CLOSED, "x", "ArrowDown", 3).active).toBe(0);
-  // Up from the box is one short of the end, as app.js's (active + step + n) % n gives.
   expect(stepped(CLOSED, "x", "ArrowUp", 3).active).toBe(1);
   expect(stepped({ active: 0 }, "x", "ArrowUp", 3).active).toBe(2);
   expect(stepped({ active: 2 }, "x", "ArrowDown", 3).active).toBe(0);

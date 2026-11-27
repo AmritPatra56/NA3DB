@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-// A download button that opens a short list of files (the FASTA menu, Save
-// reference). It shuts once a file is picked or a click lands elsewhere.
 function DownloadMenu({ className = "", label, title, children }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

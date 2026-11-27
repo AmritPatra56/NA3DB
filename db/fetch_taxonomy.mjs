@@ -1,23 +1,11 @@
-// fetch_taxonomy.mjs - the other names of every organism the database holds.
-//
-//   node --env-file=.env db/fetch_taxonomy.mjs
-//
-// Writes taxonomy.json: for each NCBI taxonomy id in a source or host column,
-// its scientific name, its common names and synonyms, and its lineage. This
-// is what lets "mouse" find Mus musculus, and "Escherichia coli" find a host
-// recorded as the strain "Escherichiacoli 'BL21-Gold(DE3)pLysS AG'".
-// RCSB and PDBe index the same NCBI names for the same reason.
-//
-// Reads the database, never writes it. Run again after a load brings new taxa.
-// Source: NCBI E-utilities efetch, db=taxonomy
-// https://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.EFetch
+// Writes taxonomy.json from NCBI Taxonomy for every taxon in the database. Run: node --env-file=.env db/fetch_taxonomy.mjs
 
 import { writeFileSync } from "node:fs";
 import { query, close } from "../db.js";
 
 const EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi";
 const BATCH = 200;
-// Without an API key NCBI allows three requests a second.
+// NCBI allows three requests a second without an API key.
 const PAUSE_MS = 400;
 const OUT = new URL("../taxonomy.json", import.meta.url);
 
@@ -34,8 +22,7 @@ const decode = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&qu
 const all = (xml, tag) => [...xml.matchAll(new RegExp(`<${tag}>([^<]*)</${tag}>`, "g"))].map((m) => decode(m[1]));
 const one = (xml, tag) => all(xml, tag)[0];
 
-// One <Taxon> record. Its lineage is cut out first, because the lineage holds
-// <Taxon> records of its own whose names must not be read as this one's.
+// Lineage cut out first: it holds <Taxon> records of its own.
 function parse(record) {
     let lineage_xml = record.match(/<LineageEx>([\s\S]*?)<\/LineageEx>/)?.[1] ?? "";
     let own = record.replace(/<LineageEx>[\s\S]*?<\/LineageEx>/, "");
@@ -58,7 +45,6 @@ async function fetch_batch(ids) {
     let res = await fetch(url);
     if (!res.ok) throw new Error(`NCBI answered ${res.status} for ${ids.length} ids`);
     let xml = await res.text();
-    // Top-level records only: lineages are cut out before splitting.
     let flat = xml.replace(/<LineageEx>[\s\S]*?<\/LineageEx>/g, (m) => m.replaceAll("Taxon>", "LTaxon>"));
     return [...flat.matchAll(/<Taxon>([\s\S]*?)<\/Taxon>/g)]
         .map((m) => parse(m[1].replaceAll("LTaxon>", "Taxon>")));
@@ -71,8 +57,7 @@ let taxa = {};
 for (let i = 0; i < ids.length; i += BATCH) {
     let batch = ids.slice(i, i + BATCH);
     for (const t of await fetch_batch(batch)) {
-        // A merged id comes back under its new number; file it under the
-        // number our data uses, which is the one a query will look up.
+        // A merged id comes back under its new number; filed under ours.
         let ours = [t.taxid, ...t.aka].filter((id) => batch.includes(id));
         let { aka, ...kept } = t;
         for (const id of ours) taxa[id] = { ...kept, taxid: id, current: t.taxid };

@@ -3,7 +3,6 @@ import { test, expect, vi, afterEach } from "vitest";
 import { render, cleanup, fireEvent, act } from "@testing-library/react";
 import ThemeButton from "../src/components/ThemeButton.jsx";
 
-// The rail's theme button (theme.test.js before 8.17, against public/theme.js).
 const KEY = "na3db-theme";
 const root = document.documentElement;
 

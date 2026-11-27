@@ -1,11 +1,8 @@
-// zip.test.js - the browser's ZIP writer (client/src/zip.js), read back with
-// Node's own zlib, so a file it makes is one any unzip tool opens.
 import test from "node:test";
 import assert from "node:assert";
 import zlib from "node:zlib";
 import { makeZip } from "./client/src/zip.js";
 
-// Every file in a zip, by the central directory, as { name, method, text }.
 function unzip(buffer) {
     let end = buffer.lastIndexOf(Buffer.from([0x50, 0x4B, 0x05, 0x06]));
     let count = buffer.readUInt16LE(end + 10);

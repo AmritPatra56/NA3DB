@@ -1,7 +1,6 @@
 import { press } from "../press.js";
 import { number } from "../format.js";
 
-// on: whether this option is ticked. Landing keeps the ticks; the option only asks to flip.
 function BrowseOption({ option, on, onToggle }) {
   return (
     <li>

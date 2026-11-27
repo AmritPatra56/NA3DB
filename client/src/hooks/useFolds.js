@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 
-// Which sections are folded (structure.ejs fold). A click on a #link whose
-// target sits in a folded section opens it first, or the link would land on
-// nothing. flushSync: open it before the browser jumps, not after.
+// flushSync: open the section before the browser jumps to the #link.
 export function useFolds() {
   const [folded, setFolded] = useState(() => new Set());
 

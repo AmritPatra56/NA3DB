@@ -1,8 +1,5 @@
 import CiteSave from "./CiteSave.jsx";
 
-// One label and value per row, as the rows arrive from /api/entries/:id.
-// The server already leaves out empty rows, so 1OLN (NMR) has no Resolution.
-// cited: the entry has a citation, saved from beside Published.
 function StructureFacts({ rows, pdbId, cited }) {
   return (
     <>

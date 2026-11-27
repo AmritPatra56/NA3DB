@@ -1,17 +1,4 @@
-/* Colours. Every colour that differs between the themes is a token here,
-   light first, dark after it. Dark is a cool blue-grey (#11161d ground,
-   #18202a panels, #e3e8ef text).
-
-   Data colours keep their meaning in both themes: the base-pair families and
-   the NtC classes stay the same hue, only lifted where a dark ground would
-   swallow them (OPN black, NAN white, the modified-nucleotide ink).
-
-   Auto follows the device (prefers-color-scheme); a visitor's own choice sets
-   data-theme on <html> (views/includes/theme.ejs). Both dark blocks must stay
-   identical; theme.test.js checks it. Screen only, so printing stays light.
-
-   Calm lab (Round 1): one ink-blue interface colour (--accent, also --focus),
-   cool neutrals; every bright colour left on a page is data. */
+/* Colours. Both dark blocks must stay identical; theme.test.js checks it. Screen only, so printing stays light. */
 :root {
     color-scheme: light;
     --bg-primary: #f5f6f8;
@@ -70,9 +57,7 @@
     --ntc-edge: #858a93;
     --swatch-edge: rgba(0, 0, 0, 0.25);
 
-    /* The logo's two strands. Deep on a light page; both step up on a dark
-       one, or the deep strand sits at 1.1:1 against the card and half the
-       mark disappears. */
+    /* Both strands step up on dark, or the deep one sits at 1.1:1 against the card. */
     --mark-deep: #0f2a47;
     --mark-light: #3f7fc8;
 
@@ -217,10 +202,7 @@
     }
 }
 
-
-
-/* IBM Plex Sans and Mono, served from /assets/fonts (SIL Open Font License,
-   license.txt there). Nothing is fetched from a font host. */
+/* IBM Plex Sans and Mono, self-hosted (SIL Open Font License, license.txt there). */
 @font-face {
     font-family: "IBM Plex Sans";
     font-style: normal;
@@ -283,27 +265,18 @@ body {
     color: var(--text);
 }
 
-
 .interface {
     display: flex;
-    /* The footer is fixed below it on every page, so the pages end above it. */
     height: calc(100vh - var(--footer-h));
     width: 100%;
 
-    /* How tall the bar across the top of the page is. The rail's logo cell is
-       the same height, so the first line across the page is one line and the
-       rail's dividers then sit on the same rhythm as the rows beside them.
-       The search pages put .top_search up there, which is taller than the
-       plain header, so it is named once here and used by both. */
+    /* The rail's logo cell matches this height. */
     --topbar-h: 60px;
 
-    /* How tall a cell of the rail is. The filter panel's footer is the same
-       height, so the last line across the page is one line too. */
     --railcell-h: 60px;
 }
 
 .interface:has(.top_search) { --topbar-h: 78px; }
-
 
 .query_panel {
     width: 450px;
@@ -325,11 +298,7 @@ body {
     flex-direction: column;
 }
 
-
 /* -----------------------headers------------------------------- */
-
-
-
 
 .query_panel_header {
     height: 60px;
@@ -359,26 +328,17 @@ body {
     font-weight: 600;
 }
 
-
 /* -----------------------bodies------------------------------- */
-
-
-
 
 .query_panel_body,
 .results_area_body {
     flex-grow: 1;
     overflow-y: auto;
 
-    /* The cards size themselves against this box, not the window. A media
-       query cannot see the filter panel, so with it open at 1366px six cards
-       would be squeezed into 856px. A container query measures what is
-       actually available. */
+    /* A container query: a media query cannot see the filter panel. */
     container-type: inline-size;
     container-name: results;
 }
-
-
 
 /* <---------------------------rail-----------------------------> */
 
@@ -391,7 +351,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 
 .rail-logo,
 .rail-item {
@@ -416,28 +375,20 @@ body {
     background-color: var(--border);
 }
 
-/* The mark over the name. The mark is drawn inline so it takes the theme:
-   an accent tile with the lines in the accent's own text colour. */
 .rail-logo {
     height: var(--topbar-h);
     flex-direction: column;
     gap: 4px;
 }
 
-/* The lockup is as wide as it is tall, and the wordmark takes the right
-   half of it, so it is given the rail's whole width less its padding. */
 .rail-logo svg {
     display: block;
     width: 48px;
     height: auto;
 }
 
-/* The mark is a square window onto a longer helix, so the ribbons run out of
-   the viewBox on every side and the SVG viewport does the cropping. */
 .mark_deep { fill: var(--mark-deep); }
 .mark_light { fill: var(--mark-light); }
-/* The letters are not a strand: their own class, so the wordmark can be
-   recoloured without touching the ribbons. */
 .mark_word { fill: var(--mark-deep); }
 
 .rail-item img {
@@ -447,8 +398,6 @@ body {
     filter: var(--icon-filter);
 }
 
-/* The theme button: at the foot of the rail, above the name. Shows the
-   current choice; a click moves to the next. */
 .rail-theme {
     width: 100%;
     margin-top: auto;
@@ -470,7 +419,6 @@ body {
 .rail-item img.icon-narrow {
     width: 20px;
 }
-
 
 /* <-------------------categories------------------> */
 
@@ -563,20 +511,11 @@ body {
     border-color: var(--focus);
 }
 
-
 /* <---------------pill buttons-------------> */
-
 
 .pill_group {
     margin-bottom: 16px;
 }
-
-/* .group_label {
-    font-size: 12px;
-    font-weight: 500;
-    margin-bottom: 4px;
-    padding-left: 4px;
-} */
 
 .pill_field {
     display: flex;
@@ -614,12 +553,8 @@ body {
 
 .pill[hidden],
 .revealed_field[hidden] { display: none; }
-/* A resolution band picked on the landing page: there while on, so it can be
-   turned off here too, and gone once off. */
 .pill_band:not(.selected) { display: none; }
 
-/* "9 more" at the end of a long pill group: the shape of a pill, drawn dashed
-   so it reads as a way to more choices rather than one of them. */
 .pill_more {
     display: inline-flex;
     align-items: center;
@@ -637,14 +572,11 @@ body {
 .pill_more:hover { border-style: solid; }
 .pill_more:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* The resolution range under the method pills: tied to them by a rule on the
-   left, so it reads as a detail of the method just picked. */
 .revealed_field {
     margin: -6px 0 16px 6px;
     padding: 10px 0 2px 12px;
     border-left: 2px solid var(--ok-line);
 }
-
 
 /* <------------------range row-------------> */
 
@@ -688,13 +620,8 @@ input::placeholder {
     color: var(--text-dim);
 }
 
-
 /* <--------------search footer-----------------------------> */
 
-
-/* The height of a rail cell, so its rule and the rail's last one are the same
-   line across the page; 24px at the sides, the same as .category_body above
-   it, so the button's edges line up with the fields'. */
 .query_panel_footer {
     flex-shrink: 0;
     height: var(--railcell-h);
@@ -730,12 +657,7 @@ input::placeholder {
     cursor: not-allowed;
 }
 
-
-/* The one open/close arrow: a chevron in ink blue, 14px, pointing right when
-   shut and down when open. A button carries it as <i class="arrow">, turned
-   by the button's aria-expanded; every fold-out (<details>) gets it before
-   its summary on its own, except the "?" and the download menus. A panel
-   that slides sideways uses .arrow_side: right to open, left to close. */
+/* The one open/close arrow, turned by aria-expanded. .arrow_side for sideways panels. */
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
 
@@ -763,9 +685,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .arrow, details > summary::before { transition: none; }
 }
 
-/* The one download button: every link or button that saves a file wears
-   .download, the arrow included, so a file is spotted the same way on every
-   page. .download_small is the size for section bands and tool rows. */
 .download {
     display: inline-flex;
     align-items: center;
@@ -807,8 +726,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .download_small { padding: 4px 9px; font-size: 12px; gap: 5px; }
 .download_small::before { width: 13px; height: 13px; }
 
-/* The same button, drawn in outline: for a way on that sits beside the one
-   the page is really asking for, not in competition with it. */
 .download_quiet {
     background: none;
     border-color: var(--border-dark);
@@ -824,7 +741,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 @media (prefers-reduced-motion: reduce) {
     .download { transition: none; }
 }
-
 
 /* <---------------report page-------------> */
 
@@ -862,16 +778,12 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     cursor: pointer;
 }
 
-/* The table tabs: one row of equal buttons under the heading. The open one
-   is filled, as the result view switch is. */
 .report_tabs {
     display: flex;
     gap: 4px;
     padding: 12px 24px 4px;
 }
 
-/* Shut by default: regulars never see more than the one link. The look is
-   the shared .guide; this only places it under the tabs. */
 .report_why {
     padding: 0 24px 10px;
     border-bottom: 1px solid var(--border);
@@ -919,7 +831,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--text-dim);
 }
 
-
 /* <---------------detail panel-------------> */
 
 .detail_body {
@@ -955,12 +866,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--accent);
 }
 
-/* Only fires when there are two links, and only on the second one. */
 .detail_link + .detail_link {
     margin-left: 18px;
 }
 
-/* The Molecules section: one table per kind, nucleic acids first. */
 .molecules_summary {
     display: flex;
     align-items: center;
@@ -1037,22 +946,17 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--text-dim);
 }
 
-/* Natural, Expressed, Synthetic: the first thing read in a Source row. */
 .source_kind {
     font-weight: 600;
 }
 
-/* Published, with Save reference beside it. */
 .published_value { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .published_value .cite_save { margin-left: 0; }
-/* On a phone the button sits mid-row, so its menu would run off the right
-   edge: it opens from the row's left instead. */
 @media (max-width: 640px) {
     .published_value { position: relative; }
     .published_value .cite_save { position: static; }
 }
 
-/* The primary citation, and what to do with it. */
 .citation_actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .citation_actions .cite_save { margin-left: 0; }
 .citation_actions .cite_save .entry_fasta_menu,
@@ -1093,7 +997,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 /* <---------------empty state-------------> */
 
-/* Under "No entries found": close searches, each a link with its count. */
 .did_you_mean {
     max-width: 36em;
     margin: 0;
@@ -1160,10 +1063,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     outline-offset: 2px;
 }
 
-
-/* Narrow windows stack the filters above the results instead of hiding the
-   results: a half-screen laptop window used to show the structure page,
-   the report and the results list as blank. */
+/* Narrow windows stack the filters above the results. */
 @media (max-width: 1023px) {
     .workspace_body {
         flex-direction: column;
@@ -1186,7 +1086,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     }
 }
 
-
 /* <---------------scrollbar-------------> */
 
 .query_panel_body {
@@ -1206,8 +1105,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .query_panel_body::-webkit-scrollbar-track {
     background-color: transparent;
 }
-
-
 
 .results_range {
     font-size: 12px;
@@ -1230,8 +1127,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--text-dim);
 }
 
-/* Matched to the Sort by control beside it. Wide enough for three digits
-   plus the browser's own spinner. */
 .per_page_field input {
     width: 72px;
     padding: 6px 8px;
@@ -1265,8 +1160,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .sort_field select {
     font-weight: 600;
-    /* More room on the right than the left: the browser draws its own chevron
-       in there, and at 8px it sits on the border. */
     padding: 6px 22px 6px 10px;
     border-radius: 5px;
 
@@ -1289,17 +1182,13 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     border-color: var(--focus);
 }
 
-/* The list itself is drawn by the browser, which ignores a transparent
-   background, so the options need a real one in both themes. */
+/* The browser ignores a transparent background on options. */
 .sort_field select option {
     background-color: var(--bg-secondary);
     color: var(--text-muted);
 }
 
-
-
 /* <---------------------results---------------------------> */
-
 
 .result_row {
     display: flex;
@@ -1355,18 +1244,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--accent-ink);
 }
 
-
-
-
 .hidden {
     display: none !important;
 }
 
-
-/* The pages float over the foot of the list rather than standing on a bar of
-   their own: the entries keep scrolling under them, so nothing is hidden by a
-   strip that is mostly empty. Only the buttons take the mouse; the gaps
-   between them belong to the list behind. */
 .pagination {
     position: absolute;
     left: 0;
@@ -1383,14 +1264,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .pagination:empty { display: none; }
 
-/* Room at the foot of the list, so its last entry can be scrolled out from
-   under the buttons. Only where there are buttons: the structure and report
-   pages share this scroller and have none. */
 .results_area:has(.pagination:not(:empty)) .results_area_body {
     padding-bottom: 58px;
 }
 
-/* Each one its own button, frosted so what is under it still shows. */
 .page_num,
 .page_arrow {
     pointer-events: auto;
@@ -1459,8 +1336,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     padding: 24px;
 }
 
-/* Held above centre: a page centred exactly reads as unfinished, and the
-   examples need room under the box without the whole block drifting. */
 .landing_inner {
     width: 100%;
     max-width: 1000px;
@@ -1473,8 +1348,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     margin: 0;
 }
 
-/* The wordmark is 4.3 times as wide as it is tall, so it is sized by width
-   and takes about the room the 40px heading took. */
 .landing_wordmark {
     display: block;
     width: clamp(165px, 25.5vw, 270px);
@@ -1488,8 +1361,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--text-muted);
 }
 
-/* Narrower than the block around it: the cards below need the width, but
-   a search box that wide stops reading as a box. */
 .landing_search {
     max-width: 620px;
     margin: 32px auto 0;
@@ -1499,9 +1370,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     gap: 8px;
 }
 
-/* The box. It is this that is drawn, not the input inside it, because what
-   is ticked is written in the box beside the typing and the two belong in one
-   border. Also the frame the count and the suggestions hang off. */
 .landing_field {
     position: relative;
     flex-grow: 1;
@@ -1549,8 +1417,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     filter: brightness(1.08);
 }
 
-/* The live count. Always in the flow, empty or not, so the examples below do
-   not jump down the moment a number appears. */
 .landing_count {
     min-height: 18px;
     margin-top: 10px;
@@ -1560,11 +1426,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--accent);
 }
 
-/* Browse: five cards laid out 2-1-2, one question each. filters.js BROWSE
-   names each card's area. The middle card spans both rows, and every card
-   stretches to its row, so the five close as one even block whatever their
-   lengths. The bar is the row's count against the largest in its card, so the
-   cards compare within themselves only. */
 .browse_lead {
     margin-top: 16px;
     font-size: 15px;
@@ -1581,8 +1442,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     gap: 14px;
     text-align: left;
 }
-/* Three columns leave each row too little room once Yes and No sit beside
-   it, so a tablet takes two, the organisms down the right. */
 @media (min-width: 641px) and (max-width: 900px) {
     .browse {
         grid-template-columns: 1fr 1fr;
@@ -1602,7 +1461,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     background: var(--bg-primary);
 }
 
-/* What the card's counts mean, at its foot whatever its length. */
 .browse_foot {
     margin-top: auto;
     padding-top: 8px;
@@ -1628,8 +1486,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     padding: 0;
 }
 
-/* A row: its name, number and bar on the left, Yes and No on the right.
-   Without the script the name and Yes are the same link, No its own. */
 .browse_row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1676,8 +1532,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .browse_card a:hover .browse_name { color: var(--accent); }
 .browse_card a:hover .browse_bar { opacity: 1; }
 
-/* Yes and No: two small joined buttons. Yes on takes the accent, No on a
-   red wash; one press more turns either off. */
 .browse_answer {
     display: inline-flex;
     border: 1px solid var(--input-border);
@@ -1697,9 +1551,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 .browse_card .browse_answer a + a { border-left: 1px solid var(--input-border); }
 
-/* A row with options says so on its Yes: a small chevron, pointing right while
-   the shelf is shut and down while it is open (the shared .arrow rules turn it
-   by aria-expanded). Without pick.js nothing opens, so nothing is promised. */
 .browse_yes .arrow { display: none; }
 
 .picking .browse_yes {
@@ -1716,7 +1567,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     vertical-align: 0;
 }
 
-/* On the filled Yes the chevron takes the colour the word does. */
 .browse_card .browse_yes[aria-pressed="true"] .arrow { background: var(--bg-primary); }
 .browse_card .browse_yes:hover { color: var(--accent); background: var(--accent-wash); }
 .browse_card .browse_no:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, transparent); }
@@ -1727,9 +1577,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .picking .browse_row:has(.browse_yes[aria-pressed="true"]) > .browse_link .browse_name { color: var(--accent); font-weight: 600; }
 .picking .browse_row:has(.browse_no[aria-pressed="true"]) > .browse_link .browse_name { color: var(--danger); font-weight: 600; }
 
-/* A row's options, open under it while Yes is on: a quiet heading, then
-   rows with a tick box, set in from the card's edge with a line on the left
-   so they read as part of the row above. */
 .browse_options {
     grid-column: 1 / -1;
     margin: 2px 0 6px 2px;
@@ -1755,7 +1602,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     text-overflow: ellipsis;
 }
 
-/* Ticking an option (pick.js): an empty box at its right, filled when on. */
 .browse_tick { display: none; }
 
 .picking .browse_options a {
@@ -1793,13 +1639,8 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 .picking .browse_link { cursor: pointer; }
 
-/* While rows are ticked, the line under the box says what they find, so the
-   count that was there keeps its place but goes quiet rather than show a
-   second number. */
 .picked .landing_count { visibility: hidden; }
 
-/* What is ticked, in the box where the invitation to type was: once rows are
-   answered, that is what the box asks, and Search runs it. */
 .picked_line {
     display: flex;
     align-items: center;
@@ -1812,8 +1653,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .picked_line[hidden] { display: none; }
 
-/* One line, cut with an ellipsis rather than pushing the typing out of the
-   box; the whole of it is on hover. */
 .pick_what {
     margin: 0;
     min-width: 0;
@@ -1825,9 +1664,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .pick_what::first-letter { text-transform: uppercase; }
 
-/* Inside the box, against its right edge: the number belongs to the search
-   that is about to run, not to a line of its own. Never in the way of the
-   caret, which is why the box is given room for it while rows are ticked. */
 .pick_count {
     position: absolute;
     top: 50%;
@@ -1860,19 +1696,14 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .pick_clear:hover { background: var(--accent-wash); color: var(--accent); }
 .pick_clear:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* A button like the others, in the quiet outline: most visitors want the box,
-   and the ones who want the filters are looking for this. */
 .landing_advanced { margin-top: 34px; }
 
-/* Sliders, not the download arrow: this one opens the filter panel. */
 .landing_advanced::before {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M4 7h10M18 7h2M4 17h4M12 17h8'/%3E%3Ccircle cx='16' cy='7' r='2.2'/%3E%3Ccircle cx='10' cy='17' r='2.2'/%3E%3C/svg%3E");
 }
 
 /* <---------------------top search---------------------------> */
 
-/* A column beside the rail: the search bar, then the panel and results below
-   it. Everything inside .interface used to sit in one row. */
 .workspace {
     flex-grow: 1;
     min-width: 0;
@@ -1889,13 +1720,9 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     display: flex;
 }
 
-/* Three columns, the outer two the same width, so the middle one sits on the
-   centre line of the bar. Centring with flex would not: the Filters button on
-   the right would push the box left by half its own width. */
 .top_search {
     flex-shrink: 0;
-    /* Its own content decides the rest; --topbar-h is what the rail matches,
-       so if this bar grows past it, change the variable, not this line. */
+    /* --topbar-h is what the rail matches: change the variable, not this line. */
     min-height: var(--topbar-h);
     padding: 8px 24px;
     border-bottom: 1px solid var(--border);
@@ -1916,8 +1743,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     gap: 8px;
 }
 
-/* Its own row under the box, kept even while empty, so the bar does not grow
-   or shift when the count appears. */
 .top_search_count {
     grid-column: 2;
     grid-row: 2;
@@ -1943,8 +1768,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     cursor: pointer;
 }
 
-/* The same segmented control as Cards | Lines, in column one so the box above
-   stays on the centre line. */
 .match_switch {
     grid-column: 1;
     grid-row: 1 / span 2;
@@ -1983,8 +1806,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     background-color: var(--accent);
 }
 
-/* Capped rather than full width, so the box lines up with the results beside
-   the panel instead of stretching across the whole screen. */
 .top_search input {
     width: 520px;
     max-width: 100%;
@@ -2008,9 +1829,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     border-color: var(--focus);
 }
 
-/* Scoped to the box, not the whole bar: the bar also holds the Filters toggle
-   and the Contains/Excludes switch, and a bare `.top_search button` styled
-   those too. */
+/* Scoped to the box: a bare .top_search button also styled the toggles. */
 .top_search_box button {
     padding: 10px 20px;
     border-radius: 6px;
@@ -2030,8 +1849,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     filter: brightness(1.08);
 }
 
-/* The panel and the results now sit inside .workspace_body, which is already
-   the scrolling context, so they size to it rather than to the viewport. */
 .workspace_body > .query_panel,
 .workspace_body > .results_area {
     height: auto;
@@ -2039,9 +1856,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 /* <---------------------drawer handle---------------------------> */
 
-/* The panel folds by sliding off to the left, behind the edge of the page.
-   visibility waits for the slide to end, so the fields leave the tab order
-   only once they are out of sight. */
+/* visibility waits for the slide, so fields leave the tab order only once hidden. */
 .workspace_body > .query_panel {
     transition: margin-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
 }
@@ -2056,8 +1871,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .workspace_body { overflow: hidden; }
 }
 
-/* A zero-width column between the panel and the results, so the handle can
-   sit astride the panel's edge and ride along with it. */
 .panel_edge {
     position: relative;
     z-index: 5;
@@ -2087,15 +1900,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     transition: left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s, border-color 0.2s;
 }
 
-/* Drawn as a control rather than a bare arrow: sitting on the seam between
-   two panels, an outline is what tells it from the join. */
 .panel_handle:hover { background-color: var(--accent-wash); border-color: var(--accent); }
 .panel_handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* Folded, the handle becomes a tab on the page's edge, with a count of the
-   filters still in use. */
 .folded + .panel_edge .panel_handle { left: 0; }
-
 
 .handle_count {
     position: absolute;
@@ -2117,8 +1925,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .folded + .panel_edge .handle_count:not(:empty) { display: block; }
 
-/* Stacked above the results, the panel folds upwards and the handle lies on
-   its side across the seam, centred. */
 @media (max-width: 1023px) {
     .workspace_body > .query_panel {
         overflow: hidden;
@@ -2142,8 +1948,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
         transition: top 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s;
     }
 
-    /* Stacked, the panel folds upwards: the arrow points up to close it,
-       down to open it. */
     .workspace_body .panel_handle .arrow { rotate: 90deg; }
     .workspace_body .panel_handle[aria-expanded="true"] .arrow { rotate: -90deg; }
 
@@ -2157,9 +1961,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .panel_handle { transition: none; }
 }
 
-
-/* The live count, between the box and the examples. Reserves its own line so
-   the examples do not jump down when a number appears. */
 .landing_count {
     min-height: 18px;
     margin-top: 10px;
@@ -2169,13 +1970,9 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--accent);
 }
 
-
 /* <---------------------result cards---------------------------> */
 
-/* One card a row: the picture beside the head, every other field below.
-   minmax(0, 1fr) and not 1fr: a column's default minimum is its widest
-   unbreakable content, and an entity name like 5'-R(*CP*CP*AP*GP*...)-3' has
-   no break opportunity, so one card would force the whole row wider. */
+/* minmax(0, 1fr): a long entity name has no break and would widen the row. */
 .results_list.as_cards {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -2183,10 +1980,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     padding: 16px;
 }
 
-/* Wide: the picture on the left, everything else beside it, so nothing sits
-   under the picture. As the results area narrows the layout steps down (see
-   the container queries below) so the text never becomes a tall
-   thin column beside a short picture. */
 .result_card {
     padding: 20px;
     border-radius: 10px;
@@ -2222,8 +2015,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     }
 }
 
-/* Empty on purpose: the place a snapshot of the 3D structure will go. Drawn
-   as a visible frame so the slot, and its size, can be seen. */
 .card_picture,
 .grid_tile_picture {
     display: block;
@@ -2265,7 +2056,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     overflow-wrap: anywhere;
 }
 
-/* The numbers a reader compares first: small caps label over a bold value. */
 .card_facts {
     grid-area: facts;
     display: grid;
@@ -2283,8 +2073,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .card_facts dd { margin: 2px 0 0; font-weight: 700; }
 .card_facts small { font-weight: 400; color: var(--text-muted); }
 
-/* Every other field and the links, the second row beside the picture. Each
-   field takes its own width up to a cap; the links close the row. */
 .card_rest .card_field { flex: 0 1 auto; min-width: 90px; max-width: 260px; }
 .card_rest {
     grid-area: rest;
@@ -2297,7 +2085,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     border-top: 1px solid var(--border);
 }
 
-/* Long entity names stop at two lines; the full text is on the structure page. */
 .card_value {
     margin-top: 2px;
     font-size: 13px;
@@ -2309,8 +2096,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     overflow: hidden;
 }
 
-/* Medium: the rest of the fields leave the right column and run under both,
-   so the right column is only as tall as the picture. */
 @container results (max-width: 1099px) {
     .result_card {
         grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
@@ -2321,8 +2106,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .card_facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; }
 }
 
-/* Narrow: a smaller picture beside the id and title only; the numbers and the
-   fields take the full width below, in tidy columns. */
 @container results (max-width: 759px) {
     .result_card {
         grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
@@ -2337,12 +2120,8 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .card_rest .card_field { max-width: none; }
 }
 
-/* Phone width: picture on top, the rest below it; numbers two across. */
-/* The phone card's own parts, hidden on wider cards. */
 .card_when, .card_brief { display: none; }
 
-/* A phone card: who it is first, a short picture, four numbers, one line
-   for the paper, and the full fields behind More. */
 @container results (max-width: 489px) {
     .result_card {
         grid-template-columns: minmax(0, 1fr);
@@ -2379,9 +2158,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .result_card:not(.show_more) .card_field:not(.searched) { display: none; }
 }
 
-/* Two buttons reading as one control: a shared border, a divider between them,
-   and the pressed one filled. aria-pressed carries the state for the styling,
-   the tests and a screen reader alike. */
 .view_switch {
     display: flex;
     border: 1px solid var(--input-border);
@@ -2416,15 +2192,8 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     background-color: var(--accent);
 }
 
-
 /* <---------------------report preview---------------------------> */
 
-/* The table scrolls sideways in its own box rather than widening the page:
-   fifteen ticked fields are far wider than any window. */
-/* Scrolls both ways inside a fixed box, rather than letting the page grow.
-   With 200 rows and overflow-x alone the horizontal bar ends up below the
-   last row, so reaching it means scrolling past everything first. Capped
-   here, it stays on screen with the sticky header above it. */
 .preview_scroll {
     overflow: auto;
 
@@ -2433,10 +2202,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     background-color: var(--bg-secondary);
 }
 
-/* max-content, not 100%: at 100% the table is pinned to the width of its box,
-   so extra columns squeeze each other thinner and thinner instead of running
-   off the edge, and the scrollbar above never has anything to scroll.
-   min-width keeps it filling the box when only a few fields are ticked. */
+/* max-content, not 100%, or extra columns squeeze instead of scrolling. */
 .preview_table {
     border-collapse: collapse;
     width: max-content;
@@ -2444,7 +2210,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     font-size: 12px;
 }
 
-/* Sticky so the column names stay in view while the rows scroll past. */
 .preview_table thead th {
     position: sticky;
     top: 0;
@@ -2457,8 +2222,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     background-color: var(--bg-primary);
     border-bottom: 1px solid var(--border-dark);
 
-    /* Above the rows sliding under it, and above the left-hand cells when the
-       table is scrolled sideways. */
     z-index: 1;
 }
 
@@ -2468,10 +2231,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     border-bottom: 1px solid var(--border);
 }
 
-/* A title can run to 150 characters and a residue list to 40. Capping the cell
-   and clipping keeps every row one line, which is what makes the table
-   scannable and what the CSV looks like in a spreadsheet. min-width stops a
-   short column like Resolution collapsing to the width of its heading. */
 .preview_table td {
     min-width: 90px;
     max-width: 320px;
@@ -2490,10 +2249,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--text-dim);
 }
 
-
-/* The table fills whatever height is left rather than a guessed slice of the
-   viewport, which left 177px of dead space under it. min-height: 0 on each
-   step because a flex item will not shrink below its content without it. */
+/* min-height: 0, or a flex item will not shrink below its content. */
 .report_body {
     display: flex;
     flex-direction: column;
@@ -2513,9 +2269,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     min-height: 0;
 }
 
-/* The report's field list folds with the full search's drawer handle, on
-   its edge, and slides off to the left the same way. Folded, the edge keeps
-   the handle's width so the tab never covers the table. */
 .interface > .query_panel:has(#report_fields) {
     transition: margin-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
 }
@@ -2535,11 +2288,8 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .interface > .query_panel.folded:has(#report_fields) { transition: none; }
 }
 
-/* On a phone the list sits above the table and this opens it downwards;
-   beside the table the handle does it. */
 @media (min-width: 641px) {
     .fields_toggle { display: none; }
-    /* The list slides off to the left behind the rail and stays out of sight. */
     .interface:has(#report_fields) { overflow: hidden; }
     .interface:has(#report_fields) > .rail { position: relative; z-index: 6; }
 }
@@ -2558,11 +2308,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .fields_toggle:hover { background-color: var(--accent-wash); }
 
-
-
-
-
-/* The Source section: one line of legend, then the table. */
 .source_legend {
     margin: 2px 0 8px;
     font-size: 12px;
@@ -2573,12 +2318,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     vertical-align: top;
 }
 
-/* A chimera's segments read as one block: no rule between them. */
 .source_table tr.segment_continues td {
     border-bottom: none;
 }
 
-/* Base pairs section: one bar, a legend, family chips, the pair list. */
 .pair_bar {
     display: flex;
     height: 22px;
@@ -2594,8 +2337,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     white-space: nowrap;
     overflow: hidden;
 }
-/* On a phone a quarter of the bar is too narrow for "cWW A–U/T"; the
-   legend under it names each colour, so the bar keeps just the numbers. */
 .pair_bar_label { padding-left: 0.3em; }
 @media (max-width: 600px) { .pair_bar_label { display: none; } }
 .pair_au { background: #5dcaa5; color: #04342c; }
@@ -2642,7 +2383,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .pair_list .molecule_table { width: auto; min-width: 380px; }
 .pair_list .molecule_table td, .pair_list .molecule_table th { padding-right: 32px; }
 
-/* Sequence under a molecule row: lines of 60, blocks of 10. */
 .molecule_table tr:has(+ .sequence_row) td { border-bottom: none; }
 .sequence_row td { padding-top: 0; }
 .sequence summary { cursor: pointer; color: var(--accent); font-size: 12px; }
@@ -2720,7 +2460,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .sequence_copy .icon_done, .sequence_copy.copied .icon_copy { display: none; }
 .sequence_copy.copied .icon_done { display: inline; color: var(--focus); }
 
-/* The whole-entry FASTA, beside the Molecules summary. */
 .entry_fasta { margin-left: auto; position: relative; }
 .entry_fasta_menu {
     position: absolute;
@@ -2746,7 +2485,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .entry_fasta_menu a:hover { background: var(--bg-primary); }
 .entry_fasta_menu span { color: var(--text-dim); }
 
-/* The suggestions under a box such as Ligand: a few rows, never the screen. */
 .suggest_field { position: relative; }
 .suggest_list {
     position: absolute;
@@ -2774,8 +2512,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     cursor: pointer;
 }
 .suggest_list li:hover, .suggest_list li[aria-selected="true"] { background: var(--bg-primary); }
-/* An organism's code is its scientific name: as wide as it needs, the
-   common names beside it giving way first. */
 #source_organism_options li,
 #expression_host_options li { grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto; }
 #source_organism_options b,
@@ -2785,8 +2521,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .suggest_list small { color: var(--text-dim); }
 .suggest_list em { font-style: normal; color: var(--text-muted); }
 
-/* Names under the main search box, grouped, each with its count. Placed by
-   box_suggest.js exactly under the box. */
 .landing_search, .top_search_box { position: relative; }
 .box_suggest {
     position: absolute;
@@ -2843,15 +2577,12 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     font-size: 11px;
     color: var(--text-dim);
 }
-/* A finger needs a taller row than a pointer. */
 @media (hover: none) {
     .box_suggest li[role="option"] { min-height: 44px; align-items: center; }
 }
 
-/* The base-pair count with its CSV download at the far end. */
 .pair_head { display: flex; align-items: center; gap: 8px; }
 
-/* Show all / Show fewer under a long table: a quiet link, not a button. */
 .more_rows_toggle {
     border: none;
     background: none;
@@ -2863,16 +2594,11 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 }
 .more_rows_toggle:hover { text-decoration: underline; }
 
-/* How many entries a pill finds, quieter than its name. */
 .pill_count { margin-left: 2px; opacity: 0.6; font-variant-numeric: tabular-nums; }
-
 
 /* <---------------------------phones-----------------------------> */
 
-/* A phone gets the page as one scrolling document instead of an app shell of
-   inner scroll boxes: the browser bar can then hide on scroll, and nothing is
-   trapped in a box shorter than the thumb. The rail turns into a bar across
-   the top, since a 60px column is a sixth of a 375px screen. */
+/* Phones scroll the page as one document, so the browser bar can hide. */
 @media (max-width: 640px) {
     .interface {
         flex-direction: column;
@@ -2898,7 +2624,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
         border-bottom: 1px solid var(--border);
     }
 
-    /* The mark and the name on the left, the page icons on the right. */
     .rail-icons { display: contents; }
 
     .rail-logo,
@@ -2918,14 +2643,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .rail-logo svg { width: 30px; height: 30px; }
 
-
     .rail-item { order: 2; }
     .rail-theme { order: 3; margin-top: 0; border-top: 0; }
 }
 
-/* Below a laptop width the one-row bar and header no longer fit: at 700px
-   the box covered the Contains switch and pushed Filters off the edge. Both
-   wrap onto two rows, on tablets and phones alike. */
 @media (max-width: 1023px) {
     .top_search {
         height: auto;
@@ -2946,7 +2667,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
         font-size: 16px; /* below 16px iOS zooms the page on focus */
     }
 
-    /* Count and range on one row, the controls on the next. */
     .workspace .results_area_header {
         height: auto;
         padding: 12px 16px;
@@ -2968,14 +2688,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 }
 
-/* The search page on a phone: the bar on two rows, the filters above the
-   results, the results header on two rows, two compact cards. */
 @media (max-width: 640px) {
     .match_switch button,
     .top_search_box button { min-height: 44px; }
 
-    /* Stacked above the results like on a tablet, but capped so the
-       results are never more than a short scroll away. */
     .workspace_body > .query_panel { max-height: 60dvh; }
     #query_form .query_panel_body { overflow-y: auto; }
     .query_panel_header { height: 52px; padding: 0 16px; }
@@ -2988,7 +2704,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .field input,
     .range_row input { font-size: 16px; padding: 10px; }
 
-    /* Stacked, with no rail beside it to line up with. */
     .query_panel_footer { height: auto; padding: 12px 16px; }
     .query_panel_footer .search,
     .query_panel_footer .download { width: 100%; min-height: 48px; font-size: 15px; }
@@ -3004,7 +2719,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .per_page_field input { width: 64px; }
 
-    /* One card a row, the picture on top and the details below it. */
     .results_list.as_cards { gap: 8px; padding: 12px; }
 
     .result_card { padding: 14px; }
@@ -3012,7 +2726,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .result_row { padding: 12px; }
 
-    /* Narrow enough for both arrows and seven pages in 360px; still 40px tall to tap. */
     .pagination { bottom: 10px; gap: 4px; }
 
     .page_num,
@@ -3061,7 +2774,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     gap: 6px;
 }
 
-/* Nothing to show, or the panel is open and already shows it. */
 .active_filters:empty,
 .workspace:has(#query_form:not(.folded)) .active_filters { display: none; }
 
@@ -3095,9 +2807,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .filter_chip { min-height: 36px; font-size: 13px; }
 }
 
-/* The structure page on a phone. The molecule tables keep their columns and
-   scroll sideways in their own box: squeezed to 335px, headers ran into each
-   other and codes broke mid-word ("2M G"). */
 @media (max-width: 640px) {
     .detail_body { padding: 16px; }
 
@@ -3113,14 +2822,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .more_rows_toggle { padding-block: 8px; }
 }
 
-/* The report on a phone: count and toggle, then the field list, then the
-   table, with Export pinned to the bottom of the screen. The two columns are
-   unwrapped (display: contents) so their parts can be put in that order. */
 @media (max-width: 640px) {
     .interface > .results_area:has(.report_body),
     .interface > .query_panel:has(#report_fields) { display: contents; }
 
-    /* Shut means the list folds away, not the Export button with it. */
     .interface > .query_panel.folded:has(#report_fields) { margin-left: 0; visibility: visible; }
     .query_panel.folded > #report_fields { display: none; }
     .interface > .panel_edge { display: none; }
@@ -3134,7 +2839,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     #report_fields + .query_panel_footer { order: 5; }
     .report_row_note { padding: 12px 16px 0; }
 
-    /* "Report" over the list; the count above already says where you are. */
     .query_panel_header:has(+ .report_tabs) { display: none; }
 
     .query_panel:has(#report_fields) > .query_panel_footer {
@@ -3166,21 +2870,16 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     }
 
     .fields_toggle::before { content: "Fields"; }
-    /* Here the list sits above the table, so the arrow opens downwards. */
     .fields_toggle[aria-expanded="true"] > .arrow_side { rotate: 90deg; }
 
     .report_body .preview_scroll { max-height: 70vh; }
 }
 
-/* Landing and error pages on a phone: the button under the box at full
-   width, 16px text so iOS does not zoom on focus, and links big enough to
-   hit with a thumb. */
 @media (max-width: 640px) {
     .landing { padding: 16px; align-items: flex-start; }
     .landing_inner { margin: 12vh 0 0; }
     .landing_wordmark { width: min(56vw, 225px); }
 
-    /* Stacked, so the box and Search each take the full width again. */
     .landing_search { flex-direction: column; align-items: stretch; }
     .landing_search input { font-size: 16px; }
     .landing_search > button[type="submit"] { min-height: 48px; }
@@ -3196,16 +2895,10 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .picking .browse_options a { padding: 9px 6px 10px; }
     .browse_card .browse_answer a { min-width: 46px; padding: 7px 10px; font-size: 14px; }
 
-    /* The page scrolls as one document on a phone, under a fixed footer. */
-
     .empty_state .detail_link { padding: 10px 4px; font-size: 15px; }
 }
 
-
 /* <---------------structure page sections-------------> */
-/* Four groups, coloured like the filter panel's category dots, so the page a
-   search leads to reads in the same colours as the search. --sec is the
-   group's colour, --tint its band, --ink the text on the band. */
 .group_views,
 .group_overview    { --sec: #378add; --tint: var(--tint-blue); --ink: var(--ink-blue); }
 .group_composition { --sec: #ba7517; --tint: var(--tint-amber); --ink: var(--ink-amber); }
@@ -3224,7 +2917,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     padding-top: 16px;
 }
 
-/* The sidebar: sticky in the scrolling body, so it is always one click away. */
 .section_nav {
     position: sticky;
     top: 0;
@@ -3258,10 +2950,8 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     flex-shrink: 0;
 }
 
-/* Only the group label carries the dot on the sidebar; the chips need it. */
 .nav_item::before { display: none; }
 
-/* Overview is a group of one, so on the sidebar its link is the label. */
 @media (min-width: 1024px) {
     .nav_item.nav_solo {
         margin-top: 6px;
@@ -3297,10 +2987,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .nav_item.empty { color: var(--text-dim); }
 
-/* The full search's drawer handle (.panel_handle), on the sidebar's edge: a
-   zero-width column that stays in view, so the handle sits astride the edge
-   at the middle of the screen. Folded, the sidebar slides off to the left
-   and the handle stays on the page's edge. */
 .nav_edge {
     position: sticky;
     top: 0;
@@ -3321,7 +3007,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .section_nav { transition: none; }
 }
 
-/* The page opens on the Overview band; the title is its first, larger row. */
 .page_section:first-of-type { margin-top: 0; }
 
 .structure_lead .detail_value {
@@ -3329,8 +3014,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     line-height: 1.45;
 }
 
-/* A section: a full-width tinted band, then its body. The gap above each band
-   is what tells one category from the next. */
 .page_section {
     margin-top: 32px;
     scroll-margin-top: 12px;
@@ -3379,8 +3062,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     cursor: pointer;
 }
 
-/* The one "?" on the site (views/includes/help.ejs): a round ink-blue
-   button, filled when open, so it reads the same in every section. */
 .help > summary {
     display: grid;
     place-items: center;
@@ -3409,11 +3090,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 .band_fold:hover { background: var(--accent-wash); }
 
-/* Swap which column is the wide one: the same button as the FASTA and CSV
-   ones beside it (.download .download_small), with its own glyph in place of
-   the download arrow. The filled block is the column the views would take,
-   so the picture says what the words say. Only drawn where there are two
-   columns to swap, so it is hidden until the wide layout (below). */
 .band_swap { display: none; }
 
 .band_swap::before {
@@ -3425,7 +3101,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .band_swap[aria-pressed="true"]::before {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16' fill='none' stroke='black' stroke-width='1.8'%3E%3Crect x='0.9' y='0.9' width='12.1' height='14.2' rx='1.8' fill='black'/%3E%3Crect x='16.1' y='0.9' width='7' height='14.2' rx='1.8'/%3E%3C/svg%3E");
 }
-
 
 .help { position: relative; }
 
@@ -3445,7 +3120,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     color: var(--text);
 }
 
-/* Sub-headings inside a section carry the group's colour as a left bar. */
 .page_section .molecule_group > summary {
     padding-left: 8px;
     border-left: 3px solid var(--sec);
@@ -3477,8 +3151,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 .link_list a { color: var(--accent); }
 .link_files { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
 
-/* Tablets and phones: the sidebar becomes a strip of chips that scrolls
-   sideways and stays under the top of the page. */
 @media (max-width: 1023px) {
     .structure_page { display: block; }
 
@@ -3497,7 +3169,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
     .nav_group { display: contents; }
     .nav_group_label { display: none; }
-    /* A strip has no side to fold to, so folded or not it shows the chips. */
     .nav_edge { display: none; }
     .nav_folded .section_nav { visibility: visible; }
 
@@ -3534,10 +3205,7 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .band_fold, .help > summary { width: 34px; height: 34px; }
 }
 
-
 /* <---------------landing: stats line and footer-------------> */
-/* Scrolls inside itself, as the other pages do, so the rail stays the full
-   height of the window. Left to the page, the rail ended one screen down. */
 .landing_page {
     flex-grow: 1;
     min-width: 0;
@@ -3559,8 +3227,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
 
 :root { --footer-h: 44px; }
 
-/* On every page and always in view: How to cite, Help and Contact should never
-   need a scroll to reach. Dialogs open in the top layer, above it. */
 .site_footer {
     position: fixed;
     left: 0;
@@ -3608,7 +3274,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     background: var(--bg-secondary);
 }
 
-/* The logo file is drawn light for a dark ground, as the rail once used it. */
 .support_tile img {
     display: block;
     height: 18px;
@@ -3616,14 +3281,11 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     filter: var(--icon-filter);
 }
 
-/* A phone keeps the same one row: the links, and the logo at the end. The
-   page scrolls as one document there, so it stops short of the footer. */
 @media (max-width: 640px) {
     :root { --footer-h: 48px; }
     body { padding-bottom: var(--footer-h); }
 
-    /* Not a scroller here, or the tick bar would stick inside a box that
-       never scrolls instead of to the screen. */
+    /* Not a scroller, or the tick bar would stick inside a box that never scrolls. */
     .landing_page { flex-grow: 1; overflow-y: visible; }
 
     .site_footer { padding: 0 12px; gap: 8px; }
@@ -3633,8 +3295,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     .site_footer_links a { padding: 12px 2px; }
 }
 
-/* The arc picture at the top of Base pairs: each pair an arc over the strands,
-   as wide as the section. */
 .arc_picture {
     margin: 0 0 16px;
     padding: 10px 10px 8px;
@@ -3643,7 +3303,6 @@ details[open]:not(.help, .entry_fasta) > summary::before { rotate: 90deg; }
     border-radius: 10px;
 }
 .arc_picture svg { display: block; width: 100%; height: auto; }
-/* Assembly 1 | Asymmetric unit: the same segmented look as Contains | Excludes. */
 .arc_views {
     display: inline-flex;
     flex-wrap: wrap;
@@ -3700,7 +3359,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .arc_key i.arc_nc { background: var(--pair-nc); }
 .arc_key i.arc_mod { width: 7px; height: 7px; border-radius: 50%; background: var(--pair-mod); }
 
-/* The picture opens full screen: a click on it, or the Full screen button. */
 .arc_zoom {
     display: block;
     width: 100%;
@@ -3735,8 +3393,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 @media (max-width: 820px) {
     .arc_viewer { width: 100vw; height: 100dvh; border-radius: 0; }
 }
-/* Expanded in the page (expand.js): in the flow under the part that opened
-   it, so the rest of the page stays where it was, above and below. */
 .arc_viewer.in_place {
     position: static;
     display: block;
@@ -3749,7 +3405,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 @media (max-width: 820px) {
     .arc_viewer.in_place { height: 86dvh; border-radius: 10px; }
 }
-/* The map and the comparison are as tall as they need, up to that. */
 .seqmap_dialog.in_place, .ss_dialog.in_place { height: auto; max-height: min(86vh, 960px); }
 .seqmap_dialog.in_place .av_box, .ss_dialog.in_place .av_box { height: auto; max-height: inherit; }
 .av_box { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; background: var(--bg-secondary); }
@@ -3789,7 +3444,6 @@ path.arc_nc { stroke: var(--pair-nc); }
     .av_stage { min-height: 70dvh; border-right: 0; }
 }
 
-/* The counts above the drawing: small caps label over a bold number. */
 .av_summary {
     display: flex;
     flex-wrap: wrap;
@@ -3821,7 +3475,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .av_right { text-anchor: end; }
 .av_name { text-anchor: middle; font-weight: 600; }
 
-/* The pointed or picked pair, always shown under the drawing. */
 .av_info {
     display: flex;
     flex-direction: column;
@@ -3864,7 +3517,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .av_legend { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 8px 0 0; font-size: 11.5px; color: var(--text-muted); }
 .av_copynote { margin: 6px 0 0; font-size: 12px; color: var(--text-muted); }
 
-/* Every pair, hovered and picked rows tied to their arcs. */
 .av_list { flex: 1; min-height: 0; overflow: auto; }
 @media (max-width: 820px) {
     .av_side { min-height: auto; }
@@ -3895,8 +3547,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .av_sw.arc_nc { background: var(--pair-nc); }
 .av_table { padding: 8px 14px; font-size: 12.5px; border-top: 1px solid var(--border); }
 
-/* The Grid view: a tile per entry, a blank picture slot over its id, title
-   and facts. The whole tile is one link to the structure page. */
 .results_list.as_grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -3940,7 +3590,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 @media (prefers-reduced-motion: reduce) { .grid_tile { transition: none; } }
 
 /* <---------------structure page: sequence map-------------> */
-/* One ruler that scrolls sideways; the row names stay put on the left. */
 .seqmap { font-size: 12px; color: var(--text-muted); }
 .seqmap_wait { padding: 12px 0; }
 .seqmap_tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
@@ -4015,7 +3664,6 @@ path.arc_nc { stroke: var(--pair-nc); }
                                 box-shadow: inset 0 0 0 1px var(--swatch-edge); }
 .seqmap_key_note { flex-basis: 100%; font-size: 12px; color: var(--text-muted); }
 
-/* The sequence map full screen: strands on the left, the overview over the map. */
 .seqmap_buttons { display: inline-flex; gap: 6px; }
 .seqmap_full {
     padding: 2px 10px;
@@ -4142,7 +3790,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .ss_pick select {
     min-width: 0;
     max-width: 260px;
-    /* Room on the right for the browser's own chevron, as .sort_field. */
     padding: 4px 22px 4px 10px;
     font: inherit;
     color: var(--text);
@@ -4225,7 +3872,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .ss_detail { display: block; margin-top: 1px; font-size: 12px; color: var(--text-dim); overflow-wrap: anywhere; }
 .ss_note { margin-top: 8px; color: var(--text-muted); }
 
-/* Expanded: the picture wide, the list beside it. */
 .ss_dialog .ss_dialog_body { min-height: 0; overflow: auto; padding: 12px 16px 16px; }
 .ss_dialog .ss_compare { margin-top: 0; }
 .ss_dialog .ss_stage { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
@@ -4237,7 +3883,6 @@ path.arc_nc { stroke: var(--pair-nc); }
     .ss_dialog .ss_list_box { max-height: none; }
 }
 
-/* Phone: each entry a card, the bar stacked, the picture scrolls sideways. */
 @media (max-width: 640px) {
     .ss_table_wrap { overflow: visible; border: 0; background: none; }
     .ss_table, .ss_table tbody, .ss_table tr, .ss_table th, .ss_table td { display: block; }
@@ -4280,7 +3925,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .ss_gone_text { color: var(--warn); }
 .ss_svg { cursor: crosshair; }
 
-/* Fold-out guides: how to read a section's colours or picture. */
 .guide { font-size: 13px; }
 .guide > summary { cursor: pointer; color: var(--accent); font-size: 13px; width: max-content; margin-bottom: 4px; }
 .guide > summary:hover { text-decoration: underline; }
@@ -4297,7 +3941,6 @@ path.arc_nc { stroke: var(--pair-nc); }
                box-shadow: inset 0 0 0 1px var(--swatch-edge); }
 .ntc_bar { stroke: var(--ntc-edge); stroke-width: 0.6px; }
 
-/* Conformation: one line per CANA class; each NtC chip carries its DNATCO colour. */
 .ntc_family_name { margin: 12px 0 2px; font-size: 12px; color: var(--text-muted); }
 .ntc_line { display: grid; grid-template-columns: minmax(0, 220px) 40px minmax(0, 1fr); gap: 4px 10px;
             align-items: start; padding: 3px 0; font-size: 13px; }
@@ -4312,7 +3955,6 @@ path.arc_nc { stroke: var(--pair-nc); }
     .ntc_chips { grid-column: 1 / -1; }
 }
 
-/* How to read the map: a worked example of the layered bracket rows. */
 .map_guide { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 0 6px; }
 .map_guide text { font-size: 12px; }
 .map_guide .mg_mono { font: 14px ui-monospace, "SFMono-Regular", Menlo, monospace; text-anchor: middle; }
@@ -4385,7 +4027,6 @@ path.arc_nc { stroke: var(--pair-nc); }
 .lbn_lines { flex: 1 1 auto; min-width: 0; padding-right: 12px; overflow-x: auto; border-radius: 0 8px 8px 0; }
 .lbn_lines:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .lbn_note, .lbn_more { margin: 6px 0 0; font-size: 13px; color: var(--text-muted); }
-/* The 3D slot: the place the viewer will take, with links meanwhile. */
 .view_slot {
     display: grid;
     justify-items: center;
@@ -4402,32 +4043,13 @@ path.arc_nc { stroke: var(--pair-nc); }
 .view_slot p { margin: 0; max-width: 46ch; font-size: 14px; }
 .view_slot_glyph { width: 72px; height: 36px; fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; }
 .view_slot_glyph .view_pair { stroke: var(--pair-wc); }
-/* 3D: our own viewer, in a frame (views/includes/views.ejs).
-
-   A fixed height and not an aspect ratio: the frame holds a toolbar over a
-   canvas, and a square-ish box on a narrow screen would leave the model a
-   strip. 70vh beside the page is bounded by the Views' own max-height above,
-   which is what keeps the column inside the window. */
-/* The 3D view takes whatever height the reading area has left, rather than a
-   fixed box that wastes a tall window and overflows a short one. The chain of
-   definite heights starts at the section body and the frame is the last link,
-   so the tiles can be any height they like and the box still ends where the
-   page does.
-
-   Only while 3D is the open view: 1D is a few lines of text, and stretching
-   it would be a tall empty box with a dot-bracket at the top. The same
-   arithmetic as the sticky panel's max-height in the wide layout, and the
-   same here because the chrome above is the same: the 60px header, 16px over
-   the section, its 44px band and the 10px under it, 16px at the foot. */
+/* 60px header, 16px gap, 44px band, 10px, 16px foot. */
 #views > .section_body:has(#view-3d:not([hidden])) {
     display: flex;
     flex-direction: column;
     height: calc(100vh - 146px - var(--footer-h));
     min-height: 420px;
 }
-/* Narrower than the sidebar layout, the sections list is a 45px strip across
-   the top of the reading area instead of a column beside it, and it takes
-   that much of the height the view is measuring itself against. */
 @media (max-width: 1023px) {
     #views > .section_body:has(#view-3d:not([hidden])) {
         height: calc(100vh - 191px - var(--footer-h));
@@ -4452,14 +4074,8 @@ path.arc_nc { stroke: var(--pair-nc); }
     border-radius: 8px;
     background: var(--bg-primary);
 }
-/* Over the waiting words until the frame has drawn something of its own, so
-   nothing flashes blank; the slot inside keeps its dashes off, being framed
-   already. */
 #views > .section_body:has(#view-3d:not([hidden])) .view_3d { height: auto; }
 .view_3d .view_slot { position: absolute; inset: 0; border: 0; border-radius: 0; }
-/* The offer, where the page selected 3D by itself. Styled like a download
-   button because it is the same kind of promise: this one fetches the model
-   and annotates it. */
 .view_3d_start {
     padding: 7px 14px;
     border: 1px solid var(--accent);
@@ -4473,31 +4089,21 @@ path.arc_nc { stroke: var(--pair-nc); }
 }
 .view_3d_start:hover { filter: brightness(1.08); }
 .view_3d_start:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-/* Once the frame exists the slot behind it is history; the button must not
-   be reachable under a frame that has not finished drawing. */
 .view_3d[data-mounted] .view_3d_start { display: none; }
 .view_3d_frame { position: relative; z-index: 1; display: block; width: 100%; height: 100%; border: 0; background: transparent; }
 .view_3d:not(.view_3d_ready) .view_3d_frame { opacity: 0; }
 
-/* 1D: the column under the pointer and its partners, behind the text. */
 .lbn_lines { position: relative; isolation: isolate; cursor: crosshair; }
 .lbn_band { position: absolute; top: 0; bottom: 0; z-index: -1; background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent); pointer-events: none; }
 .lbn_partner { box-shadow: inset 0 0 0 1px var(--pair-wc); }
 .lbn_info { margin: 6px 0 0; min-height: 1.5em; font-size: 14px; color: var(--text); overflow-wrap: anywhere; }
 .lbn_find { color: var(--accent); }
 
-/* The other pairs, linked to the 1D view: a pair is a link that shows it
-   there, and the pair on show keeps its row marked. */
 .pair_hint { margin: 8px 0 6px; font-size: 13px; color: var(--text-muted); }
 .pair_show { color: var(--accent); text-decoration: none; }
 .pair_show:hover { text-decoration: underline; }
 .pair_table tr.pair_on td { background: var(--accent-wash); }
 
-/* A wide screen: the Views leave the run of sections for a column of their
-   own, beside the page and always in sight. The sections keep their order;
-   the Views span every row, with a last 1fr row taking any height they have
-   over the rest, so no gap opens between two sections. Narrower, the Views
-   stay the page's first section. */
 @media (min-width: 1360px) {
     .structure_page .detail_body {
         --viewer: clamp(360px, 27vw, 560px);
@@ -4507,14 +4113,9 @@ path.arc_nc { stroke: var(--pair-nc); }
         column-gap: 40px;
         align-content: start;
         max-width: calc(1100px + 40px + var(--viewer));
-        /* A scrolling box here would hold the Views still against itself. */
         overflow: visible;
     }
     .band_swap { display: inline-flex; }
-    /* Swapped: the sections take the column the views had and the views take
-       the sections'. Only the widths trade places -- the sections stay on the
-       left and the views on the right, so nothing a reader is looking at
-       jumps across the page, and the row as a whole is the width it was. */
     .structure_page.views_wide .detail_body {
         grid-template-columns: var(--viewer) minmax(0, 1fr);
     }
@@ -4527,23 +4128,17 @@ path.arc_nc { stroke: var(--pair-nc); }
         top: 16px;
         margin-top: 0;
     }
-    /* Never taller than the window, or its foot would wait for the end of
-       the page: the reading area (100vh less the 60px header and the footer)
-       less 16px above, the 44px band and its 10px, and 16px below. The band
-       stays out of it, so its help note is never cut. */
+    /* 100vh less header, footer, gaps and the band. */
     .structure_page #views > .section_body {
         max-height: calc(100vh - 146px - var(--footer-h));
         overflow-y: auto;
     }
     .structure_page #views + .page_section { margin-top: 0; }
     .structure_page #views .section_band { margin: 0 0 10px; }
-    /* Three tiles in a column this narrow: glyph and name in one line, and
-       the open view's words under the row as its caption. */
     #views .view_tiles { position: relative; padding-bottom: 22px; margin-bottom: 8px; }
     #views .view_tile { grid-template-columns: auto auto; justify-content: center; padding: 8px; }
     #views .view_glyph { grid-row: auto; }
     #views .view_what { display: none; }
     #views .view_tile[aria-selected="true"] .view_what { display: block; position: absolute; left: 0; bottom: 0; font-size: 13px; }
-    /* Always in sight, so not in the list of places to go. */
     .section_nav .group_views { display: none; }
 }

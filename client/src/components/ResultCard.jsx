@@ -3,18 +3,12 @@ import { useState } from "react";
 import { cardParts, entryHref } from "../resultCard.js";
 import { go } from "../address.js";
 
-// One result as a card (app.js card_html): a blank picture slot, kept for a
-// snapshot of the 3D structure; the id and title; the numbers a reader
-// compares first; every other field behind More on a phone. The whole card
-// opens the structure page; the id is also a real link, for a new tab or a
-// keyboard. Whether More is open is this card's own business, so it is its state.
 function ResultCard({ entry }) {
   const [more, setMore] = useState(false);
   const p = cardParts(entry);
   const href = entryHref(entry.pdb_id);
 
   function open(e) {
-    // A link inside the card is its own destination; More only unfolds the card.
     if (e.target.closest("a, .card_more")) return;
     go(href);
   }

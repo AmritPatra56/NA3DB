@@ -1,6 +1,4 @@
-// search.reference.mjs - the JavaScript filtering used before PostgreSQL, kept
-// only so the tests can check the SQL agrees. The app never imports it, and it
-// parses queries itself so a bug cannot hide in both places.
+// Reference implementation for tests only; the app never imports it.
 
 import entries from "./entries.json" with { type: "json" };
 
@@ -30,16 +28,12 @@ function pill_matches(value, selected) {
     return selected.includes(value);
 }
 
-// The pre-split values old links carry. A copy, not an import from
-// filters.js, for the same reason the parsing is: one bug, two places.
 const OLD_POLYMER_TYPES = {
     "Nucleic acid": ["DNA", "RNA", "DNA/RNA"],
     "Protein/NA":   ["Protein/DNA", "Protein/RNA", "Protein/DNA/RNA"]
 };
 const expand_polymer_types = (values) => values.flatMap((v) => OLD_POLYMER_TYPES[v] || [v]);
 
-// The seed gives an RNA entry with no organism a synthetic-construct source
-// (the fixture rule in db/make_seed.mjs), so that is what the SQL searches.
 function seeded_organism(e) {
     return e.source_organism || (e.polymer_type === "RNA" ? "synthetic construct" : null);
 }
@@ -50,8 +44,6 @@ function matches(entry, f) {
     if (!text_matches(entry.assigned_ntc, f.assigned_ntc)) return false;
     if (!text_matches(entry.entity_name, f.entity_name)) return false;
     if (!text_matches(seeded_organism(entry), f.source_organism)) return false;
-    // A residue code is matched whole, as the Ligand box does; the seed's
-    // chem_comp names are empty, so no name can match here.
     if (f.nonstandard_residue !== "") {
         let codes = (entry.nonstandard_residue ?? "").split(",").map((c) => c.trim().toUpperCase());
         if (!codes.includes(f.nonstandard_residue.trim().toUpperCase())) return false;
@@ -69,7 +61,6 @@ function matches(entry, f) {
     return true;
 }
 
-// Every matching pdb_id, in the order the old implementation produced.
 export function reference_ids(query_params) {
     let f = to_filters(query_params);
     return entries.filter((e) => matches(e, f))

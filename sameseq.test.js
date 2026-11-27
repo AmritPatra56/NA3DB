@@ -1,7 +1,3 @@
-// sameseq.test.js - checks compare_chains, which tells what differs between
-// two chains of one sequence. No database: small made-up chains whose every
-// difference is known.
-
 import test from "node:test";
 import assert from "node:assert";
 import { compare_chains, sequence_key, best_rank, SAME_FOLD } from "./sameseq.js";
@@ -40,7 +36,6 @@ test("a pair only in one chain is a numbered difference, marked on its side", ()
     assert.equal(c.diffs[0].text, "A4 and A6 pair only in A1.");
     let row = c.rows.find((r) => r.family === "tWH");
     assert.deepEqual(row.pairs, [[3, 5, "a"]]);
-    // The same the other way round.
     let back = compare_chains(chain("B1", { pairs: STEM }), a);
     assert.equal(back.diffs[0].kind, "pair_b");
     assert.equal(back.rows.find((r) => r.family === "tWH").pairs[0][2], "b");
@@ -59,7 +54,6 @@ test("a pair the other chain cannot have, its nucleotide unmodelled, is not a di
 test("the same two bases paired another way is one difference", () => {
     let a = chain("A1", { pairs: [...STEM, [4, 6, "tWH"]] });
     let c = compare_chains(a, chain("B1", { pairs: [...STEM, [6, 4, "tHW"]] }));
-    // 6-4 tHW read from 4 is tWH: the same pair, no difference.
     assert.equal(c.diffs.length, 0);
     let d = compare_chains(a, chain("B1", { pairs: [...STEM, [4, 6, "cSS"]] }));
     assert.equal(d.diffs.length, 1);
@@ -77,7 +71,6 @@ test("a backbone step differs only when both are sure of their class", () => {
     let a = chain("A1", { steps: [[1, "AA00", "AAA", 80], [2, "AA00", "AAA", 40], [3, "AA00", "AAA", 80], [4, "AA00", "AAA", 80]] });
     let b = chain("B1", { steps: [[1, "BB00", "BBB", 70], [2, "BB00", "BBB", 90], [3, "NANT", "NAN", 0], [4, "AA08", "AAA", 60]] });
     let c = compare_chains(a, b);
-    // 1: both sure, A-form vs B-form. 2: A1 unsure. 3: B1 unassigned. 4: same class.
     assert.equal(c.diffs.length, 1);
     assert.equal(c.diffs[0].kind, "step");
     assert.equal(c.diffs[0].i, 0);
@@ -124,7 +117,6 @@ test("differences are numbered along the sequence", () => {
 });
 
 test("same fold needs most pairs in both", () => {
-    // Eighteen pairs of G1 with C9, one per family, are eighteen pairs to compare.
     let pairs = ["cWW", "tWW", "cWH", "cHW", "tWH", "tHW", "cWS", "cSW", "tWS", "tSW",
                  "cHH", "tHH", "cHS", "cSH", "tHS", "tSH", "cSS", "tSS"].map((f) => [1, 9, f]);
     let keep = Math.ceil(pairs.length * SAME_FOLD);

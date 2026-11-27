@@ -1,6 +1,5 @@
 const none = <span className="molecule_sub">none</span>;
 
-// The ligands: code (linked to rcsb.org when it has a page), name, how many.
 function LigandTable({ rows }) {
   return (
     <>

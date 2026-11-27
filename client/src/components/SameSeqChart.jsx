@@ -4,17 +4,9 @@ import SameSeqKey from "./SameSeqKey.jsx";
 import { NtcRects } from "./NtcSwatch.jsx";
 import { LABEL_W, chartOf, columnAt, lookupOf } from "../sameSeqChart.js";
 
-// The comparison's picture (sameseq.js draw_chart, hover_setup): row names
-// that stay put, then one ruler: A's backbone steps above the sequence, B's
-// below, both chains' pairs in dot-bracket rows and each difference's number
-// over it; the words and the key under it. Hover shows a column, a click
-// pins it; a click on a number picks that difference (onMark).
-// sel: the picked difference, { n }, or null; its first column shows until
-// the pointer moves again.
 function SameSeqChart({ d, w, sel, scrollRef, onMark }) {
   const c = useMemo(() => chartOf(d, w), [d, w]);
   const look = useMemo(() => lookupOf(d), [d]);
-  // The pointer's column, with the pick it came after: a new pick shows its own.
   const [hover, setHover] = useState({ col: null, sel: undefined });
   const [pinned, setPinned] = useState(null);
   const picked = sel && d.diffs[sel.n - 1];
@@ -23,8 +15,6 @@ function SameSeqChart({ d, w, sel, scrollRef, onMark }) {
   const colAt = (ev) => columnAt(ev.currentTarget.getBoundingClientRect(), ev.clientX, w, c.n);
   const onMove = (ev) => { if (ev.pointerType === "mouse" && pinned === null) setHover({ col: colAt(ev), sel }); };
   const onLeave = (ev) => { if (ev.pointerType === "mouse" && pinned === null) setHover({ col: null, sel }); };
-  // A click or tap pins the column, so the words stay while the reader
-  // looks; another click on it lets go.
   const onClick = (ev) => {
     const mark = ev.target.closest(".ss_mark");
     if (mark) { onMark(Number(mark.dataset.n)); return; }
@@ -38,7 +28,6 @@ function SameSeqChart({ d, w, sel, scrollRef, onMark }) {
     <div className="ss_chart">
       <div ref={scrollRef} className="seqmap_scroll ss_scroll" tabIndex={0} aria-label="Comparison picture, scrolls sideways">
         <svg className="seqmap_labels ss_labels" width={LABEL_W} height={c.height} aria-hidden="true">
-          {/* A fixed list for this picture, so the place is a safe key. */}
           {c.labels.map((l, k) => <text key={k} x={6} y={l.y} className={"seqmap_label " + l.cls} style={l.fill ? { fill: l.fill } : undefined}>{l.text}</text>)}
         </svg>
         <svg className="seqmap_svg ss_svg" width={c.width} height={c.height} role="img"
@@ -58,7 +47,6 @@ function SameSeqChart({ d, w, sel, scrollRef, onMark }) {
           </g>
           <g>
             <line x1={0} x2={c.width} y1={c.yA + 0.5} y2={c.yA + 0.5} className="seqmap_base" />
-            {/* One bar per step of the reply: a fixed list, so the place is a safe key. */}
             {c.ups.map((rects, k) => <NtcRects key={k} rects={rects} />)}
           </g>
           <g transform={`translate(0 ${c.yB}) scale(1 -1)`}>
@@ -85,8 +73,6 @@ function SameSeqChart({ d, w, sel, scrollRef, onMark }) {
   );
 }
 
-// One pair row: the tints behind pairs only one chain has, the dots, then
-// the brackets that cannot be compared and the rest in the row's colour.
 function RowMarks({ r, w }) {
   return (
     <>

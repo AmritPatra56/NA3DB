@@ -7,15 +7,6 @@ import { useMapZoom } from "../hooks/useMapZoom.js";
 import { useClientWidth } from "../hooks/useSize.js";
 import { W, fileUrl, fitWidth, prepare, viewBox, centreOn } from "../seqMap.js";
 
-// The sequence map expanded in the page, right under it (seqmap.js
-// open_full): every strand can go on the ruler, an overview shows where the
-// view is, and the columns zoom from letters down to a fraction of a pixel.
-// first: the section's map, which it opens on. Esc closes it, as Back does.
-//
-// SeqMapFull     (owns the strands: useFullMap, and the zoom: useMapZoom)
-// ├─ SeqMapSide
-// ├─ SeqMapOverview
-// └─ SeqMapView
 function SeqMapFull({ first, onCollapse }) {
   const box = useRef(null);
   const scroll = useRef(null);
@@ -24,16 +15,13 @@ function SeqMapFull({ first, onCollapse }) {
   const p = useMemo(() => prepare(map), [map]);
   const drawnAt = full.drawn;
   const [left, setLeft] = useState({ drawn: drawnAt, at: 0 });
-  // The same functions between draws, so scrolling never draws the map again.
   const onMoved = useCallback((x) => setLeft({ drawn: drawnAt, at: x }), [drawnAt]);
   const onScroll = useCallback((ev) => onMoved(ev.currentTarget.scrollLeft), [onMoved]);
   const { w, onZoom } = useMapZoom(scroll, p.n, onMoved);
-  // A new set starts at its 5′ end.
   const at = left.drawn === drawnAt ? left.at : 0;
   const view = useClientWidth(scroll, drawnAt);
   const frame = viewBox(at, view, w, p.n);
 
-  // show(), as expand.js does: the browser then focuses the first control inside.
   useEffect(() => {
     box.current.show();
     box.current.scrollIntoView({ block: "start", behavior: "smooth" });

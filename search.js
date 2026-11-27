@@ -1,6 +1,3 @@
-// search.js - turns a set of filters into SQL and runs it.
-// Server only. It never touches HTTP and never touches the screen.
-
 import { readFileSync } from "node:fs";
 import { query } from "./db.js";
 import { dot_bracket_record } from "./detail.js";
@@ -12,17 +9,13 @@ import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, SOURCES_SQL, sort_by,
          REPORT_TABLES, report_fields, MOLECULE_COLUMNS, LIGAND_COLUMNS,
          modified_sql } from "./filters.js";
 
-
-// One raw query value as a single string, whatever shape it arrived in.
-// PostgreSQL refuses a NUL in text, so ?q=%00 or /structure/%00 was a 500.
+// PostgreSQL refuses NUL in text.
 function as_text(value) {
     if (value === undefined) return "";
     if (Array.isArray(value)) return as_text(value[0]);
     return String(value).replaceAll("\u0000", "");
 }
 
-// Letters that do not come apart into a base letter and an accent, and Greek
-// letters, which the chemical names in the data spell out (alpha-amanitin).
 const SPELLED = {
     "ß": "ss", "æ": "ae", "œ": "oe", "ø": "o", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "ı": "i",
     "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta", "ε": "epsilon", "ζ": "zeta",
@@ -32,12 +25,7 @@ const SPELLED = {
 };
 const SPELLED_RE = new RegExp(`[${Object.keys(SPELLED).join("")}]`, "giu");
 
-// A typed value as the data spells it. The data is plain ASCII (Muller,
-// Sponer, Cerny), so accents are folded; dropping the accented letter instead
-// made Cerny "ern" and found 140 wrong entries. Spaces are trimmed and runs of
-// them made one, so "ribosome " and a phone's trailing space find the same.
-// Curly double quotes become straight ones: phones and Macs type “HIV domain”
-// for "HIV domain", and the quotes are what ask for an exact phrase.
+// The data is plain ASCII, so accents are folded. Curly quotes become straight.
 export function clean_text(value) {
     return value
         .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB\u2033\u301D\u301E\uFF02]/g, "\"")
@@ -51,8 +39,6 @@ export function clean_text(value) {
         .trim();
 }
 
-// One raw query value as a list. Takes a comma-joined string, a repeated key,
-// or nothing.
 function as_list(value) {
     if (value === undefined) return [];
 
@@ -65,8 +51,6 @@ function as_list(value) {
     });
 }
 
-// req.query as a filters object. Every key is always present, so nothing
-// downstream has to check.
 function query_to_filters(query) {
     let filters = {};
 
@@ -81,43 +65,25 @@ function query_to_filters(query) {
     return filters;
 }
 
-// Wraps a value for a "contains" search with the pattern characters escaped,
-// so a % or _ someone types stays literal. Backslash goes first.
 function like_contains(text) {
-    // Newlines come out first. The doc view separates its fields with one, so
-    // a needle holding a newline could match across two of them -- reachable
-    // from a URL as ?q=%0A even though no text input can type it.
+    // The doc view separates fields with newlines.
     return "%" + String(text).replace(/[\r\n]+/g, " ").replace(/[\\%_]/g, "\\$&") + "%";
 }
 
-// The same value with punctuation dropped, for matching against prose that
-// has been normalised the same way: typing "zdna" finds "Z-DNA".
-//
-// Spaces survive on purpose. Collapsing them too would run neighbouring words
-// together, and "nt RNA" would become "ntrna" and answer a search for tRNA.
-// Measured on the real data: dropping spaces turned 163 tRNA hits into 209,
-// and all 46 extras were wrong.
+// Spaces kept: "nt RNA" would become "ntrna" and match tRNA.
 function like_normalised(text) {
     let stripped = String(text)
         .toLowerCase()
-        // Drops newlines along with the punctuation, which is what stops a
-        // needle crossing the separator between two fields in the doc view.
         .replace(/[^a-z0-9 ]/g, "")
         .replace(/\s+/g, " ")
         .trim();
 
-    // Nothing alphanumeric was typed, so there is nothing to match loosely. A
-    // hyphen cannot survive normalisation on either side, so this pattern
-    // matches nothing, which is what keeps a lone "%" finding nothing.
     if (stripped === "") return "%-%";
 
-    // No escaping needed: % _ and \\ were just stripped.
     return "%" + stripped + "%";
 }
 
-
-// A plural as its singular, so ribosomes finds ribosome. Letters only: 1DNS
-// is an id, not the plural of 1DN. Short words are left alone.
+// Letters only: 1DNS is an id, not a plural.
 export function singular(word) {
     if (word.length < 4 || !/^[a-z]+$/i.test(word)) return word;
     if (/ies$/i.test(word)) return word.slice(0, -3) + "y";
@@ -126,27 +92,8 @@ export function singular(word) {
     return word;
 }
 
-// More words than this is a pasted paragraph; it is matched as one phrase,
-// as before, instead of as a clause per word.
 const MAX_UNITS = 12;
 
-// What the search box asks for: a list of units, every one of which must
-// match, each a list of spellings any one of which will do. This is how the
-// big structure databases read a search: all the words, in any order, with
-// quotes for an exact phrase.
-//
-//   "yeast tRNA"     [[yeast], [tRNA]]
-//   ribosomes        [[ribosome]]            a plural finds the singular
-//   families         [[families], [family]]  when the singular is not a prefix
-//   "z dna"          [[z dna, zdna, z-dna]]  a lone letter joins the next word
-//   "\"yeast tRNA\"" [[yeast tRNA]] exact     quotes keep a phrase whole
-//
-// A quoted unit is marked exact (is_exact): whole words, in that order, with
-// none of the loosening below. A quote left open runs to the end, which is
-// what someone typing "HIV domain and nothing after it means.
-//
-// A lone letter matches nearly everything, which is why it joins the next
-// word: Z DNA is how people type Z-DNA. Not a or i, which are words.
 export function search_units(text) {
     let units = [];
     if ((text.match(/"/g) ?? []).length % 2 === 1) text += "\"";
@@ -161,11 +108,9 @@ export function search_units(text) {
 
     for (let i = 0; i < words.length; i++) {
         let word = words[i], next = words[i + 1];
-        // "E. coli" glues like "E coli": the dot is an abbreviation, not a word.
+        // "E. coli" glues like "E coli".
         if (/^[b-hj-z]\.?$/i.test(word) && next) {
             let letter = word[0];
-            // Last, the other way round: authors are stored "Sponer, J.",
-            // which is "sponer j" in the prose, so J. Sponer finds them.
             units.push([`${letter} ${next}`, `${letter}${next}`, `${letter}-${next}`, `${next} ${letter}`]);
             i++;
             continue;
@@ -179,25 +124,16 @@ export function search_units(text) {
 
 export const is_exact = (unit) => unit.exact === true;
 
-// Regular-expression metacharacters escaped, for PostgreSQL's ~*. The value
-// travels as a parameter, so this is about meaning, not injection.
+// Escaped for meaning; the value is a parameter.
 const regex_literal = (text) => text.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
 
-// A phrase as whole words, in order, inside one field. A space and a hyphen
-// both separate words, so "Z DNA" finds Z-DNA; a newline does not, and the
-// doc view puts one between two authors, organisms or molecules, so a
-// phrase cannot run from one into the next.
+// A newline does not separate words, so a phrase cannot span two fields.
 export function exact_pattern(phrase) {
     let words = phrase.split(/[\s-]+/).filter(Boolean);
     if (words.length === 0) return null;
     return "(^|[^[:alnum:]])" + words.map(regex_literal).join("[[:blank:]-]+") + "([^[:alnum:]]|$)";
 }
 
-// "Helen Berman", "Helen M. Berman", "J. Sponer": two or three words that
-// read as a person, as the PDB stores them, "Berman, H.M." (family name, a
-// comma, then initials; mmCIF _citation_author.name). Only the initial of a
-// first name is stored, so "Helen Berman" can only ever mean "Berman, H.",
-// and the page says so. null when the text does not read as a name.
 const NAME_WORD = /^[a-z][a-z'-]*\.?$/i;
 
 export function author_form(text) {
@@ -211,8 +147,6 @@ export function author_form(text) {
     let [first, ...middle] = given;
     let initial = first[0];
 
-    // The first name as an initial, or written out in full where a depositor
-    // did ("Bleary, Percival R."); a middle initial, if typed, must be there.
     let pattern = "(^|\n)" + regex_literal(family) + ",[[:blank:]]*"
         + (first.length > 1 ? `(${regex_literal(initial)}\\.|${regex_literal(first)}\\M)`
                             : `${regex_literal(initial)}(\\.|\\M)`)
@@ -222,22 +156,15 @@ export function author_form(text) {
     return { pattern, family, shown };
 }
 
-// Per kind: was it filled in, and what goes into the ?. Three rules cover ten
-// of the eleven filters. Lives here, not in the registry, because like_contains
-// is an engine detail. A confal score of 0 is truthy and survives `active`.
 const KINDS = {
     text:  { active: (v) => v !== "",     param: (v) => like_contains(v),
              normalised: (v) => like_normalised(v) },
     range: { active: (v) => v !== "",     param: (v) => Number(v) },
-    // A whole number that fits an integer column; anything else matches
-    // nothing rather than reaching PostgreSQL as NaN or 1e99.
+    // Anything else matches nothing rather than reaching PostgreSQL as NaN.
     number: { active: (v) => v !== "",    param: (v) => (/^\s*\d{1,9}\s*$/.test(v) ? Number(v) : -1) },
     pills: { active: (v) => v.length > 0, param: (v) => v }
 };
 
-
-// A common name searches its taxon alone: the text branch gets NULL, which
-// ILIKE never matches.
 const text_param_of = (filter, rule, value) =>
     filter.common_name_is_taxon && is_common_name(value) ? null : rule.param(value);
 
@@ -249,12 +176,7 @@ export function build_where(query_params) {
     let tests = [];
     let values = [];
 
-    // Every ? in the clause becomes the number the value landed at, so a
-    // clause and its value cannot drift apart.
-    // ? is the value. ?~ is the same value with its punctuation dropped, for
-    // the branches matching against normalised prose. ?@ is the taxonomy ids
-    // the typed text names (taxonomy.js), so mouse finds Mus musculus.
-    // ?~ and ?@ go first, or the bare ? would eat their question marks.
+    // ?~ and ?@ first, or the bare ? would take their question marks.
     function bind(clause, value, normalised, typed) {
         values.push(value);
 
@@ -275,19 +197,11 @@ export function build_where(query_params) {
     const add = (clause, value, normalised, typed) => tests.push(bind(clause, value, normalised, typed));
     const param = (value) => { values.push(value); return "$" + values.length; };
 
-    // An author written "Family, I.": the family name narrows through the
-    // prose index, then the pattern checks the initials.
     const author_clause = (name) =>
         `EXISTS (SELECT 1 FROM doc d WHERE d.id = e.id
                     AND d.prose LIKE ${param(like_normalised(name.family))}
                     AND d.authors ~* ${param(name.pattern)})`;
 
-    // A quoted phrase. Each of its words narrows through the same indexes the
-    // loose search uses, which is cheap and always a superset: a whole word
-    // in a field is also a substring of it, punctuation dropped or not. Only
-    // the rows left are checked with the pattern, which on its own read every
-    // field of every row (45-217 ms). A full scientific name also matches by
-    // taxon, and a name by its stored form, as unquoted.
     const exact_clause = (phrase) => {
         let pattern = exact_pattern(phrase);
         if (!pattern) return "FALSE";
@@ -314,18 +228,12 @@ export function build_where(query_params) {
         return `(${found.join("\n      OR ")})`;
     };
 
-    // not_<key> asks the opposite of that one filter: not_source_organism=
-    // Bacteria is every entry with no bacterial molecule. The filter's own
-    // clause is built as usual, then turned round; COALESCE so an entry the
-    // clause cannot judge (no resolution, say) counts as not matching. Many
-    // values in one not_ are "none of them", as many in one filter are "any".
-    // The search box has no not_: Excludes already turns the whole search.
+    // COALESCE: an entry the clause cannot judge counts as not matching.
     let excluded = query_to_filters(Object.fromEntries(Object.entries(query_params)
         .filter(([k]) => k.startsWith(NOT) && k !== NOT + "q").map(([k, v]) => [k.slice(NOT.length), v])));
     let asked = [...FILTERS.map((filter) => ({ filter, value: f[filter.key], not: false })),
                  ...FILTERS.map((filter) => ({ filter, value: excluded[filter.key], not: true }))];
 
-    // Where the tests of the filter being turned round begin.
     let turning = null;
     const turn = () => {
         if (turning === null) return;
@@ -339,8 +247,6 @@ export function build_where(query_params) {
         if (not) turning = tests.length;
         let value = asked_value;
 
-        // The search box: each word its own clause, any spelling of it will do,
-        // and each quoted phrase its own exact clause.
         if (filter.words) {
             let clauses = search_units(value).map((unit) => {
                 if (is_exact(unit)) return exact_clause(unit[0]);
@@ -351,16 +257,12 @@ export function build_where(query_params) {
             });
             if (clauses.length === 0) continue;
 
-            // Unquoted, a name typed the usual way ("Jiri Sponer") is also
-            // tried as the PDB stores it ("Sponer, J."), since the words alone
-            // never match: no first name is stored.
             let name = value.includes("\"") ? null : author_form(value);
             let all = clauses.join("\n     AND ");
             tests.push(name ? `AND ((${all})\n     OR ${author_clause(name)})` : `AND ${all}`);
             continue;
         }
 
-        // A filter writing its own clause, with no parameter. null = inactive.
         if (filter.clause) {
             let sql = filter.clause(value);
             if (sql) tests.push(sql);
@@ -370,26 +272,19 @@ export function build_where(query_params) {
         let rule = KINDS[filter.kind];
         if (!rule.active(value)) continue;
 
-        // Old spellings a bookmark may still carry, turned into current ones.
         if (filter.expand) value = filter.expand(value);
 
-        // Longer than anything the column holds: matches nothing, at once.
         if (filter.max_length && value.trim().length > filter.max_length) {
             tests.push("AND FALSE");
             continue;
         }
 
-        // One pattern per word, all of which must match the same row.
         if (filter.each_word) {
             let words = value.split(/[\s,]+/).filter(Boolean);
             add(filter.where, (words.length ? words : [value]).map(like_contains));
             continue;
         }
 
-        // A list of codes ("MG,ZN") or of taxa ("Eukaryota,Bacteria"), as
-        // ticked on the landing page: any of them, each read exactly as if
-        // typed alone. Only when every part is a code, or names a taxon, so a
-        // name holding a comma (1,2-ETHANEDIOL) is still one name.
         let is_part = filter.code_list ? (p) => /^[A-Za-z0-9]{1,5}$/.test(p)
                     : filter.taxon_list ? (p) => taxa_named(p).length > 0
                     : null;
@@ -408,25 +303,13 @@ export function build_where(query_params) {
     }
     turn();
 
-    // Nothing was asked, so there is nothing to invert either: excluding
-    // nothing leaves the whole table.
     if (tests.length === 0) return { where: "TRUE", values };
 
-    // Each clause carries its own leading AND, which has to come off before
-    // the search can be treated as one expression.
     let search = tests
         .map((sql) => sql.replace(/^\s*AND\s+/, ""))
         .join("\n    AND ");
 
-    // "excludes" inverts the whole search, not each filter inside it. The
-    // question it answers is "everything except what I just asked for", so
-    // contains and excludes always add up to the whole table, whatever is in
-    // the box and the panel together. Inverting filter by filter would not:
-    // with two active, NOT(a) AND NOT(b) leaves every row matching exactly
-    // one of them in neither half.
-    //
-    // NOT never yields null here because no clause can: they are EXISTS,
-    // ILIKE against columns that cannot be null, and IS TRUE / IS NOT TRUE.
+    // Inverts the whole search, so contains and excludes add up to the whole table.
     if (match_mode(as_text(query_params.match)) === "excludes") {
         return { where: "NOT (\n    " + search + "\n)", values };
     }
@@ -434,19 +317,7 @@ export function build_where(query_params) {
     return { where: search, values };
 }
 
-// The ORDER BY for the Best match sort, and the values it adds after the
-// WHERE's. Lower ranks first:
-//   0  the whole search as one phrase, and every word as a whole word
-//   1  the whole phrase, but a word only inside a longer one
-//   2  the words apart, each a whole word somewhere
-//   3  the words apart, some only inside longer words
-// So TAR lists HIV TAR first and "target" last, and Thermus ribosome lists
-// titles saying "Thermus thermophilus 70S ribosome" before the rest. Ties,
-// and every entry when the box is empty, go in id order.
-//
-// A whole word is checked in the normalised prose and also in the title,
-// entities and residues as written, where a hyphen still separates words:
-// A-DNA holds DNA as a word, though its prose reads adna.
+// Rank 0: phrase and whole words; 1: phrase, partial words; 2: words apart, whole; 3: words apart, partial.
 function best_match(query_params, offset, sort) {
     let text = clean_text(as_text(query_params.q));
     let units = text ? search_units(text) : [];
@@ -460,8 +331,6 @@ function best_match(query_params, offset, sort) {
     let phrase = text.replaceAll("\"", " ").replace(/\s+/g, " ").trim();
     let has_phrase = `(d.prose LIKE ${p(like_normalised(phrase))} OR d.entities ILIKE ${p(like_contains(phrase))})`;
 
-    // Spellings are already [a-z0-9 ] once normalised, so they are safe in a
-    // regular expression. A plural ending is allowed after any of them.
     let whole = units.map((unit) => {
         let spellings = [...new Set(unit.map((s) => like_normalised(s).slice(1, -1)).filter((s) => s && s !== "-"))];
         if (spellings.length === 0) return "TRUE";
@@ -476,10 +345,8 @@ function best_match(query_params, offset, sort) {
     return { order: `${rank}, e.id`, values };
 }
 
-// Cap on one export, so a single request cannot exhaust memory.
 const EXPORT_LIMIT = 5000;
 
-// The page number the caller asked for, or 1 if it is missing or nonsense.
 function as_page(value) {
     let n = Math.floor(Number(as_text(value)));
 
@@ -487,28 +354,19 @@ function as_page(value) {
     return n;
 }
 
-// One page of matching entries plus the counts for pagination. Two queries at
-// once: a page past the end returns no rows, so the total needs its own.
 export async function search_entries(query_params) {
     let { where, values } = build_where(query_params);
     let page = as_page(query_params.page);
 
-    // Matched against a list rather than taken from the URL: it is written
-    // straight into the LIMIT, so it can only ever be one of three numbers.
+    // Written straight into LIMIT, so only one of three numbers.
     let page_size = page_size_from(query_params.per_page);
     let offset = (page - 1) * page_size;
 
-    // Looked up by key, so nothing from the URL is ever interpolated into the
-    // ORDER BY. e.id last breaks ties, or a tied row could appear on two pages;
-    // a column that is already unique does not need it.
     let sort = sort_by(as_text(query_params.sort));
     let { order, values: ranking } = best_match(query_params, values.length, sort);
 
     let [rows, counted] = await Promise.all([
-        // Ids first, then the columns for those ten. With the columns in the
-        // same query as the LIMIT, PostgreSQL builds all thirteen for every
-        // row up to the offset and discards them: the last page cost 1.7 s.
-        // LIMIT and OFFSET are inlined safely because as_page returns digits.
+        // Ids first: with the columns in the same query the last page took 1.7 s.
         query(`SELECT ${ENTRY_COLUMNS} ${ENTRY_JOINS}
                WHERE e.id IN (
                    SELECT e.id FROM entry e
@@ -534,11 +392,6 @@ export async function search_entries(query_params) {
     };
 }
 
-// How the box was read, for the note above the results:
-//   exact      a quoted phrase was asked for
-//   phrase     loose words, and the quoted search to offer instead
-//   stored_as  names it was also read as ("Berman, H."), so nobody wonders
-//              why "Helen Berman" lists an H. Berman
 async function how_read(query_params) {
     let text = clean_text(as_text(query_params.q));
     let units = text ? search_units(text) : [];
@@ -549,8 +402,6 @@ async function how_read(query_params) {
     };
 }
 
-// Only names some author really has: "yeast tRNA" reads as "tRNA, Y." and
-// says nothing.
 async function stored_names(text) {
     if (!text) return [];
 
@@ -566,8 +417,6 @@ async function stored_names(text) {
     return found.rows.map((r) => r.shown);
 }
 
-// The size of the database and when it last changed, for the landing page.
-// Asked fresh, like /api/stats, so a load shows at once.
 export async function database_stats() {
     let result = await query(`SELECT (SELECT count(*) FROM entry) AS total,
                                      (SELECT max(loaded_at) FROM loaded_entries) AS updated`);
@@ -575,8 +424,6 @@ export async function database_stats() {
     return { total: Number(row.total), updated: row.updated };
 }
 
-// How many entries match, without building a single row. Costs 6-45 ms where
-// a full search costs 28-38, which is what makes a count-as-you-type possible.
 export async function count_entries(query_params) {
     let { where, values } = build_where(query_params);
     let counted = await query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values);
@@ -584,14 +431,6 @@ export async function count_entries(query_params) {
     return Number(counted.rows[0].n);
 }
 
-
-// The landing page's BROWSE cards with their counts, each row counted by the
-// query its Yes runs, so a row and its results cannot disagree. Each row's
-// options are filled in: a kingdom's organisms, a filter's 10 most frequent
-// codes (read from the same lists the Full search boxes suggest from), or its
-// fixed choices, each counted too. Each bar is a row's count against the
-// largest in its own list. Kept for ten minutes: the data changes only on a
-// load.
 const BROWSE_TTL_MS = 10 * 60 * 1000;
 export const BROWSE_TOP = 10;
 const TOP_SOURCES = { ligand: ligand_suggestions, nonstandard_residue: nonstandard_suggestions };
@@ -603,11 +442,6 @@ function with_share(rows) {
     return rows.map((r) => ({ ...r, share: r.count / most }));
 }
 
-// A kingdom's most frequent source organisms, from the list the Source
-// organism box suggests from. A strain already counted under its species
-// listed above it is left out, so E. coli is not listed twice, and so is a
-// name NCBI files as unclassified ("bacterium"), which is no one organism.
-// The note is the first common name.
 export function kingdom_organisms(organisms, within, n = BROWSE_TOP) {
     let chosen = [];
     for (const o of organisms) {
@@ -621,7 +455,6 @@ export function kingdom_organisms(organisms, within, n = BROWSE_TOP) {
     return chosen;
 }
 
-// A row's options as rows of their own, before counting.
 async function options_of(row) {
     if (row.within) {
         let chosen = kingdom_organisms(await organism_suggestions("source_organisms"), row.within);
@@ -649,13 +482,9 @@ export async function browse_counts() {
     return groups;
 }
 
-// Every matching entry for the report, up to EXPORT_LIMIT. Says whether it
-// stopped early so the page can warn.
 export async function export_entries(query_params) {
     let { where, values } = build_where(query_params);
 
-    // The same order the screen used, so a downloaded CSV matches what was on
-    // it. No extra join: ENTRY_JOINS already has every table a sort needs.
     let sort = sort_by(as_text(query_params.sort));
     let { order, values: ranking } = best_match(query_params, values.length, sort);
 
@@ -677,13 +506,6 @@ export async function export_entries(query_params) {
     };
 }
 
-
-// Every polymer of every matching entry, for the report's Molecules table:
-// entries in the order export_entries gives them, then nucleic acids before
-// proteins, molecules by number. Nucleic acids only unless proteins is "1".
-// `q` lets a test run this inside its own transaction.
-// The ids of the entries a search matches, in the order the results list
-// shows them. The part tables list their rows entry by entry in this order.
 async function export_ids(query_params, q) {
     let { where, values } = build_where(query_params);
     let sort = sort_by(as_text(query_params.sort));
@@ -714,8 +536,6 @@ export async function export_molecules(query_params, q = query) {
     return { results: rows.rows, total: rows.rows.length, entries: ids.length, proteins };
 }
 
-// The report's Ligands table: one row per ligand of the matching entries,
-// water only with ?water=1, in entry order, then as each entry numbers them.
 export async function export_ligands(query_params, q = query) {
     let ids = await export_ids(query_params, q);
     let water = as_text(query_params.water) === "1";
@@ -733,11 +553,6 @@ export async function export_ligands(query_params, q = query) {
     return { results: rows.rows, total: rows.rows.length, entries: ids.length, water };
 }
 
-
-// The base_pairs.dbn file of the report's ZIP: one dot_bracket_record per
-// matching entry with annotated pairs, in the order of the results list. An
-// entry with nucleic acids but no annotation is listed in unannotated, not
-// written as a line of dots, which would read as "no pairs".
 export async function export_dot_brackets(query_params, q = query) {
     let ids = await export_ids(query_params, q);
 
@@ -752,10 +567,7 @@ export async function export_dot_brackets(query_params, q = query) {
           ORDER BY array_position($1, a.entry_id), length(ep.entity_id), ep.entity_id,
                    length(a.id), a.id`, [ids])).rows;
 
-    // Two plain reads joined here, not in SQL: for the join the planner
-    // guesses a few hundred pairs, loops over 370,000 and took 16 s. Each
-    // row comes as one line of text, since building 400,000 row objects
-    // took the driver 4 s and splitting the lines takes a fraction of that.
+    // Joined in JS: the planner looped over 370,000 pairs and took 16 s.
     let cww = new Set((await q(
         `SELECT entry_id || ' ' || base_pair_id AS k FROM ndb_base_pair_annotation
           WHERE entry_id = ANY($1) AND lw_family = 'cWW'`, [ids])).rows.map((r) => r.k));
@@ -773,13 +585,11 @@ export async function export_dot_brackets(query_params, q = query) {
                 : [];
         });
 
-    // Canonical by the bases' parents, so a modified U (PSU) pairs as U.
+    // By the parent base, so PSU pairs as U.
     let parent = new Map((await q(`SELECT id, parent_comp_id FROM chem_comp WHERE parent_comp_id IS NOT NULL`)).rows
         .map((r) => [r.id, r.parent_comp_id]));
     let base = (comp) => (parent.get(comp) ?? comp).replace(/^D(?=[ACGTU]$)/, "").replace("T", "U");
 
-    // An NMR ensemble annotates every model; the first is enough. Every entry
-    // with any annotation counts as annotated, even with no cWW pair.
     let first = new Map();
     for (const p of listed) first.set(p.entry_id, Math.min(first.get(p.entry_id) ?? Infinity, p.model));
     let annotated = new Set((await q(
@@ -804,7 +614,6 @@ export async function export_dot_brackets(query_params, q = query) {
     return { text: records.join(""), records: records.length, unannotated };
 }
 
-// The SELECT list for one scope, built from the registry.
 function columns_sql(scope) {
     return COLUMNS
         .filter((c) => c.scope === scope)
@@ -812,13 +621,8 @@ function columns_sql(scope) {
         .join(",\n    ");
 }
 
-// Every search result row.
 const ENTRY_COLUMNS = columns_sql("entry");
 
-// The Structures table of the report: its own fields only, whatever their
-// scope. A column with a fallback takes it here, as the page does, so an
-// entry that records only its first author still has authors in the file;
-// one with a report_select uses that, a faster way to the same value.
 const STRUCTURE_COLUMNS = report_fields(REPORT_TABLES.find((t) => t.key === "structures"))
     .map(({ key }) => {
         let c = COLUMNS.find((col) => col.key === key);
@@ -828,12 +632,9 @@ const STRUCTURE_COLUMNS = report_fields(REPORT_TABLES.find((t) => t.key === "str
     })
     .join(",\n    ");
 
-// Extra columns for one entry. Each is a subquery, so a page of ten results
-// must not pay for them.
 const DETAIL_COLUMNS = columns_sql("detail");
 
-// The tables those expressions read, and the aliases they use. LEFT JOIN, not
-// JOIN: an entry can lack any of these rows (52 have no organism row).
+// LEFT JOIN: 52 entries have no organism row.
 const ENTRY_JOINS = `
     FROM entry e
     LEFT JOIN struct s                ON s.entry_id   = e.id
@@ -843,8 +644,6 @@ const ENTRY_JOINS = `
     LEFT JOIN ndb_struct_ntc_overall ntc ON ntc.entry_id = e.id
 `;
 
-// One entry by its PDB id, case-insensitively: 4tna and 4TNA are the same
-// structure. undefined when there is none; this file does not know about 404s.
 export async function find_entry(id) {
     let result = await query(
         `SELECT ${ENTRY_COLUMNS}, ${DETAIL_COLUMNS} ${ENTRY_JOINS}
@@ -856,9 +655,6 @@ export async function find_entry(id) {
     return result.rows[0];
 }
 
-// The first thing wrong with the query, or null if it is answerable.
-// What an entity is, in the words a reader of a nucleic acid database uses.
-// entity_poly.type when it is a polymer, entity.type otherwise.
 const POLY_KINDS = {
     "polyribonucleotide":                                "RNA",
     "polydeoxyribonucleotide":                           "DNA",
@@ -870,8 +666,7 @@ const POLY_KINDS = {
 };
 const ENTITY_KINDS = { "non-polymer": "Ligand", "water": "Water", "branched": "Oligosaccharide" };
 
-// Nucleic acids lead: in 786 entries entity 1 is a protein, and this is a
-// nucleic acid database. Anything unrecognised sorts after the known kinds.
+// Nucleic acids first: in 786 entries entity 1 is a protein.
 const KIND_ORDER = ["RNA", "DNA", "DNA/RNA hybrid", "Protein",
                     "Oligosaccharide", "Ligand", "Water", "Other"];
 
@@ -880,22 +675,16 @@ function entity_kind(entity_type, poly_type) {
     return ENTITY_KINDS[entity_type] || "Other";
 }
 
-// Entity ids are numbers stored as text, so "10" would sort before "2".
+// Entity ids are text, so "10" would sort before "2".
 function by_kind_then_id(a, b) {
     return KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)
         || a.id.length - b.id.length
         || a.id.localeCompare(b.id);
 }
 
-// Every molecule in one structure, with its chains, in one round trip.
-// `q` lets a test run this inside its own transaction; the site uses query.
-// Chain author ids come from pdbx_poly_seq_scheme, so ligands and water have
-// none: the schema has no non-polymer scheme table.
+// Ligands and water have no author chain id: the schema has no non-polymer scheme.
 const blank = (v) => (v && v.trim()) || null;
 
-// How a molecule was made, from its source rows: one segment for most, one per
-// stretch of sequence for a chimera (3WFR molecule 3: 1-15, 16-453, 454-512).
-// The host is kept only when it is not the source organism itself.
 export function source_of(rows) {
     if (!rows.length) return null;
     let segments = rows.map((r) => ({ organism: blank(r.organism), taxid: r.taxid ?? null,
@@ -988,11 +777,6 @@ export async function entry_contents(id, q = query) {
     return { entities: entities.sort(by_kind_then_id), modified };
 }
 
-// Every residue of every polymer, for the sequence shown on the structure
-// page: the code (2MG, not G), whether it is a modified nucleotide, the
-// author number of the first chain, and whether any chain has it in the
-// model. Kept out of entry_contents so the API is not 89,527 rows longer
-// for 9MU2. A Map from entity id to residues in sequence order.
 export async function entry_residues(id, q = query) {
     let result = await q(
         `WITH e AS (SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1)),
@@ -1027,10 +811,6 @@ export async function entry_residues(id, q = query) {
     return residues;
 }
 
-// Every annotated base pair of one entry, in model 1 (an NMR entry repeats
-// each pair per model). kind is judged on the parent bases, so 1OB5's
-// G30-5MC40 (cWW_G-5MC) is Watson-Crick: 'wc' is cWW G-C or A-U/T, 'gu' is
-// cWW G with U/T, 'nc' is every other pair. See db/migrations/014.
 export async function entry_base_pairs(id, q = query) {
     let result = await q(
         `WITH p AS (
@@ -1078,9 +858,6 @@ export async function entry_base_pairs(id, q = query) {
     return result.rows;
 }
 
-// An entry's biological assemblies (migration 016): each with the chains and
-// operator expressions that build it, in file order, and every operator as
-// [r11, r12, r13, t1, r21, r22, r23, t2, r31, r32, r33, t3].
 export async function entry_assemblies(id, q = query) {
     let key = [as_text(id).trim()];
     let [assemblies, opers] = await Promise.all([
@@ -1104,10 +881,6 @@ export async function entry_assemblies(id, q = query) {
     };
 }
 
-// What the sequence map needs beyond the pairs: every nucleotide of every
-// nucleic-acid chain (its letter, author number, whether it is in the model)
-// and every NtC step of model 1 with its CANA class and confidence (confal).
-// A modified nucleotide's letter is its parent's, in lower case.
 export async function entry_sequence_tracks(id, q = query) {
     let e = `(SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1))`;
     let [residues, steps] = await Promise.all([
@@ -1136,9 +909,6 @@ export async function entry_sequence_tracks(id, q = query) {
     return { residues: residues.rows, steps: steps.rows };
 }
 
-// Where each modified nucleotide sits, one row per code and chain, in the
-// author numbering the Numbering column uses. Nucleic-acid chains only, the
-// same rule as the residue filter, so a protein's MSE is not listed.
 async function modified_nucleotides(id, q) {
     let result = await q(
         `WITH m AS (
@@ -1162,10 +932,7 @@ async function modified_nucleotides(id, q) {
     return result.rows;
 }
 
-// Where a molecule's sequence comes from, as links. A PDB reference to the
-// entry itself, as for most synthetic DNA and RNA (2,672 nucleic acid
-// entities), says only "this sequence is here" and is left out. A database
-// with no known address (NOR) keeps its name and code without a url.
+// A PDB self-reference says nothing, so it is left out.
 const NCBI = "https://www.ncbi.nlm.nih.gov";
 const REFERENCE_URL = {
     UNP:  (r) => ({ label: "UniProt",  url: `https://www.uniprot.org/uniprotkb/${r.accession}`,
@@ -1192,10 +959,6 @@ function sequence_links(refs, type, poly_type, entry_id) {
         .sort((a, b) => a.label.localeCompare(b.label) || a.code.localeCompare(b.code));
 }
 
-// Per polymer chain: how much of the sequence is in the model, which residues
-// are missing, and the author numbering a paper uses. A residue with no
-// auth_mon_id was in the sequence but not seen in the density. Alternative
-// residues at one position count once.
 async function chain_stats(id, q) {
     let result = await q(
         `WITH r AS (
@@ -1225,8 +988,6 @@ async function chain_stats(id, q) {
     }]));
 }
 
-// Missing residues as runs of consecutive positions: 1L9A's two gaps are one
-// run, "A173-G174", not two entries.
 export function missing_runs(missing) {
     let runs = [];
 
@@ -1243,9 +1004,6 @@ export function missing_runs(missing) {
     return runs.map(({ from_seq, to_seq, ...run }) => run);
 }
 
-// How many of an entry's steps DNATCO assigned to each NtC class. One row in
-// the step summary is one step: their count is ndb_struct_ntc_overall's
-// num_steps in every entry.
 export async function entry_ntc_classes(id, q = query) {
     let result = await q(
         `SELECT s.assigned_ntc AS ntc, s.assigned_cana AS cana, count(*)::int AS n
@@ -1257,14 +1015,7 @@ export async function entry_ntc_classes(id, q = query) {
     return result.rows;
 }
 
-// The checked reference for each entry that has one: db/build_citations.mjs
-// writes it from Crossref and PubMed.
 let references = null;
-
-// The primary citation of one structure, or null. Only the primary: it is
-// the paper the depositors name for the structure, and the one to cite. 129
-// entries also list related papers; those stay in the CIF, not on the page.
-// From citations.json when the entry is there, the PDB's citation otherwise.
 
 export async function entry_citation(id, q = query) {
     let result = await q(
@@ -1283,8 +1034,7 @@ export async function entry_citation(id, q = query) {
     if (!c) return null;
     references ??= JSON.parse(readFileSync(new URL("./citations.json", import.meta.url), "utf8")).entries;
     let r = references[as_text(id).trim().toUpperCase()];
-    // The PDB's own citation, in the reference's shape. A PMID of -1 is the
-    // PDB's way of saying none.
+    // PMID -1 means none.
     let pubmed = c.pubmed > 0 ? String(c.pubmed) : null;
     let cited = r ? { ...r, source: "reference" } : {
         type: "article", source: "pdb",
@@ -1308,7 +1058,6 @@ export function query_problem(query) {
         return "page must be a whole number of 1 or more";
     }
 
-    // Every range: each end a number, and the low end no higher than the top.
     for (const lo of FILTERS.filter((f) => f.kind === "range" && f.pair_with)) {
         let min = as_text(query[lo.key]);
         let max = as_text(query[lo.pair_with]);
@@ -1322,8 +1071,6 @@ export function query_problem(query) {
 
     return null;
 }
-// Every ligand in the database, water left out, most common first, for the
-// Ligand box's suggestions. 339 rows: small enough to send whole.
 export async function ligand_suggestions(q = query) {
     let result = await q(
         `SELECT n.comp_id AS code, cc.name, count(DISTINCT n.entry_id)::int AS entries
@@ -1335,10 +1082,6 @@ export async function ligand_suggestions(q = query) {
     return result.rows;
 }
 
-// Every non-standard nucleotide in the database, most common first, for the
-// Non-standard residue box's suggestions, with the base it is modified from.
-// Counted from doc.residue_codes, the list the filter itself reads, so the
-// number beside a code is what picking it finds.
 export async function nonstandard_suggestions(q = query) {
     let result = await q(
         `SELECT cc.id AS code, cc.name, cc.parent_comp_id AS parent, count(*)::int AS entries
@@ -1350,11 +1093,6 @@ export async function nonstandard_suggestions(q = query) {
     return result.rows;
 }
 
-// The organisms the Source organism and Expression host boxes can suggest,
-// one row per taxon with its common names and how many entries hold it,
-// in the { code, name, entries } shape the Ligand box uses. code is NCBI's
-// scientific name, which the box finds whatever the depositor wrote.
-// One row per taxon and spelling, with the entries holding it.
 const ORGANISM_ROWS = {
     source_organisms: `SELECT s.taxid, s.organism, array_agg(DISTINCT s.entry_id) AS ids
                          FROM ${SOURCES_SQL} s
@@ -1375,7 +1113,6 @@ export async function organism_suggestions(role, q = query) {
     }
     let groups = (await q(ORGANISM_ROWS[role])).rows;
 
-    // One row per name. Two ids NCBI has since merged are one organism.
     let names = new Map();
     for (const g of groups) {
         let t = g.taxid === null ? null : taxon(g.taxid);
@@ -1383,9 +1120,6 @@ export async function organism_suggestions(role, q = query) {
         if (code && !names.has(code)) names.set(code, t ? t.common.join(", ") : "");
     }
 
-    // Counted by the box's own rule, so the number is what picking it finds:
-    // the name inside the written one, or a taxon the name means.
-    // Escherichia coli counts its strains, as the search will.
     let rows = [...names].map(([code, name]) => {
         let lower = code.toLowerCase();
         let taxa = new Set(taxa_named(code));
@@ -1402,8 +1136,6 @@ export async function organism_suggestions(role, q = query) {
     return rows;
 }
 
-// How many entries each pill of a counted filter finds, as
-// { polymer_type: { DNA: 197, ... } }. One GROUP BY per filter.
 export async function pill_counts(q = query) {
     let counts = {};
     for (const f of FILTERS.filter((f) => f.count_by)) {
@@ -1414,12 +1146,7 @@ export async function pill_counts(q = query) {
     return counts;
 }
 
-// ---- Same sequence in other entries ------------------------------------------
-// Which nucleic-acid entities share a sequence letter for letter. Asking
-// Postgres each time took 120-290 ms, so every sequence is held here, keyed
-// by polymer type and sequence (sequence_key). A hash over every entity_poly
-// row (16 ms) tells when a load has changed one, and the index is rebuilt.
-// It is checked at most every SAME_SEQUENCE_CHECK_MS, one check at a time.
+// Every sequence held in memory (Postgres took 120-290 ms); a hash of entity_poly tells when to rebuild.
 export const SAME_SEQUENCE_CHECK_MS = 2000;
 const SEQUENCE_SIGNATURE =
     `SELECT count(*)::text || ' ' || coalesce(sum(hashtext(entry_id || ' ' || entity_id || ' ' ||
@@ -1462,8 +1189,6 @@ export async function sequence_index(q = query, now = Date.now()) {
     return seq_pending;
 }
 
-// The groups an entry's nucleic-acid entities belong to that reach another
-// entry: each its key and every { entry, entity } in it, this entry's first.
 export async function same_sequence_groups(id, q = query) {
     let index = await sequence_index(q);
     let upper = as_text(id).trim().toUpperCase();
@@ -1483,8 +1208,6 @@ export async function same_sequence_groups(id, q = query) {
     return groups;
 }
 
-// How many other entries share a sequence with this one, for the page's
-// section count.
 export async function same_sequence_count(id, q = query) {
     let upper = as_text(id).trim().toUpperCase();
     let others = new Set();
@@ -1494,8 +1217,6 @@ export async function same_sequence_count(id, q = query) {
     return others.size;
 }
 
-// A chain's sequence key and entity, or null when it is not a plain
-// nucleic-acid chain of a known entry.
 export async function chain_sequence_key(entry, label, q = query) {
     let index = await sequence_index(q);
     let r = await q(`SELECT entry_id, entity_id FROM struct_asym WHERE upper(entry_id) = upper($1) AND id = $2`,
@@ -1506,9 +1227,6 @@ export async function chain_sequence_key(entry, label, q = query) {
     return key ? { key, entry: entry_id, entity: entity_id, label: as_text(label).trim() } : null;
 }
 
-// What the table lists for each entry of a group: its title, method and
-// resolution, and every chain of the entity with its author name, how much of
-// it is modelled and its mean backbone confidence.
 export async function same_sequence_members(members, q = query) {
     let entries = [...new Set(members.map((m) => m.entry))];
     let [about, chains] = await Promise.all([
@@ -1534,11 +1252,6 @@ export async function same_sequence_members(members, q = query) {
     return { about: by_entry, chains: chains.rows };
 }
 
-// Everything compare_chains reads for a set of chains, given as
-// { entry, label }: residues, base pairs within the chain and NtC steps, all
-// of the entry's first model. A pair counts only between two nucleotides of
-// the chain as it is in the file, not with a symmetry copy. A step whose
-// nucleotide has alternate positions is taken once, for the first one.
 export async function chain_tracks(chains, q = query) {
     let entries = chains.map((c) => c.entry);
     let labels = chains.map((c) => c.label);
@@ -1576,11 +1289,7 @@ export async function chain_tracks(chains, q = query) {
                        WHEN least(base_1, base_2) || greatest(base_1, base_2) = 'GU' THEN 'gu'
                        ELSE 'nc' END AS kind
              FROM p`, [entries, labels]),
-        // The chains' steps are gathered first, through the entry_id index.
-        // Left to plan the whole join, Postgres guessed the same-chain filter
-        // keeps 26 of a million steps and scanned the table once per chain:
-        // the tRNA group of 5UYM (53 chains) ran past the 15 s limit. 0.35 s
-        // now, with identical rows for all 328 groups the old query answered.
+        // Steps gathered first: the planned join ran past 15 s for 5UYM's tRNA group.
         q(`WITH m AS (SELECT t.entry_id, min(coalesce(t.pdb_model_number, 1)) AS first_model
                         FROM ndb_struct_ntc_step t WHERE t.entry_id = ANY($1) GROUP BY t.entry_id),
               t AS MATERIALIZED (
@@ -1613,9 +1322,6 @@ const mean_confal = (steps) => {
     return sure.length ? Math.round(sure.reduce((x, y) => x + y, 0) / sure.length) : null;
 };
 
-// The section's table: for each group this entry is in, every entry with the
-// sequence, each chain with how it compares to this entry's first chain, and
-// which chain is the best model of the sequence.
 export async function same_sequence(id, q = query) {
     let upper = as_text(id).trim().toUpperCase();
     let groups = await Promise.all((await same_sequence_groups(id, q)).map(async (g) => {
@@ -1655,8 +1361,6 @@ export async function same_sequence(id, q = query) {
     return groups.filter(Boolean);
 }
 
-// Two chains side by side, given as ENTRY:LABEL. null when either is not a
-// plain nucleic-acid chain; false when their sequences are not the same.
 export async function compare_same_sequence(a_id, b_id, q = query) {
     let parse = (s) => { let [entry, label] = as_text(s).split(":"); return [entry ?? "", label ?? ""]; };
     let [a, b] = await Promise.all([chain_sequence_key(...parse(a_id), q), chain_sequence_key(...parse(b_id), q)]);

@@ -3,8 +3,6 @@ import { test, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, waitFor } from "@testing-library/react";
 import { renderAt } from "./render.jsx";
 
-// Each page as :4000 draws it for the same replies: its title, heading,
-// what the rail lights and carries, and a line that shows the data arrived.
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -16,7 +14,6 @@ const headings = (level) => screen.queryAllByRole("heading", { level }).map((h) 
 
 test("landing: the five questions and the count", async () => {
   renderAt("/");
-  // The count is set in parts (the number bold), so the line is read whole.
   await waitFor(() => expect(document.querySelector(".landing_stats")?.textContent.replace(/\s+/g, " ").trim()).toBe("1,489 structures · updated 6 Nov 2026"));
   expect(headings(2)).toEqual(["What is it made of?", "Where is it from?", "How was it solved?", "Is it modified?", "What is bound to it?"]);
   expect(document.title).toBe("NA3DB");
@@ -70,6 +67,5 @@ test("a failed reply shows the server's error page and lights nothing", async ()
   renderAt("/structure/ZZZZ");
   await screen.findByRole("heading", { level: 1, name: "Page not found" });
   expect(screen.getByText("There is nothing at /structure/ZZZZ.")).toBeTruthy();
-  // The page tells App it failed once it has drawn, so the rail follows a render later.
   await waitFor(() => expect(rail()).toEqual(["/search", "#", "/report"]));
 });

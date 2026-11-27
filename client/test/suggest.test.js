@@ -1,7 +1,6 @@
 import { test, expect } from "vitest";
 import { marked, nextActive, optionId } from "../src/suggest.js";
 
-// box_suggest.js: the bold part, and the arrows (past either end is the box).
 test("the typed text is marked where it starts a word", () => {
   expect(marked("Homo sapiens", "sap")).toEqual(["Homo ", "sap", "iens"]);
   expect(marked("Homo sapiens", "omo")).toEqual(["Homo sapiens"]);

@@ -1,7 +1,3 @@
-// contents.test.js - checks entry_contents, which lists every molecule in one
-// structure. The test database is flat (one or two entities, no chains), so
-// each test builds a fuller structure inside a transaction and rolls it back.
-
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { query, transaction, close } from "./db.js";
@@ -17,7 +13,6 @@ after(() => close());
 
 const ROLLBACK = new Error("rollback");
 
-// Runs `work` against a fixture entry that never outlives the test.
 async function with_fixture(work) {
     let result;
     try {
@@ -32,8 +27,6 @@ async function with_fixture(work) {
     return result;
 }
 
-// ZZ01: a protein listed first, as in 786 real entries, then RNA, DNA, a
-// hybrid, a magnesium ion and water. Ids out of order on purpose ("10" < "2").
 async function insert_fixture(q) {
     await q(`INSERT INTO entry (id) VALUES ('ZZ01')`);
 
@@ -56,21 +49,18 @@ async function insert_fixture(q) {
     await q(`INSERT INTO pdbx_entity_nonpoly (entity_id, entry_id, name, comp_id)
              VALUES ('4', 'ZZ01', 'MAGNESIUM ION', 'MG'), ('5', 'ZZ01', 'water', 'HOH')`);
 
-    // Entity 2 has two copies, chains B and C. MG has three, water one.
     await q(`INSERT INTO struct_asym (id, entry_id, entity_id) VALUES
              ('A', 'ZZ01', '1'), ('B', 'ZZ01', '2'), ('C', 'ZZ01', '2'),
              ('D', 'ZZ01', '3'), ('E', 'ZZ01', '10'),
              ('F', 'ZZ01', '4'), ('G', 'ZZ01', '4'), ('H', 'ZZ01', '4'),
              ('I', 'ZZ01', '5')`);
 
-    // Author chain letters differ from label ids, as they often do.
     await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id,
                                                mon_id, pdb_strand_id) VALUES
              ('A', 'ZZ01', '1', 1, 'MET', 'P'), ('A', 'ZZ01', '1', 2, 'LYS', 'P'),
              ('B', 'ZZ01', '2', 1, 'G',   'R'), ('C', 'ZZ01', '2', 1, 'G', 'S'),
              ('D', 'ZZ01', '3', 1, 'DA',  'T'), ('E', 'ZZ01', '10', 1, 'DA', 'U')`);
 }
-
 
 test("lists every entity, not only entity 1", async () => {
     let c = await with_fixture((q) => entry_contents("ZZ01", q));
@@ -138,9 +128,6 @@ test("an entry with no entities gives an empty list, not undefined", async () =>
     assert.deepEqual(c.entities, []);
 });
 
-// --- entity_name on the card and the page (micro-goal 1.1) --------------
-
-// The column's own SQL, run inside the fixture's transaction.
 async function entity_name_of(id, q) {
     let select = COLUMNS.find((c) => c.key === "entity_name").select;
     let r = await q(`SELECT ${select} AS v FROM entry e WHERE e.id = $1`, [id]);
@@ -188,10 +175,6 @@ test("find_entry and search still return entity_name", async () => {
     assert.equal(page.results[0].entity_name, "TRNAPHE");
 });
 
-// --- the entity_name filter (micro-goal 1.2) ----------------------------
-// The filter was always an EXISTS over every entity; these pin that down so
-// it cannot drift back to entity 1 the way the displayed column had.
-
 async function matches(params, q) {
     let { where, values } = build_where(params);
     let r = await q(`SELECT e.id FROM entry e WHERE ${where}`, values);
@@ -236,9 +219,6 @@ test("the search box's document gathers every entity, not entity 1", async () =>
     assert.match(r.rows[0].def, /string_agg\(DISTINCT en\.pdbx_description/);
 });
 
-// --- polymer type: DNA, RNA or both (micro-goal 1.3) --------------------
-
-// An entry ZZ03 holding one polymer entity per type given, then `work`.
 async function with_types(types, work) {
     return with_fixture(async (q) => {
         await q(`INSERT INTO entry (id) VALUES ('ZZ03')`);
@@ -298,7 +278,6 @@ test("the polymer type filter finds a DNA entry and not an RNA one", async () =>
     assert.ok(!rna.includes("ZZ03"));
 });
 
-// Bookmarks made before the split carry the old values.
 test("an old 'Nucleic acid' link still finds DNA, RNA and DNA/RNA entries", async () => {
     for (const types of [[DNA], [RNA], [HYBRID]]) {
         let found = await with_types(types, (q) => matches({ polymer_type: "Nucleic acid" }, q));
@@ -318,10 +297,6 @@ test("an old link does not widen into the protein-only entries", async () => {
     assert.ok(!found.includes("ZZ03"));
 });
 
-// --- chain count (micro-goal 1.5) ---------------------------------------
-// struct_asym has a row per ligand and per water as well as per chain:
-// 77,095 of its 97,441 rows in the real data.
-
 async function column_of(key, id, q) {
     let select = COLUMNS.find((c) => c.key === key).select;
     let r = await q(`SELECT ${select} AS v FROM entry e WHERE e.id = $1`, [id]);
@@ -329,7 +304,6 @@ async function column_of(key, id, q) {
 }
 
 test("Chains counts polymer chains, not ligands or water", async () => {
-    // ZZ01: A protein, B and C RNA, D DNA, E hybrid; F-H magnesium; I water.
     assert.equal(await with_fixture((q) => column_of("chain_count", "ZZ01", q)), 5);
 });
 
@@ -357,12 +331,7 @@ test("Chains agrees with the chains entry_contents lists for polymers", async ()
     assert.equal(n, polymer_chains);
 });
 
-// --- residue count (micro-goal 1.6) -------------------------------------
-// entity_poly_seq is one row per residue per ENTITY, so two copies of a chain
-// counted once. pdbx_poly_seq_scheme is one row per residue per CHAIN.
-
 test("Residues counts every residue of every chain", async () => {
-    // ZZ01: chain A has 2 residues; B, C, D and E one each.
     assert.equal(await with_fixture((q) => column_of("residue_count", "ZZ01", q)), 6);
 });
 
@@ -394,12 +363,7 @@ test("Residues does not read entity_poly_seq, which counts each entity once", as
     assert.equal(n, 6);
 });
 
-// --- nucleotide count (micro-goal 1.6b) ---------------------------------
-// Residues includes protein, which hides the nucleic acid: 2VON has 400
-// residues and 14 nucleotides.
-
 test("Nucleotides counts DNA, RNA and hybrid residues, not protein", async () => {
-    // ZZ01: protein A has 2 residues; RNA B and C, DNA D and hybrid E one each.
     assert.equal(await with_fixture((q) => column_of("nucleotide_count", "ZZ01", q)), 4);
 });
 
@@ -443,9 +407,6 @@ test("works on the plain test data without a fixture", async () => {
     assert.equal(c.entities[0].kind, "RNA");
 });
 
-// --- atom count (micro-goal 1.7) ----------------------------------------
-// One copy of the structure: model 1 only, no water.
-
 async function insert_atoms(q, rows) {
     for (let [asym, comp, model] of rows) {
         await q(`INSERT INTO atom_site (entry_id, label_asym_id, label_comp_id,
@@ -474,9 +435,6 @@ test("Atoms is 0 for an entry with no coordinates", async () => {
     assert.equal(await with_fixture((q) => column_of("atom_count", "ZZ01", q)), 0);
 });
 
-// --- modified nucleotides only (micro-goal 1.8) -------------------------
-// A protein label such as MSE does not make a nucleic acid entry non-standard.
-
 async function with_residues(rows, work) {
     return with_fixture(async (q) => {
         await q(`INSERT INTO chem_comp (id, mon_nstd_flag) VALUES ('MSE', 'n'), ('PSU', 'n')
@@ -489,7 +447,6 @@ async function with_residues(rows, work) {
     });
 }
 
-// The rule migration 010 stores and load_cif.py writes, run on the fixture.
 async function stored_flag(q) {
     let r = await q(`SELECT EXISTS (
         SELECT 1 FROM entity_poly_seq eps
@@ -527,8 +484,6 @@ test("the residue filter does not find an entry by a protein modification", asyn
     assert.ok(!mse.includes("ZZ01"));
     assert.ok(psu.includes("ZZ01"));
 });
-
-// --- source organism from every entity (micro-goal 1.9) -----------------
 
 async function organism_of(rows) {
     return with_fixture(async (q) => {
@@ -571,8 +526,6 @@ test("a capitals-only organism reads in species case on the card, as stored in t
     assert.equal(row.value, "Saccharomyces cerevisiae; HEPATITIS C VIRUS");
 });
 
-// A phone card keeps only some rows, picked by key, plus whatever answers the
-// search. Expression host is never on a card, so here it is only searched.
 test("a card row names its column and says whether it answers the search", () => {
     let rows = detail_rows({ title: "T", expression_host: "Escherichia coli" }, "card", ["expression_host"]);
     assert.deepEqual(rows.find((r) => r.key === "title"),
@@ -580,9 +533,6 @@ test("a card row names its column and says whether it answers the search", () =>
     assert.equal(rows.find((r) => r.key === "expression_host").searched, true);
 });
 
-// --- organism, taxon, how obtained and host as search filters (L7) --------
-
-// ZZ02: a natural yeast RNA and an E. coli-made Thermus protein.
 const YEAST_AND_THERMUS = [["nat", "1", 1, "Saccharomyces cerevisiae", 4932],
                            ["gen", "2", 1, "Thermus aquaticus", 271, "Escherichia coli", 562]];
 const finds = (params, rows = YEAST_AND_THERMUS) =>
@@ -645,8 +595,6 @@ test("each new filter puts its own row on the card", () => {
                      ["expression_host", "source_kind", "source_taxonomy"]);
 });
 
-// --- resolution from refine, as the PDB reports it (micro-goal 1.10) ----
-
 async function with_resolution(refine, reflns, work) {
     return with_fixture(async (q) => {
         if (refine !== null) await q(`INSERT INTO refine (entry_id, pdbx_refine_id, ls_d_res_high)
@@ -657,7 +605,6 @@ async function with_resolution(refine, reflns, work) {
     });
 }
 
-// The column reads tables ENTRY_JOINS brings in; the sort carries the same.
 async function resolution_of(q) {
     let join = SORTS.find((s) => s.key === "resolution_asc").join;
     let select = COLUMNS.find((c) => c.key === "resolution").select;
@@ -686,8 +633,6 @@ test("the resolution sort orders by the same value the card shows", async () => 
                   ORDER BY ${sort.sql}, e.id LIMIT 1`)).rows[0].id);
     assert.equal(first, "ZZ01");
 });
-
-// --- every citation (micro-goal 1.11) -----------------------------------
 
 async function with_citations(work) {
     return with_fixture(async (q) => {
@@ -725,7 +670,6 @@ test("an entry with no checked reference has the PDB's citation, marked as such"
 });
 
 test("an entry in citations.json has the checked reference, not the PDB's copy", async () => {
-    // 1DN8 is in the seed; its reference comes from Crossref and PubMed.
     let c = await entry_citation("1dn8");
     assert.equal(c.source, "reference");
     assert.ok(c.authors.every((a) => a.family || a.name), "authors are names, not strings");
@@ -762,10 +706,6 @@ test("an entry with no citation has none", async () => {
     assert.equal(await with_fixture((q) => entry_citation("ZZ01", q)), null);
 });
 
-// --- the search document, nucleotides only (micro-goal 1.12) ------------
-// doc is a materialized view, so the fixture rebuilds it inside the
-// transaction; the rollback puts the old one back.
-
 test("the search document holds modified nucleotides, not protein ones", async () => {
     let row = await with_residues([["1", 1, "MSE"], ["2", 1, "PSU"]], async (q) => {
         await q(`REFRESH MATERIALIZED VIEW doc`);
@@ -785,10 +725,6 @@ test("the box and the residue filter agree on a protein modification", async () 
     assert.ok(!box.includes("ZZ01"));
 });
 
-// --- the Molecules table (micro-goal 2.1a) ------------------------------
-// ZZ02 is 1L9A in miniature: an RNA numbered from 112 with two residues
-// missing, a protein, magnesium and water. Author chains swapped, as there.
-
 async function with_molecules(work) {
     return with_fixture(async (q) => {
         await q(`INSERT INTO entry (id) VALUES ('ZZ02')`);
@@ -802,8 +738,6 @@ async function with_molecules(work) {
         await q(`INSERT INTO struct_asym (id, entry_id, entity_id) VALUES
                  ('A', 'ZZ02', '1'), ('B', 'ZZ02', '2'), ('C', 'ZZ02', '3'), ('D', 'ZZ02', '3'),
                  ('E', 'ZZ02', '4')`);
-        // seq 3 and 4 were in the sequence but not seen: no auth_mon_id.
-        // seq 5 has two alternative residues and counts once.
         await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id, mon_id,
                                                    pdb_seq_num, auth_mon_id, pdb_strand_id) VALUES
                  ('A', 'ZZ02', '1', 1, 'G', 112, 'G',  'B'),
@@ -860,8 +794,6 @@ test("a ligand row gives its code and how many copies", async () => {
                                                url: "https://www.rcsb.org/ligand/MG" }]);
 });
 
-// --- links and organism per molecule (micro-goal 2.1b) ------------------
-
 async function with_refs(refs, organisms, work) {
     return with_molecules(async (q) => {
         for (let [i, [entity, db, code, acc]] of refs.entries())
@@ -896,9 +828,6 @@ test("every reference is listed, and an unknown database is plain text", async (
     assert.equal(m.groups[1].rows[0].links[0].url, null);
 });
 
-// --- where each polymer came from (L6) ----------------------------------
-
-// rows: [table, entity, src_id, organism, taxid, host, host_taxid, beg, end]
 async function with_sources(rows, work = async (q) => molecule_groups(await entry_contents("ZZ02", q))) {
     return with_molecules(async (q) => {
         for (let [table, entity, src, org, taxid, host, host_taxid, beg, end] of rows) {
@@ -922,7 +851,6 @@ async function with_sources(rows, work = async (q) => molecule_groups(await entr
     });
 }
 
-// One row of the Source table as text: kind | organisms | host | notes.
 const text = (o) => (o ? o.name + (o.common ? ` (${o.common})` : "") : "—");
 const flat = (r) => [r.kind,
     r.segments.map((g) => [g.range, text(g.organism), g.taxon?.id].filter(Boolean).join(" ")).join("; "),
@@ -1041,10 +969,6 @@ test("the protein group folds only when it is large", () => {
     assert.equal(molecule_groups(proteins(FOLD_PROTEINS + 1)).groups[0].folded, true);
 });
 
-// --- modified nucleotides and where they sit (micro-goal 2.1c) ----------
-// ZZ02's RNA (author chain B) gets ZZM at 112, 113 and 116, and ZZN at 114,
-// which was not modelled. The protein gets ZZP, which must not be listed.
-
 async function with_modified(work) {
     return with_molecules(async (q) => {
         await q(`INSERT INTO chem_comp (id, name, mon_nstd_flag) VALUES
@@ -1090,12 +1014,6 @@ test("a long list of positions shows the first few and keeps the rest", () => {
     assert.equal(row.rest.length, 12 - POSITIONS_SHOWN);
 });
 
-
-// --- base pairs (2.1d) ---------------------------------------------------
-
-// ZZ03 with the given pairs, each [model, chain_1, comp_1, seq_1, chain_2,
-// comp_2, seq_2, family]. 5MC and PSU name their parents, as migration 014
-// fills them in na3db.
 async function with_pairs(rows, work = (q) => entry_base_pairs("ZZ03", q)) {
     let result;
     try {
@@ -1160,7 +1078,6 @@ test("each pair says where it sits, and which copy of the chain each end is", as
 
     assert.deepEqual(where, [{ label_1: "A", pos_1: 1, copy_1: "1", label_2: "A", pos_2: 9, copy_2: "1" },
                              { label_1: "A", pos_1: 2, copy_1: "1", label_2: "A", pos_2: 8, copy_2: "2" }]);
-    // The picture's fields stay out of the files people download.
     assert.deepEqual(Object.keys(base_pair_export("ZZ03", pairs).pairs[0]),
                      ["chain_1", "res_1", "chain_2", "res_2", "family", "kind"]);
     assert.equal(base_pairs_csv(pairs).split("\n")[0], "chain_1,res_1,chain_2,res_2,family,kind");
@@ -1218,10 +1135,6 @@ test("many self-paired chains are counted, not named", () => {
     assert.equal(s.sentence, `${chains.length} chains each pair only with themselves, 1 pair each.`);
 });
 
-
-// --- sequences (2.3) -----------------------------------------------------
-
-// ZZ02's RNA with its fifth residue a pseudouridine, and its protein.
 const with_sequence = (work) => with_molecules(async (q) => {
     await q(`INSERT INTO chem_comp (id, mon_nstd_flag, name) VALUES ('PSU', 'n', 'PSEUDOURIDINE')
              ON CONFLICT (id) DO UPDATE SET mon_nstd_flag = 'n', name = EXCLUDED.name`);
@@ -1289,15 +1202,12 @@ test("an entry FASTA holds every sequenced molecule, or only the nucleic acids",
 
     assert.equal(entry_fasta("1ob5", entities),
                  ">1OB5_2|Chain B|TRNA\nGCGGAUUUAF\n>1OB5_1|Chain A|EF-TU\nAKGEF\n");
-    // PDB's sequence is kept: the charged tRNA's F stays.
     assert.equal(entry_fasta("1ob5", entities, { na_only: true }), ">1OB5_2|Chain B|TRNA\nGCGGAUUUAF\n");
     assert.deepEqual(fasta_choices(entities), { all: 2, na: 1 });
     assert.equal(entry_fasta("1ob5", [protein], { na_only: true }), null);
     assert.equal(entry_fasta("1ob5", [ligand]), null);
 });
 
-// ZL01 a SAM riboswitch with Mg; ZL02 only ions and drop additives; ZL03
-// water alone; ZL04 nothing at all. The seed has no ligands, so they are here.
 async function with_ligands(work) {
     return with_fixture(async (q) => {
         await q(`INSERT INTO chem_comp (id, name, formula) VALUES
@@ -1327,7 +1237,6 @@ test("the Ligand box matches a code whole and a name from three letters", async 
         sam: await m({ ligand: "sam" }),
         k: await m({ ligand: "K" }),
         adenosyl: await m({ ligand: "adenosyl" }),
-        // Two letters of a name are too few: "ad" is in half the dictionary.
         short: await m({ ligand: "ad" }),
         water: await m({ ligand: "HOH" }),
         excludes: await m({ ligand: "MG", match: "excludes" })
@@ -1368,7 +1277,6 @@ test("the base-pair export counts every kind and keeps the page's rows", async (
     assert.deepEqual(out.pairs[2], { chain_1: "A", res_1: "A3", chain_2: "B", res_2: "G22",
                                      family: "tHS", kind: "nc" });
 
-    // The CSV holds the same pairs, row for row.
     let lines = base_pairs_csv(rows).trimEnd().split("\n");
     assert.equal(lines[0], "chain_1,res_1,chain_2,res_2,family,kind");
     assert.deepEqual(lines.slice(1).map((l) => l.split(",")),
@@ -1403,7 +1311,6 @@ test("large counts on the page carry thousands separators, like Atoms", () => {
     assert.equal(shown.Atoms, "219,329");
 });
 
-// --- the NtC classes in Conformation --------------------------------------
 test("NtC steps are counted by CANA class, each class named, no class last and apart", () => {
     let t = ntc_section([{ ntc: "AA00", cana: "AAA", n: 31 }, { ntc: "AA08", cana: "AAw", n: 5 },
                          { ntc: "AA01", cana: "AAA", n: 31 }, { ntc: "BB00", cana: "BBB", n: 2 },

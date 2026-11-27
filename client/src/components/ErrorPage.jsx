@@ -1,5 +1,4 @@
 import { Link } from "react-router";
-// error.ejs: a heading, one line saying what happened, and a way on.
 function ErrorPage({ heading, message }) {
   return (
     <div className="results_area">

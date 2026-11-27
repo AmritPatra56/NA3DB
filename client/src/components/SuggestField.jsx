@@ -3,11 +3,6 @@ import NameList from "./NameList.jsx";
 import { useApi } from "../hooks/useApi.js";
 import { CLOSED, namesFor, drawn, closed, stepped } from "../nameSuggest.js";
 
-// A panel box with a name list (organism, host, residue, ligand). The names
-// are asked for once, the first time the box is focused or typed in.
-// onValue(name, value): the [name] handler, for typing. onFill: a pick fills
-// the box with its code, as the old pick sets the value without an input
-// event, so the Search button's count is not asked again.
 function SuggestField({ filter, value, onValue, onFill }) {
   const [wanted, setWanted] = useState(false);
   const reply = useApi(wanted ? `/api/${filter.suggest}` : null);
@@ -15,12 +10,10 @@ function SuggestField({ filter, value, onValue, onFill }) {
   const listId = `${filter.key}_options`;
   const listRef = useRef(null);
 
-  // Not loaded yet: nothing; failed: nothing, and the box still searches.
   const all = reply.data ?? [];
   const names = list.text === null ? [] : namesFor(all, list.text);
   const shown = list.open && names.length > 0;
 
-  // The name the arrows reach stays in view.
   useEffect(() => {
     if (list.active >= 0) listRef.current?.children[list.active]?.scrollIntoView({ block: "nearest" });
   }, [list.active]);

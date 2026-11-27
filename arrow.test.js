@@ -1,13 +1,8 @@
-// arrow.test.js - the one open/close arrow: every control that folds
-// something open or shut shows the same chevron, drawn by one CSS rule, in one
-// colour and size. No database needed.
-
 import test from "node:test";
 import assert from "node:assert";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
-// The React pages' own code: every .js and .jsx under client/src.
 const sources = (dir = "client/src") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
     .flatMap((f) => f.isDirectory() ? sources(`${dir}/${f.name}`) : /\.jsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []);
 const SOURCES = sources().map((path) => [path, read(`./${path}`)]);
@@ -70,8 +65,6 @@ test("an arrow-only control is just the arrow: no outline, no shadow, no tab edg
     }
 });
 
-// The one exception: the panel handle sits on the seam between two panels,
-// where an outline is what tells it from the join (PR #4).
 test("the panel handle is drawn as a control, outlined on the seam", () => {
     let rule = CSS.match(/\n\.panel_handle \{([^{}]*)\}/);
     assert.ok(rule, ".panel_handle has its own rule");

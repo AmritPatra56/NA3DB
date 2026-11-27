@@ -2,9 +2,6 @@ import GlyphIcon from "./GlyphIcon.jsx";
 import { KIND, familyCounts, familyWords, isModified } from "../arcView.js";
 import { number } from "../format.js";
 
-// Beside the drawing: the family chips (one picks only that family), the
-// symbols' key, and every pair in a list. d null: nothing yet. listRef: the
-// list's box, so the pointed pair's row can be scrolled to.
 function ArcSide({ pdbId, d, L, on, fam, listRef, onHover, onPick, onFamily }) {
   const rowClass = (i) => (isModified(d, L, i) ? "av_modres" : undefined);
   return (
@@ -26,7 +23,6 @@ function ArcSide({ pdbId, d, L, on, fam, listRef, onHover, onPick, onFamily }) {
         <table>
           <thead><tr><th>#</th><th>Base 1</th><th>Base 2</th><th>Family</th><th>Type</th></tr></thead>
           <tbody className="av_rows" onMouseLeave={() => onHover(null)}>
-            {/* A pair's place in the list is its number, fixed for this d. */}
             {d && L && d.pairs.map(([a, b, kind, , f, nameA, nameB], i) => (
               <tr key={i} data-i={i} hidden={Boolean(fam) && f !== fam} className={i === on ? "av_row_on" : undefined}
                   onMouseOver={() => onHover(i)} onClick={() => onPick(i)}>

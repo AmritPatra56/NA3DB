@@ -1,22 +1,16 @@
 import { useEffect, useRef } from "react";
 import { perPageFrom } from "../searchQuery.js";
 
-// Above the results (search.ejs results_area_header): how many, the page size,
-// the layout, the order and which ones are shown (app.js update_header).
-// onSort(key), onPerPage(n), onView(view): hand a new choice up to SearchPage.
 function ResultsHeader({ registry, query, total, start, shown, onSort, onPerPage, onView }) {
   const perPageBox = useRef(null);
   const sortBox = useRef(null);
 
-  // An order the menu does not offer leaves it showing none, as the old page
-  // does; React would otherwise show the first option.
+  // An unknown sort selects nothing rather than the first option.
   useEffect(() => {
     if (!registry.sorts.some((s) => s.key === query.sort)) sortBox.current.selectedIndex = -1;
   });
 
-  // The browser's own "change", not React's onChange (which fires per key):
-  // typing 100 passes through 1 and 10, and each would be a search. The box
-  // then shows the size in force, so a typed 5000 settles back to 200.
+  // The native change event, not onChange: typing 100 would search 1 and 10 first.
   useEffect(() => {
     const box = perPageBox.current;
     function settle() {

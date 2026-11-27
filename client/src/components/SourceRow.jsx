@@ -3,7 +3,6 @@ import { sourceClass } from "../structure.js";
 
 const none = <span className="molecule_sub">none</span>;
 
-// An organism: in italics when it is a species name, its common name after it.
 function Organism({ organism }) {
   if (!organism) return none;
   return (
@@ -14,15 +13,11 @@ function Organism({ organism }) {
   );
 }
 
-// A taxonomy id, linked to NCBI.
 function Taxon({ taxon }) {
   if (!taxon) return none;
   return <a target="_blank" rel="noopener" title="NCBI Taxonomy" href={taxon.url}>{taxon.id}</a>;
 }
 
-// One source: a line per segment (a chimera has several), the molecule,
-// chains, kind and host spanning them all. Many molecules fold into
-// "N molecules", each with its chains.
 function SourceRow({ row, notes }) {
   const n = row.segments.length;
   const span = (cell) => <td rowSpan={n}>{cell}</td>;
@@ -43,7 +38,6 @@ function SourceRow({ row, notes }) {
 
   return (
     <>
-      {/* Segments come in sequence order and are never reordered. */}
       {row.segments.map((seg, i) => (
         <tr key={i} className={i < n - 1 ? "segment_continues" : undefined}>
           {i === 0 && <>{span(molecules)}{span(chains)}{span(<span className={`source_kind ${sourceClass(row.kind)}`}>{row.kind}</span>)}</>}

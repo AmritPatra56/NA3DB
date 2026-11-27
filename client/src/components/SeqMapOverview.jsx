@@ -1,9 +1,6 @@
 import { useMemo, useRef } from "react";
 import { overviewOf } from "../seqMap.js";
 
-// The whole ruler above the expanded map (seqmap.js overview): each strand a
-// band, the steps' colours under it, the box that is the view (frame), and
-// the strand names under it. A click or drag puts the view there: onCentre(column).
 function SeqMapOverview({ map, p, frame, onCentre }) {
   const o = useMemo(() => overviewOf(map, p), [map, p]);
   const dragging = useRef(false);

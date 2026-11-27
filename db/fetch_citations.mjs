@@ -1,22 +1,4 @@
-// fetch_citations.mjs - each entry's primary paper as the publisher and
-// PubMed record it, to fill what the PDB leaves out.
-//
-//   node --env-file=.env db/fetch_citations.mjs
-//
-// The PDB keeps initials, an abbreviated journal and no issue, ISSN or
-// abstract. Crossref has the publisher's record of a DOI; PubMed adds the
-// abstract and keywords, and is the source for papers with a PMID but no DOI.
-//
-//   RCSB      https://data.rcsb.org/redoc/index.html          (GET /rest/v1/core/entry/{id})
-//   Crossref  https://api.crossref.org/swagger-ui/index.html  (GET /works/{doi})
-//   PubMed    https://www.ncbi.nlm.nih.gov/books/NBK25499/    (EFetch, XML)
-//
-// The RCSB is asked first about entries whose paper had no DOI or PMID when
-// our files were made: the PDB adds the citation once the paper is out.
-//
-// Responses are kept in db/citation_cache/ (git-ignored), so a second run
-// fetches only what is new. Both services ask for gentle use: Crossref's
-// public pool and NCBI's 3 requests a second without a key.
+// Caches each entry's paper from RCSB, Crossref and PubMed in db/citation_cache/. Run: node --env-file=.env db/fetch_citations.mjs
 
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -32,12 +14,10 @@ mkdirSync(new URL("pubmed/", CACHE), { recursive: true });
 mkdirSync(new URL("rcsb/", CACHE), { recursive: true });
 mkdirSync(new URL("search/", CACHE), { recursive: true });
 
-// A DOI as a file name: "/" and other path characters encoded.
 const doi_file = (doi) => join(fileURLToPath(CACHE), "crossref", `${encodeURIComponent(doi.toLowerCase())}.json`);
 
 async function get(url, tries = 5) {
     for (let n = 1; ; n++) {
-        // A dropped connection is retried like a busy server.
         let res = await fetch(url, { headers: HEADERS }).catch((e) => ({ status: e.cause?.code ?? e.message }));
         if (res.ok || res.status === 404) return res;
         if (n === tries) throw new Error(`${res.status} from ${url}`);
@@ -52,7 +32,6 @@ let rows = (await query(`
     FROM citation c WHERE c.id = 'primary' ORDER BY c.entry_id`)).rows;
 await close();
 
-// The RCSB's current primary citation for entries we have no DOI or PMID for.
 let rcsb_fetched = 0;
 for (const r of rows.filter((r) => !r.doi && !(r.pmid > 0))) {
     let file = new URL(`rcsb/${r.entry_id}.json`, CACHE);
@@ -68,12 +47,7 @@ for (const r of rows.filter((r) => !r.doi && !(r.pmid > 0))) {
 }
 console.log(`rcsb: ${rcsb_fetched} fetched now`);
 
-// Still no DOI or PMID: Crossref searched by the title and first author.
-// Kept are only papers with the same title (a character or two apart) and
-// the same first author; build_citations.mjs uses one only once it is listed
-// in its MATCHES, after a person has looked. Their PMIDs are looked up by DOI.
-// Papers only: Crossref also has every PDB entry under its own DOI (10.2210),
-// with the entry's title and depositors, which would match every search.
+// Title-search matches are used only once listed in build_citations.mjs MATCHES.
 const PAPER = new Set(["journal-article", "posted-content", "book-chapter", "proceedings-article"]);
 const paper = (m) => PAPER.has(m.type) && !m.DOI.startsWith("10.2210/");
 let searched = 0, candidates = 0;
@@ -98,7 +72,6 @@ for (const r of rows.filter((r) => !r.doi && !(r.pmid > 0) && r.title)) {
     }
     let found = JSON.parse(readFileSync(file, "utf8")).filter(paper);
     candidates += found.length;
-    // Fetched below like any other paper, so the build has both records.
     for (const m of found) {
         if (!existsSync(doi_file(m.DOI))) writeFileSync(doi_file(m.DOI), JSON.stringify({ message: m }));
         if (m.pmid) rows.push({ entry_id: r.entry_id, doi: m.DOI, pmid: Number(m.pmid) });
@@ -106,11 +79,9 @@ for (const r of rows.filter((r) => !r.doi && !(r.pmid > 0) && r.title)) {
 }
 console.log(`search: ${searched} searched now, ${candidates} candidates`);
 
-// Papers PubMed links to the entry, confirmed by a person.
 for (const [entry_id, m] of Object.entries(PUBMED_MATCHES)) rows.push({ entry_id, doi: m.doi, pmid: m.pmid });
 
-// Crossref, one DOI at a time. 404 is kept too: a DOI Crossref does not know
-// (DataCite and a few others) is an answer, not a failure.
+// A 404 is kept: a DOI Crossref does not know is an answer.
 let dois = [...new Set(rows.map((r) => r.doi).filter(Boolean))];
 let fetched = 0, missing = 0;
 for (const doi of dois) {
@@ -125,7 +96,6 @@ for (const doi of dois) {
 }
 console.log(`crossref: ${dois.length} DOIs, ${fetched} fetched now, ${missing} unknown to Crossref`);
 
-// PubMed, 200 PMIDs a request, one XML file a PMID.
 let pmids = [...new Set(rows.map((r) => r.pmid).filter(Boolean).map(String))]
     .filter((p) => !existsSync(new URL(`pubmed/${p}.xml`, CACHE)));
 for (let i = 0; i < pmids.length; i += 200) {

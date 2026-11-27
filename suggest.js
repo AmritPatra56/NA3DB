@@ -1,17 +1,7 @@
-// suggest.js - "Did you mean" for a search that found nothing.
-//
-// Built from the words the database itself holds, so it can only ever offer
-// a word some entry contains, and every offer carries the real count it would
-// return. Nothing is corrected behind the user's back: a search for ribozome
-// still answers 0, with ribosome and ribozyme offered as links.
-// NCBI PubMed does the same (ESpell); RCSB, PDBe and UniProt offer nothing.
-
 import { query } from "./db.js";
 import { clean_text, singular, count_entries, organism_suggestions, ligand_suggestions, nonstandard_suggestions } from "./search.js";
 import { taxa_named, name_key, lineage_of } from "./taxonomy.js";
 
-// Every word of every entry's searchable text, with how many entries hold it.
-// The same normalising as doc.prose: lower case, punctuation dropped.
 const VOCABULARY = `
     SELECT w, count(DISTINCT id)::int AS n FROM (
         SELECT id, regexp_split_to_table(
@@ -22,7 +12,6 @@ const VOCABULARY = `
      WHERE length(w) >= 3
      GROUP BY w`;
 
-// doc changes only when a load refreshes it; this notices that in ~2 ms.
 const SIGNATURE = `SELECT count(*)::text || ' ' || coalesce(sum(hashtext(prose))::text, '0') AS s FROM doc`;
 const CHECK_MS = 60 * 1000;
 
@@ -48,8 +37,7 @@ export async function vocabulary(q = query) {
     return pending;
 }
 
-// Typing distance with a swap of two neighbours counted as one slip
-// (optimal string alignment). Gives up early once past the cap.
+// Optimal string alignment: a swap counts as one slip.
 export function distance(a, b, cap) {
     if (Math.abs(a.length - b.length) > cap) return cap + 1;
     let prev2 = null;
@@ -71,13 +59,10 @@ export function distance(a, b, cap) {
     return prev[b.length];
 }
 
-// One slip in a short word, two in a long one. Shorter words are not
-// corrected at all: tna is one slip from rna, dna, tra and many more.
+// Short words are not corrected: tna is one slip from rna, dna, tra.
 const MIN_LENGTH = 4;
 const slips = (word) => (word.length <= 7 ? 1 : 2);
 
-// Words the search would find as they are. The box matches inside words, so
-// a word is known if any database word contains it (or its singular).
 function known(word, words) {
     let one = singular(word);
     for (const w of words.keys()) {
@@ -86,10 +71,6 @@ function known(word, words) {
     return false;
 }
 
-// The closest database words, commonest first. Only the fewest slips count:
-// nucleosme offers nucleosome, not nuclease two slips away. A word holding
-// another offer is dropped, since the box matches inside words and the shorter
-// finds it anyway: ribosomes, and gquadruplex (G-quadruplex) beside quadruplex.
 export function closest(word, words, limit = 3) {
     let cap = slips(word), found = [];
     for (const [w, n] of words) {
@@ -104,28 +85,20 @@ export function closest(word, words, limit = 3) {
         .slice(0, limit);
 }
 
-// Past this many unknown words the search is not a typo but something else.
 const MAX_UNKNOWN = 3;
 const MAX_TRIED = 9;
 const MAX_OFFERED = 3;
 
-// Keeps the capital a word was typed with: Ribozome -> Ribosome.
 function as_typed(typed, word) {
     return /^[A-Z]/.test(typed) ? word[0].toUpperCase() + word.slice(1) : word;
 }
 
-// Up to three corrected searches, each { field, value, total }, best first:
-// the box to change, what to put in it, and what that would find. Every other
-// filter in the query is kept, so each total is what the link will show.
-// Empty when nothing close exists. Asked only of a search that found nothing.
 export async function did_you_mean(query_params, q = query) {
     if (query_params.match === "excludes") return [];
     let offers = [...await search_box_offers(query_params, q), ...await organism_offers(query_params)];
     return offers.slice(0, MAX_OFFERED);
 }
 
-// The organism boxes take a whole name, so the whole name is compared with
-// every scientific and common name we hold: mus musculas, Mus musculus.
 const ORGANISM_BOXES = { source_organism: "source_organisms", expression_host: "expression_hosts" };
 
 async function organism_offers(query_params) {
@@ -161,7 +134,6 @@ async function search_box_offers(query_params, q) {
 
     let { words } = await vocabulary(q);
 
-    // Each word as typed, where it sits, and its normalised form.
     let tokens = [...text.matchAll(/[\p{L}\p{N}]+/gu)]
         .map((m) => ({ typed: m[0], at: m.index, word: m[0].toLowerCase() }))
         .filter((t) => t.word.length >= MIN_LENGTH && !known(t.word, words));
@@ -171,7 +143,6 @@ async function search_box_offers(query_params, q) {
     let options = tokens.map((t) => closest(t.word, words));
     if (options.some((o) => o.length === 0)) return [];
 
-    // Every combination of the closest words, fewest slips first.
     let combos = [[]];
     for (const o of options) combos = combos.flatMap((c) => o.map((x) => [...c, x]));
     combos = combos
@@ -180,7 +151,6 @@ async function search_box_offers(query_params, q) {
         .slice(0, MAX_TRIED);
 
     let offers = await Promise.all(combos.map(async ({ picks, slips }) => {
-        // Replaced from the end, so earlier positions stay right.
         let fixed = text;
         for (let i = tokens.length - 1; i >= 0; i--) {
             let t = tokens[i];
@@ -198,20 +168,6 @@ async function search_box_offers(query_params, q) {
         .map(({ q, total }) => ({ field: "q", value: q, total }));
 }
 
-// ---------------------------------------------------------------------------
-// Suggestions under the search box, as you type: the authors, organisms and
-// molecules the database holds whose name has a word starting with the text,
-// and entries whose id starts with it. RCSB, PDBe, UniProt and NAKB all do
-// this; the rules here are the ones that keep it honest:
-//   - only names that exist, written exactly as stored ("Berman, D."), never
-//     merged or expanded: nobody can tell whether Chen, S. is Chen, S.J.
-//   - each with the count picking it returns, counted by count_entries with
-//     the filters in use, so the number is the search; 0 is never offered
-//   - picking an author or molecule fills the box with the name in quotes,
-//     an exact phrase; an organism, residue or ligand opens its own filter. Enter without picking still runs what was typed
-
-// Lines of the doc view: one author, organism or molecule per line, with the
-// entries holding each. Case-folded, keeping the commonest spelling.
 const NAME_LINES = `
     SELECT 'authors' AS kind, trim(x) AS name, array_agg(DISTINCT id) AS ids
       FROM doc, unnest(string_to_array(authors, E'\\n')) x WHERE trim(x) <> '' GROUP BY 2
@@ -223,7 +179,7 @@ let names = null;
 let names_checked = 0;
 let names_pending = null;
 
-// Read once at start-up, so the first person to type does not wait ~1 s.
+// Loaded at start-up so the first keystroke does not wait.
 export const warm_box_names = (q = query) => box_names(q).catch(() => {});
 
 async function box_names(q) {
@@ -234,9 +190,6 @@ async function box_names(q) {
             if (!names || names.signature !== sig) {
                 let by = { authors: new Map(), molecules: new Map() };
                 for (const r of (await q(NAME_LINES)).rows) {
-                    // A quote cannot sit inside a quoted phrase, and a long
-                    // systematic name ("[[[(2R,3S,4R,5R)-5-(6-aminopurin-...")
-                    // is nothing anyone types.
                     if (r.name.includes("\"") || r.name.length > LONGEST_NAME) continue;
                     let key = r.name.toLowerCase();
                     let seen = by[r.kind].get(key);
@@ -254,9 +207,6 @@ async function box_names(q) {
                     residues:  (await nonstandard_suggestions(q)).map(chemical),
                     ligands:   (await ligand_suggestions(q)).map(chemical)
                 };
-                // A ligand is also an entity, named the same: offered once,
-                // as the ligand. A sequence written out as a name,
-                // "RNA(5'-R(*AP*UP*(PSU)P*...)-3')", is nothing anyone types.
                 let chemicals = new Set([...names.residues, ...names.ligands].map((r) => r.also.toLowerCase()));
                 names.molecules = [...by.molecules.values()]
                     .filter((n) => !chemicals.has(n.name.toLowerCase()) && !n.name.includes("*"))
@@ -274,13 +224,10 @@ async function box_names(q) {
 const LONGEST_NAME = 60;
 export const BOX_MIN_LENGTH = 2;
 const PER_GROUP = 3;
-// Tried per group before counting, so filters that zero some still leave three.
 const TRIED = 6;
 const IDS_SHOWN = 4;
 
-// 0 when the name starts with the text, 1 when a later word does, else null.
-// Words split on anything not a letter or digit, so "west" finds
-// Patterson-West, J. after Westhof, E.
+// Words split on non-alphanumerics, so "west" finds Patterson-West.
 export function word_start(name, text) {
     let lower = name.toLowerCase();
     if (lower.startsWith(text)) return 0;
@@ -292,8 +239,6 @@ export function word_start(name, text) {
     return null;
 }
 
-// "Jiri Sponer", "H. M. Berman": a typed person, as the stored names it can
-// be. Family name whole, initials in order from the first.
 function as_person(text) {
     let words = text.split(/\s+/).filter(Boolean);
     if (words.length < 2 || words.length > 3 || !words.every((w) => /^[a-z][a-z'-]*\.?$/.test(w))) return null;
@@ -307,7 +252,6 @@ function is_person(name, person) {
     return family === person.family && given.replace(/[^a-z]/g, "").startsWith(person.initials);
 }
 
-// The best few, one per spelling: tRNA-fMet and tRNA(fMet) are one offer.
 function best(rows, rank, limit) {
     let seen = new Set();
     return rows.map((r) => [rank(r), r])
@@ -321,9 +265,6 @@ function best(rows, rank, limit) {
         .slice(0, limit);
 }
 
-// How a typed word is closest to a name: the fewest slips to one of its
-// words, whole or as far as typed (westo is one slip from westh-of). null
-// past the slips a word that long may have.
 function near(name, text) {
     let cap = slips(text), found = null;
     for (const word of name.toLowerCase().split(/[^a-z0-9]+/)) {
@@ -334,7 +275,6 @@ function near(name, text) {
     return found;
 }
 
-// A modified residue or ligand by its code, or a word of its name.
 function chemical_rank(r, lower) {
     let code = r.code.toLowerCase();
     if (code === lower) return -1;
@@ -342,13 +282,8 @@ function chemical_rank(r, lower) {
     return word_start(r.also ?? "", lower) === null ? null : 1;
 }
 
-// The boxes a pick fills, and where a group sits in the list.
 const FILTER_OF = { organisms: "source_organism", residues: "nonstandard_residue", ligands: "ligand" };
 
-// The organisms as the box offers them, each in the Source organism filter,
-// which holds its strains too (taxonomy.js). One with strains of its own in
-// NA3DB, if a species, says so, "All Escherichia coli", or it reads as one strain beside
-// the others listed under it. `common` is what a common name is matched on.
 const species_shaped = (name) => /^[A-Z][a-z]+ [a-z]+$/.test(name);
 let organisms_made = { from: null, rows: [] };
 export function organism_rows(list) {
@@ -368,12 +303,10 @@ const ORDER = ["authors", "organisms", "residues", "ligands", "molecules"];
 
 export async function box_suggestions(query_params, q = query) {
     let text = clean_text(String(query_params.q ?? ""));
-    // A quote means the reader is writing the exact phrase themselves.
     if (text.length < BOX_MIN_LENGTH || text.includes("\"")) return { text, groups: [] };
     let lower = text.toLowerCase();
 
     let held = await box_names(q);
-    // Two letters name too much, except a code typed whole: MG, ZN, NA.
     if (text.length < 3) {
         let code = (r) => (r.code.toLowerCase() === lower ? 0 : null);
         let rows = { residues: held.residues, ligands: held.ligands };
@@ -382,13 +315,9 @@ export async function box_suggestions(query_params, q = query) {
     let person = as_person(lower);
 
     let organisms = organism_rows(await organism_suggestions("source_organisms"));
-    // Mouse finds Mus musculus by its common name, as taxonomy.js reads one:
-    // by its last word, where English puts the thing named, so mouse finds
-    // "house mouse" but not Arabidopsis, the "mouse-ear cress".
+    // Matched by the last word: mouse finds "house mouse", not "mouse-ear cress".
     let organism_rank = (o) => {
         let common = (o.common ?? "").toLowerCase().split(/,\s*/).filter(Boolean);
-        // Named whole, by either name, first: human is Homo sapiens before
-        // it is Human immunodeficiency virus.
         if (o.name.toLowerCase() === lower || common.includes(lower)) return -1;
         let own = word_start(o.name, lower);
         if (own !== null) return own;
@@ -407,8 +336,6 @@ export async function box_suggestions(query_params, q = query) {
 
     let groups = await counted_groups(query_params, rows, ranks);
 
-    // Nothing starts with it: a slip, perhaps. One word of four letters or
-    // more, the same slips "Did you mean" allows; westof offers Westhof, E.
     let near_miss = false;
     if (groups.length === 0 && /^[a-z0-9]+$/.test(lower) && lower.length >= MIN_LENGTH) {
         let close = (name, also) => {
@@ -420,7 +347,6 @@ export async function box_suggestions(query_params, q = query) {
         near_miss = groups.length > 0;
     }
 
-    // An id opens its entry, so it is not counted: it is one entry.
     if (/^[0-9][a-z0-9]{2,3}$/i.test(text)) {
         let upper = text.toUpperCase();
         let ids = held.ids.filter((id) => id.startsWith(upper)).slice(0, IDS_SHOWN);
@@ -429,9 +355,6 @@ export async function box_suggestions(query_params, q = query) {
     return { text, groups, ...(near_miss ? { near: true } : {}) };
 }
 
-// Each group's best few, counted as the search the pick runs: a name quoted
-// in the box, or an organism, residue or ligand in its own filter, every other
-// filter as it is. In parallel; each count is a few milliseconds.
 async function counted_groups(query_params, rows, ranks) {
     let groups = await Promise.all(ORDER.filter((kind) => rows[kind]).map(async (kind) => {
         let tried = best(rows[kind], ranks[kind], TRIED);

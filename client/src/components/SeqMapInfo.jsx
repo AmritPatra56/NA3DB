@@ -3,7 +3,6 @@ import { familyWords, rowColour } from "../seqMap.js";
 
 export const HINT = "Hover or tap a column: its pairs and the steps on either side show here.";
 
-// The step from column a to b, in words, its NtC drawn small.
 function Step({ s, a, b, res }) {
   if (!s) return null;
   const where = `step ${res(a)}→${res(b)}: `;
@@ -11,9 +10,6 @@ function Step({ s, a, b, res }) {
   return <span className="seqmap_step">{where}<NtcSwatch ntc={s.ntc} /> <b>{s.ntc}</b> {s.cana} · confal {s.confal ?? "–"}</span>;
 }
 
-// The words under the map (seqmap.js show): the shown column, its pairs with
-// a jump to each partner, and the steps on either side. shown: a column or
-// null; then note (a failed ask, in the full screen) or the hint.
 function SeqMapInfo({ map, p, shown, note, onJump }) {
   const c = shown === null ? null : map.cols[shown];
   if (!c) return <div className="seqmap_info" aria-live="polite">{note ?? <span className="seqmap_hint">{HINT}</span>}</div>;

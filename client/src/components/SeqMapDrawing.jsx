@@ -2,7 +2,6 @@ import { Fragment } from "react";
 import { NtcRects } from "./NtcSwatch.jsx";
 import { LABEL_W, Y_SEQ, Y_BASE, rowY } from "../seqMap.js";
 
-// The pointer's marks: a band over the column, bands and rings on its partners.
 function Hover({ d, p, shown, w }) {
   if (shown === null || !p.links[shown]) return null;
   const band = (i, cls) => <rect x={i * w + w / 2 - d.band / 2} y="0" width={d.band} height={d.height} className={cls} />;
@@ -20,8 +19,6 @@ function Hover({ d, p, shown, w }) {
   );
 }
 
-// The row names, then the map itself (seqmap.js draw_map), from d
-// (seqMap.js drawingOf) at column width w.
 function SeqMapDrawing({ map, p, d, w, shown, pinned, svgRef, onPointerMove, onPointerLeave, onClick }) {
   return (
     <>
@@ -29,7 +26,6 @@ function SeqMapDrawing({ map, p, d, w, shown, pinned, svgRef, onPointerMove, onP
         <text x="4" y={Y_SEQ + 14} className="seqmap_label">seq</text>
         <text x="4" y={Y_BASE - 8} className="seqmap_label">NtC</text>
         {map.rows.map((r, k) => (
-          // Rows come in a fixed order with the map: the place is a safe key.
           <text key={k} x="4" y={rowY(k) + 4} className={`seqmap_label${r.overflow ? " seqmap_over" : ""}`} style={{ fill: d.rows[k].colour }}>{r.name}</text>
         ))}
       </svg>
@@ -64,8 +60,6 @@ function SeqMapDrawing({ map, p, d, w, shown, pinned, svgRef, onPointerMove, onP
           </Fragment>
         ) : (
           <g key={r.k} style={{ fill: r.colour }}>
-            {/* A nucleotide pairs once per row, so its place is unique. */}
-            {/* A column paired twice ticks twice; the list is fixed for a map. */}
             {r.ticks.map((x, n) => <rect key={n} x={x} y={rowY(r.k) - 4} width={Math.max(0.8, w)} height="8" />)}
           </g>
         ))}

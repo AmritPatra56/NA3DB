@@ -1,8 +1,3 @@
-// The logo's shapes, copied from views/includes/rail.ejs. The rail draws
-// the whole lockup; the landing title sets the five letters on one line.
-// Paths only: the components choose the class, and so the colour.
-
-// The two strands of the mark: three light pieces, three deep.
 export const MARK_LIGHT = [
   "M 1121,2631 L 1121,2773.1 L -0,2002.5 L -0,1819 L 239.7,1674.1 L 1121,2631 Z",
   "M 0,186.7 L 0,-0 L 1121,983.7 L 1121,1212.1 L 881.3,1366 L 0,186.7 Z",
@@ -14,7 +9,6 @@ export const MARK_DEEP = [
   "M 0,2001.4 L 0,1790.7 L 1121,1023.6 L 1121,1705.3 L 0,2001.4 Z",
 ];
 
-// The letters, by name. THREE is the 3, drawn like a B with an open back.
 export const LETTER = {
   N: "M 1236.9,1472.2 L 1236.9,591.8 L 1282.7,591.8 L 1823.8,1081.3 L 1823.8,591.8 L 1922.4,591.8 L 1922.4,1472.2 L 1877.8,1472.2 L 1335.5,982.7 L 1335.5,1472.2 L 1236.9,1472.2 Z",
   A: "M 2117.2,1472.2 L 2117.2,787.8 C 2117.2,733.9 2136.6,687.7 2175.3,649.3 C 2214.1,611 2260,591.8 2313.2,591.8 L 2509.3,591.8 C 2562.5,591.8 2608.2,611.2 2646.6,649.9 C 2684.9,688.7 2704.1,734.6 2704.1,787.8 L 2704.1,1472.2 L 2509.3,1472.2 L 2509.3,1157.3 L 2313.2,1069.7 L 2313.2,1472.2 L 2117.2,1472.2 Z M 2509.3,982.7 L 2509.3,787.8 C 2509.3,760.5 2499.7,737.2 2480.5,718 C 2461.3,698.8 2438,689.3 2410.7,689.3 C 2384.1,689.3 2361.2,698.8 2342,718 C 2322.8,737.2 2313.2,760.5 2313.2,787.8 C 2313.2,787.8 2307.2,830.7 2307.2,895.7",

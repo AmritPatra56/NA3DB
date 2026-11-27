@@ -1,8 +1,3 @@
-// The Same sequence comparison's picture as data (public/sameseq.js
-// marker_spots, draw_chart, hover_setup, select): for a reply from
-// /api/same_sequence/compare and a column width, where every number, bar and
-// bracket sits, and what A and B each have at a column. Pure, so the
-// components only draw what this says.
 import { barRects, rowColour } from "./seqMap.js";
 
 export const W = 14, W_FULL = 20;    // one column, in the section and expanded
@@ -13,8 +8,6 @@ export const WHO = { "=": "in both", a: "only in A", b: "only in B", n: "cannot 
 const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "sugar" };
 export const familyWords = (f) => `${f[0] === "c" ? "cis" : "trans"} ${EDGE[f[1]]}/${EDGE[f[2]]}`;
 
-// Where each difference's number sits: over its nucleotides, or between two
-// for a backbone step. Numbers that would touch go on another line.
 export function markerSpots(d, w) {
   const xOf = (i) => i * w + w / 2;
   const spots = [];
@@ -34,7 +27,6 @@ export function markerSpots(d, w) {
   return { spots, lines: Math.max(1, lines.length) };
 }
 
-// The whole picture at column width w; each list in the order the svg draws it.
 export function chartOf(d, w) {
   const n = d.length;
   const xOf = (i) => i * w + w / 2;
@@ -53,7 +45,6 @@ export function chartOf(d, w) {
   labels.push({ y: yA - 8, text: "A backbone", cls: "" }, { y: ySeq + 14, text: "sequence", cls: "" }, { y: yB + 16, text: "B backbone", cls: "" });
   d.rows.forEach((r, k) => labels.push({ y: rowY(k) + 4, text: r.overflow ? `${r.name} +` : r.name, cls: r.overflow ? "seqmap_over" : "", fill: rowColour(r.name) }));
 
-  // Ruler: A's author numbers every ten, where B numbers the same.
   const ruler = [];
   d.cols.forEach((c, i) => {
     const num = Number.parseInt(c[1], 10);
@@ -61,14 +52,11 @@ export function chartOf(d, w) {
     ruler.push({ i, x: xOf(i), y: yRuler, num });
   });
 
-  // Steps: A up, B down, each between its two nucleotides.
   const bw = 10 * Math.min(1, w / W);
   const hOf = (c) => 4 + (BAR - 6) * Math.max(0, Math.min(100, c ?? 0)) / 100;
   const ups = d.steps.a.map(([i, , confal, ntc]) => barRects((i + 1) * w, bw, hOf(confal), yA, ntc));
   const downs = d.steps.b.map(([i, , confal, ntc]) => barRects((i + 1) * w, bw, hOf(confal), 0, ntc));
 
-  // Sequence: modified nucleotides in lower case; a nucleotide one chain
-  // does not model is faint, with a mark under it on that side.
   const kinds = { seen: [], mod: [], gone: [] };
   d.cols.forEach((c, i) => kinds[!c[3] || !c[4] ? "gone" : c[0] !== c[0].toUpperCase() ? "mod" : "seen"].push(i));
   const letters = Object.entries(kinds).filter(([, cols]) => cols.length)
@@ -79,7 +67,6 @@ export function chartOf(d, w) {
     if (!c[4]) gaps.push({ key: `${i}b`, x: i * w + 2, y: ySeq + SEQ - 2 });
   });
 
-  // Pairs: a tint behind the two brackets of a pair only one chain has.
   const rows = d.rows.map((r, k) => {
     const ends = new Map();
     for (const [i, j, who] of r.pairs) { ends.set(i, who); ends.set(j, who); }
@@ -97,8 +84,6 @@ export function chartOf(d, w) {
   return { n, width, height, yA, yB, ySeq, labels, ruler, ups, downs, letters, gaps, rows, marks, rowH: ROW };
 }
 
-// What the words under the picture need: each column's pairs (both ways)
-// and the differences at it, the steps by column, and a column's name.
 export function lookupOf(d) {
   const links = Array.from({ length: d.length }, () => []);
   for (const r of d.rows) {
@@ -117,14 +102,11 @@ export function lookupOf(d) {
   };
 }
 
-// The column under a pointer at clientX, on an svg whose box is rect.
 export function columnAt(rect, clientX, w, n) {
   const i = Math.floor((clientX - rect.left) / w);
   return i >= 0 && i < n ? i : null;
 }
 
-// How far to scroll the picture for difference x: its middle in the middle,
-// or, when it is wider than the view, its 5′ end; far: its 3′ end instead.
 export function scrollFor(x, w, clientWidth, far) {
   const lo = Math.min(...x.cols), hi = Math.max(...x.cols);
   const span = (hi - lo + 1) * w;
@@ -133,7 +115,6 @@ export function scrollFor(x, w, clientWidth, far) {
   return { left: Math.max(0, left), long: span > view };
 }
 
-// The first B: the first chain in another entry, else any other chain.
 export function firstOther(group) {
   const chains = group.entries.flatMap((e) => e.chains);
   const entry = group.ref.split(":")[0] + ":";

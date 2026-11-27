@@ -2,8 +2,6 @@ import { Fragment } from "react";
 import CiteSave from "./CiteSave.jsx";
 import CopyButton from "./CopyButton.jsx";
 
-// Where the paper is (structure.ejs): "Not yet published.", a preprint, or
-// the journal (a chapter's book first), volume(issue), pages and year.
 function Source({ c, unpublished }) {
   if (unpublished) return "Not yet published.";
   if (c.type === "preprint") return <><i>{c.journal}</i> preprint{c.year && ` (${c.year})`}</>;
@@ -14,13 +12,9 @@ function Source({ c, unpublished }) {
     where,
     c.year && `(${c.year})`,
   ].filter(Boolean);
-  // The parts as EJS spaces them, one space between each; a fixed list, so
-  // the place is a safe key.
   return parts.map((p, n) => <Fragment key={n}>{n > 0 && " "}{p}</Fragment>);
 }
 
-// The Citation section (structure.ejs). c: /api/entries/:id's citation, with
-// cite_text, cite_unpublished and cite_authors from the same reply.
 function Citation({ pdbId, c, text, unpublished, authors }) {
   return (
     <div className="citation">

@@ -1,10 +1,6 @@
 import { Link } from "react-router";
 import { BEST_NOTE, VERDICT_ICON, methodShort, modelled, resolution } from "../sameSeq.js";
 
-// One entry of the Same sequence table: a row per chain, the entry's id,
-// title and resolution spanning them. ref: the chain the others are compared
-// with; best: the group's best model; pressed: the chain compared with ref
-// now, or null. onRow(a, b): a row's Compare.
 function SameSeqEntry({ e, refId, best, pressed, hidden, onRow }) {
   const res = resolution(e.resolution);
   return (

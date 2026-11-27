@@ -1,5 +1,3 @@
-// Puts text on the clipboard (structure.ejs). Without clipboard permission
-// (an embedded or plain-http page) it copies through a hidden text box.
 export async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);

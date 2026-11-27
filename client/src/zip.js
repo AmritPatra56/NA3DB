@@ -1,8 +1,4 @@
-// A .zip file built in the browser (public/zip.js), so Download all needs no
-// library and no server round trip. The layout is PKWARE's APPNOTE (local
-// headers, data, central directory, end record). Deflated where the browser
-// has CompressionStream("deflate-raw"), stored as is where it does not:
-// every unzip tool reads both.
+// PKWARE APPNOTE layout. Deflated where CompressionStream("deflate-raw") exists, stored otherwise.
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -26,7 +22,6 @@ async function deflate(bytes) {
   }
 }
 
-// files: [{ name, text }]. Returns a Blob of type application/zip.
 export async function makeZip(files, when = new Date()) {
   const encoder = new TextEncoder();
   const time = (when.getHours() << 11) | (when.getMinutes() << 5) | (when.getSeconds() >> 1);

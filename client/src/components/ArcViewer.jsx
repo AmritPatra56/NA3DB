@@ -7,15 +7,6 @@ import { useApi } from "../hooks/useApi.js";
 import { useSize } from "../hooks/useSize.js";
 import { useArcView } from "../hooks/useArcView.js";
 
-// The arc picture expanded in the page, right under it (arc_viewer.ejs and
-// arc_viewer.js): every pair on screen, counts above the drawing, the pointed
-// pair under it, the whole list by family beside it. It asks for the pairs as
-// numbers (/arcs) only now, so a ribosome's thousands never weigh down the
-// page. view: which picture (an assembly or "au"). Esc closes it, as Back does.
-//
-// ArcViewer      (owns what is shown: useArcView)
-// ├─ ArcSummary, ArcStage, ArcInfo
-// └─ ArcSide
 function ArcViewer({ pdbId, view, onCollapse }) {
   const arcs = useApi(`/api/entries/${encodeURIComponent(pdbId)}/arcs?assembly=${encodeURIComponent(view)}`);
   const d = arcs.data;
@@ -25,7 +16,6 @@ function ArcViewer({ pdbId, view, onCollapse }) {
   const size = useSize(svgRef, d);
   const v = useArcView(d, size);
 
-  // show(), as expand.js does: the browser then focuses the first control inside.
   useEffect(() => {
     box.current.show();
     box.current.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -41,7 +31,6 @@ function ArcViewer({ pdbId, view, onCollapse }) {
     return () => document.removeEventListener("keydown", key);
   }, [onCollapse]);
 
-  // A pair pointed at in the drawing: its row comes into the list's view.
   const onPointed = (i) => {
     v.onHover(i);
     if (i != null) listRef.current.querySelector(`tr[data-i="${i}"]`)?.scrollIntoView({ block: "nearest" });

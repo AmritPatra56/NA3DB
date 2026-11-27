@@ -18,7 +18,7 @@ test("the box searches from two letters and suggests without quotes", () => {
   expect([suggestable("ab"), suggestable('"ab')]).toEqual([true, false]);
 });
 
-test("error pages say what error.ejs says", () => {
+test("error pages say what each status means", () => {
   expect([404, 503, 500].map((status) => errorHeading({ status })))
     .toEqual(["Page not found", "Temporarily unavailable", "Something went wrong"]);
   expect(failureOf({ status: 404, message: "x" }, "/structure/ZZZZ?view=2d"))
@@ -39,7 +39,6 @@ test("the search note's lines", () => {
   expect(noteParts({ stored_as: ["Smith, J.", "Smith, J.A."] })).toEqual([{ storedAs: "Smith, J., Smith, J.A." }]);
 });
 
-// A router stand-in at one address: what keepView asks it to go to.
 function at(path, search = "", hash = "") {
   const went = [];
   attachRouter({ state: { location: { pathname: path, search, hash } }, navigate: (url) => went.push(url) });

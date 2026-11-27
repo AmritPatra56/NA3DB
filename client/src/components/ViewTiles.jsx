@@ -1,7 +1,6 @@
 import ViewGlyph from "./ViewGlyph.jsx";
 import { TILES, nextTile } from "../views.js";
 
-// The 1D, 2D and 3D tiles: shows which is open and asks Views to open another.
 function ViewTiles({ open, onShow }) {
   function handleKeyDown(e, at) {
     const n = nextTile(e.key, at);

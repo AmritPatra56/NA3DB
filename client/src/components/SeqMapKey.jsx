@@ -1,8 +1,6 @@
 import NtcClassKey from "./NtcClassKey.jsx";
 import { rowColour } from "../seqMap.js";
 
-// The key under the map (seqmap.js key_html): the NtC classes the shown
-// steps use, then the pair rows' colours.
 function SeqMapKey({ map }) {
   return (
     <div className="seqmap_key">

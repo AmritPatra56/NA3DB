@@ -1,5 +1,3 @@
-// A from-to pair of number boxes. One revealed by a pill group (the
-// resolution) sits under it and shows only while `shown`.
 function RangeField({ filter, values, shown, onValue }) {
   const by = filter.revealed_by;
   const box = (f, end) => (

@@ -2,14 +2,9 @@ import { useEffect, useRef } from "react";
 import { number } from "../format.js";
 import { rowKey } from "../lbn.js";
 
-// Every pair that is not a cWW one, folded under Show the N other pairs. A
-// pair names its two nucleotides (data-a, data-b); selecting it shows it in
-// the 1D view (onShowPair). rowOn: the row marked as the pair on show; find:
-// the row to open the list at, from the 1D view (usePairLink).
 function OtherPairs({ pairs, rowOn, find, onShowPair }) {
   const box = useRef(null);
 
-  // Open the list at a row: unfolded, in sight, its link focused (views.js find_row).
   useEffect(() => {
     if (!find) return;
     const at = pairs.findIndex((p) => rowKey(p) === find.row);

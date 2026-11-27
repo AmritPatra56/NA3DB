@@ -1,8 +1,3 @@
-// theme.test.js - the light and dark themes: the colour tokens in
-// public/style.css, that the app's one page sets the theme before it paints,
-// the fonts and the logo. The button itself is client/test/themeButton.test.jsx.
-// No database needed.
-
 import test from "node:test";
 import assert from "node:assert";
 import { readFileSync, readdirSync } from "node:fs";
@@ -11,11 +6,8 @@ import { MARK_LIGHT, MARK_DEEP } from "./client/src/logo.js";
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const CSS = read("./public/style.css");
 const SHELL = read("./client/index.html");
-// Every file the React client is written in.
 const CLIENT = readdirSync(new URL("./client/src", import.meta.url), { recursive: true })
     .filter((f) => /\.jsx?$/.test(f)).map((f) => read(`./client/src/${f}`));
-
-// --- the tokens -----------------------------------------------------------
 
 const LIGHT_BLOCK = CSS.match(/^:root \{([\s\S]*?)\n\}/m)[1];
 const DARK_BY_CHOICE = CSS.match(/:root\[data-theme="dark"\] \{([\s\S]*?)\n    \}/)[1];
@@ -34,8 +26,6 @@ test("light and dark define the same tokens", () => {
     assert.match(DARK_BY_CHOICE, /color-scheme: dark;/);
 });
 
-// Both dark blocks sit inside @media screen, so a printed page is light
-// whatever the theme on screen.
 test("printing stays light", () => {
     assert.match(CSS, /@media screen \{\s*:root\[data-theme="dark"\]/);
     assert.match(CSS, /@media screen and \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
@@ -44,13 +34,7 @@ test("printing stays light", () => {
 test("every token in use is defined, and every token defined is used", () => {
     let rest = CSS.replace(LIGHT_BLOCK, "").replace(DARK_BY_CHOICE, "").replace(DARK_BY_DEVICE, "");
     let scripts = ["public/cana.js", "detail.js"].map(read).concat(CLIENT).join("\n");
-    // A name ending in "-" is a template's prefix (var(--pair-${kind})); its
-    // whole names are written out elsewhere.
     let used = new Set([...(rest + scripts).matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]).filter((n) => !n.endsWith("-")));
-    // Set and read inside a rule (the category dot, a section's colours), not
-    // themes; footer-h, topbar-h (the bar across the top, which the rail's
-    // logo cell matches), viewer and rows (the structure page's Views column
-    // and the sections beside it) are sizes, the same in both.
     let local = new Set(["dot", "sec", "tint", "ink", "share", "footer-h", "topbar-h", "railcell-h", "viewer", "rows"]);
     for (const name of used) {
         if (!local.has(name)) assert.ok(name in LIGHT, `--${name} is used but never defined`);
@@ -58,10 +42,6 @@ test("every token in use is defined, and every token defined is used", () => {
     for (const name of Object.keys(LIGHT)) assert.ok(used.has(name), `--${name} is defined but never used`);
 });
 
-// A colour written outside the tokens shows the same in both themes. These
-// are the ones meant to: filled badges and buttons that carry their own text
-// colour, the group hues, the red marks. A new one fails here until it is
-// either made a token or added on purpose.
 const THEME_FREE = new Set([
     "#378add", "#1d9e75", "#ba7517",                        // group hues
     "#5dcaa5", "#04342c", "#e0a030", "#412402", "#7f77dd", "#eeedfe", "#cecbf6", "#26215c", "#0f7a58", // pair badges
@@ -76,7 +56,6 @@ test("no colour outside the tokens unless it is meant to be the same in both the
     assert.deepEqual([...new Set(stray)], []);
 });
 
-// WCAG 2 relative luminance and contrast ratio.
 const luminance = (hex) => {
     let [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
         .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -87,7 +66,6 @@ const contrast = (a, b) => {
     return (hi + 0.05) / (lo + 0.05);
 };
 
-// Text on its ground, at least 4.5:1 (WCAG AA) in the dark theme.
 const TEXT_PAIRS = [
     ["text", "bg-primary"], ["text", "bg-secondary"], ["text", "row-hover"],
     ["text-muted", "bg-primary"], ["text-muted", "bg-secondary"],
@@ -110,7 +88,6 @@ test("text is readable in both themes: at least 4.5:1 against its ground", () =>
     }
 });
 
-// Lines and marks that carry meaning need 3:1 (WCAG 1.4.11).
 const GRAPHICS = ["pair-wc", "pair-gu", "pair-nc", "pair-mod", "strand", "ntc-nan-line", "ntc-edge", "text-dim"];
 test("base pairs, NtC marks and hints stand out in both themes: at least 3:1", () => {
     for (const [theme_name, theme] of THEMES) {
@@ -121,7 +98,6 @@ test("base pairs, NtC marks and hints stand out in both themes: at least 3:1", (
     }
 });
 
-// The edge of a field or tick box is what shows it is there (WCAG 1.4.11).
 test("field and tick-box edges are visible in both themes: at least 3:1", () => {
     for (const [name, theme] of THEMES) {
         for (const ground of ["bg-primary", "bg-secondary"]) {
@@ -131,8 +107,6 @@ test("field and tick-box edges are visible in both themes: at least 3:1", () => 
     }
 });
 
-// Calm lab (Round 1 identity): one ink-blue interface colour; focus rings and
-// ticks use it too, so every bright colour left on a page is data.
 test("the interface has one accent colour, the Calm lab ink blue", () => {
     assert.equal(LIGHT["accent"].toLowerCase(), "#24508f");
     assert.equal(DARK["accent"].toLowerCase(), "#86a9e2");
@@ -142,13 +116,8 @@ test("the interface has one accent colour, the Calm lab ink blue", () => {
     assert.match(CSS, /accent-color: var\(--accent\);/);
 });
 
-// The NtC colours are DNATCO's, the same in both themes, so a figure means
-// what it means in DNATCO. Any that falls under 3:1 on a theme's ground gets
-// the outline there: the pale A, B and N on light, the deep BII on dark.
 test("NtC colours are DNATCO's exact palette; a dim one is outlined", async () => {
     let { NTC_CLASS_COLOURS, ntc_classes } = await import("./public/cana.js");
-    // As dnatco.datmos.org draws them (checked 2026-11-17); A and SYN changed
-    // there after the copy in Mol*'s color.ts.
     assert.deepEqual(NTC_CLASS_COLOURS, { A: "#FFEBA1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
                                           IC: "#FA5CFB", OPN: "#E90000", SYN: "#FF8222", N: "#F2F2F2" });
     assert.deepEqual([ntc_classes("AB01"), ntc_classes("BA08"), ntc_classes("BB07"), ntc_classes("OP1S"),
@@ -161,8 +130,6 @@ test("NtC colours are DNATCO's exact palette; a dim one is outlined", async () =
     }
     assert.match(CSS, /\.ntc_bar \{ stroke: var\(--ntc-edge\);/);
 });
-
-// --- every page --------------------------------------------------------
 
 test("the page sets the theme before it paints and has the button", () => {
     let head = SHELL.slice(0, SHELL.indexOf("</head>"));
@@ -179,10 +146,6 @@ test("no em dash in anything the theme shows", () => {
     }
 });
 
-// --- the fonts -------------------------------------------------------------
-
-// IBM Plex, served from NA3DB itself (no font host sees our visitors),
-// under the SIL Open Font License kept beside the files.
 test("IBM Plex is self-hosted: every face the CSS names is on disk", () => {
     let faces = [...CSS.matchAll(/@font-face \{([\s\S]*?)\}/g)].map((m) => m[1]);
     let have = faces.map((f) => `${f.match(/font-family: "([^"]+)"/)[1]} ${f.match(/font-weight: (\d+)/)[1]}`);
@@ -210,15 +173,7 @@ test("no page loads fonts from another site", () => {
     for (const page of pages) assert.ok(!/fonts\.(googleapis|gstatic)\.com|use\.typekit|fonts\.bunny/.test(page));
 });
 
-// --- the logo --------------------------------------------------------------
-
-// The mark: two ribbons of a double helix, cut to a square window out of a
-// taller drawing. The ribbons run out of the viewBox on every side and the
-// SVG viewport crops them, which is what keeps the bands thick at 32px.
-// Drawn in --mark-deep and --mark-light, so it follows the theme; the favicon
-// carries the same two pairs in its own media query.
 const RAIL = read("./client/src/components/Rail.jsx");
-// The paths as the rail draws them, light ones first.
 const RAIL_SVG = [...MARK_LIGHT.map((d) => `<path class="mark_light" d="${d}"`),
                   ...MARK_DEEP.map((d) => `<path class="mark_deep" d="${d}"`)].join("\n");
 
@@ -232,9 +187,6 @@ test("the rail carries the helix mark and the name reads left to right", () => {
     assert.match(CSS, /\.mark_light \{ fill: var\(--mark-light\); \}/);
 });
 
-// The deep ribbon is painted last, so it passes in front at every crossing.
-// On a dark page both steps move up: the deep blue alone sits at about 1.1:1
-// against the card, which would leave half the mark invisible.
 test("the deep ribbon is in front, and both strands lighten for the dark theme", () => {
     assert.ok(RAIL.lastIndexOf("mark_light") < RAIL.indexOf("mark_deep"),
               "every light path is drawn before the deep ones");
@@ -243,9 +195,6 @@ test("the deep ribbon is in front, and both strands lighten for the dark theme",
     assert.match(dark, /--mark-light: #a3cbef;/);
 });
 
-// Real DNA and A-RNA are right-handed: seen from the side, the strand nearer
-// the viewer runs "/" -- up as it goes right, which in these coordinates
-// (y downwards) is a negative slope. A mirrored logo would be wrong.
 test("the mark is a right-handed helix, in the rail and the favicon", () => {
     const ends = (svg, cls) =>
         [...svg.matchAll(new RegExp(`<path class="${cls}" d="M (-?[\\d.]+),(-?[\\d.]+) L -?[\\d.]+,-?[\\d.]+ L (-?[\\d.]+),(-?[\\d.]+)`, "g"))]

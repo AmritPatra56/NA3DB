@@ -1,13 +1,8 @@
-// assembly.test.js - the arc picture of a biological assembly: which chains,
-// which copies, which pairs. No database: the operators and assemblies are
-// shaped like real ones (1TTT, 1EN9, 4NH6, 4OPJ, 1BMV), small enough to read.
-
 import test from "node:test";
 import assert from "node:assert";
 import { assembly_pairs, expression_ops, identity_op, arc_views, pair_arcs,
          ARC_PAIR_MAX, ARC_MANY_STRANDS, AU } from "./detail.js";
 
-// [r11, r12, r13, t1, r21, r22, r23, t2, r31, r32, r33, t3]
 const I = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
 const shift = (x) => [1, 0, 0, x, 0, 1, 0, 0, 0, 0, 1, 0];
 const TWOFOLD = [-1, 0, 0, 40, 0, -1, 0, 0, 0, 0, 1, 0];     // -x+40, -y, z: twice is I
@@ -27,7 +22,6 @@ test("an operator expression gives every operator it names, a product as pairs",
     let product = expression_ops("(X0)(1,3)", o);
     assert.deepEqual(product.map((x) => x.key), ["X0×1", "X0×3"]);
     assert.deepEqual(product[1].m, shift(105), "3 first, then X0");
-    // A turn and a shift do not commute: X0 after 3 is -(x+5)+40 = -x+35.
     let turned = expression_ops("(2)(3)", o)[0];
     assert.equal(turned.key, "2×3");
     assert.deepEqual(turned.m, [-1, 0, 0, 35, 0, -1, 0, 0, 0, 0, 1, 0]);
@@ -52,7 +46,6 @@ test("1TTT: three complexes in the file, assembly 1 keeps only its own", () => {
 test("1EN9: half a duplex in the file, the assembly builds the other strand", () => {
     let o = ops({ 1: I, 2: TWOFOLD });
     let assembly = { id: "1", gens: [{ expr: "1,2", chains: ["A"] }] };
-    // As the file lists them: always from the chain's own copy.
     let pairs = [pair("A", 1, "A", 8, "1", "2"), pair("A", 2, "A", 7, "1", "2")];
     let v = assembly_pairs(assembly, o, pairs);
     assert.deepEqual(v.pairs.map((p) => `${p.copy_1}:${p.pos_1}-${p.copy_2}:${p.pos_2}`),
@@ -85,7 +78,6 @@ test("4OPJ: one pair listed twice, a cell apart, is drawn once", () => {
 test("4OPJ: a pair listed only from a moved copy is still found", () => {
     let o = ops({ 1: shift(42), 2: I, 3: shift(-42) });
     let assembly = { id: "1", gens: [{ expr: "1", chains: ["B"] }, { expr: "2", chains: ["A"] }] };
-    // A moved by -42 pairs with B as filed: so A as filed pairs with B moved by +42.
     let v = assembly_pairs(assembly, o, [pair("A", 1, "B", 6, "3", "2")]);
     assert.deepEqual(v.pairs.map((p) => [p.copy_1, p.copy_2]), [["2", "1"]]);
 });
@@ -169,18 +161,15 @@ test("arc_views: the picture shown puts crossing pairs under the line, in any vi
 test("arc_views: a line under the picture says what the view changes, only when it does", () => {
     let o = ops({ 1: I, 2: TWOFOLD });
     let res = residues(20);
-    // 1TTT: the file holds A and B; assembly 1 is A alone.
     let split = { assemblies: [{ id: "1", gens: [{ expr: "1", chains: ["A"] }] }, { id: "2", gens: [{ expr: "1", chains: ["B"] }] }], opers: o };
     let two = [pair("A", 1, "A", 10), pair("B", 1, "B", 10)];
     assert.deepEqual(arc_views(rna(["A", "B"], 20), res, two, split, "").about, ["The file holds 2 strands; assembly 1 uses 1 of them."]);
     assert.deepEqual(arc_views(rna(["A", "B"], 20), res, two, split, AU).about, [], "the file itself: nothing to explain");
-    // 1EN9: the assembly builds the other strand.
     let built = { assemblies: [{ id: "1", gens: [{ expr: "1,2", chains: ["A"] }] }], opers: o };
     assert.deepEqual(arc_views(rna(["A"], 8), residues(8), [pair("A", 1, "A", 8, "1", "2")], built, "").about,
                      ["Assembly 1 builds 1 strand by symmetry, drawn dashed."]);
     assert.deepEqual(arc_views(rna(["A"], 8), residues(8), [pair("A", 1, "A", 8, "1", "2")], built, AU).about, [],
                      "the file's own crystal copy is the page's ′ note, not an assembly's line");
-    // Same picture either way, nothing crossing: no line at all.
     let same = { assemblies: [{ id: "1", gens: [{ expr: "1", chains: ["A"] }] }], opers: ops({ 1: I }) };
     assert.deepEqual(arc_views(rna(["A"], 20), res, [pair("A", 1, "A", 10)], same, "").about, []);
     let crossing = [pair("A", 1, "A", 10), pair("A", 2, "A", 9), { ...pair("A", 5, "A", 15), family: "tWH", kind: "nc" }];

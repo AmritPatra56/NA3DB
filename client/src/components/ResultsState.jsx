@@ -1,9 +1,5 @@
 import DidYouMean from "./DidYouMean.jsx";
 
-// What the results area says instead of results (search.ejs): the spinner
-// while searching, the server's message when it fails, No entries found when
-// nothing matches, with any close searches under it.
-// suggestions, getHref, onPick: passed on to DidYouMean.
 function ResultsState({ busy, error, empty, suggestions, getHref, onPick }) {
   return (
     <>

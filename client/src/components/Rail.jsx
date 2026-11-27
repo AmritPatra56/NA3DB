@@ -2,18 +2,12 @@ import { Link } from "react-router";
 import ThemeButton from "./ThemeButton.jsx";
 import { MARK_LIGHT, MARK_DEEP, LETTER } from "../logo.js";
 
-// The rail (rail.ejs), drawn from railOf in route.js.
-// active: the lit section ("search", "report" or null). report: whether Report is
-// offered. carry: the query the Full search and Report links carry.
 function Rail({ active, report, carry }) {
   const item = (name) => `rail-item ${active === name ? "active" : ""}`;
   return (
     <div className="rail">
       <div className="rail-icons">
         <Link to="/" className="rail-logo" title="NA3DB home" aria-label="NA3DB home">
-            {/* The logo: the mark and the wordmark as one lockup (rail.ejs). The link
-                carries the name, so the drawing is hidden from screen readers. The
-                colours follow the theme through --mark-deep and --mark-light. */}
             <svg className="mark" viewBox="0 0 2705 2774" aria-hidden="true">
               {MARK_LIGHT.map((d) => <path className="mark_light" d={d} key={d} />)}
               {MARK_DEEP.map((d) => <path className="mark_deep" d={d} key={d} />)}
@@ -26,7 +20,6 @@ function Rail({ active, report, carry }) {
         <a href="#" className="rail-item" title="Questions">
           <img src="/assets/Q.png" alt="Questions" className="icon-narrow" />
         </a>
-        {/* A report covers a search, so it is not offered before there is one. */}
         {report && (
           <Link to={"/report" + carry} className={item("report")} data-page="/report" title="Report">
             <img src="/assets/report.svg" alt="Report" />

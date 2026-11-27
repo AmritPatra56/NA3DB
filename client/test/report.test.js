@@ -20,7 +20,6 @@ test("ticks start with Entry ID; fields keep table order and groups", () => {
   expect(chosenFields(structures, ["method", "pdb_id"]).map((f) => f.key)).toEqual(["pdb_id", "method"]);
 });
 
-// Each path is the request :4000's report page sends for the address.
 test("the rows are asked for as :4000 asks", () => {
   expect(rowsPath("?author_name=Smith&fields=closed", registry, structures)).toBe("/api/export?author_name=Smith");
   expect(rowsPath("?entry_id=1TTT&table=ligands&water=0", registry, ligands)).toBe("/api/export/ligands?entry_id=1TTT");

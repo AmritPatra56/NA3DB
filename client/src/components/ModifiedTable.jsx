@@ -1,12 +1,9 @@
 import { Fragment, useState } from "react";
 
-// A position, greyed with a title when no chain models it.
 function Position({ position }) {
   return position.seen ? position.num : <span className="unmodelled" title="not modelled">{position.num}</span>;
 }
 
-// Positions as "8, 12, 47", each with its place in the list as a key: the
-// list is drawn once and never reordered.
 const positions = (list) => list.map((p, i) => <Fragment key={i}>{i > 0 && ", "}<Position position={p} /></Fragment>);
 
 function ModifiedRow({ row }) {
@@ -25,14 +22,11 @@ function ModifiedRow({ row }) {
   );
 }
 
-// The modified nucleotides: the first group.shown rows, the rest behind Show
-// all N. Whether they show is this table's own look, not the page's data.
 function ModifiedTable({ group }) {
   const [all, setAll] = useState(false);
   const { rows, shown } = group;
   const folds = shown !== null && rows.length > shown;
   const head = folds ? rows.slice(0, shown) : rows;
-  // A code can sit on several chains, so code and chain together name a row.
   const key = (row) => `${row.code}:${row.chain.name}`;
 
   return (

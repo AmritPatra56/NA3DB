@@ -2,8 +2,6 @@ import { test, expect } from "vitest";
 import entry from "./entry1ttt.json" with { type: "json" };
 import { cardParts, lineParts, tileFacts, methodLabel, resolutionText, yearOf, entryHref } from "../src/resultCard.js";
 
-// entry1ttt.json: 1TTT from :4000's /api/entries?entry_id=1TTT. The words
-// below are the ones :4000's card for it shows.
 test("the 1TTT card says what :4000's card says", () => {
   const p = cardParts(entry);
   expect(p.when).toBe("X-ray 2.70 Å · 1995");

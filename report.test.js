@@ -1,6 +1,3 @@
-// report.test.js - the report's tables: which fields each holds, what the
-// export returns for Structures, and how /report opens a table.
-
 import test, { before, after } from "node:test";
 import assert from "node:assert";
 import { once } from "node:events";
@@ -26,13 +23,8 @@ after(async () => {
 
 const structures = REPORT_TABLES.find((t) => t.key === "structures");
 
-// Fields about a part of a structure: one value per molecule or ligand, so
-// they belong in Molecules or Ligands, never beside the paper.
 const PART_FIELDS = ["entity_name", "source_organism", "source_taxonomy", "source_kind",
                      "expression_host", "nonstandard_residue", "ligands", "assigned_ntc"];
-
-
-// --- the tables ---------------------------------------------------------
 
 test("the report has Structures, Molecules and Ligands, Structures first", () => {
     assert.deepEqual(REPORT_TABLES.map((t) => t.name), ["Structures", "Molecules", "Ligands"]);
@@ -74,17 +66,12 @@ test("the page gets the tables with labels and no SQL", () => {
     assert.equal(public_registry().report_key, "pdb_id");
 });
 
-
-// --- what the export returns -------------------------------------------
-
 test("the export returns exactly the Structures fields, in table order", async () => {
     let row = (await export_entries({})).results[0];
 
     assert.deepEqual(Object.keys(row), report_fields(structures).map((f) => f.key));
 });
 
-// Runs work inside a transaction that is always rolled back, so rows it
-// inserts never reach the test database.
 const ROLLBACK = new Error("rollback");
 async function rolled_back(work) {
     let result;
@@ -101,9 +88,6 @@ const value_of = async (q, key, id) => {
     return (await q(`SELECT ${c.report_select ?? c.select} AS v FROM entry e WHERE e.id = $1`, [id])).rows[0].v;
 };
 
-// The test database has no chains, so a small entry of its own: protein,
-// RNA in two copies with a line break in its sequence, DNA, and a hybrid.
-// Checked against the page's count on all 1,489 real entries as well.
 test("the report's nucleotide count: nucleic acids only, every copy, line breaks ignored", async () => {
     let n = await rolled_back(async (q) => {
         await q(`INSERT INTO entry (id) VALUES ('ZZ09')`);
@@ -140,7 +124,6 @@ test("R-work falls back to R observed; R-free does not", async () => {
     assert.deepEqual(got, [[0.181, 0.222], [0.19, null], [null, null]]);
 });
 
-// The test database's citations are bare ids, so one filled in here.
 test("paper title, journal, year, DOI and PubMed come from the primary citation", async () => {
     let got = await rolled_back(async (q) => {
         await q(`INSERT INTO entry (id) VALUES ('ZZ09')`);
@@ -164,11 +147,6 @@ test("an entry with only a first author still has authors in the report", async 
     }
 });
 
-
-// --- the Molecules table ------------------------------------------------
-// ZZ09: protein 1; RNA 2 in two copies, label chains B and C, author chains
-// R and S, with a line break in its sequence, two pseudouridines, one 5MC,
-// and position 5 recorded as both PSU and U; DNA 3, synthetic; RNA 10.
 async function molecule_fixture(q) {
     await q(`INSERT INTO entry (id) VALUES ('ZZ09')`);
     await q(`INSERT INTO entity (id, entry_id, type, pdbx_description) VALUES
@@ -273,12 +251,6 @@ test("?proteins= alone is not a search and does not open the report", async () =
     assert.equal((await fetch(base + "/report?proteins=1", { redirect: "manual" })).status, 302);
 });
 
-
-// --- Ligands ------------------------------------------------------------
-
-// ZZ09: a made-up ion ZQ1 in three copies as entity 10, water as 3 (one
-// struct_asym row holds all 40), and ZQ2 as 2, named differently by the entry
-// than by the dictionary. Codes the test seed cannot already hold.
 async function ligand_fixture(q) {
     await q(`INSERT INTO entry (id) VALUES ('ZZ09')`);
     await q(`INSERT INTO chem_comp (id, type, name, formula, formula_weight, pdbx_synonyms) VALUES
@@ -361,9 +333,6 @@ test("?water= alone is not a search and does not open the report", async () => {
     assert.equal((await fetch(base + "/report?water=1", { redirect: "manual" })).status, 302);
 });
 
-
-// --- base_pairs.dbn -----------------------------------------------------
-
 test("dot_bracket_record: chains joined by &, crossing pairs in [], one pair per base", () => {
     let chains = [{ asym: "A", auth: "X", sequence: "GGGAAACCCU" }, { asym: "B", auth: "Y", sequence: "GCAU" }];
     let pairs = [{ asym_1: "B", pos_1: 3, asym_2: "A", pos_2: 10 },  // given second end first
@@ -381,9 +350,6 @@ test("dot_bracket_record: chains joined by &, crossing pairs in [], one pair per
                  ">ZZ09|Chain X\nGGGAAACCCU\n..........\n");
 });
 
-// ZZ09: RNA chains A (author X, GGGAAACCCU) and B (author Y, GCAU) with a
-// hairpin, a pair across the chains, a PSU-A pair, and pairs the file must
-// leave out. ZZ08: RNA with no annotation at all.
 async function pair_fixture(q) {
     await q(`INSERT INTO entry (id) VALUES ('ZZ09'), ('ZZ08')`);
     await q(`INSERT INTO chem_comp (id, mon_nstd_flag, parent_comp_id) VALUES ('PSU', 'n', 'U')
@@ -398,7 +364,6 @@ async function pair_fixture(q) {
     await q(`INSERT INTO pdbx_poly_seq_scheme (asym_id, entry_id, entity_id, seq_id, mon_id, pdb_strand_id) VALUES
              ('A', 'ZZ09', '1', 1, 'G', 'X'), ('B', 'ZZ09', '2', 1, 'G', 'Y'), ('A', 'ZZ08', '1', 1, 'G', 'A')`);
 
-    // [model, asym 1, seq 1, comp 1, asym 2, seq 2, comp 2, family, copy 2]
     let pairs = [[1, "A", 1, "G", "A", 9, "C", "cWW"], [1, "A", 2, "G", "A", 8, "C", "cWW"],
                  [1, "A", 3, "G", "A", 7, "C", "cWW"], [1, "A", 4, "A", "B", 4, "U", "cWW"],
                  [1, "A", 10, "PSU", "B", 3, "A", "cWW"],
@@ -447,13 +412,9 @@ test("/api/export/dbn follows the search and turns away a bad one", async () => 
     assert.equal((await fetch(base + "/api/export/dbn?resolution_min=abc")).status, 400);
 });
 
-
-// --- the page -----------------------------------------------------------
-
 test("?table= alone is not a search and does not open the report", async () => {
     let res = await fetch(base + "/report?table=ligands", { redirect: "manual" });
 
     assert.equal(res.status, 302);
 });
-
 

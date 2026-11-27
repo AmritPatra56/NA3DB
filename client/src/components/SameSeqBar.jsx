@@ -1,5 +1,3 @@
-// The chains of a group as a select's options (sameseq.js chain_options):
-// one optgroup per entry, the other side's pick unavailable.
 function ChainOptions({ group, other }) {
   return group.entries.map((e) => (
     <optgroup key={e.entry} label={`${e.entry}${e.this ? " (this page)" : ""}`}>
@@ -10,8 +8,6 @@ function ChainOptions({ group, other }) {
   ));
 }
 
-// Compare any two (sameseq.js draw_group's bar): chain A, a swap, chain B,
-// Compare, and, once a comparison is open, Expand.
 function SameSeqBar({ group, a, b, open, expanded, onPick, onSwap, onRun, onExpand, onCollapse }) {
   return (
     <div className="ss_bar" role="group" aria-label="Compare two chains">

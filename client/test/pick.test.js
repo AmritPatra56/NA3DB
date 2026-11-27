@@ -1,7 +1,6 @@
 import { test, expect } from "vitest";
 import { pickQuery, pickSummary, pickUrl, pickWords } from "../src/pick.js";
 
-// The same rows as the server's pick.test.js, values as public/pick.js gives them.
 const row = (key, values, label) => ({ key, values, label });
 const DNA = row("polymer_type", ["DNA"], "DNA");
 const RNA = row("polymer_type", ["RNA"], "RNA");

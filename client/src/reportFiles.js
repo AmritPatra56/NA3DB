@@ -1,8 +1,3 @@
-// The report's files as text (public/report.js build_csv, fasta_text,
-// readme_text), and handing one to the browser to save. No server involved.
-
-// One value as a CSV cell: a comma, quote or line break means the whole cell
-// is quoted, and a quote inside it is written twice.
 function csvCell(value) {
   const text = value === null || value === undefined ? "" : String(value);
   if (text.includes(",") || text.includes('"') || text.includes("\n") || text.includes("\r")) {
@@ -11,24 +6,20 @@ function csvCell(value) {
   return text;
 }
 
-// The whole file: a header row of labels, then one row per row. Starts with a
-// byte-order mark, without which Excel reads UTF-8 as Latin-1 and an author
-// like Ferré-D'Amaré comes out garbled.
+// BOM, or Excel reads UTF-8 as Latin-1 and Ferré-D'Amaré comes out garbled.
 export function buildCsv(fields, rows) {
   const header = fields.map((f) => csvCell(f.label)).join(",");
   const lines = rows.map((row) => fields.map((f) => csvCell(row[f.key])).join(","));
   return "﻿" + [header, ...lines].join("\r\n") + "\r\n";
 }
 
-// Today as the file names write it: 2026-11-26.
 export const today = () => new Date().toISOString().slice(0, 10);
 
-// PDB ids Excel turns into numbers: 3E42 becomes 3 x 10^42 and stays so.
+// Ids Excel turns into numbers: 3E42 becomes 3 x 10^42.
 const EXCEL_NUMBER = /^\d+E\d+$/i;
 export const excelIds = (ids) => ids.filter((id) => EXCEL_NUMBER.test(id));
 
-// FASTA in the header layout of the structure page and RCSB:
-// >1OB5_2|Chains B, D, F|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932).
+// RCSB's header: >1OB5_2|Chains B, D, F|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932)
 export function fastaText(molecules) {
   return molecules.filter((m) => m.sequence).map((m) => {
     const chains = String(m.chains || "").split(", ").filter(Boolean);
@@ -42,9 +33,6 @@ export function fastaText(molecules) {
   }).join("");
 }
 
-// README.txt. origin: the site's; search: the search's query string;
-// proteins, water: the options on; counts: rows per table; dbn: the
-// /api/export/dbn reply; excel: the ids Excel would spoil; date: today.
 export function readmeText({ origin, search, proteins, water, counts, dbn, excel, date }) {
   const lines = [
     "NA3DB report",
@@ -87,7 +75,6 @@ export function readmeText({ origin, search, proteins, water, counts, dbn, excel
   return lines.join("\r\n");
 }
 
-// Hands the browser a file to save.
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

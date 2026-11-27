@@ -3,12 +3,9 @@ import { copyText } from "../clipboard.js";
 
 const COPIED_MS = 1500;
 
-// A copy button: copies `text`, then shows a tick and says "Copied" for 1.5 s
-// (structure.ejs). children: words after the icon, the citation's "Copy".
 function CopyButton({ text, title, className = "sequence_copy", children }) {
   const [copied, setCopied] = useState(false);
 
-  // The tick goes 1.5 s after it came; a page left sooner clears the timer.
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), COPIED_MS);

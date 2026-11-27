@@ -1,6 +1,3 @@
-// How to read the sequence map (map_guide.ejs): one made-up 14-nucleotide
-// RNA, its pairs drawn as arcs and again as the bracket rows the map uses.
-// Every rule here is one detail.js layer_rows and bracket_line follow.
 const X = Array.from({ length: 14 }, (_, k) => 123 + k * 26);
 const at = (...ks) => ks.map((k) => X[k - 1]).join(" ");
 const ARCS = [

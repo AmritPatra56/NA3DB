@@ -1,6 +1,3 @@
-// search.test.js - checks that search.js still answers the way it used to.
-// Run with: npm test
-
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { close } from "./db.js";
@@ -14,9 +11,7 @@ import { SORTS, DEFAULT_SORT, sort_by,
          page_size_from, MATCH_MODES, DEFAULT_MATCH, match_mode, RESOLUTION_SQL } from "./filters.js";
 import { query, transaction, close as close_db } from "./db.js";
 
-// search.js now holds database connections. Without this, npm test never exits.
 after(() => close_db());
-
 
 test("finds an entry by its exact id", async () => {
     assert.equal((await find_entry("4TNA")).pdb_id, "4TNA");
@@ -30,9 +25,6 @@ test("returns undefined for an id that does not exist", async () => {
     assert.equal(await find_entry("ZZZZ"), undefined);
 });
 
-
-// --- filtering ----------------------------------------------------------
-
 test("no filters returns every entry", async () => {
     assert.equal((await export_entries({})).total, entries.length);
 });
@@ -42,17 +34,12 @@ test("an unknown parameter is ignored", async () => {
                      await export_entries({}));
 });
 
-
-// Each row: the filter name, a value to search for, and how to read the
-// matching field off an entry. One test body, run once per row.
 const text_cases = [
     ["entry_id",        "tna",      (e) => e.pdb_id],
     ["author_name",     "hingerty", (e) => e.author],
     ["source_organism", "sacch",    (e) => e.source_organism]
 ];
 
-// Every matching row as the results list has it, page by page: the report's
-// rows hold only the Structures fields, not the organism a card shows.
 async function every_result(params) {
     let rows = [];
     for (let page = 1; page <= (await search_entries(params)).pages; page++) {
@@ -78,7 +65,6 @@ for (const [field, value, read] of text_cases) {
     });
 }
 
-
 test("a pill filter keeps only the chosen values", async () => {
     let found = (await export_entries({ polymer_type: "RNA" })).results;
 
@@ -86,8 +72,6 @@ test("a pill filter keeps only the chosen values", async () => {
     for (const entry of found) assert.equal(entry.polymer_type, "RNA");
 });
 
-// experimental_method, not polymer_type: every entry is one of two polymer
-// types, so that test would pass with the filter removed.
 test("two pills mean either one, and nothing else", async () => {
     let a = "SOLUTION NMR";
     let b = "X-RAY DIFFRACTION";
@@ -96,10 +80,8 @@ test("two pills mean either one, and nothing else", async () => {
     let only_b = (await export_entries({ experimental_method: b })).total;
     let either = await export_entries({ experimental_method: `${a},${b}` });
 
-    // A method is one value per entry, so the two sets cannot overlap.
     assert.equal(either.total, only_a + only_b);
 
-    // And it must still exclude something, or the filter is doing nothing.
     assert.ok(either.total < entries.length, "two pills should not match everything");
 
     for (const entry of either.results) {
@@ -119,14 +101,9 @@ test("two different filters must both hold", async () => {
     }
 });
 
-// Documents a known limitation rather than a bug: confal_score is null for
-// every entry until DNATCO data is loaded, so any confal filter excludes all.
 test("a confal filter matches nothing while DNATCO data is missing", async () => {
     assert.equal((await export_entries({ confal_min: "0" })).total, 0);
 });
-
-
-// --- paging -------------------------------------------------------------
 
 test("a page holds no more than the page size", async () => {
     let first = await search_entries({});
@@ -141,8 +118,6 @@ test("pages is the total divided by page size, rounded up", async () => {
     assert.equal(r.pages, Math.ceil(r.total / r.page_size));
 });
 
-// The unfiltered total divides evenly, hiding a round-down bug. This uses a
-// filter that leaves a remainder, so the last page must hold the leftovers.
 test("the last page is reachable when the total does not divide evenly", async () => {
     let query = { source_organism: "sacch" };
     let r = await search_entries(query);
@@ -159,7 +134,6 @@ test("the last page is reachable when the total does not divide evenly", async (
     assert.equal(past.results.length, 0, "there must be nothing after the last page");
 });
 
-// The important one. Off-by-one slicing shows up here and almost nowhere else.
 test("walking every page yields every entry exactly once, in order", async () => {
     let all = (await export_entries({})).results.map((e) => e.pdb_id);
     let walked = (await every_result({})).map((e) => e.pdb_id);
@@ -175,7 +149,6 @@ test("a page past the end is empty but still reports the true total", async () =
     assert.equal(r.pages, Math.ceil(entries.length / r.page_size));
 });
 
-// The floor, not the gate: even unvalidated nonsense must not crash.
 const bad_pages = ["abc", "0", "-5", "", "999999999999"];
 
 for (const value of bad_pages) {
@@ -187,11 +160,6 @@ for (const value of bad_pages) {
     });
 }
 
-
-// Sorted here rather than by a second call to search.js, where a broken sort
-// would appear on both sides and cancel out. No sort in the query means the
-// registry's default, which is entry id, and the export uses the same order
-// as the screen.
 test("results come back in id order when nothing asks otherwise", async () => {
     let ids = (await export_entries({})).results.map((e) => e.pdb_id);
     let expected = [...ids].sort((a, b) => a.localeCompare(b));
@@ -206,9 +174,6 @@ test("the first page starts at the first id overall", async () => {
     assert.equal((await search_entries({})).results[0].pdb_id, all_ids[0]);
 });
 
-
-// --- export -------------------------------------------------------------
-
 test("export returns every match, not one page", async () => {
     let r = await export_entries({});
 
@@ -220,16 +185,11 @@ test("export is not truncated at this size", async () => {
     assert.equal((await export_entries({})).truncated, false);
 });
 
-
-// --- validation ---------------------------------------------------------
-
 test("a query with nothing wrong returns null", () => {
     assert.equal(query_problem({}), null);
     assert.equal(query_problem({ page: "2", confal_min: "2", confal_max: "9" }), null);
 });
 
-// Each row: a bad query, and part of the message it should produce.
-// Matching on a fragment means the wording can improve without breaking tests.
 const bad_queries = [
     [{ page: "abc" },                      /whole number/],
     [{ page: "0" },                        /whole number/],
@@ -249,25 +209,17 @@ for (const [query, expected] of bad_queries) {
     });
 }
 
-// The gate rejects it; the floor survives it anyway.
 test("the gate and the floor disagree on purpose", async () => {
     assert.ok(query_problem({ page: "2.9" }), "the gate should reject a fractional page");
     assert.equal((await search_entries({ page: "2.9" })).page, 2);
 });
 
-
-// --- the SQL WHERE builder ----------------------------------------------
-// build_where's output run against the database, checked against the answers
-// the JavaScript version gives.
-
-// Runs a filter against the database and returns how many entries match.
 async function count(filters) {
     let { where, values } = build_where(filters);
     let r = await query(`SELECT count(*) AS n FROM entry e WHERE ${where}`, values);
     return Number(r.rows[0].n);
 }
 
-// Each row: the filter, and the answer entries.json gives for the same question.
 const text_answers = [
     [{},                                             120],
     [{ entry_id: "tna" },                              2],
@@ -295,7 +247,6 @@ test("placeholders are numbered in the order the values were added", () => {
 
     assert.match(built.where, /\$1/);
     assert.match(built.where, /\$2/);
-    // The third is the taxa "sacch" names, none: it is part of a word.
     assert.match(built.where, /\$3/);
     assert.deepEqual(built.values, ["%tna%", "%sacch%", []]);
 });
@@ -307,9 +258,6 @@ test("a value never reaches the SQL text", () => {
     assert.deepEqual(built.values, ["%' OR '1'='1%"]);
 });
 
-
-// Pills and the score range. Same rule: every number is what the JavaScript
-// version returns for the same filter.
 const pill_answers = [
     [{ polymer_type: "RNA" },                                     60],
     [{ polymer_type: "Protein/RNA" },                             60],
@@ -334,8 +282,6 @@ for (const [filters, expected] of pill_answers) {
     });
 }
 
-// The method filter writes its values into the SQL, so only the ones it
-// knows may get there: anything else finds nothing, and no quote gets in.
 test("method pills are written in only when known", () => {
     let built = build_where({ experimental_method: "SOLUTION NMR,X-RAY DIFFRACTION" });
     assert.equal(built.values.length, 0);
@@ -346,12 +292,6 @@ test("method pills are written in only when known", () => {
     assert.match(odd.where, /x\.method = 'X-RAY DIFFRACTION' AND EXISTS/);
     assert.match(build_where({ experimental_method: "x' OR '1'='1" }).where, /^\s*FALSE\s*$/);
 });
-
-
-// --- the one search box -------------------------------------------------
-// q is an OR across five fields, so each branch is checked against the
-// dedicated filter for the same field. A dropped branch shows up as a count
-// that stops reaching the one beside it.
 
 test("q finds what each dedicated filter finds", async () => {
     const branches = [
@@ -396,9 +336,6 @@ test("a % or _ typed in the box stays literal", async () => {
 test("the box takes one typed value and matches it two ways", async () => {
     let built = build_where({ q: "z-dna" });
 
-    // Five branches over the doc view, three parameters: the literal value
-    // for the id, the entity descriptions and the residues, the normalised
-    // one for prose, and the taxa it names (none) for the source organisms.
     assert.deepEqual(built.values, ["%z-dna%", "%zdna%", []]);
     assert.equal((built.where.match(/\$1/g) || []).length, 3);
     assert.equal((built.where.match(/\$2/g) || []).length, 1);
@@ -416,14 +353,6 @@ test("punctuation in the box is optional", async () => {
 });
 
 test("dropping punctuation does not run neighbouring words together", async () => {
-    // Spaces survive normalisation; only punctuation goes. If spaces went too,
-    // a space would stop separating words and these two would match wrongly:
-    //
-    //   9IBC "ATP-dependent RNA helicase"  -> ...dependentrna... contains trna
-    //   1BDN "THE BEND OF A DNA DODECAMER" -> ...ofadnadodeca... contains adna
-    //
-    // The second is the sharper one, because A-DNA is a real thing to search
-    // for, so the collision is with a term someone would genuinely type.
     let trna = await export_entries({ q: "tRNA" });
     let adna = await export_entries({ q: "adna" });
 
@@ -434,16 +363,10 @@ test("dropping punctuation does not run neighbouring words together", async () =
 });
 
 test("a search with nothing alphanumeric in it still finds nothing", async () => {
-    // "%" strips to empty. The normalised branches must not turn that into a
-    // wildcard that matches the whole table.
     assert.equal((await search_entries({ q: "%" })).total, 0);
     assert.equal((await search_entries({ q: "---" })).total, 0);
 });
 
-// --- what a result row carries -------------------------------------------
-// The card shows the authors and the journal, so both have to arrive with
-// every result rather than only when one entry is fetched. This is the test
-// that fails if either slips back to detail scope.
 test("every result carries its authors and journal, not just the detail view", async () => {
     let page = await search_entries({});
 
@@ -454,14 +377,9 @@ test("every result carries its authors and journal, not just the detail view", a
         assert.ok("published" in entry, `${entry.pdb_id} has no published`);
     }
 
-    // And the fallback still works a row at a time, not just for one entry.
     let named = page.results.filter((e) => e.all_authors || e.author);
     assert.ok(named.length > 0, "some entry should name an author");
 });
-
-// --- a card answers the question that was asked -------------------------
-// Pure registry logic, so it is tested here rather than over HTTP: na3db_test
-// has no NtC or confal rows for a round-trip to match against.
 
 test("a filter in use names the column that explains the match", () => {
     assert.deepEqual(columns_answering({}), []);
@@ -472,7 +390,6 @@ test("a filter in use names the column that explains the match", () => {
     assert.deepEqual(columns_answering({ confal_max: "90" }), ["confal_score"]);
     assert.deepEqual(columns_answering({ monomer_flag: "Standard" }), ["monomer_flag"]);
 
-    // Both ends of the range name one column, not two.
     assert.deepEqual(columns_answering({ confal_min: "60", confal_max: "90" }),
                      ["confal_score"]);
 });
@@ -485,20 +402,13 @@ test("a filter left blank explains nothing", () => {
 test("the extra columns come back in registry order, not the order asked for", () => {
     let plain = columns_for("card").map((c) => c.key);
 
-    // Named backwards on purpose: confal_score sits before assigned_ntc in
-    // COLUMNS, and that is the order the card must draw them in.
     let asked = columns_for("card", ["assigned_ntc", "confal_score"]).map((c) => c.key);
 
     assert.equal(asked.length, plain.length + 2);
     assert.deepEqual(asked.slice(-2), ["confal_score", "assigned_ntc"]);
 
-    // And every column already on the card keeps the place it had.
     assert.deepEqual(asked.filter((k) => plain.includes(k)), plain);
 });
-
-// --- what the search box means ------------------------------------------
-// "excludes" negates the box's clause, so the two answers partition the table.
-// Nothing else is negatable: a filter opts in by naming the parameter.
 
 test("an unknown match mode falls back to contains", () => {
     for (const mode of MATCH_MODES) assert.equal(match_mode(mode.key), mode.key);
@@ -565,9 +475,6 @@ test("a filter and the box are inverted together, as one search", async () => {
 
     assert.equal(yes + no, all, `${yes} + ${no} should be every entry`);
 
-    // The distinction that matters: NOT(a AND b), not NOT(a) AND NOT(b).
-    // Inverting filter by filter would drop every row matching exactly one of
-    // the two, and those rows would then be in neither half.
     let xray = (await search_entries({ experimental_method: both.experimental_method })).total;
     let only_one = xray - yes;
 
@@ -587,11 +494,6 @@ test("excluding a filter and the box keeps the halves disjoint", async () => {
         assert.ok(!kept.has(entry.pdb_id), `${entry.pdb_id} is in both halves`);
     }
 });
-
-// --- the search document ------------------------------------------------
-// doc is a materialized view, which means it holds a copy of the text rather
-// than reading it live. A copy can go stale. These turn that into a failing
-// test instead of a quietly wrong search result.
 
 test("the search document has exactly one row per entry", async () => {
     let missing = await query(`SELECT e.id FROM entry e
@@ -615,8 +517,6 @@ test("the search document still agrees with the tables it was built from", async
 });
 
 test("the document's residues answer the same question the filter does", async () => {
-    // The box will read doc.residues; the panel filter reads entity_poly_seq
-    // joined to chem_comp. They must not be able to disagree.
     for (const code of ["PSU", "H2U", "5MU"]) {
         let viaFilter = (await search_entries({ nonstandard_residue: code })).total;
         let viaDoc = Number((await query(
@@ -626,15 +526,6 @@ test("the document's residues answer the same question the filter does", async (
     }
 });
 
-// --- one search must not match across two fields -------------------------
-// doc keeps every searchable field in one row, so the joins between them must
-// not themselves be searchable. Before 008 they were: "rna hall" found two
-// structures whose title ends in RNA and whose author is named Hall, with no
-// title and no author anywhere containing that phrase. 1,484 of 1,489 entries
-// could produce a match like it.
-
-// Quoted, because two loose words may sit in different fields: that is a
-// match. A phrase may not run from one field into the next.
 test("a quoted phrase spanning the title and the authors matches nothing", async () => {
     let rows = (await query(`
         SELECT d.id,
@@ -660,8 +551,6 @@ test("a quoted phrase spanning the title and the authors matches nothing", async
         let spanning = `${lastOfTitle} ${firstOfAuthors}`;
         let found = (await export_entries({ q: `"${spanning}"` })).results.map((e) => e.pdb_id);
 
-        // Another entry may hold the phrase for real; this one cannot, because
-        // the only place it exists is across the join.
         assert.ok(!found.includes(row.id),
             `"${spanning}" is in no single field of ${row.id}, only across its title/author join`);
         checked++;
@@ -670,11 +559,6 @@ test("a quoted phrase spanning the title and the authors matches nothing", async
     assert.ok(checked > 0, "no spanning phrase could be built, so nothing was proved");
 });
 
-// The seed's ions and water give entries two descriptions, "tRNA-Phe" and
-// "MAGNESIUM ION" say, which doc joins with a newline in sorted order. A
-// phrase from the end of one to the start of the next is in neither. Against
-// the real na3db, "-3') MAGNESIUM" found 29 structures before 008 and none
-// after.
 test("a quoted phrase spanning two entity descriptions does not find the entry", async () => {
     let rows = (await query(`
         SELECT entry_id AS id, array_agg(DISTINCT pdbx_description ORDER BY pdbx_description) AS names
@@ -693,7 +577,6 @@ test("a quoted phrase spanning two entity descriptions does not find the entry",
         if (names.some((n) => words(n).join(" ").includes(spanning))) continue;
 
         let found = async (q) => (await export_entries({ q })).results.map((e) => e.pdb_id);
-        // Each half alone finds it, so the search does reach the descriptions.
         assert.ok((await found(`"${first}"`)).includes(id), `"${first}" should find ${id}`);
         assert.ok(!(await found(`"${spanning}"`)).includes(id),
             `"${spanning}" is in no single description of ${id}, only across their join`);
@@ -703,9 +586,6 @@ test("a quoted phrase spanning two entity descriptions does not find the entry",
 });
 
 test("the seed has no entry with two authors to span", async () => {
-    // Not a claim about the code. Every seed entry has one author, so the
-    // author join cannot be exercised here. If the seed ever gains a second
-    // author this fails: then assert that spanning case as above.
     let multi = await query(`SELECT count(*) AS n FROM (SELECT entry_id FROM citation_author
                               GROUP BY entry_id HAVING count(DISTINCT name) > 1) b`);
     assert.equal(Number(multi.rows[0].n), 0,
@@ -713,8 +593,6 @@ test("the seed has no entry with two authors to span", async () => {
 });
 
 test("a newline in the search cannot breach the separator", async () => {
-    // The fields are separated by a newline, which no text input can type but
-    // a URL can carry as %0A. It must not be usable to match across the wall.
     let rows = (await query(`
         SELECT d.id, (SELECT st.title FROM struct st WHERE st.entry_id = d.id) AS title,
                (SELECT string_agg(DISTINCT ca.name, ' ') FROM citation_author ca
@@ -734,11 +612,6 @@ test("a newline in the search cannot breach the separator", async () => {
         "a newline in the needle matched across the separator it is supposed to respect");
 });
 
-// --- residues in the search box -----------------------------------------
-// The box used to answer nothing for PSU, because residues live in
-// entity_poly_seq and searching 3.8 million rows cost 1,708 ms. They are in
-// the doc view now, so the box can reach them.
-
 test("a residue code typed in the box finds those structures", async () => {
     for (const code of ["PSU", "H2U", "5MU"]) {
         let box = (await search_entries({ q: code })).total;
@@ -751,15 +624,6 @@ test("a residue code typed in the box finds those structures", async () => {
 });
 
 test("the seed carries residue codes but no chemical names", async () => {
-    // Not an assertion about the code: it records why the test below this one
-    // can only check codes. db/seed.sql is generated from entries.json, which
-    // has no chem_comp.name, so every name in na3db_test is null. The real
-    // na3db, loaded from CIF files, has them, and there the box finds 93
-    // structures for "pseudouridine" against 4 before this change.
-    //
-    // If make_seed.mjs ever starts carrying names, this test fails, and that
-    // is the signal to assert the chemical-name path properly rather than
-    // leaving it covered only by hand.
     let named = await query(`SELECT count(*) AS n FROM chem_comp
                               WHERE mon_nstd_flag = 'n' AND name IS NOT NULL`);
 
@@ -768,11 +632,6 @@ test("the seed carries residue codes but no chemical names", async () => {
 });
 
 test("only non-standard residues are in the document at all", async () => {
-    // The view is built with mon_nstd_flag = 'n', so a standard base is not
-    // a residue code in there. It can still appear as part of a longer code:
-    // searching DG finds DDG structures, the same loose-matching trade-off
-    // that takes 5M from 21 to 108. That is substring search working, not a
-    // standard base leaking in, and this pins the distinction.
     let standard = await query(`SELECT count(*) AS n FROM chem_comp
                                  WHERE mon_nstd_flag = 'n' AND id IN ('DA','DC','DG','A','C','G','U')`);
 
@@ -783,11 +642,6 @@ test("only non-standard residues are in the document at all", async () => {
     assert.ok((await search_entries({ q: "PSU" })).total < all,
               "a residue search must still narrow the results");
 });
-
-
-// --- how many results a page holds --------------------------------------
-// Any whole number, capped. The number reaches a LIMIT, so what matters is
-// that what comes back is always digits between 1 and the cap.
 
 test("any whole number is accepted, and capped", () => {
     for (const n of [1, 7, 20, 25, 37, 73, 100, MAX_PAGE_SIZE]) {
@@ -805,7 +659,6 @@ test("any whole number is accepted, and capped", () => {
                      `${bad} should fall back to the default`);
     }
 
-    // A fraction floors rather than reaching the SQL as 12.9.
     assert.equal(page_size_from("12.9"), 12);
 });
 
@@ -820,7 +673,6 @@ test("whatever comes back is safe to write into a LIMIT", () => {
     }
 });
 
-// 37 is on no list anywhere: the point is that an arbitrary size works.
 for (const size of [...PAGE_SIZE_SUGGESTIONS, 37]) {
     test(`a page of ${size} holds ${size} and divides the total by it`, async () => {
         let r = await search_entries({ per_page: String(size) });
@@ -831,7 +683,6 @@ for (const size of [...PAGE_SIZE_SUGGESTIONS, 37]) {
     });
 }
 
-// Off-by-one in the slicing shows up here and almost nowhere else.
 test("walking every page at each size yields every entry once", async () => {
     for (const size of [20, 37, 100]) {
         let first = await search_entries({ per_page: String(size) });
@@ -847,10 +698,6 @@ test("walking every page at each size yields every entry once", async () => {
     }
 });
 
-// --- sorting --------------------------------------------------------------
-// The seed carries resolutions and deposition dates but no confal scores, so
-// the confal orders are checked for acceptance and stability, not for order.
-
 for (const sort of SORTS) {
     test(`sort ${sort.key} returns every entry exactly once`, async () => {
         let first = await search_entries({ sort: sort.key });
@@ -861,8 +708,6 @@ for (const sort of SORTS) {
             r.results.forEach((e) => seen.push(e.pdb_id));
         }
 
-        // Ties are what break this: without e.id as a last key a tied row can
-        // land on two pages, or on none.
         assert.equal(seen.length, first.total);
         assert.equal(new Set(seen).size, first.total, "a row appeared twice");
     });
@@ -895,10 +740,6 @@ test("an unknown sort falls back to the default instead of failing", async () =>
     assert.equal(sort_by("nonsense").key, DEFAULT_SORT.key);
 });
 
-// --- the indexes the search depends on ----------------------------------
-// Not a speed test, those are flaky. It checks the indexes exist, which is the
-// real mistake: loading init.sql and forgetting the migrations.
-
 const REQUIRED_INDEXES = [
     "idx_entry_id_upper",
     "idx_entry_id_trgm",
@@ -919,12 +760,7 @@ test("every index the search relies on is present", async () => {
     }
 });
 
-// With 120 rows a sequential scan is genuinely cheaper, so this asks whether
-// the index can serve the query at all. That answer does not change with size.
 test("the id lookup CAN be served by an index, not only by a scan", async () => {
-    // transaction(), not four separate query() calls: SET LOCAL only affects
-    // the transaction it runs in, and the pool hands out a different
-    // connection each call. This used to pass by luck.
     let r = await transaction(async (q) => {
         await q("SET LOCAL enable_seqscan = off");
         return q("EXPLAIN SELECT e.id FROM entry e WHERE UPPER(e.id) = UPPER($1)", ["4tna"]);
@@ -935,7 +771,6 @@ test("the id lookup CAN be served by an index, not only by a scan", async () => 
     assert.match(plan, /idx_entry_id_upper/,
         `find_entry would scan every row. Plan was: ${plan}`);
 });
-
 
 test("the stored residue list agrees with the residues", async () => {
     let r = await query(`
@@ -955,8 +790,6 @@ test("the stored residue list agrees with the residues", async () => {
 });
 
 test("the search document's organisms agree with all three source tables", async () => {
-    // Recomputed here rather than shared with migration 013, so a fourth
-    // source kind added to one side and not the other shows up as drift.
     let r = await query(`
         WITH s AS (
             SELECT entry_id, pdbx_gene_src_scientific_name AS organism, 'gen' AS kind FROM entity_src_gen
@@ -972,10 +805,6 @@ test("the search document's organisms agree with all three source tables", async
     assert.equal(Number(r.rows[0].wrong), 0,
         "doc.organisms is stale, run REFRESH MATERIALIZED VIEW doc");
 });
-
-// --- derived columns must not drift -------------------------------------
-// has_nonstandard_residue is stored, not computed, which is only safe while it
-// agrees with the rows behind it. A loader that forgets it would be silent.
 
 test("the stored monomer flag still agrees with the residues", async () => {
     let r = await query(`
@@ -993,8 +822,6 @@ test("the stored monomer flag still agrees with the residues", async () => {
         "has_nonstandard_residue has drifted, re-run db/migrations/010 to recompute");
 });
 
-// --- what people type: spaces, accents, stray bytes -------------------------
-
 test("spaces around a search do not change it, and runs of them count as one", () => {
     let plain = build_where({ q: "ribosome", author_name: "Sponer, J" });
     assert.deepEqual(build_where({ q: "  ribosome ", author_name: " Sponer,   J " }), plain);
@@ -1004,32 +831,24 @@ test("a box holding only spaces is an empty box", () => {
     assert.deepEqual(build_where({ q: "   ", entry_id: " " }), build_where({}));
 });
 
-// The data is plain ASCII: Muller, Sponer, Cerny. Dropping the accented letter
-// instead turned Cerny into "ern" and found 140 wrong entries.
 test("accents are folded, so Müller, Šponer and Černý find the ASCII names", () => {
     assert.deepEqual(build_where({ author_name: "Müller" }), build_where({ author_name: "Muller" }));
     assert.deepEqual(build_where({ q: "Šponer Černý" }), build_where({ q: "Sponer Cerny" }));
     assert.deepEqual(build_where({ q: "Øster Straße Łódź" }), build_where({ q: "Oster Strasse Lodz" }));
 });
 
-// Chemical names in the data spell Greek letters out.
 test("a Greek letter is spelled out, as the chemical names in the data are", () => {
     assert.deepEqual(build_where({ ligand: "α-amanitin" }), build_where({ ligand: "alpha-amanitin" }));
 });
 
-// PostgreSQL refuses a NUL in text, and that was a 500 from ?q=%00.
 test("a NUL byte is dropped instead of breaking the query", async () => {
     assert.deepEqual(build_where({ q: "ribo\u0000some" }), build_where({ q: "ribosome" }));
     assert.equal((await find_entry("4TNA\u0000")).pdb_id, "4TNA");
     await search_entries({ q: "\u0000", author_name: "\u0000" });
 });
 
-// --- words, not one phrase -------------------------------------------------
-
 const ids_for = async (params) => (await export_entries(params)).results.map((e) => e.pdb_id).sort();
 
-// Every major structure database matches all the words, in any order, and
-// takes quotes for an exact phrase. "Thermus ribosome" found 0 of 22.
 test("every word must match, in any order", async () => {
     let one = await ids_for({ q: "yeast transfer" });
     assert.ok(one.length >= 4, one.join());
@@ -1050,13 +869,10 @@ test("a plural finds the singular", async () => {
     assert.deepEqual(await ids_for({ q: "ribosomes" }), await ids_for({ q: "ribosome" }));
 });
 
-// An id is not a plural: 1DNS must not become 1DN and find 1DN4, 1DN5...
 test("a word with digits is never trimmed as a plural", async () => {
     assert.deepEqual(await ids_for({ q: "1DNS" }), ["1DNS"]);
 });
 
-// One letter on its own matches nearly everything, so it joins the next word:
-// Z DNA reads as Z-DNA, as people write it.
 test("a lone letter joins the next word, so Z DNA finds Z-DNA", async () => {
     let zdna = await ids_for({ q: "Z-DNA" });
     assert.ok(zdna.length > 0);
@@ -1064,8 +880,6 @@ test("a lone letter joins the next word, so Z DNA finds Z-DNA", async () => {
     assert.deepEqual(await ids_for({ q: "zdna" }), zdna);
 });
 
-// "E. coli" is the same abbreviation as "E coli"; the dot must not turn the E
-// into a word of its own that matches almost every entry.
 test("a lone letter with a dot joins the next word too", async () => {
     let plain = await ids_for({ q: "E coli" });
     assert.ok(plain.length > 0);
@@ -1074,11 +888,6 @@ test("a lone letter with a dot joins the next word too", async () => {
     assert.deepEqual(await ids_for({ q: "e.coli" }), plain);
 });
 
-// --- quoted phrases: exact, whole words -------------------------------------
-
-// The rule, written again in JavaScript and run over every entry, so the SQL
-// is checked against an independent reading rather than against itself:
-// whole words, in order, a space or hyphen between them, inside one field.
 const FIELDS = ["id", "title", "entities", "authors", "organisms", "residues"];
 
 async function holding(phrase) {
@@ -1096,9 +905,6 @@ for (const phrase of ["TAR", "Z DNA", "tRNA", "RNA", "DNA", "PSU", "HIV", "trans
     });
 }
 
-// The doc view puts each author, organism and residue on a line of its own.
-// A phrase made of the end of one line and the start of the next must not
-// find that entry. The seed's only multi-line field is residues.
 test("a quoted phrase never runs from one line of a field into the next", async () => {
     let row = (await query(`SELECT id, residues FROM doc
                              WHERE residues LIKE '%' || chr(10) || '%' ORDER BY id LIMIT 1`)).rows[0];
@@ -1155,8 +961,6 @@ test("a phrase with only punctuation, or regex characters, finds nothing and doe
     assert.deepEqual(await ids_for({ q: "\"[.*\"" }), []);
 });
 
-// The PDB stores "Westhof, E.": no first names. A name typed the usual way is
-// also tried that way, quoted or not, and the reply says so.
 test("a name typed in full finds the author stored with initials", async () => {
     let stored = await ids_for({ q: "\"Westhof, E.\"" });
     assert.ok(stored.length > 0);
@@ -1164,7 +968,6 @@ test("a name typed in full finds the author stored with initials", async () => {
     assert.deepEqual(await ids_for({ q: "\"Eric Westhof\"" }), stored);
     assert.deepEqual(await ids_for({ q: "E. Westhof" }), stored);
     assert.deepEqual((await search_entries({ q: "Eric Westhof" })).stored_as, ["Westhof, E."]);
-    // A different first initial is a different person.
     assert.deepEqual(await ids_for({ q: "\"Fred Westhof\"" }), []);
 });
 
@@ -1189,8 +992,6 @@ test("the reply says how the box was read", async () => {
     assert.equal((await search_entries({ q: "tRNA" })).phrase, null, "one word needs no offer");
 });
 
-// Depositors write "Escherichiacoli 'BL21-Gold(DE3)pLysS AG'"; the NCBI id
-// says what it is. Only a full scientific name in quotes means a taxon.
 test("a quoted species name also matches by taxon, and nothing else does", async () => {
     let ecoli = taxa_exactly_named("Escherichia coli");
     assert.ok(ecoli.includes(562) && ecoli.includes(866768), "the species and its strains");
@@ -1202,9 +1003,6 @@ test("a quoted species name also matches by taxon, and nothing else does", async
     assert.ok(text_only.every((id) => quoted.includes(id)), "every written match is kept");
 });
 
-// The seed has no misspelt E. coli, so one is added for the length of a
-// transaction that is always rolled back: an entry whose only source says
-// "Escherichiacoli" with E. coli's NCBI id is found by the quoted name.
 test("a misspelt organism with the right NCBI id is found by the quoted name", async () => {
     const ROLLBACK = new Error("rollback");
     let found;
@@ -1234,9 +1032,6 @@ test("a pasted paragraph neither fails nor builds a giant query", async () => {
     assert.deepEqual(await ids_for({ q: words }), []);
 });
 
-// --- best match first ------------------------------------------------------
-
-// Entries holding the exact phrase come before those holding the words apart.
 test("with a search, entries holding the whole phrase come first", async () => {
     let phrase = await ids_for({ q: "\"phenylalanine trna\"" });
     let ordered = (await export_entries({ q: "phenylalanine trna" })).results.map((e) => e.pdb_id);
@@ -1246,8 +1041,6 @@ test("with a search, entries holding the whole phrase come first", async () => {
 
 test("a whole word ranks above the same letters inside another word", async () => {
     let ordered = (await export_entries({ q: "dna" })).results.map((e) => e.pdb_id);
-    // 25QK has DNA only inside dsDNA; 30LM has it as a word. By id alone 25QK
-    // would come first. A-DNA counts as the word: the hyphen separates.
     assert.ok(ordered.indexOf("30LM") >= 0 && ordered.indexOf("30LM") < ordered.indexOf("25QK"), ordered.join());
     assert.ok(ordered.indexOf("1VJ4") < ordered.indexOf("25QK"), "A-DNA holds DNA as a word");
 });
@@ -1257,10 +1050,6 @@ test("a chosen sort still wins over best match", async () => {
     assert.deepEqual(ordered, [...ordered].sort().reverse());
 });
 
-
-// --- probe findings: author order, residues, NtC length ------------------
-
-// Authors are stored "Westhof, E.". People type the initial first.
 test("the author box takes the words of one name in any order", async () => {
     let stored = await ids_for({ author_name: "Westhof, E." });
     assert.ok(stored.length > 0);
@@ -1270,7 +1059,6 @@ test("the author box takes the words of one name in any order", async () => {
 });
 
 test("the words must all be in one author's name, not spread across two", async () => {
-    // Westhof's initial is E; Z belongs to Seraj, who is not a Westhof.
     assert.deepEqual(await ids_for({ author_name: "Z. Westhof" }), []);
 });
 
@@ -1281,8 +1069,6 @@ test("the search box finds an author written initial first", async () => {
     assert.deepEqual(await ids_for({ q: "E Westhof" }), by_name);
 });
 
-// The residue box reads the codes the doc view gathered. It must give what
-// reading the residues themselves gives, for every code the data holds.
 test("the residue box answers as reading every residue would, for every code", async () => {
     let codes = (await query(`SELECT DISTINCT cc.id FROM chem_comp cc WHERE cc.mon_nstd_flag = 'n'`))
         .rows.map((r) => r.id);
@@ -1304,18 +1090,12 @@ test("an NtC value too long to be a class finds nothing, and Excludes everything
     assert.equal((await ids_for({ assigned_ntc: "x".repeat(5000), match: "excludes" })).length, all);
 });
 
-
-// --- the resolution range ---------------------------------------------------
-// Exactly the entries whose resolution, as the card shows it, lies in the
-// range, both ends included. Checked against the column the cards read, so
-// the filter and the card can never disagree about an entry.
 test("a resolution range finds exactly the entries the card puts inside it", async () => {
     let shown = (await query(`SELECT e.id, ${RESOLUTION_SQL} AS r FROM entry e`)).rows;
     let ids = async (params) => (await export_entries(params)).results.map((e) => e.pdb_id).sort();
     let held = shown.filter((x) => x.r !== null).map((x) => x.r).sort((a, b) => a - b);
     assert.ok(held.length > 2, "the seed holds entries with a resolution");
 
-    // One end on a value an entry has, so "included" is tested, not assumed.
     let lo = held[Math.floor(held.length / 4)], hi = held[Math.floor(held.length * 3 / 4)];
     for (const [params, keep] of [
         [{ resolution_min: String(lo), resolution_max: String(hi) }, (r) => r >= lo && r <= hi],
@@ -1327,8 +1107,6 @@ test("a resolution range finds exactly the entries the card puts inside it", asy
     }
 });
 
-// The card's resolution is the one the source data gives, whatever table the
-// method keeps it in: em_3d_reconstruction for EM, reflns for X-ray, none for NMR.
 test("every entry shows the resolution entries.json gives it", async () => {
     let got = new Map((await query(`SELECT e.id, ${RESOLUTION_SQL} AS r FROM entry e`)).rows
                       .map((x) => [x.id, x.r]));
@@ -1348,8 +1126,6 @@ test("a resolution range never lets in an entry with no resolution", async () =>
     assert.ok(none.every((id) => !found.includes(id)));
 });
 
-// The Non-standard residue box suggests each code with how many entries hold
-// it; picking the code must find exactly that many, and a code is whole.
 test("every suggested non-standard residue finds as many entries as it says", async () => {
     let rows = await nonstandard_suggestions();
     assert.ok(rows.length > 0);
@@ -1361,8 +1137,6 @@ test("every suggested non-standard residue finds as many entries as it says", as
                  "part of a code finds nothing");
 });
 
-// A common name means its taxon, not every organism written with the word:
-// "human" must not bring in Human adenovirus 2.
 test("a typed common name searches its taxon alone; a scientific name keeps the text match", () => {
     let human = build_where({ source_organism: "human" });
     assert.ok(human.values.includes(null), "the text branch is switched off");

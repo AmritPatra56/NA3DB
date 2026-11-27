@@ -1,5 +1,3 @@
-// taxonomy.test.js - organisms found by the names people use for them.
-
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { close } from "./db.js";
@@ -10,10 +8,6 @@ import { taxa_named, name_key } from "./taxonomy.js";
 after(() => close());
 
 const ids_for = async (params) => (await export_entries(params)).results.map((e) => e.pdb_id).sort();
-
-// NCBI ids: 10090 mouse, 10116 rat, 9606 human, 562 E. coli, 866768 a strain
-// of it, 4932 baker's yeast, 4896 fission yeast, 3702 Arabidopsis (the
-// "mouse-ear cress"), 7227 fruit fly, 11676 HIV-1.
 
 test("a common name finds the species", () => {
     assert.ok(taxa_named("mouse").includes(10090));
@@ -79,7 +73,6 @@ test("contains and excludes still add up to the whole table with a common name",
     }
 });
 
-// The number beside a suggestion is what picking it will find, for every one.
 test("each organism suggestion's count is what picking it finds", async () => {
     for (const [role, field] of [["expression_hosts", "expression_host"], ["source_organisms", "source_organism"]]) {
         let rows = await organism_suggestions(role);

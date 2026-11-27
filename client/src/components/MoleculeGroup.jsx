@@ -2,8 +2,6 @@ import PolymerTable from "./PolymerTable.jsx";
 import ModifiedTable from "./ModifiedTable.jsx";
 import LigandTable from "./LigandTable.jsx";
 
-// One table of the Molecules, Modified nucleotides or Ligands section
-// (molecule_group.ejs): DNA, RNA, Protein, the modified ones, the ligands.
 function MoleculeGroup({ pdbId, group }) {
   return (
     <details className="molecule_group" open={!group.folded}>

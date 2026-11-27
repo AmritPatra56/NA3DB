@@ -2,9 +2,6 @@ import { Link } from "react-router";
 import MeantList from "./MeantList.jsx";
 import { structures } from "../format.js";
 
-// The line under the box: how many structures the typed text finds
-// (landing.js). Nothing found: close searches as links, never applied for
-// the reader. Always in the flow, empty or not, so the cards never jump.
 function LandingCount({ result }) {
   if (!result) return <p className="landing_count"></p>;
   const { total, suggestions = [] } = result;

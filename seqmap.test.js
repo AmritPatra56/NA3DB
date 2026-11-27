@@ -1,8 +1,3 @@
-// seqmap.test.js - checks sequence_map, which lays an entry's sequence, NtC
-// steps and base pairs on one ruler in layered dot-bracket notation. No
-// database: the fixture is 9CFN chain A as NA3DB returns it, whose rows the
-// hackathon notation's README prints.
-
 import test from "node:test";
 import assert from "node:assert";
 import { sequence_map, sequence_map_text, MAP_STRANDS, base_pair_section } from "./detail.js";
@@ -11,7 +6,6 @@ import { columnKey as column_key } from "./client/src/lbn.js";
 const rna = (labels) => [{ id: "1", kind: "RNA", chains: labels.map((label) => ({ label, auth: label })) },
                          { id: "2", kind: "Protein", chains: [{ label: "P", auth: "P" }] }];
 
-// 9CFN chain A: 59 nt, 56-59 not in the model.
 const SEQ = "AAGUACCCUCCAAGCCCUACAGGUUGGAAGAGGGGGCUAUCAGUCCUGUAGGCAGACUC";
 const residues = (label, seq, missing = []) => [...seq].map((code, i) =>
     ({ label, pos: i + 1, code, num: String(i + 1), seen: !missing.includes(i + 1), parent: code, modified: false }));
@@ -83,12 +77,10 @@ test("a duplex: the partner strand comes along, after a separator", () => {
                      "unknown strands fall back to the default");
 });
 
-// Pairs between strands as cWW Watson–Crick, one per [strand, pos, strand, pos].
 const between = (list) => list.map(([label_1, pos_1, label_2, pos_2]) =>
     ({ label_1, pos_1, label_2, pos_2, family: "cWW", kind: "wc", copy_1: "1", copy_2: "1" }));
 
 test("by default every strand linked through pairs is shown, in file order (1P8K)", () => {
-    // 1P8K: A pairs with D and C, B only with C, so B is reached through C.
     let tracks = { residues: ["A", "B", "C", "D"].flatMap((l) => residues(l, "GCGC")), steps: [] };
     let pairs = between([["A", 1, "D", 4], ["A", 4, "C", 1], ["B", 1, "C", 4]]);
     let map = sequence_map(rna(["A", "B", "C", "D"]), tracks, pairs);
@@ -107,14 +99,12 @@ test("a strand with no link to the first is left for the picker", () => {
 test("a long chain of linked strands stops at the cap, nearest strands first", () => {
     let labels = Array.from({ length: MAP_STRANDS + 4 }, (_, n) => `S${n}`);
     let tracks = { residues: labels.flatMap((l) => residues(l, "GC")), steps: [] };
-    // S0-S1, S1-S2, ...: each strand reached through the one before.
     let pairs = between(labels.slice(1).map((l, n) => [labels[n], 1, l, 2]));
     let map = sequence_map(rna(labels), tracks, pairs);
 
     assert.equal(MAP_STRANDS, 8);
     assert.deepEqual(map.shown, labels.slice(0, MAP_STRANDS));
 
-    // One strand pairing with all the others reaches them at once: still capped.
     let star = sequence_map(rna(labels), tracks, between(labels.slice(1).map((l) => ["S0", 1, l, 2])));
     assert.deepEqual(star.shown, labels.slice(0, MAP_STRANDS));
 });
@@ -130,15 +120,11 @@ test("a symmetry copy is its own strand, named with a prime", () => {
     assert.deepEqual(map.steps.map((s) => s.i), [1, 6], "the copy shares its chain's steps");
 });
 
-// The Base pairs table and the 1D view find each other by key alone: each
-// row of other pairs must name two columns of the view that pair there, a
-// symmetry copy's end included. A key written two ways would link nothing.
 test("every row of other pairs names two columns of the 1D view, and they pair there", () => {
     let copy = { label_1: "A", pos_1: 1, label_2: "A", pos_2: 3, family: "tHS", kind: "nc", copy_1: "1", copy_2: "2_755" };
     let pairs = [...PAIRS, copy];
     let rows = base_pair_section(pairs.map((p) => ({ ...p, chain_1: "A", chain_2: "A", bases: "AG", res_1: "", res_2: "" })))
         .noncanonical;
-    // Author numbers from 101: the key is the position, which they are not.
     let tracks = { residues: TRACKS.residues.map((r) => ({ ...r, num: String(r.pos + 100) })), steps: [] };
     let map = sequence_map(rna(["A"]), tracks, pairs);
     let col = new Map(map.cols.map((c, i) => [column_key(map, i), i]));

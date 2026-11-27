@@ -2,8 +2,6 @@ import { Fragment } from "react";
 import NtcGuide from "./NtcGuide.jsx";
 import { number, counted } from "../format.js";
 
-// The steps of Conformation by shape (structure.ejs): each family, then each
-// conformer class in it with its NtCs as coloured chips. ntc: /pairs' ntc.
 function NtcFamilies({ ntc }) {
   return (
     <>

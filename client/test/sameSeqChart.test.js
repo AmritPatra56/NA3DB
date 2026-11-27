@@ -2,8 +2,6 @@ import { test, expect } from "vitest";
 import d from "./compare1ttt.json" with { type: "json" };
 import { W, chartOf, lookupOf, columnAt, scrollFor, firstOther, comparePath } from "../src/sameSeqChart.js";
 
-// compare1ttt.json: :4000's /api/same_sequence/compare?a=1TTT:A&b=4V4R:B.
-// The expected numbers are the ones in the chart :4000 draws for it.
 const c = chartOf(d, W);
 
 test("size and labels", () => {
@@ -13,7 +11,6 @@ test("size and labels", () => {
 });
 
 test("ruler, letters, numbers and tints", () => {
-  // y is the ruler line; SameSeqChart draws the numbers 8 above it (78 in the svg).
   expect(c.ruler.map((r) => `${r.x}:${r.y + 8}:${r.num}`)).toEqual(["133:78:10", "273:78:20", "413:78:30", "553:78:40", "693:78:50", "833:78:60", "973:78:70"]);
   expect(c.letters.map((l) => [l.kind, l.text.length, l.x.split(" ").slice(0, 3).join(" ")])).toEqual([["seen", 62, "7 21 35"], ["mod", 14, "133 217 231"]]);
   expect(c.marks).toHaveLength(64);

@@ -1,6 +1,3 @@
-// A choice kept for the next page (localStorage), as structure.ejs keeps the
-// nav fold and the Views width and the rail keeps the theme. Storage can be
-// blocked; then nothing is kept and the choice holds for this page only.
 export function recall(key) {
   try {
     return localStorage.getItem(key);

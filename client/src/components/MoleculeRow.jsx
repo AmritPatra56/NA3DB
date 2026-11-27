@@ -3,7 +3,6 @@ import Sequence from "./Sequence.jsx";
 
 const none = <span className="molecule_sub">none</span>;
 
-// One polymer: its row of the table, then its sequence on a row of its own.
 function MoleculeRow({ pdbId, row }) {
   return (
     <>

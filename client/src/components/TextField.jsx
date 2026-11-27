@@ -1,5 +1,3 @@
-// A plain text box in the panel. One with a name list is a SuggestField.
-// onValue(name, value): the [name] handler.
 function TextField({ filter, value, onValue }) {
   return (
     <div className="field">

@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
-"""
-NADB PostgreSQL Loader
-======================
-Unified port of all 4 MySQL loaders (Tiers 1-9) → PostgreSQL.
-
-Changes from MySQL loaders:
-  - mysql.connector  →  psycopg (psycopg3)
-  - INSERT IGNORE    →  INSERT ... ON CONFLICT DO NOTHING
-  - pgserver         →  embedded postgres, no sudo needed
-  - SAVEPOINT isolation kept identical
+"""Loads DNATCO-extended mmCIF files into PostgreSQL (tiers T1-T9).
 
 Usage:
-    python nadb_pg_loader.py --cif 6cly.cif          # load one file
-    python nadb_pg_loader.py --cif-dir ./dnatco_extended_1500  # load all
+    python3 db/load_cif.py --cif 6cly.cif
+    python3 db/load_cif.py --cif-dir ./dnatco_extended_1500
+    python3 db/load_cif.py --cif-dir <dir> --reload
 """
 
 import os, re, sys, logging, argparse, traceback
@@ -41,12 +33,7 @@ DB_NAME     = "nadb"
 ATOM_BATCH  = 5_000
 
 def load_env_file(path):
-    """Reads KEY=value lines from the same .env the application uses.
-
-    A variable already set in the shell wins over the file, the same rule as
-    Node's --env-file, which is how a server or a container passes real
-    values in without editing anything.
-    """
+    """Reads KEY=value lines from .env; a variable already set in the shell wins."""
     p = Path(path)
     if not p.exists():
         return
@@ -120,9 +107,7 @@ def mark_loaded(conn, cur, entry_id, path):
     Until the loaded_entries row exists the entry counts as partial, which is
     what makes an interrupted run safe to repeat.
     """
-    # has_nonstandard_residue is stored, not computed per search (migrations
-    # 006 and 010), so it has to be written here once this entry's residues
-    # are in. Only DNA, RNA and hybrid chains count, not protein.
+    # has_nonstandard_residue is stored (migrations 006, 010): nucleic-acid chains only.
     cur.execute("""
         UPDATE entry SET has_nonstandard_residue = EXISTS (
             SELECT 1 FROM entity_poly_seq eps
@@ -191,9 +176,7 @@ def _parse_single_values(text: str) -> dict:
         val = m.group(2).strip()
         val = re.sub(r"^'(.*)'$", r"\1", val, flags=re.DOTALL)
         val = re.sub(r'^"(.*)"$', r"\1", val, flags=re.DOTALL)
-        # A CIF value can also be a block between two semicolons on their own
-        # lines. Both ends are required, so a semicolon inside the text stays:
-        # "Structure of RacA-DNA complex; P21 form" is a real title.
+        # A ;-delimited text block: a ; inside the text stays.
         val = re.sub(r"^;(.*);\s*$", r"\1", val, flags=re.DOTALL)
         val = re.sub(r"\s+", " ", val).strip()
         result[key] = None if val in ("?", ".") else val
@@ -263,18 +246,12 @@ def _parse_loop(text: str, category: str) -> list:
     return rows or _single_row(text, category)
 
 
-# A category with one row is written without loop_, one "_category.field value"
-# per line. The loop parser above saw none of these, so 602 entries lost their
-# organism and 298 their ligands. Values are read with the same tokeniser and
-# whitespace is collapsed as _parse_single_values does, so a value reads the
-# same whichever way the file writes it.
+# A one-row category is written without loop_.
 def _single_row(text: str, category: str) -> list:
     cat_esc = re.escape(category)
     start = re.search(r"^_" + cat_esc + r"\.", text, re.MULTILINE | re.IGNORECASE)
     if not start:
         return []
-    # The category ends at the first line that is not one of its own items:
-    # a comment, loop_, a new data block or another category's item.
     end = re.compile(r"^(?:#|loop_|data_|_(?!" + cat_esc + r"\.))", re.MULTILINE | re.IGNORECASE)
     end_m = end.search(text, start.end())
     tokens = _tokenise(text[start.start(): end_m.start() if end_m else len(text)])
@@ -382,7 +359,6 @@ def load_citation(cur, eid, text, sv):
        year,journal_id_ASTM,country,journal_id_ISSN,journal_id_CSD,
        book_publisher,pdbx_database_id_PubMed,pdbx_database_id_DOI)
       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING"""
-    # An entry with no citation still gets an empty "primary" row, as before.
     rp = _parse_loop(text, "citation") or [{}]
     rows = [(r.get("id") or "primary", eid,
              r.get("title"), r.get("journal_abbrev"), r.get("journal_volume"),
@@ -505,9 +481,7 @@ def load_struct_asym(cur, eid, text, sv):
         (id,entry_id,entity_id,details) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
         [(r.get("id"), eid, r.get("entity_id"), r.get("details")) for r in rp])
 
-# ── Biological assemblies (migration 016) ─────────────────────────────────────
-# No ON CONFLICT in any of them: a repeated key means a malformed file, and it
-# should fail loudly in its savepoint rather than lose a row unseen.
+# ── Biological assemblies (migration 016). No ON CONFLICT: a repeated key is a malformed file.
 
 def operator_ids(expr: str) -> list:
     """The operator ids an oper_expression names, in order.
@@ -756,7 +730,7 @@ def load_struct_sheet(cur, eid, text):
 def load_struct_sheet_order(cur, eid, text):
     rp = _parse_loop(text, "struct_sheet_order")
     if not rp: return 0
-    # "offset" is a reserved PG keyword — must be double-quoted
+    # "offset" is reserved in PostgreSQL, so quoted.
     return _many(cur, """INSERT INTO struct_sheet_order
         (sheet_id,entry_id,range_id_1,range_id_2,"offset",sense)
         VALUES (%s,%s,%s,%s,%s,%s)""",
@@ -922,8 +896,7 @@ def load_chem_comp(cur, text):
           _float(r.get("formula_weight"))) for r in rp])
 
 
-# A modified residue's standard parent (5MC → C), which is how a base pair with
-# a modified base is still recognised as Watson–Crick. See db/migrations/014.
+# A modified residue's parent (5MC → C), so its pairs count as Watson–Crick.
 def load_parent_bases(cur, text):
     parents = {(r.get("label_comp_id"), r.get("parent_comp_id"))
                for r in _parse_loop(text, "pdbx_struct_mod_residue")}
@@ -1181,8 +1154,7 @@ def process_cif(cur, conn, filepath: str) -> dict:
     S["struct_ref"]           = run_table(cur, "struct_ref",           load_struct_ref,            cur, eid, text, sv)
     S["struct_ref_seq"]       = run_table(cur, "struct_ref_seq",       load_struct_ref_seq,        cur, eid, text) if _count(cur, "struct_ref", eid) > 0 else 0
 
-    # Assemblies: generators need their assembly, their operators and the
-    # chains they name, so they go last and only when all three are in.
+    # Assemblies last: they need their chains and operators.
     S["pdbx_struct_assembly"]  = run_table(cur, "pdbx_struct_assembly",  load_pdbx_struct_assembly,  cur, eid, text)
     S["pdbx_struct_oper_list"] = run_table(cur, "pdbx_struct_oper_list", load_pdbx_struct_oper_list, cur, eid, text)
     gen_ok = asym_ok and S["pdbx_struct_assembly"] > 0 and S["pdbx_struct_oper_list"] > 0
@@ -1338,8 +1310,6 @@ def main():
     pgdata = Path(args.pgdata)
     pgdata.mkdir(parents=True, exist_ok=True)
 
-    # Decided before scanning the disk, so the log names the database even
-    # when no files are found.
     load_env_file(args.env_file)
     db_uri = external_uri()
 
@@ -1386,7 +1356,6 @@ def main():
         log.error("No CIF files found"); sys.exit(1)
     log.info("Found %d CIF file(s)", len(cif_files))
 
-    # Repair what a previous run left half-written, then list what is left.
     with psycopg.connect(db_uri) as conn:
         clean_partial_entries(conn)
         done = set() if args.reload else already_loaded(conn)
@@ -1409,8 +1378,7 @@ def main():
         try:
             with psycopg.connect(db_uri) as conn:
                 with conn.cursor() as cur:
-                    # --reload: drop the old copy, or rows double in the
-                    # tables with generated ids.
+                    # --reload: drop the old copy, or rows double in tables with generated ids.
                     if args.reload:
                         cur.execute("DELETE FROM entry WHERE id = %s", (eid,))
                         conn.commit()
@@ -1439,11 +1407,7 @@ def main():
     for t in ALL_TABLES:
         log.info("  %-40s  %d", t, totals.get(t, 0))
 
-    # The search document is a materialized view, so it still holds whatever
-    # was in the tables when it was last built. Rebuilding it here is what
-    # keeps the search box agreeing with the data just loaded. CONCURRENTLY
-    # leaves the old copy readable while it runs, so a running server never
-    # sees an empty view.
+    # Refresh the search view; CONCURRENTLY keeps it readable meanwhile.
     log.info("Rebuilding the search document ...")
     try:
         with psycopg.connect(db_uri) as conn:

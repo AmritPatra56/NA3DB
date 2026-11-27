@@ -1,8 +1,3 @@
-// equivalence.test.js - proof that moving to PostgreSQL changed no answers.
-// Every filter goes through both search.js (the SQL) and search.reference.mjs
-// (the old JavaScript) and the two must agree. Comparing against a version
-// already known to be right is what makes 150+ combinations affordable.
-
 import test, { after } from "node:test";
 import assert from "node:assert";
 import { export_entries } from "./search.js";
@@ -11,9 +6,6 @@ import { close } from "./db.js";
 
 after(() => close());
 
-// Asserts the SQL and the reference match the same entries. Both sides are put
-// in id order first: which entries match is the claim here, and the order they
-// come back in is covered by the sort tests in search.test.js.
 async function agree(filters) {
     let sql = (await export_entries(filters)).results.map((r) => r.pdb_id).sort();
     let ref = reference_ids(filters).slice().sort();
@@ -22,7 +14,6 @@ async function agree(filters) {
         `SQL and reference disagree for ${JSON.stringify(filters)}`);
 }
 
-// A few values per filter, chosen to hit matches, near-misses and nothing.
 const VALUES = {
     entry_id:            ["tna", "1", "B", "ZZZZ", "d"],
     author_name:         ["hingerty", "e.", "a"],
@@ -50,7 +41,6 @@ for (const [field, values] of Object.entries(VALUES)) {
     }
 }
 
-// Combinations, generated from a fixed seed so a failure is reproducible.
 const FIELDS = Object.keys(VALUES);
 let seed = 42;
 const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
@@ -70,8 +60,6 @@ test("60 generated filter combinations all agree", async () => {
     for (const filters of combos) await agree(filters);
 });
 
-// The characters that mean something to ILIKE but nothing to .includes().
-// Without escaping, entry_id="%" returned all 120 entries instead of none.
 const PATTERN_CHARACTERS = ["%", "_", "T_A", "4%A", "%%", "\\", "a_b%c"];
 
 for (const value of PATTERN_CHARACTERS) {

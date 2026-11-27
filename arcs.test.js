@@ -1,30 +1,20 @@
-// arcs.test.js - checks pair_arcs, which draws an entry's base pairs as an
-// arc diagram. No database: the fixtures are real NA3DB rows for 1B23 (a
-// tRNA), 119D (a DNA duplex) and 7KLP (a G-quadruplex), as entry_base_pairs
-// and entry_residues return them.
-
 import test from "node:test";
 import assert from "node:assert";
 import { pair_arcs, nested_set, ARC_WIDTH, ARC_HEIGHT } from "./detail.js";
 
-// One polymer, as entry_contents gives it.
 const polymer = (id, kind, labels, length) =>
     ({ id, kind, chains: labels.map((label) => ({ label, auth: label })), length });
 
-// Its residues, as entry_residues gives them: one per position.
 const residues_for = (length, modified = []) =>
     Array.from({ length }, (_, i) => ({ pos: i + 1, modified: modified.includes(i + 1) }));
 
 const pair = (label_1, pos_1, label_2, pos_2, family = "cWW", kind = "wc", copy_1 = "1", copy_2 = "1") =>
     ({ label_1, pos_1, label_2, pos_2, family, kind, copy_1, copy_2 });
 
-// Every arc as [x start, x end, y of the control points]. A tall arc's control
-// points sit above the picture; the curve itself peaks at 3/4 of that height.
 const arcs = (path) => [...path.matchAll(/M(-?[\d.]+) -?[\d.]+C-?[\d.]+ (-?[\d.]+) -?[\d.]+ -?[\d.]+ (-?[\d.]+) -?[\d.]+/g)]
     .map((m) => [Number(m[1]), Number(m[3]), Number(m[2])]);
 const numbers = (path) => [...path.matchAll(/-?[\d.]+/g)].map((m) => Number(m[0]));
 
-// 1B23: chain R, 74 nt, and a protein that must not be drawn.
 const T_RNA = [polymer("1", "RNA", ["R"], 74), polymer("2", "Protein", ["P"], 405)];
 const T_RES = new Map([["1", residues_for(74, [8, 19, 20, 31, 36, 38, 52, 53])],
                        ["2", residues_for(405)]]);
@@ -46,8 +36,6 @@ test("a tRNA: every pair drawn, one path per kind as the Base pairs section coun
     assert.equal(arcs(d.paths.nc).length, 5);
     assert.deepEqual(d.chains.map((c) => c.label), ["R"], "the protein is not on the line");
     assert.equal(d.width, ARC_WIDTH);
-    // 8-14, 9-13, 16-57 and 18-54 cross the D stem (10-24): under the line, and the
-    // picture grows to hold them, the names under them.
     let under = d.layout.pairs.filter((p) => p[7] === 1).map((p) => `${p[0]}-${p[1]}`);
     assert.deepEqual(under, ["8-14", "9-13", "16-57", "18-54"]);
     assert.equal(d.below, 4);
@@ -89,7 +77,6 @@ test("a pair listed twice (alternate locations) is drawn once", () => {
 });
 
 test("a duplex made by crystal symmetry draws the copy as a second strand, A′", () => {
-    // 1D26: one 8-nt strand in the file; A1 pairs with A8 of copy 2, and so on.
     let entities = [polymer("1", "DNA", ["A"], 8)];
     let res = new Map([["1", residues_for(8)]]);
     let mate = Array.from({ length: 8 }, (_, k) => pair("A", k + 1, "A", 8 - k, "cWW", "wc", "1", "2"));
@@ -221,7 +208,6 @@ test("the small picture is a standalone image: own colours, no labels, escaped i
     assert.ok(!svg.includes("#e0a030"), "no G·U, no G·U path");
     assert.match(svg, /stroke-dasharray/, "the copy is dashed");
     assert.match(svg, /<path fill="#26215c" class="m"/, "modified dots");
-    // Dark colours ride along for a page in the dark theme.
     assert.match(svg, /@media \(prefers-color-scheme: dark\)/);
     assert.ok(!svg.includes("<text"), "no labels at this size");
     assert.match(arc_thumbnail(null, `<x>"`), /&lt;x>&quot;: no base pairs annotated/);
@@ -238,7 +224,6 @@ test("a card's numbers come from the same picture: strands, nucleotides, pairs, 
     assert.equal(arc_summary(null), null);
 });
 
-// --- which arcs go above the line ----------------------------------------
 const cross = ([i, j], [k, l]) => (i < k && k < j && j < l) || (k < i && i < l && l < j);
 const kept = (arcs, w = () => 1) => [...nested_set(arcs, w)].sort((a, b) => a - b);
 
@@ -257,7 +242,6 @@ test("nested_set: weight decides, not order: Watson–Crick counts twice", () =>
     let arcs = [[1, 10], [5, 15]];
     assert.deepEqual(kept(arcs, (k) => [1, 2][k]), [1]);
     assert.deepEqual(kept(arcs, (k) => [2, 1][k]), [0]);
-    // Three Others nested in each other outweigh one Watson–Crick pair.
     let three = [[1, 10], [5, 15], [6, 14], [7, 13]];
     assert.deepEqual(kept(three, (k) => (k === 0 ? 2 : 1)), [1, 2, 3]);
 });

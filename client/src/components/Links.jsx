@@ -1,5 +1,3 @@
-// Links and downloads (structure.ejs): the files, then the pages elsewhere.
-// fasta: how many polymers the FASTA holds; pairs: whether there are base pairs.
 function Links({ pdbId, fasta, pairs }) {
   const id = encodeURIComponent(pdbId);
   return (

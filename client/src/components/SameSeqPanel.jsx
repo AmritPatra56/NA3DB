@@ -3,7 +3,6 @@ import SameSeqChart from "./SameSeqChart.jsx";
 import { VERDICT_ICON } from "../sameSeq.js";
 import { scrollFor } from "../sameSeqChart.js";
 
-// The comparison's guide points to the sequence map's: open it there.
 function openMapGuide(ev) {
   const guide = document.getElementById("sequence-map-guide");
   if (!guide) return;
@@ -12,10 +11,6 @@ function openMapGuide(ev) {
   guide.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// One comparison drawn (sameseq.js draw_panel, select): the verdict, how to
-// read the picture, the picture, and every difference in words. Picking a
-// difference, by its number or its line, scrolls the picture to it, and the
-// line into sight; a second pick of a long-range pair's line goes to its far end.
 function SameSeqPanel({ d, w, sel, onSelect }) {
   const s = d.summary;
   const scroll = useRef(null);
@@ -30,7 +25,7 @@ function SameSeqPanel({ d, w, sel, onSelect }) {
     const box = scroll.current;
     let { left, long } = scrollFor(x, w, box.clientWidth, false);
     if (fromList && long) {
-      // Its two ends cannot both be on screen: the second click goes to the other.
+      // Both ends do not fit: a second click goes to the far one.
       if (end.current === n) { left = scrollFor(x, w, box.clientWidth, true).left; end.current = null; }
       else end.current = n;
     }
@@ -43,7 +38,6 @@ function SameSeqPanel({ d, w, sel, onSelect }) {
         <p className={`ss_big ss_v_${s.verdict}`}><b className="ss_icon" aria-hidden="true">{VERDICT_ICON[s.verdict]}</b>{s.headline}</p>
         <p className="ss_facts">
           <span className="ss_ab ss_ab_a">A</span> {d.a} <span className="ss_ab ss_ab_b">B</span> {d.b}
-          {/* The facts are fixed for this reply, so the place is a safe key. */}
           {s.facts.map((f, k) => <Fragment key={k}> <span className="ss_dot">·</span> {f}</Fragment>)}
         </p>
       </div>

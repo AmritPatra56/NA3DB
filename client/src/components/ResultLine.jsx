@@ -1,9 +1,6 @@
 import { entryHref, lineParts } from "../resultCard.js";
 import { go } from "../address.js";
 
-// One result as a line in the Lines view (app.js row_html): id, date and
-// resolution on the left, title and method on the right. The whole line opens
-// the structure page.
 function ResultLine({ entry }) {
   const p = lineParts(entry);
   return (

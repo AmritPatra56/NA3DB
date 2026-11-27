@@ -3,10 +3,6 @@ import ViewSlot from "./ViewSlot.jsx";
 import View3D from "./View3D.jsx";
 import OneD from "./OneD.jsx";
 
-// views.ejs: 1D, 2D and 3D tiles over one panel each, one open at a time.
-// choice: which is open and whether the 3D frame is made (useViewChoice,
-// owned by the page, as a row of the Base pairs table opens 1D). pin,
-// tableRows, onFindRow: the 1D view's link with that table (usePairLink).
 function Views({ pdbId, viewer, choice, pin, tableRows, onFindRow }) {
   const { open, mounted } = choice;
 

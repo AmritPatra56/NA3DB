@@ -56,7 +56,7 @@ names, source organisms and modified nucleotides all at once.
 | `tRNA` | 163 structures of transfer RNA |
 | `ribozyme` | 20 structures of RNA that acts as an enzyme |
 | `Z-DNA` | 7 structures of left-handed DNA |
-| `Escherichia coli` | 189 structures from *E. coli* |
+| `Escherichia coli` | 191 structures from *E. coli* |
 | `Leonard` | 2 structures by an author of that name |
 | `PSU` | 90 structures containing pseudouridine |
 
@@ -68,8 +68,16 @@ Three things to know:
 - **Capitals never matter.**
 - **Punctuation is optional:** `zdna` finds `Z-DNA`.
 - **It finds text inside words:** `tRNA` also finds `tRNApro`.
+- **Quotes ask for an exact phrase:** `"yeast tRNA"`.
+- **A typo is not corrected silently:** `ribozime` finds nothing and offers
+  `ribozyme (20)` as a link.
 
-No login. Your browser talks to no site but this one.
+Below the box on the front page, five **Browse** cards ask simple questions
+(what is it made of, how was it measured, which organism...). Each row has
+`Yes` and `No` buttons and a count, so you can build a search without typing.
+
+No login and no tracking. Nothing is loaded from another site until you open
+the 3D view.
 
 ## 2. Step by step
 
@@ -80,11 +88,13 @@ Works the same on a laptop and a phone.
 2. **Narrow it down.** Press `Filters`: method, polymer type, organism,
    ligand, confal score and more. The button at the bottom says how many you
    will get (`Show 50 results`), so you never land on an empty page.
+   `Contains | Excludes` next to the box turns the whole search round.
 3. **See what is on.** Each filter in use is a chip above the results, like
    `Experimental method: X-ray ×`. Press `×` to drop it.
 4. **Pick a view** at the top: `Grid` (small tiles), `Cards` (the facts, the
    default) or `Lines` (one row each). Change the order with `Sort`. The empty
    frame on each card and tile is kept for a picture of the 3D structure.
+   `Best match` is the default order: whole-word and whole-phrase matches first.
 5. **Open a structure.** Press anywhere on a card, tile or line. The arc picture
    of its base pairs, with a full-screen view, is on the structure page. See [The structure page](#3-the-structure-page).
 6. **Share it.** Copy the address. Your search, filters, order, page and view
@@ -105,7 +115,7 @@ Works the same on a laptop and a phone.
 | | Conformation | confal score and percentile, and every NtC step grouped by shape, each colour named |
 | | Sequence map | sequence, backbone shape and every base pair on one ruler |
 | | Same sequence | every other chain in NA3DB with exactly this sequence, and a side-by-side comparison |
-| References | Citations | every paper, with DOI and PubMed links |
+| References | Citations | the primary paper, with DOI and PubMed links, and `Save reference` (RIS or BibTeX) |
 | | Links and downloads | RCSB, FASTA, base pairs as CSV, the report, the entry as JSON |
 
 - **The sidebar** lists the sections and marks the one you are reading. On a
@@ -220,7 +230,8 @@ difference.
 | sequences | `FASTA` button, for one molecule or the whole entry |
 | base pairs | `CSV` button in Base pairs |
 | sequence map | `Download notation` in Sequence map |
-| a list of results | the Report icon, pick your columns, `Export to CSV` |
+| a reference | `Save reference` in Citations: RIS (EndNote, Zotero, Mendeley) or BibTeX |
+| a list of results | the Report icon: pick your fields, then `Download CSV` for one table (Structures, Molecules, Ligands) or `Download all (ZIP)`, which adds the base pairs as dot-bracket |
 | anything, by script | the [API](#13-api-reference) |
 
 From Python:
@@ -265,6 +276,7 @@ psql -h localhost -U na3db -d na3db_test -f db/seed.sql
 # 5. Build the pages, test, then run
 (cd client && npm install && npm run build)
 npm test
+(cd client && npm test)
 npm run dev
 ```
 
@@ -276,6 +288,7 @@ Open <http://localhost:4000>. You should see **Entries (120)**.
 | --- | --- |
 | `npm test` says `no password supplied` | `.env.test` is missing or has no `DB_PASSWORD` |
 | `permission denied for schema public` | the role does not own the database (step 1) |
+| the server stops with `client/dist/index.html` missing | build the pages first: `cd client && npm run build` |
 | a blank page | `DB_NAME` in `.env` must be `na3db`, not `na3db_test` |
 | filters work but the search box finds nothing | the search index is stale: `psql -d na3db -c "REFRESH MATERIALIZED VIEW doc"` |
 
@@ -295,24 +308,43 @@ measuring something else. The two files differ in one line, `DB_NAME`.
 
 ## 8. Day to day
 
-**Run.** `npm run dev` restarts on every change; `npm start` runs once. Port
-4000 by default, or `PORT=5000 npm run dev`. A value set in the shell wins
-over `.env`.
+**Run.** `npm run dev` restarts the server on every change; `npm start` runs
+it once. Port 4000 by default, or `PORT=5000 npm run dev`. A value set in the
+shell wins over `.env`.
 
-**Test.** `npm test`: 447 tests, about six seconds, using Node's own
-`node --test`, no framework. They run the real SQL against `na3db_test`.
+**Work on the pages.** Express serves the built pages from `client/dist`, so
+after a change in `client/` either rebuild (`cd client && npm run build`) or
+run Vite beside the server for live reload:
+
+```bash
+npm run dev                  # Express on :4000
+cd client && npm run dev     # Vite on :5173, forwards /api and the files to :4000
+```
+
+Open <http://localhost:5173>. `API_TARGET=http://localhost:4001 npm run dev`
+points Vite at another server.
+
+**Test.** Two suites, both against real code, no mocks of the database:
+
+```bash
+npm test                     # server: 656 tests on na3db_test, about twenty seconds
+cd client && npm test        # pages: 101 Vitest tests, no database
+cd client && npm run lint    # ESLint
+```
 
 | file | checks |
 | --- | --- |
 | `search.test.js` | filtering, paging, ordering, validation, indexes |
-| `server.test.js` | every route, status codes, formats, private files stay private, no em dash on the page |
+| `server.test.js` | every route, status codes, formats, private files stay private |
 | `contents.test.js` | what each section of the structure page shows, the NtC grouping |
 | `equivalence.test.js` | 150+ filter combinations, checked against an older independent implementation |
 | `errors.test.js` | 503 vs 500, HTML vs JSON, nothing leaks |
-| `arcs.test.js` | the arc picture: strands, pairs, families, numbers |
-| `seqmap.test.js` | the sequence map: steps and bracket rows on one ruler |
-| `sameseq.test.js` | the chain comparison, on made-up chains |
-| `landing.test.js` | the count-as-you-type under the front-page box |
+| `arcs.test.js`, `assembly.test.js` | the arc picture and biological assemblies |
+| `seqmap.test.js`, `sameseq.test.js` | the sequence map and the chain comparison |
+| `suggest.test.js`, `taxonomy.test.js` | "Did you mean", suggestions, organism names |
+| `report.test.js`, `zip.test.js` | the report tables and the ZIP |
+| `theme.test.js`, `arrow.test.js` | both dark-theme blocks agree, one arrow everywhere |
+| `client/test/` | the React helpers, hooks and pages |
 
 **Load the real data.** The 1,489 structures come from DNATCO CIF files, which
 are not in this repository.
@@ -328,8 +360,16 @@ again:** finished files are skipped, half-loaded ones are redone. Use
 `--reload` to redo a finished file on purpose; running it plain would add its
 rows twice.
 
+After a load that brings new entries, refresh the files built from the data:
+
+```bash
+node --env-file=.env db/fetch_taxonomy.mjs     # taxonomy.json: organism names from NCBI
+node --env-file=.env db/fetch_citations.mjs    # caches papers from RCSB, Crossref, PubMed
+node --env-file=.env db/build_citations.mjs    # citations.json: one checked reference per entry
+```
+
 **Change the schema.** Add the next numbered file to `db/migrations/`, like
-`015_what_it_does.sql`, then run:
+`017_what_it_does.sql`, then run:
 
 ```bash
 node --env-file-if-exists=.env db/migrate.mjs
@@ -337,7 +377,7 @@ node --env-file-if-exists=.env db/migrate.mjs
 
 It applies only what has not run yet, each in a transaction. **Never edit a
 migration that has already run**: the databases will not see the edit. Add a
-new one instead. Three-digit numbers, so they sort in order.
+new one instead.
 
 ## 9. Shipping to na3db.org
 
@@ -348,76 +388,46 @@ new one instead. Three-digit numbers, so they sort in order.
    /opt/na3db/main/app/deploy/update.sh
    ```
 
-   It pulls `main`, builds a new image, restarts the app and checks
-   `/api/health`. The database is not touched. If the new version does not
-   answer, it prints the two commands that bring the previous one back.
+   It pulls `main`, builds a new image (the React pages are built inside it),
+   restarts the app and checks `/api/health`. The database is not touched. If
+   the new version does not answer, it prints the two commands that bring the
+   previous one back.
 
 | file | what it does |
 | --- | --- |
 | `deploy/update.sh` | the update above |
 | `deploy/backup.sh` | a nightly database dump, keeping the last 7 days |
 | `deploy/na3db.org.nginx` | the web server in front of the app |
-| `Containerfile` | how the app image is built |
+| `Containerfile` | how the app image is built: the pages first, then the server |
 
 Passwords live only on the server, never in git.
 
 ### The 3D viewer
 
-The structure page's **3D** view frames our own viewer: the Moorhen pane of the
-NAPAIR browser (`BASEPAIRING_WEB/napair_browser`), which downloads the entry
-from RCSB and annotates every base pair in WebAssembly inside the reader's
-tab. Nothing of it is in this repository: a build is 117 MB of coot, monomer
-dictionaries and the curated reference library.
+The **3D** view frames our own viewer: the Moorhen pane of the NAPAIR browser
+(`BASEPAIRING_WEB/napair_browser`). It downloads the entry from RCSB and
+annotates every base pair in WebAssembly, in the reader's tab. A build is
+117 MB, so it is not in this repository.
 
 ```bash
 cd ../napair_browser
 npm install && npm run build          # writes dist/
-rm -rf ../na3db/viewer                # a rebuild cannot empty a live one
-cp -R dist ../na3db/viewer
+rm -rf ../na3db-react/viewer          # a rebuild cannot empty a live one
+cp -R dist ../na3db-react/viewer
 ```
 
-`viewer/` is gitignored and goes into the image with everything else, so
-shipping it is the ordinary `deploy/update.sh`. `VIEWER_DIR=/some/other/dist`
-names a build elsewhere instead, which is the easy way to point a dev server
-at `napair_browser/dist` without copying anything.
+`viewer/` is gitignored but goes into the image, so shipping it is the
+ordinary `deploy/update.sh`. Or set `VIEWER_DIR=/path/to/napair_browser/dist`
+to use a build where it is.
 
-- **Found once, at boot.** No build, no frame: the 3D view says the viewer is
-  not installed and nothing 404s. Install one and restart.
-- **`/structure/:id` sends `Cross-Origin-Opener-Policy: same-origin` and
-  `Cross-Origin-Embedder-Policy: require-corp`,** and so does `/viewer/`.
-  Moorhen's coot needs `SharedArrayBuffer`, which a browser grants only a
-  cross-origin-isolated page, and a frame counts as isolated only when the
-  document around it is. **This is why a cross-origin image, script or font
-  cannot be added to the structure page** unless it sends CORP or CORS: today
-  that page loads nothing but its own files. Every page sends the same two
-  headers: the site is one React document, so a page reached from another
-  inside it keeps the headers the first load came with.
-- **The frame is made by `useViewChoice` when the tile is first clicked**,
-  never by the HTML, and once only. A reader who stays in 1D downloads none of
-  it; a second click does not restart a run that is already under way.
-- **The open view follows the section being read**, at every width. Base pairs
-  and Sequence map open 1D, Conformation opens 3D; every other section leaves
-  the view as it was. Below 1360px the Views are a section at the top rather
-  than a panel beside the page, so the switch happens above the fold and is
-  there when the reader scrolls back up.
-  `useReading` already tracks the current section for the sidebar and the
-  `#section` in the address, and `useViewChoice` decides what that means.
-- **The 3D view is as tall as the reading area allows**, not a fixed box: the
-  section body takes `100vh` less the chrome above it (and 45px less again
-  below 1023px, where the sections list is a strip across the top), and a
-  flex chain hands what is left to the frame. Only while 3D is open, since 1D
-  is a few lines of text that should not be stretched to fill a column.
-- **A handle in the gutter between the two columns swaps which is the wide
-  one** (1360px and wider), shaped like the sidebar's handle because it is the
-  same kind of control. The sections and the Views trade widths and stay where they are,
-  so the model gets about 775px of a 1500px window and nothing jumps across
-  the page. Remembered in `localStorage` as `views_wide` and applied before
-  the first paint, like the folded sidebar beside it.
-- **A view selected by a scroll only offers 3D, it does not start it**: the
-  panel shows what it costs and a button. Starting the frame, and writing
-  `?view=` to the address, are a reader's own click. And once they have
-  clicked a tile or that button, scrolling stops changing the view for the
-  rest of the visit: a view somebody asked for is never taken away.
+- **Found once, at boot.** With no build, the 3D view says the viewer is not
+  installed. Install one and restart.
+- **Every page is cross-origin isolated** (`Cross-Origin-Opener-Policy:
+  same-origin`, `Cross-Origin-Embedder-Policy: require-corp`). Moorhen needs
+  `SharedArrayBuffer`, which only an isolated page gets, and React moves to a
+  structure without a new page load. So **an image, script or font from
+  another site cannot be added** unless it sends CORP or CORS headers.
+- **The frame loads only when a reader asks for 3D**, never on its own.
 
 ---
 
@@ -425,53 +435,59 @@ at `napair_browser/dist` without copying anything.
 
 ## 10. Where everything lives
 
-**One rule: everything in `public/` is downloaded by every visitor; everything
-outside it stays on the server.** A second rule follows: **the server decides,
-the browser draws.** What counts as a match, the order, the page size: all in
-`search.js`, none in the browser.
+**The server decides, the browser draws.** What counts as a match, the order,
+the page size and every formatted value are worked out on the server; React
+only shows what `/api` sends. Every page address returns the same
+`client/dist/index.html`, and React Router picks the page.
 
 **Server**, at the root:
 
 | file | job |
 | --- | --- |
 | `server.js` | every route. The only file that knows about HTTP. |
-| `filters.js` | every filter and column, as data. The one file a new field goes in. |
+| `filters.js` | every filter, column and sort, as data. The one file a new field goes in. |
 | `search.js` | turns filters into SQL, runs it, pages the results |
-| `detail.js` | turns one entry into what the cards and the structure page show: rows, arcs, the sequence map, the NtC groups |
-| `sameseq.js` | finds chains with the same sequence and compares two of them |
+| `detail.js` | turns one entry into what the pages show: rows, arcs, the sequence map, the NtC groups |
+| `suggest.js` | "Did you mean" and the suggestions under the search box |
+| `taxonomy.js` | which organisms a typed name means (`mouse` is *Mus musculus*), from `taxonomy.json` |
+| `sameseq.js` | compares two chains with the same sequence |
+| `cite.js` | the citation as RIS and BibTeX |
+| `help_texts.js` | the wording of every `?` note. Edit text here. |
 | `db.js` | the only file that opens a database connection |
+| `citations.json`, `taxonomy.json` | built from the data by the scripts in `db/` (section 8) |
 | `entries.json`, `search.reference.mjs` | the old 120-entry data and the old search, kept only so the tests can check the SQL agrees |
 
 **Database**, in `db/`:
 
 | file | job |
 | --- | --- |
-| `migrations/*.sql` | the schema, one file per change, applied in number order (001 to 014) |
+| `migrations/*.sql` | the schema, one file per change, applied in number order (001 to 016) |
 | `migrate.mjs` | applies what has not run yet. Safe to run twice. |
-| `load_cif.py` | reads DNATCO CIF files into 39 tables |
+| `load_cif.py` | reads DNATCO CIF files into the tables |
+| `backfill_assemblies.py` | fills the assembly tables for entries loaded before migration 016 |
+| `fetch_taxonomy.mjs`, `fetch_citations.mjs`, `build_citations.mjs` | build `taxonomy.json` and `citations.json` |
 | `seed.sql` | the 120 sample entries, for development and tests. Made by `make_seed.mjs`. |
 
-**Pages**, in `client/` (React, built by Vite into `client/dist`, which
-`server.js` serves for every page address):
+**Pages**, in `client/` (React 19, built by Vite into `client/dist`):
 
 | file | job |
 | --- | --- |
-| `index.html` | the one page: sets the theme before it paints, then loads the app |
-| `src/routes.jsx` | which component draws which address |
-| `src/components/` | the pages and their parts |
-| `src/hooks/` | state and effects: fetching, folds, the reading position |
-| `src/*.js` | pure helpers, tested in `client/test/` |
+| `index.html` | the one page: sets the saved theme before it paints, then loads the app |
+| `src/routes.jsx` | which page draws which address: `/`, `/search`, `/report`, `/structure/:id` |
+| `src/components/` | the pages and their parts, one component per file |
+| `src/hooks/` | state and effects: fetching (`useApi`), folds, the reading position, the 3D choice |
+| `src/*.js` | plain helpers with no React in them, tested in `client/test/` |
 
-**Browser**, in `public/`:
+**Static files**, in `public/`, served as they are:
 
 | file | job |
 | --- | --- |
-| `style.css` | every visual decision |
+| `style.css` | every visual decision, both themes |
 | `assets/` | fonts, icons, the favicon |
-| `cana.js` | the 15 CANA colours and names, shared by the server and the client |
+| `cana.js` | the 15 CANA colours and names, shared by the server and the pages |
 
 **The 3D viewer**, in `viewer/`: a build of the NAPAIR browser, gitignored and
-installed by hand (section 9). Served at `/viewer/`, cross-origin isolated.
+installed by hand (section 9). Served at `/viewer/`.
 
 ## 11. Adding a filter or a column
 
@@ -485,7 +501,7 @@ A filter:
     key:   "journal",              // its name in the URL
     label: "Journal",              // what the reader sees
     group: "Demographics",         // which box it sits in
-    kind:  "text",                 // text, range or pills
+    kind:  "text",                 // text, number, range or pills
     where: `AND EXISTS (SELECT 1 FROM citation c
                         WHERE c.entry_id = e.id AND c.journal_abbrev ILIKE ?)`
 }
@@ -516,12 +532,21 @@ typing `' OR '1'='1` just searches for that string.
 All searchable text sits in one materialized view, `doc`, one row per entry,
 with trigram indexes. That took the box from 28 ms to 7 ms.
 
+- **Every word must match**, in any order. Quotes keep a phrase whole.
+- **Best match** ranks a whole phrase and whole words above parts of words,
+  so `TAR` lists HIV TAR before "target".
 - **Each field is kept apart by a newline**, so `rna hall` cannot match a title
   ending in RNA plus an author named Hall.
 - **Only punctuation is dropped, never spaces.** Dropping spaces turned
   `ATP-dependent RNA` into a false hit for `tRNA`.
 - **The id and molecule names stay literal**, because punctuation means
   something there (`11,19-DIMETHYL` must not match `119D`).
+- **Names are read as the PDB stores them:** `Jiri Sponer` also finds
+  `Sponer, J.`, and the page says so.
+- **Organisms by any name:** `mouse`, `E. coli` and `human` find their taxa
+  and every strain under them (`taxonomy.js`).
+- **Nothing found** offers up to three close spellings that do find
+  something, each with its count (`suggest.js`). Nothing is changed silently.
 
 `doc` is a copy, so it must be rebuilt after loading data. `seed.sql` and
 `load_cif.py` both do it; if it is ever stale, `npm test` fails and prints the
@@ -531,24 +556,46 @@ command.
 
 All JSON unless noted. Filters go in the query string, the same as on the website.
 
+**Searching**
+
 | endpoint | returns |
 | --- | --- |
 | `GET /api/health` | `{"ok":true,"database":"up"}`, or `503` |
-| `GET /api/stats` | `{"total":1489}` |
-| `GET /api/fields` | every filter and column the API understands (never the SQL) |
+| `GET /api/stats` | `{"total":1489,"updated":...}` |
+| `GET /api/fields` | every filter, column and sort the API understands (never the SQL) |
 | `GET /api/count` | how many entries a search finds |
-| `GET /api/entries` | one page of results. Takes `page`, `sort`, `per_page`, `match` |
-| `GET /api/entries/:id` | one entry, or `404` |
-| `GET /api/export` | every match, up to 5,000, for the report |
+| `GET /api/entries` | one page of results. Takes `page`, `sort`, `per_page`, `match`. A search that finds nothing adds `suggestions` |
+| `GET /api/pill_counts` | how many entries each pill option finds |
+| `GET /api/browse` | the front page's Browse cards with their counts |
+| `GET /api/box_suggestions?q=` | names to offer under the search box as you type |
+| `GET /api/ligands`, `/api/nonstandard_residues`, `/api/source_organisms`, `/api/expression_hosts` | what each filter box can suggest, with counts |
+| `GET /api/help` | the `?` notes |
+
+**One entry**
+
+| endpoint | returns |
+| --- | --- |
+| `GET /api/entries/:id` | the entry and its display rows, or `404` |
+| `GET /api/entries/:id/molecules` | the Molecules, Modified nucleotides and Ligands tables |
+| `GET /api/entries/:id/pairs` | the Base pairs section and its arc picture. `?assembly=` picks a view |
 | `GET /api/entries/:id/base_pairs` | every base pair of the first model. `?format=csv` for a file |
-| `GET /api/entries/:id/arcs` | what the arc picture is drawn from |
-| `GET /api/entries/:id/sequence_map` | what the sequence map is drawn from |
+| `GET /api/entries/:id/arcs` | the arc layout, for the full-screen viewer |
+| `GET /api/entries/:id/sequence_map` | the sequence map. `?format=text` for the dot-bracket file |
 | `GET /api/entries/:id/same_sequence` | the chains sharing a sequence with this entry |
-| `GET /api/same_sequence/compare` | two chains compared, given as `ENTRY:CHAIN` |
-| `GET /api/ligands` | every ligand code, its name and how many entries hold it |
+| `GET /api/same_sequence/compare?a=&b=` | two chains compared, each given as `ENTRY:CHAIN` |
 | `GET /structure/:id/arcs.svg` | the small arc picture, as SVG |
 | `GET /structure/:id/fasta` | FASTA of every molecule. `?only=na` for nucleic acids only |
 | `GET /structure/:id/fasta/:entity` | FASTA of one molecule |
+| `GET /structure/:id/citation?format=ris` | the primary citation, `ris` or `bib` |
+
+**The report**, same filters as a search
+
+| endpoint | returns |
+| --- | --- |
+| `GET /api/export` | every matching structure, up to 5,000 |
+| `GET /api/export/molecules` | their molecules. `?proteins=1` adds proteins |
+| `GET /api/export/ligands` | their ligands. `?water=1` adds water |
+| `GET /api/export/dbn` | their base pairs as dot-bracket |
 
 Filter parameters:
 
@@ -556,10 +603,11 @@ Filter parameters:
 | --- | --- |
 | `q` | the one search box |
 | `entry_id`, `author_name`, `entity_name`, `source_organism`, `nonstandard_residue`, `expression_host`, `assigned_ntc` | contains, any case |
-| `ligand` | the exact code (`SAM`), or 5+ letters of the name |
+| `ligand` | the exact code (`SAM`), or 3+ letters of the name |
 | `taxonomy_id` | exact number |
-| `confal_min`, `confal_max` | a range |
-| `experimental_method`, `polymer_type`, `monomer_flag`, `source_kind` | one of, comma-separated |
+| `confal_min`, `confal_max`, `resolution_min`, `resolution_max` | a range |
+| `experimental_method`, `polymer_type`, `monomer_flag`, `source_kind`, `modification`, `has_ligand`, `has_water`, `synthetic` | one of, comma-separated |
+| `not_<key>` | the opposite of that one filter |
 | `match` | `contains` (default) or `excludes`, which flips the whole search |
 
 Examples:
@@ -599,17 +647,12 @@ The database takes 9.6 GB, 7.6 GB of it atom coordinates.
 
 ## 15. Not done yet
 
-- **Most electron-microscopy entries show no resolution.** 441 of 497 are
-  blank: the loader reads only the X-ray fields, though the CIF files have it.
 - **Two structures have no confal score** (`2JJA`, `363D`). DNATCO gave none. Expected.
-- **Results are not ranked.** A whole-word match and a fragment count the same.
-- **Typos find nothing.** `ribozime` returns none of the 20 ribozymes.
 - **Some molecule names miss a space** (`DNA-directedRNA polymerase`, 47 rows),
   as in the source data.
-- **The 3D view fetches its own coordinates.** The viewer in it downloads the
-  entry from RCSB and annotates it in WebAssembly, so it ignores the 7.6 GB of
+- **The 3D view fetches its own coordinates.** The viewer downloads the entry
+  from RCSB and annotates it in WebAssembly, so it ignores the 7.6 GB of
   atoms in our own database. A precalculated library served from here would
   save both the download and the compute.
 - **The 3D viewer is light only**, so it stays white inside a dark page.
-- **The first arc picture of an entry takes about 18 ms to work out**, then it
-  is cached for an hour.
+- **The card pictures are empty frames**, kept for a snapshot of the 3D structure.

@@ -5,8 +5,6 @@ import App from "./App.jsx";
 import { routes } from "./routes.jsx";
 import { attachRouter } from "./address.js";
 
-// One route per page under App, which draws the rail and the footer round
-// whichever page the address picks.
 const router = createBrowserRouter([{ element: <App />, children: routes }]);
 attachRouter(router);
 

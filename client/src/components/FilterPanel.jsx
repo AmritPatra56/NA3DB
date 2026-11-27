@@ -6,12 +6,6 @@ import RangeField from "./RangeField.jsx";
 import PillGroup from "./PillGroup.jsx";
 import { fieldsOf, pillsOf } from "../panelForm.js";
 
-// The filter panel (search.ejs query_panel), drawn from the registry: nothing
-// here names a filter. It only shows the form it is given and calls back up.
-// panel: the form (panelForm.js). counts: /api/pill_counts. asked: every value
-// the page was opened with. open: false while folded by the handle, when
-// nothing in it can be reached. label: what the Search button says.
-// onSubmit: Search pressed (or Enter in a box). onFill: a name picked.
 function FilterPanel({ registry, panel, counts, asked, open, busy, label, onValue, onFill, onPill, onSubmit }) {
   function field(f) {
     if (f.kind === "text" && f.suggest) return <SuggestField key={f.key} filter={f} value={panel.values[f.key]} onValue={onValue} onFill={onFill} />;
