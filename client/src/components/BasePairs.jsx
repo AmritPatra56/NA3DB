@@ -33,7 +33,7 @@ function BasePairs({ pdbId, bp, view, expanded, onExpand, onCollapse, rowOn, fin
         <>
           <div id="bp-families" className="pair_caption">Others, by Leontis–Westhof family</div>
           <div className="pair_families">
-            {bp.families.map((f) => <span key={f.family} title={f.name}>{f.family} {number(f.n)}</span>)}
+            {bp.families.map((f) => <span key={f.family} title={f.name}>{`${f.family} ${number(f.n)}`}</span>)}
           </div>
         </>
       )}

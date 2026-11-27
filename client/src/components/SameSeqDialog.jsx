@@ -5,7 +5,9 @@ import { useEffect, useRef } from "react";
 function SameSeqDialog({ onCollapse, children }) {
   const box = useRef(null);
 
+  // show(), as expand.js does: the browser then focuses the first control inside.
   useEffect(() => {
+    box.current.show();
     box.current.scrollIntoView({ block: "start", behavior: "smooth" });
   }, []);
 
@@ -20,7 +22,7 @@ function SameSeqDialog({ onCollapse, children }) {
   }, [onCollapse]);
 
   return (
-    <dialog ref={box} className="arc_viewer ss_dialog in_place" aria-label="Compare two chains, expanded" open>
+    <dialog ref={box} className="arc_viewer ss_dialog in_place" aria-label="Compare two chains, expanded">
       <div className="av_box">
         <div className="av_top">
           <strong>Compare</strong>

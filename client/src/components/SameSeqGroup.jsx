@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import SameSeqEntry from "./SameSeqEntry.jsx";
 import SameSeqCompare from "./SameSeqCompare.jsx";
 import SameSeqDialog from "./SameSeqDialog.jsx";
@@ -22,8 +23,9 @@ function SameSeqGroup({ group, many, expanded, onExpand, onCollapse }) {
   const entries = sortedEntries(group);
   // Expanded only once a comparison is open (a reload keeps the mark, not the pair).
   const full = expanded && cmp.open;
+  // flushSync: the panel shows "Comparing…" before the scroll, as sameseq.js run does.
   const onRow = (a, b) => {
-    cmp.onRow(a, b);
+    flushSync(() => cmp.onRow(a, b));
     box.current.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const compare = <SameSeqCompare group={group} cmp={cmp} expanded={full} boxRef={box} onExpand={onExpand} onCollapse={onCollapse} />;

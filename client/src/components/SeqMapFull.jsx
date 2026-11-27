@@ -33,7 +33,9 @@ function SeqMapFull({ first, onCollapse }) {
   const view = useClientWidth(scroll, drawnAt);
   const frame = viewBox(at, view, w, p.n);
 
+  // show(), as expand.js does: the browser then focuses the first control inside.
   useEffect(() => {
+    box.current.show();
     box.current.scrollIntoView({ block: "start", behavior: "smooth" });
   }, []);
 
@@ -51,7 +53,7 @@ function SeqMapFull({ first, onCollapse }) {
   const scrollTo = (x) => { scroll.current.scrollLeft = x; };
 
   return (
-    <dialog ref={box} className="arc_viewer seqmap_dialog in_place" aria-label="Sequence map, expanded" open>
+    <dialog ref={box} className="arc_viewer seqmap_dialog in_place" aria-label="Sequence map, expanded">
       <div className="av_box">
         <div className="av_top">
           <strong className="smd_id">{map.pdb_id}</strong>
