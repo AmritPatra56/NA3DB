@@ -49,6 +49,9 @@ test("small readers", () => {
   expect(filtersToParams({ a: "", b: [], c: "x", d: ["1", "2"] }).toString()).toBe("c=x&d=1%2C2");
   expect(panelOpenOf("?panel=closed")).toBe(false);
   expect(panelOpenOf("?panel=open")).toBe(true);
+  // Open unless the handle folded it (server.test.js PANEL_CASES before 8.17).
+  expect(["", "?q=tRNA", "?q=tRNA&page=3&sort=confal_desc", "?entry_id=tna", "?q=", "?q=tRNA&panel=closed", "?panel=closed"]
+    .map(panelOpenOf)).toEqual([true, true, true, true, true, false, false]);
   expect(askedValues("?a=1,2&b=3")).toEqual(["1", "2", "3"]);
   expect(filtersOfPath("/api/entries?ligand=MG&per_page=20", registry).ligand).toBe("MG");
 });

@@ -6,12 +6,11 @@ import assert from "node:assert";
 import { FILTERS, COLUMNS, TEXT_FILTERS, PILL_FILTERS, BROWSE, MODIFICATIONS, RESOLUTION_BANDS } from "./filters.js";
 import { once } from "node:events";
 import { readFileSync } from "node:fs";
-import app, { cited_rows, asked_view, viewer_installed, pairs_reply } from "./server.js";
+import app, { cited_rows, viewer_installed, pairs_reply } from "./server.js";
 import { close as close_db, query } from "./db.js";
 import { find_entry, entry_contents, entry_residues, entry_citation, entry_base_pairs, entry_ntc_classes, browse_counts, build_where, kingdom_organisms, BROWSE_TOP } from "./search.js";
 import { lineage_of, name_key } from "./taxonomy.js";
-import { detail_rows, molecule_groups, structure_sections, pair_arcs, arc_views, PAGE_GROUPS, SHOWN_ELSEWHERE, base_pair_section, ntc_section } from "./detail.js";
-import { full_name } from "./cite.js";
+import { detail_rows, molecule_groups, arc_views, base_pair_section, ntc_section } from "./detail.js";
 import help from "./help_texts.js";
 
 let base;
@@ -47,12 +46,10 @@ test("the report page is served at /report", async () => {
 });
 
 test("a structure page is built from our own data", async () => {
-    let res = await fetch(base + "/structure/4TNA");
-    let html = await res.text();
-
-    assert.equal(res.status, 200);
-    // curl runs no JavaScript, so finding this proves the server rendered it.
-    assert.match(html, /FURTHER REFINEMENT/);
+    assert.equal((await fetch(base + "/structure/4TNA")).status, 200);
+    // React draws the page from this, so our own title must be in it.
+    let body = await (await fetch(base + "/api/entries/4TNA")).json();
+    assert.match(body.title, /FURTHER REFINEMENT/);
 });
 
 test("a structure page ignores case in the id", async () => {
@@ -110,15 +107,13 @@ test("/api/browse sends the landing cards and only what drawing them needs", asy
             }
         }
     }
-    // The same numbers the server-drawn page shows.
-    let page = await (await fetch(base + "/")).text();
-    for (const row of groups.flatMap((g) => g.rows)) {
-        assert.ok(page.includes(`<span class="browse_count">${row.count.toLocaleString("en-GB")}</span>`), row.label);
-    }
+    // The same numbers browse_counts works out.
+    let counts = (await browse_counts()).flatMap((g) => g.rows.map((r) => r.count));
+    assert.deepEqual(groups.flatMap((g) => g.rows.map((r) => r.count)), counts);
 });
 
-// The React search panel is drawn from /api/fields and these counts, so they
-// must be the numbers search.ejs prints beside each pill.
+// The search panel prints these beside each pill, so each must be what
+// clicking that pill alone finds.
 test("/api/pill_counts sends the counts the search panel's pills show", async () => {
     let res = await fetch(base + "/api/pill_counts");
     let counts = await res.json();
@@ -126,12 +121,10 @@ test("/api/pill_counts sends the counts the search panel's pills show", async ()
     assert.equal(res.status, 200);
     assert.deepEqual(Object.keys(counts), FILTERS.filter((f) => f.count_by).map((f) => f.key));
 
-    let page = await (await fetch(base + "/search")).text();
     let checked = 0;
     for (const [key, by_value] of Object.entries(counts)) {
-        let field = page.match(new RegExp(`data-name="${key}">([\\s\\S]*?)</div>`))[1];
-        for (const [, value, n] of field.matchAll(/data-value="([^"]+)"[^>]*>[^<]*<span class="pill_count">([\d,]+)<\/span>/g)) {
-            assert.equal((by_value[value] ?? 0).toLocaleString("en-GB"), n, `${key}=${value}`);
+        for (const [value, n] of Object.entries(by_value)) {
+            assert.equal(await count_of(new URLSearchParams({ [key]: value })), n, `${key}=${value}`);
             checked++;
         }
     }
@@ -144,14 +137,10 @@ test("/api/pill_counts sends the counts the search panel's pills show", async ()
 test("/api/entries/:id rows are the rows the structure page shows", async () => {
     // 1DN8 has a checked reference listing more authors than the PDB's copy.
     let ids = [...new Set(["1DN8", ...(await (await fetch(base + "/api/entries?per_page=50")).json()).results.map((e) => e.pdb_id)])];
-    let unescape = (t) => t.replaceAll("&#39;", "'").replaceAll("&#34;", '"').replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
     for (const id of ids) {
         let body = await (await fetch(base + "/api/entries/" + id)).json();
-        let html = await (await fetch(base + "/structure/" + id)).text();
-        for (const row of body.rows.filter((r) => ["published", "all_authors"].includes(r.key))) {
-            let field = html.match(new RegExp(`<div class="detail_label">${row.label}</div>\\s*<div class="detail_value[^"]*">(?:<span>)?([^<]*)`));
-            assert.equal(unescape(field?.[1].trim() ?? ""), row.value, `${id} ${row.key}`);
-        }
+        let expected = cited_rows(detail_rows(await find_entry(id)), await entry_citation(id));
+        assert.deepEqual(body.rows, JSON.parse(JSON.stringify(expected)), id);
     }
 });
 
@@ -162,8 +151,6 @@ test("/api/entries/:id/molecules is the page's molecule groups", async () => {
         let body = await (await fetch(base + `/api/entries/${id}/molecules`)).json();
         let expected = molecule_groups(await entry_contents(id), await entry_residues(id));
         assert.deepEqual(body, JSON.parse(JSON.stringify(expected)), id);
-        let html = await (await fetch(base + "/structure/" + id)).text();
-        for (const g of body.groups) assert.ok(html.includes(`<summary>${g.title} (${g.rows.length})</summary>`), `${id} ${g.title}`);
     }
     assert.equal((await fetch(base + "/api/entries/ZZZZ/molecules")).status, 404);
 });
@@ -187,6 +174,14 @@ test("/api/entries/:id/pairs is the page's base pairs, arcs and NtC families", a
     }
     assert.equal((await fetch(base + "/api/entries/ZZZZ/pairs")).status, 404);
 });
+
+// Fixture pairs: the seed has none.
+const arc_pair = (label_1, pos_1, label_2, pos_2, kind = "wc", copy_2 = "1") =>
+    ({ label_1, pos_1, label_2, pos_2, family: kind === "nc" ? "tWH" : "cWW", kind, copy_1: "1", copy_2 });
+const dna = (labels, length) => [{ id: "1", kind: "DNA", length,
+                                   chains: labels.map((label) => ({ label, auth: label })) }];
+const plain = (length, modified = []) =>
+    new Map([["1", Array.from({ length }, (_, i) => ({ pos: i + 1, modified: modified.includes(i + 1) }))]]);
 
 // The test database has no pairs, so the shape is checked on a drawn picture.
 test("/pairs sends the arc picture as the page draws it, without the viewer's layout", () => {
@@ -297,24 +292,11 @@ test("a display parameter alone does not open the report", async () => {
     }
 });
 
-test("the field list opens or closes from the URL", async () => {
-    let open  = await (await fetch(base + "/report?q=tRNA")).text();
-    let shut  = await (await fetch(base + "/report?q=tRNA&fields=closed")).text();
-
-    assert.match(open, /class="query_panel "/);
-    assert.match(open, /fields_toggle"[\s\S]*?aria-expanded="true"/);
-    assert.match(open, /class="panel_handle fields_handle" aria-controls="report_panel"\s+aria-expanded="true"\s+aria-label="Hide the fields"/);
-
-    assert.match(shut, /class="query_panel folded"/);
-    assert.match(shut, /fields_toggle"[\s\S]*?aria-expanded="false"/);
-    assert.match(shut, /class="panel_handle fields_handle"[^>]*aria-expanded="false"\s+aria-label="Show the fields"/);
-});
-
 // Beside the table the list folds with the full search's drawer handle; on a
 // phone it sits above the table and the Fields button opens it downwards.
 test("the report's field list folds with the full search's handle, and the phone keeps its button", () => {
     let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
-    let js = readFileSync(new URL("./public/report.js", import.meta.url), "utf8");
+    let jsx = readFileSync(new URL("./client/src/components/ReportPage.jsx", import.meta.url), "utf8");
     let block = (start) => { let b = css.slice(css.indexOf(start)); return b.slice(0, b.indexOf("\n}\n")); };
 
     assert.match(css, /\n\.interface > \.query_panel\.folded:has\(#report_fields\) \{\n    margin-left: -450px;\n    visibility: hidden;/);
@@ -333,8 +315,7 @@ test("the report's field list folds with the full search's handle, and the phone
     let stacked = block("/* Stacked above the results, the panel folds upwards");
     assert.doesNotMatch(stacked, /\n    \.panel_handle/, "an unscoped rule would turn the report's handle too");
 
-    assert.match(js, /fields_panel\.inert = !open && !phone\.matches/, "the Download buttons stay reachable on a phone");
-    assert.doesNotThrow(() => new Function(js.replace(/^(import|export) .*$/gm, "")));
+    assert.match(jsx, /id="report_panel" inert=\{fold\.inert\}/, "the Download buttons stay reachable on a phone");
 });
 
 test("/report with a search opens", async () => {
@@ -342,57 +323,14 @@ test("/report with a search opens", async () => {
         let res = await fetch(base + "/report?" + query);
 
         assert.equal(res.status, 200, `/report?${query} should open`);
-        assert.match(await res.text(), /report_fields/);
     }
-});
-
-test("the landing page does not offer the report", async () => {
-    let landing = await (await fetch(base + "/")).text();
-    let search  = await (await fetch(base + "/search")).text();
-
-    assert.ok(!landing.includes('href="/report"'),
-              "the landing page must not link to the report");
-    assert.ok(search.includes('href="/report"'),
-              "the search page must");
 });
 
 // --- the front door ------------------------------------------------------
 test("/ is the landing page, not the search page", async () => {
-    let res  = await fetch(base + "/");
-    let html = await res.text();
-
+    // Which page React draws for / is client/test/route.test.js's.
+    let res = await fetch(base + "/", { redirect: "manual" });
     assert.equal(res.status, 200);
-    assert.match(html, /NA3DB/);
-    assert.match(html, /Nucleic Acid 3D Database/);
-
-    // The thing that makes it the landing page: no filter panel.
-    assert.ok(!html.includes("query_panel"), "the landing page carries no filters");
-});
-
-// The box submits natively: a real action and method, and a real submit
-// button. landing.js adds the live count on top, but nothing here depends on
-// it, so the page still works if that script never loads.
-test("the landing box is a form that needs no JavaScript", async () => {
-    let html = await (await fetch(base + "/")).text();
-
-    assert.match(html, /<form[^>]+action="\/search"[^>]+method="get"/);
-    assert.match(html, /name="q"/);
-    assert.match(html, /<button type="submit"/);
-
-    assert.ok(!/onsubmit=|onclick=/.test(html),
-              "nothing on this page may need a handler to work");
-});
-
-test("the landing page links to the filter panel", async () => {
-    let html = await (await fetch(base + "/")).text();
-    // ?panel=open: a phone hides the panel unless the link asks for it.
-    assert.match(html, /landing_advanced" href="\/search\?panel=open"/);
-    assert.match(html, /panel=open">Full search</);
-});
-
-test("the landing page has no 'Try' line of examples", async () => {
-    let html = await (await fetch(base + "/")).text();
-    assert.ok(!html.includes("landing_examples"));
 });
 
 // Every link made before the split carried the search on /. Those have to keep
@@ -434,15 +372,6 @@ test("a current polymer type on /search is not redirected", async () => {
         let res = await fetch(base + "/search?" + query, { redirect: "manual" });
         assert.equal(res.status, 200, `/search?${query} should be served as it is`);
     }
-});
-
-test("/search is the page that was on / before", async () => {
-    let res  = await fetch(base + "/search");
-    let html = await res.text();
-
-    assert.equal(res.status, 200);
-    assert.ok(html.includes("query_panel"), "the filter panel lives here now");
-    assert.ok(html.includes("results_list"));
 });
 
 // --- the registry endpoint ----------------------------------------------
@@ -499,174 +428,12 @@ test("/api/fields describes every filter and column", async () => {
     }
 });
 
-// The injected copy in the page is the one the browser actually runs on.
-test("the search page carries the registry and not the SQL", async () => {
-    let html = (await (await fetch(base + "/search")).text());
-
-    assert.match(html, /window\.REGISTRY = \{/);
-    assert.ok(!/ILIKE|string_agg|entity_poly_seq/i.test(html),
-              "the page must not contain SQL");
-});
-
-// --- the filter panel, open or closed ------------------------------------
-// Decided on the server so the page arrives in the right state, with no flash
-// of filters appearing and then collapsing.
-const PANEL_CASES = [
-    ["/search",                                   true,  "the Full search link"],
-    ["/search?q=tRNA",                            true,  "a search from the box"],
-    ["/search?q=tRNA&page=3&sort=confal_desc",    true,  "...paged and sorted"],
-    ["/search?entry_id=tna",                      true,  "an old bookmark using a filter"],
-    ["/search?q=tRNA&polymer_type=Protein%2FNA",  true,  "the box plus a filter"],
-    ["/search?q=",                                true,  "an empty box"],
-    ["/search?q=tRNA&panel=open",                 true,  "an old link saying open"],
-    ["/search?q=tRNA&panel=closed",               false, "the handle folded it"],
-    ["/search?panel=closed",                      false, "...with no search"]
-];
-
-for (const [url, open, why] of PANEL_CASES) {
-    test(`the panel is ${open ? "open" : "closed"} for ${why}`, async () => {
-        let html = await (await fetch(base + url)).text();
-        let tag  = html.match(/class="query_panel ([^"]*)"/);
-
-        assert.ok(tag, "the panel should be on the page either way");
-        assert.equal(!tag[1].includes("folded"), open);
-    });
-}
-
-test("the drawer handle reports the state it is in", async () => {
-    let shut = await (await fetch(base + "/search?q=tRNA&panel=closed")).text();
-    let open = await (await fetch(base + "/search?q=tRNA")).text();
-
-    assert.match(shut, /class="panel_handle"[^>]*aria-expanded="false"[^>]*aria-label="Show the filters"/);
-    assert.match(open, /class="panel_handle"[^>]*aria-expanded="true"[^>]*aria-label="Hide the filters"/);
-    assert.ok(!open.includes("filters_toggle"), "the old Filters button is gone");
-});
-
-// --- the prominent filter ------------------------------------------------
-// q is drawn above the panel rather than inside it. The input keeps its id, so
-// read_filters still finds it, and carries form="query_form" so Enter submits
-// the panel it no longer sits in.
-test("a prominent filter is drawn above the panel, not inside it", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let reg  = await (await fetch(base + "/api/fields")).json();
-
-    let prominent = reg.filters.filter((f) => f.prominent);
-    assert.ok(prominent.length > 0, "something should be prominent");
-
-    for (const f of prominent) {
-        assert.ok(!html.includes(`<label for="${f.key}">`),
-                  `${f.key} is still drawn as a panel field`);
-
-        let bar = html.slice(html.indexOf('class="top_search"'),
-                             html.indexOf('class="workspace_body"'));
-
-        assert.ok(bar.includes(`id="${f.key}"`), `${f.key} is not in the top bar`);
-        assert.ok(bar.includes('form="query_form"'),
-                  "the top input must submit the panel's form");
-    }
-});
-
-test("every other filter is still drawn inside the panel", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let reg  = await (await fetch(base + "/api/fields")).json();
-
-    for (const f of reg.filters.filter((x) => !x.prominent)) {
-        if (f.kind === "pills") {
-            assert.ok(html.includes(`data-name="${f.key}"`), `no pills for ${f.key}`);
-        } else {
-            assert.ok(html.includes(`name="${f.key}"`), `no input for ${f.key}`);
-        }
-    }
-});
-
-// --- the generated form -------------------------------------------------
-// A filter in the registry is a control on the form. Fails if one is added
-// and the form does not grow.
-test("the form has a control for every filter in the registry", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let reg  = await (await fetch(base + "/api/fields")).json();
-
-    for (const f of reg.filters) {
-        if (f.kind === "pills") {
-            assert.ok(html.includes(`data-name="${f.key}"`),
-                      `no pill group for ${f.key}`);
-            // A pill that would find nothing is left out; every other is drawn.
-            for (const o of f.options) {
-                let found = (await (await fetch(base + `/api/count?${f.key}=${encodeURIComponent(o.value)}`)).json()).total;
-                assert.equal(html.includes(`data-value="${o.value}"`), found > 0 || f.key !== "polymer_type",
-                             `pill for ${f.key} = ${o.value} (finds ${found})`);
-            }
-        } else {
-            assert.ok(html.includes(`name="${f.key}"`), `no input for ${f.key}`);
-        }
-    }
-});
-
-// confal_min and confal_max are two filters and ONE control. pair_with is
-// what tells the template that; without it the form grows two stray boxes.
-test("the form draws one range control per pair, not one per end", async () => {
-    let html = await (await fetch(base + "/search")).text();
-
-    assert.equal((html.match(/class="range_row"/g) || []).length,
-                 FILTERS.filter((f) => f.kind === "range" && f.pair_with).length);
-    assert.ok(html.includes('placeholder="min"'));
-    assert.ok(html.includes('placeholder="max"'));
-});
-
-// The resolution range waits under the method pills until X-ray, EM or another
-// method that measures one is picked, and starts hidden so it never flashes.
-test("the resolution range is drawn hidden, revealed by a method that has one", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let field = html.match(/<div class="field revealed_field"[^>]*>/)[0];
-
-    assert.match(field, /data-revealed-by="experimental_method"/);
-    assert.match(field, /X-RAY DIFFRACTION\|ELECTRON MICROSCOPY/);
-    assert.ok(!field.includes("SOLUTION NMR"), "NMR measures no resolution");
-    assert.match(field, / hidden>$/);
-    assert.ok(html.indexOf('data-name="experimental_method"') < html.indexOf("revealed_field"),
-              "the range sits under the method pills");
-});
-
-test("the method pills show four, the rest behind a More button", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let group = html.slice(html.indexOf('data-name="experimental_method"'));
-    group = group.slice(0, group.indexOf("</div>"));
-    let method = FILTERS.find((f) => f.key === "experimental_method");
-
-    assert.equal((group.match(/class="pill pill_extra"[^>]* hidden>/g) || []).length, method.options.filter((o) => !o.band).length - 4);
-    assert.match(group, /class="pill_more" aria-expanded="false"/);
-
-    // A link that picks a hidden method arrives with them unfolded.
-    let picked = await (await fetch(base + "/search?experimental_method=FIBER%20DIFFRACTION")).text();
-    assert.match(picked, /class="pill_more" aria-expanded="true"/);
-    assert.ok(!/class="pill pill_extra"[^>]* hidden>/.test(picked));
-});
-
-// One category box per group, each with the slug that colours its dot.
-test("the form draws one box per group, in registry order", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let reg  = await (await fetch(base + "/api/fields")).json();
-
-    let seen = [...html.matchAll(/class="category ([a-z]+)"/g)].map((m) => m[1]);
-    assert.deepEqual(seen, reg.groups.map((g) => g.slug));
-
-    // A box gets a note only if its group carries one.
-    assert.equal((html.match(/field_note/g) || []).length,
-                 reg.groups.filter((g) => g.note).length);
-});
-
 // --- sorting ------------------------------------------------------------
-test("the page offers every sort the registry defines, and no SQL", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let reg  = await (await fetch(base + "/api/fields")).json();
+test("the registry offers every sort, and no SQL", async () => {
+    let reg = await (await fetch(base + "/api/fields")).json();
 
     assert.equal(reg.sorts.length, 9);
-
-    for (const sort of reg.sorts) {
-        assert.ok(html.includes(`value="${sort.key}"`), `no option for ${sort.key}`);
-        assert.ok(html.includes(sort.label), `no label for ${sort.key}`);
-        assert.deepEqual(Object.keys(sort).sort(), ["key", "label"]);
-    }
+    for (const sort of reg.sorts) assert.deepEqual(Object.keys(sort).sort(), ["key", "label"]);
 
     assert.ok(!/NULLS LAST|ORDER BY|LEFT JOIN/i.test(JSON.stringify(reg)),
               "the ORDER BY must stay on the server");
@@ -686,32 +453,6 @@ test("a column can be fetched without being displayed", async () => {
 
     assert.equal(api.pdb_id, "4TNA", "so the value is there");
     assert.ok(!api.rows.some((r) => r.label === "Entry ID"), "but never as a row");
-});
-
-// --- the layout switcher -------------------------------------------------
-// Both views draw the same reply, so switching is a redraw rather than a new
-// request. The server renders the pressed state so the right button is lit on
-// arrival instead of correcting itself after the script runs.
-test("the page offers all three layouts, Grid first, Cards pressed by default", async () => {
-    for (const [url, pressed] of [["/search", "cards"],
-                                  ["/search?view=cards", "cards"],
-                                  ["/search?view=lines", "lines"],
-                                  ["/search?view=grid", "grid"],
-                                  ["/search?view=arcs", "grid"],
-                                  ["/search?view=nonsense", "cards"]]) {
-        let html = await (await fetch(base + url)).text();
-
-        assert.match(html, /data-view="grid"[\s\S]*data-view="cards"[\s\S]*data-view="lines"/, `${url}: order`);
-
-        for (const view of ["grid", "cards", "lines"]) {
-            let button = html.match(
-                new RegExp(`data-view="${view}"\\s+aria-pressed="(true|false)"`));
-
-            assert.ok(button, `${url}: no ${view} button`);
-            assert.equal(button[1], String(view === pressed),
-                         `${url}: ${view} should be ${view === pressed}`);
-        }
-    }
 });
 
 // --- the result card -----------------------------------------------------
@@ -803,57 +544,16 @@ test("the card shows the organism and not the confal score by default", async ()
     assert.equal(on_card.length, 11);
 });
 
-// --- the detail rows ----------------------------------------------------
-// The card and the structure page were two hand-written lists once, and had
-// drifted: 17 rows against 22, two ways to print a resolution. These keep them
-// one list. 4TNA and 3BNA are seed.sql fixtures; the suite uses na3db_test.
-test("the panel and the structure page draw the same rows", async () => {
-    let api  = await (await fetch(base + "/api/entries/4TNA")).json();
-    let html = await (await fetch(base + "/structure/4TNA")).text();
-
-    assert.ok(api.rows.length > 0, "there should be rows to compare");
-
-    // The modified, ligand and NtC rows are left out: the page shows them as
-    // tables and counts, which hold every code the rows list.
-    let on_page = api.rows.filter((row) => !SHOWN_ELSEWHERE.has(row.key));
-    for (const row of on_page) {
-        assert.ok(html.includes(`>${row.label}<`), `the page is missing ${row.label}`);
-    }
-
-    // Same count, so the page cannot carry extras either.
-    assert.equal((html.match(/detail_field/g) || []).length, on_page.length);
-});
-
-// The sidebar is the page's table of contents: every entry jumps to a section
-// that exists, in the order the page reads, so a link like #base-pairs is
-// safe to cite.
-test("every sidebar link on a structure page lands on a section", async () => {
-    let html = await (await fetch(base + "/structure/4TNA")).text();
-    let links = [...html.matchAll(/class="nav_item[^"]*" href="#([^"]+)"|href="#([^"]+)" class="nav_item/g)]
-        .map((m) => m[1] ?? m[2]);
-    let sections = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
-
-    assert.deepEqual(links, ["views", "overview", "molecules", "sources", "modified-nucleotides", "ligands",
-                             "base-pairs", "conformation", "sequence-map", "same-sequence", "citations", "links"]);
-    assert.deepEqual(sections, links, "one section per link, in the same order");
-});
-
 // The sidebar folds away with the full search's drawer handle on a wide
 // screen and stays folded for the next structure. On a narrow one it is a
 // chip strip, which a fold would empty.
 test("the sidebar folds on a wide screen and never empties the strip", async () => {
-    let html = await (await fetch(base + "/structure/4TNA")).text();
-    assert.match(html, /<button type="button" class="panel_handle nav_handle" aria-controls="section_nav"\s+aria-expanded="true"/,
+    let jsx = readFileSync(new URL("./client/src/components/Structure.jsx", import.meta.url), "utf8");
+    assert.match(jsx, /<button type="button" className="panel_handle nav_handle" aria-controls="section_nav"/,
                  "the full search's handle, not one drawn again");
-    assert.match(html, /<nav class="section_nav" id="section_nav"/);
-    assert.match(html, /<div class="nav_edge">[\s\S]*?<i class="arrow arrow_side" aria-hidden="true"><\/i>/);
-    // Read before the page is drawn, so a folded sidebar never flashes open.
-    assert.ok(html.indexOf('localStorage.getItem("section_nav")') < html.indexOf('class="detail_body"'));
-    assert.match(html, /try \{ localStorage\.setItem\("section_nav"/, "storage can throw in a private window");
-    assert.match(html, /nav_list\.inert = on && !nav_strip\.matches/, "folded links leave the tab order, only beside the page");
-    // One name declared twice stops the whole script, the fold and the
-    // reading position with it.
-    for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(code));
+    assert.match(jsx, /useRemembered\("section_nav", "folded", "open"\)/, "it stays folded for the next structure");
+    assert.match(readFileSync(new URL("./client/src/components/SectionNav.jsx", import.meta.url), "utf8"),
+                 /<nav className="section_nav" id="section_nav"[^>]*inert=\{inert\}>/, "folded links leave the tab order");
 
     let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
     assert.match(css, /\n\.structure_page \{\n    display: grid;\n    grid-template-columns: 180px 0 minmax/);
@@ -876,11 +576,9 @@ test("the raw fields survive beside the formatted rows", async () => {
 // 3BNA's resolution is exactly 3, where the page said "3 Å" and the panel
 // said "3.00 Å".
 test("a whole-number resolution still prints two decimals", async () => {
-    let api  = await (await fetch(base + "/api/entries/3BNA")).json();
-    let html = await (await fetch(base + "/structure/3BNA")).text();
+    let api = await (await fetch(base + "/api/entries/3BNA")).json();
 
     assert.ok(api.rows.some((r) => r.value === "3.00 \u00C5"));
-    assert.ok(html.includes("3.00 \u00C5"), "and the page agrees");
 });
 
 test("a column marked in_detail: false is fetched but is not a row", async () => {
@@ -891,8 +589,8 @@ test("a column marked in_detail: false is fetched but is not a row", async () =>
     assert.equal(api.pdb_id, "4TNA", "but it is still fetched - the links need it");
 });
 
-// Everything in public/ is public. Everything else must not be reachable,
-// or a visitor could read the server source or the raw templates.
+// Everything in public/ and the React build is public. Everything else must
+// not be reachable, or a visitor could read the server or the client source.
 const private_files = [
     "/server.js",
     "/search.js",
@@ -903,11 +601,10 @@ const private_files = [
     "/db/init.sql",
     "/db/seed.sql",
     "/entries.json",
-    "/search.ejs",
-    "/landing.ejs",
-    "/structure.ejs",
-    "/views/search.ejs",
     "/package.json",
+    "/client/src/main.jsx",
+    "/src/main.jsx",
+    "/client/package.json",
     "/.env"
 ];
 
@@ -918,7 +615,7 @@ for (const path of private_files) {
 }
 
 test("but public files are", async () => {
-    for (const path of ["/style.css", "/app.js", "/assets/search.svg"]) {
+    for (const path of ["/style.css", "/assets/search.svg", "/assets/fonts/IBMPlexSans-Regular.woff2"]) {
         assert.equal((await fetch(base + path)).status, 200, path);
     }
 });
@@ -939,35 +636,30 @@ test("/api/export honours the match mode", async () => {
 // The landing page says how big the database is and when it last changed,
 // both asked of the database, so the line cannot go stale.
 test("the landing page states the database's size and last load", async () => {
-    let html  = await (await fetch(base + "/")).text();
-    let total = (await (await fetch(base + "/api/stats")).json()).total;
+    let stats = await (await fetch(base + "/api/stats")).json();
 
-    assert.ok(html.includes(`<b>${total.toLocaleString("en-GB")}</b> structures`));
+    assert.equal(stats.total, Number((await query("SELECT count(*) FROM entry")).rows[0].count));
 
     // The test seed may have no load record; then the date is left out, not invented.
     let loads = Number((await query("SELECT count(*) FROM loaded_entries")).rows[0].count);
-    if (loads) assert.match(html, /updated \d{1,2} [A-Z][a-z]{2} \d{4}/);
-    else       assert.ok(!html.includes("updated"), "no load record, no date");
+    if (loads) assert.ok(!Number.isNaN(Date.parse(stats.updated)));
+    else       assert.equal(stats.updated, null, "no load record, no date");
 });
 
 // --- browse cards on the landing page -------------------------------------
 // Each row shows a number and its Yes links to a search; the two must agree,
 // or the front page promises results the search does not give. So must each
 // option's number and link.
-function shown_rows(html) {
-    let rows = [];
-    let re = /<a (class="browse_link" )?href="([^"]+)"[^>]*>\s*<span class="browse_name">([^<]+)[\s\S]*?<span class="browse_count">([\d,]+)<\/span>/g;
-    for (let m of html.matchAll(re)) {
-        rows.push({ option: !m[1], url: m[2].replaceAll("&amp;", "&"), label: m[3].trim(),
-                    count: Number(m[4].replaceAll(",", "")) });
-    }
-    return rows;
+// Every row and option the landing cards show, as /api/browse sends them.
+async function shown_rows() {
+    let groups = await (await fetch(base + "/api/browse")).json();
+    return groups.flatMap((g) => g.rows.flatMap((r) => [{ ...r, option: false }, ...r.options.map((o) => ({ ...o, option: true }))]));
 }
 const count_of = async (q) => (await (await fetch(base + "/api/count?" + q)).json()).total;
 const query_of = (url) => url.slice("/search?".length);
 
 test("every browse row's number is what its Yes finds, and every option's what it finds", async () => {
-    let rows = shown_rows(await (await fetch(base + "/")).text());
+    let rows = await shown_rows();
     let built = (await browse_counts()).flatMap((g) => g.rows.flatMap((r) => [r, ...r.options]));
     assert.equal(rows.length, built.length, "a row is missing from the page");
     assert.ok(rows.some((r) => r.option) && rows.some((r) => !r.option));
@@ -982,7 +674,7 @@ test("every browse row's number is what its Yes finds, and every option's what i
 // cover the whole database once. A missing or doubled value shows up here.
 test("made-of and method rows each add up to every entry", async () => {
     let total = (await (await fetch(base + "/api/stats")).json()).total;
-    let rows  = shown_rows(await (await fetch(base + "/")).text()).filter((r) => !r.option);
+    let rows  = (await shown_rows()).filter((r) => !r.option);
 
     for (const key of ["polymer_type=", "experimental_method="]) {
         let sum = rows.filter((r) => r.url.startsWith("/search?" + key)).reduce((a, r) => a + r.count, 0);
@@ -992,14 +684,14 @@ test("made-of and method rows each add up to every entry", async () => {
 
 // Yes and No answer one question, so between them they hold every entry
 // once: an entry with nothing modelled bound is a No, not missing.
-test("every row's Yes and No add up to every entry, and the page links both", async () => {
+test("every row's Yes and No add up to every entry, and the cards send both", async () => {
     let total = await count_of("");
-    let html = await (await fetch(base + "/")).text();
     let rows = BROWSE.flatMap((g) => g.rows);
+    let sent = (await shown_rows()).filter((r) => !r.option);
     assert.equal(rows.length, 17);
+    assert.deepEqual(sent.map((r) => [r.url, r.no_url]), rows.map((r) => [r.url, r.no_url]));
     for (const row of rows) {
         assert.equal(await count_of(query_of(row.url)) + await count_of(query_of(row.no_url)), total, row.label);
-        assert.ok(html.includes(`class="browse_no" href="${row.no_url.replaceAll("&", "&amp;")}"`), row.label);
         assert.ok(row.say_yes && row.say_no, "a pressed Yes or No says what it means in the bar");
     }
 });
@@ -1022,12 +714,6 @@ test("the 10 most frequent are the database's own, most entries first, water nev
         `SELECT comp_id FROM pdbx_entity_nonpoly WHERE comp_id <> 'HOH'
           GROUP BY 1 ORDER BY count(DISTINCT entry_id) DESC, 1 LIMIT 1`)).rows[0].comp_id;
     assert.equal(ligands[0], direct, "the first ligand is the most common one");
-
-    // Options wait for Yes: none shows before the script opens them.
-    let html = await (await fetch(base + "/")).text();
-    let shelves = html.match(/<div class="browse_options"[^>]*>/g);
-    assert.ok(shelves.length >= 5 && shelves.every((d) => d.endsWith(" hidden>")));
-    assert.match(html, new RegExp(`${rows[1].options.length} most frequent <small>`));
 });
 
 // Ticking two codes asks for either, read as each would be alone; a name with
@@ -1108,10 +794,6 @@ test("the resolution bands hold every X-ray and EM entry once; bands and methods
         assert.equal(await count_of(enc([a, method])), await count_of(enc([method])), "the whole method holds its band");
         assert.equal(await count_of(enc([method + ":nonsense"])), 0, "an unknown band finds nothing, as an unknown method");
     }
-    // Full search shows a band picked on the landing page, so it can be turned off.
-    let html = await (await fetch(base + "/search?" + enc([RESOLUTION_BANDS["ELECTRON MICROSCOPY"][2].value]))).text();
-    assert.match(html, /class="pill pill_band selected" data-value="ELECTRON MICROSCOPY:3-3.5">EM 3 to 3.5 Å</);
-    assert.match(html, /class="pill pill_band" data-value="X-RAY DIFFRACTION:2-2.5">/);
 });
 
 // not_<key> turns one filter round, so a filter and its not hold every
@@ -1154,15 +836,13 @@ test("a list of taxa finds entries from any of them; a name that is no taxon sta
 // NAKB's labels are hand-made and can be wrong (an oligo labelled ribosome),
 // so the front page does not offer them. Full search still can.
 test("the landing page shows its five questions, laid out 2-1-2, without NAKB labels", async () => {
-    let html = await (await fetch(base + "/")).text();
+    let sent = JSON.stringify(await (await fetch(base + "/api/browse")).json());
     assert.equal(BROWSE.length, 5);
     assert.ok(!BROWSE.some((g) => g.question === "Which molecule?"));
-    assert.ok(!/nakb/i.test(html), "the landing page still shows NAKB");
+    assert.ok(!/nakb/i.test(sent), "the landing cards still show NAKB");
 
-    // The page is in BROWSE order, which is how a phone stacks the cards.
-    let at = BROWSE.map((g) => html.indexOf(g.question));
-    assert.deepEqual(at, [...at].sort((a, b) => a - b), "the page does not follow BROWSE order");
-    for (const g of BROWSE) assert.ok(html.includes(`style="grid-area: ${g.area}"`), g.area);
+    // The cards come in BROWSE order, which is how a phone stacks them.
+    assert.deepEqual(JSON.parse(sent).map((g) => g.question), BROWSE.map((g) => g.question));
 
     // Desktop: two left, the middle spanning both rows, two right. Tablet: two
     // columns. Phone: one column in BROWSE order. Every area a card names is
@@ -1179,9 +859,7 @@ test("the landing page shows its five questions, laid out 2-1-2, without NAKB la
     assert.deepEqual(new Set(desk.flat()), new Set(BROWSE.map((g) => g.area)));
     assert.deepEqual(phone.flat(), BROWSE.map((g) => g.area), "a phone stacks the cards out of order");
 
-    for (const group of BROWSE) assert.ok(html.includes(group.question), group.question);
-    assert.ok(html.includes("Not sure what to type? Start from what you know."));
-    assert.ok(!html.includes("\u2014"), "no em dash on the landing page");
+    assert.ok(!sent.includes("\u2014"), "no em dash on the landing cards");
 });
 
 // Counted from the residues themselves, not the doc view the filter reads.
@@ -1260,14 +938,11 @@ test("a citation in an unknown format is a 400, and an unknown entry a 404", asy
 });
 
 test("the Citation section holds one citation, to save or copy", async () => {
-    let html = await (await fetch(base + "/structure/4TNA")).text();
-    let from = html.indexOf('<section id="citations"'), to = html.indexOf("</section>", from);
-    let part = html.slice(from, to);
-    assert.match(part, />Citation</);
-    assert.equal(part.match(/class="citation"/g)?.length, 1);
-    assert.ok(part.includes('href="/structure/4TNA/citation?format=ris" download'));
-    assert.ok(part.includes('href="/structure/4TNA/citation?format=bib" download'));
-    assert.ok(part.includes('data-text="Hingerty, B.E."'), "Copy carries the citation as text");
+    let body = await (await fetch(base + "/api/entries/4TNA")).json();
+    assert.match(body.cite_text, /^Hingerty, B\.E\./, "Copy carries the citation as text");
+    for (const format of ["ris", "bib"]) {
+        assert.equal((await fetch(base + `/structure/4TNA/citation?format=${format}`)).status, 200, format);
+    }
 });
 
 test("Published and Authors at the top follow a checked reference, and only that", () => {
@@ -1283,48 +958,19 @@ test("Published and Authors at the top follow a checked reference, and only that
 
 test("a checked reference gives full names, the issue and the abstract, and fills the top rows", async () => {
     let c = await entry_citation("1DN8");
-    let html = await (await fetch(base + "/structure/1DN8")).text();
-    let from = html.indexOf('<section id="citations"'), to = html.indexOf("</section>", from);
-    let part = html.slice(from, to);
+    let body = await (await fetch(base + "/api/entries/1DN8")).json();
     let first = c.authors[0];
-    assert.ok(part.includes(`${first.given} ${first.family}`), "full name in the section");
-    if (c.abstract) assert.match(part, /<summary>Abstract<\/summary>/);
+    assert.ok(body.cite_authors.startsWith(`${first.given} ${first.family}`), "full names for the section");
+    assert.equal(body.citation.abstract, c.abstract);
     let ris = await (await fetch(base + "/structure/1DN8/citation?format=ris")).text();
     assert.match(ris, new RegExp(`\r\nT2  - ${c.journal}\r\n`));
     assert.match(ris, new RegExp(`\r\nDO  - ${c.doi.replace(/[.()]/g, "\\$&")}\r\n`));
-});
-
-test("Save reference sits beside Published at the top of the page", async () => {
-    // The seed has no journals, so Published is given here.
-    let entry = { ...(await find_entry("4TNA")), published: "Nature 2020" };
-    let page = { entry, rows: detail_rows(entry), citation: { source: "pdb", title: "T", authors: [{ family: "A", given: "B." }], journal: "Nature", year: 2020 },
-                 molecules: { groups: [], fasta: {} }, base_pairs: null, arcs: null, nucleic_chains: 0, same_entries: 0 };
-    let html = await render("structure", { ...page, page: "search", sections: structure_sections(page),
-                                           PAGE_GROUPS, rail_query: "", cite_text: "A, B. T.", cite_unpublished: false, full_name });
-    let row = html.slice(html.indexOf("published_value"), html.indexOf("</details>", html.indexOf("published_value")));
-    assert.ok(row.includes("Nature 2020"));
-    assert.ok(row.includes('href="/structure/4TNA/citation?format=ris"'));
 });
 
 test("every footer link answers", async () => {
     for (const path of ["/cite", "/help", "/contact"]) {
         assert.equal((await fetch(base + path)).status, 200, path);
     }
-});
-
-// The rail is NA3DB's own now, not the institute's logo.
-test("the rail carries the NA3DB mark, not the IBT logo", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    assert.ok(html.includes('aria-label="NA3DB home"'));
-    assert.ok(!html.includes('alt="IBT logo"'));
-});
-
-// A structure page runs no script, so its rail links are built on the server.
-test("the structure page's rail carries that structure", async () => {
-    let html = await (await fetch(base + "/structure/4TNA")).text();
-
-    assert.match(html, /href="\/report\?entry_id=4TNA"/);
-    assert.match(html, /href="\/search\?entry_id=4TNA"/);
 });
 
 test("the report reached from a structure covers only that structure", async () => {
@@ -1368,111 +1014,7 @@ test("one entry's API carries each molecule's sequence and the ligand codes", as
     assert.ok("ligands" in entry);
 });
 
-test("a polymer pill shows its count, and a selected empty one is still drawn", async () => {
-    let html = await (await fetch(base + "/search")).text();
-    let rna = (await (await fetch(base + "/api/count?polymer_type=RNA")).json()).total;
-    assert.match(html, new RegExp(`data-value="RNA">RNA <span class="pill_count">${rna}</span>`));
-    assert.ok(!html.includes('data-value="Oligosaccharide"'));
-
-    let asked = await (await fetch(base + "/search?polymer_type=Oligosaccharide")).text();
-    assert.ok(asked.includes('data-value="Oligosaccharide"'),
-              "a pill the URL selects must exist, or the search silently widens");
-});
-
-
 // --- the arc picture in Base pairs ----------------------------------------
-
-// The seed has no base pairs, so the picture is drawn from fixture pairs
-// through the same template the route renders.
-const render = (view, locals) =>
-    new Promise((ok, fail) => app.render(view, locals, (err, html) => err ? fail(err) : ok(html)));
-
-async function page_with_arcs(arcs, nucleic_chains = 0, same_entries = 0, view, arc_view) {
-    let entry = await find_entry("4TNA");
-    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
-    let page = { entry, rows: detail_rows(entry), citation: null,
-                 molecules: molecule_groups(contents, residues), base_pairs: null, arcs, nucleic_chains,
-                 same_entries };
-    return render("structure", { ...page, page: "search", sections: structure_sections(page),
-                                 PAGE_GROUPS, rail_query: "", view, arc_view });
-}
-
-const section = (html, id) => {
-    let from = html.indexOf(`<section id="${id}"`);
-    return html.slice(from, html.indexOf("</section>", from));
-};
-const pairs_section = (html) => section(html, "base-pairs");
-const arc_pair = (label_1, pos_1, label_2, pos_2, kind = "wc", copy_2 = "1") =>
-    ({ label_1, pos_1, label_2, pos_2, family: kind === "nc" ? "tWH" : "cWW", kind, copy_1: "1", copy_2 });
-const dna = (labels, length) => [{ id: "1", kind: "DNA", length,
-                                   chains: labels.map((label) => ({ label, auth: label })) }];
-const plain = (length, modified = []) =>
-    new Map([["1", Array.from({ length }, (_, i) => ({ pos: i + 1, modified: modified.includes(i + 1) }))]]);
-
-test("Overview is rows only; an entry without pairs draws no picture anywhere", async () => {
-    let html = await (await fetch(base + "/structure/4TNA")).text();
-    let top = section(html, "overview");
-
-    assert.ok(!html.includes("arc_picture"));
-    assert.ok(!top.includes("arc_") && !top.includes("No base pairs annotated"));
-    assert.match(top, /class="detail_field structure_lead">\s*<div class="detail_label">Title</, "the title is the first row again");
-});
-
-test("Base pairs opens with the pairs drawn as arcs, with a key; Overview has none", async () => {
-    let arcs = pair_arcs(dna(["A", "B"], 6), plain(6, [3]),
-                         [arc_pair("A", 1, "B", 6), arc_pair("A", 2, "B", 5, "gu"), arc_pair("A", 3, "B", 4, "nc")]);
-    let page = await page_with_arcs(arcs);
-    let html = pairs_section(page);
-
-    assert.ok(!section(page, "overview").includes("arc_picture"), "not in Overview");
-    assert.ok(html.includes('<figure class="arc_picture">'));
-    for (const kind of ["wc", "gu", "nc"]) {
-        let d = html.match(new RegExp(`<path class="arc_${kind}" d="([^"]*)"`))[1];
-        assert.equal((d.match(/M/g) || []).length, 1, `one ${kind} arc`);
-    }
-    assert.match(html, /<path class="arc_dot" d="M/);
-    assert.match(html, /aria-label="Arc diagram: 3 base pairs drawn as arcs over 2 strands \(A, B\), 12 nucleotides"/);
-    assert.match(html, />A<\/text>.*>B<\/text>/s);
-    assert.ok(html.includes("2 strands · 12 nt"));
-    assert.match(html, /<path class="arc_gu" d="M[^"]+"><title>A:2 – B:5 · cWW<\/title>/, "each arc names its pair on hover");
-    assert.match(html, />5′<\/text>.*>3′<\/text>/s);
-    assert.ok(html.includes("arc_mod"), "a key entry for the modified dot");
-    assert.ok(!html.includes("symmetry copy"), "no copies, no note");
-    assert.ok(!html.includes("No base pairs annotated"));
-});
-
-test("a symmetry copy is named A′, drawn dashed and explained under the picture", async () => {
-    let arcs = pair_arcs(dna(["A"], 4), plain(4),
-                         [arc_pair("A", 1, "A", 4, "wc", "2"), arc_pair("A", 2, "A", 3, "wc", "2")]);
-    let html = pairs_section(await page_with_arcs(arcs));
-
-    assert.match(html, /class="arc_strand arc_copy"/);
-    assert.match(html, />A′<\/text>/);
-    assert.ok(html.includes("′ marks a copy from the crystal's symmetry"));
-    assert.ok(!html.includes("arc_mod"), "nothing modified, no key entry for it");
-    assert.ok(!html.includes('<i class="arc_gu">') && !html.includes('<i class="arc_nc">'),
-              "the key lists only the kinds drawn");
-});
-
-test("the picture offers Assembly 1 | Asymmetric unit, and the expanded view follows it", async () => {
-    let one = pair_arcs(dna(["A"], 4), plain(4), [arc_pair("A", 1, "A", 4, "wc", "2")]);
-    let arc_view = { key: "1", assembly: true, note: { text: "Assembly 1 has 30 strands.", link: "au", link_text: "The asymmetric unit is easier to read." },
-                     options: [{ key: "1", label: "Assembly 1", current: true, title: "In the cell" },
-                               { key: "au", label: "Asymmetric unit", current: false, title: "As stored" }],
-                     about: ["Assembly 1 builds 1 strand by symmetry, drawn dashed.", "Under the line: <pairs>"] };
-    let html = pairs_section(await page_with_arcs(one, 0, 0, undefined, arc_view));
-
-    assert.match(html, /<nav class="arc_views" aria-label="Which chains to draw">\s*<a href="\?assembly=1#base-pairs" title="In the cell" aria-current="true">Assembly 1<\/a><a href="\?assembly=au#base-pairs" title="As stored">Asymmetric unit<\/a>/);
-    assert.equal((html.match(/data-arc-view="1"/g) || []).length, 2, "both open buttons ask for the same view");
-    assert.ok(html.includes('<span class="arc_note">Assembly 1 builds 1 strand by symmetry, drawn dashed.</span>'));
-    assert.ok(html.includes('<span class="arc_note">Under the line: &lt;pairs&gt;</span>'), "each line said once, escaped");
-    assert.ok(!html.includes("′ marks a copy"), "the assembly's own line says it, not the crystal note");
-    assert.match(html, /Assembly 1 has 30 strands\. <a href="\?assembly=au#base-pairs">The asymmetric unit is easier to read\.<\/a>/);
-
-    let plain_page = pairs_section(await page_with_arcs(one));
-    assert.ok(!plain_page.includes("arc_views"), "no assemblies known: no choice to offer");
-    assert.ok(plain_page.includes("′ marks a copy from the crystal's symmetry"));
-});
 
 test("the arcs API gives the viewer every pair as numbers, and a 404 for an unknown entry", async () => {
     let res = await fetch(base + "/api/entries/4tna/arcs");
@@ -1481,22 +1023,6 @@ test("the arcs API gives the viewer every pair as numbers, and a 404 for an unkn
     assert.deepEqual({ ...body, title: undefined }, { pdb_id: "4TNA", title: undefined, view: "au", strands: [], pairs: [] }, "the seed has no pairs, nor assemblies");
     assert.equal(typeof body.title, "string", "the viewer heads itself with the title");
     assert.equal((await fetch(base + "/api/entries/ZZZZ/arcs")).status, 404);
-});
-
-test("the picture opens full screen: a button for it, the dialog, and its script", async () => {
-    let arcs = pair_arcs(dna(["A", "B"], 6), plain(6), [arc_pair("A", 1, "B", 6)]);
-    let html = await page_with_arcs(arcs);
-
-    assert.equal((html.match(/data-arc-open="4TNA"/g) || []).length, 2, "the picture and the Full screen button");
-    assert.match(html, /<dialog id="arc_viewer"/);
-    assert.match(html, /<script type="module" src="\/arc_viewer.js"><\/script>/);
-    for (const part of ["av_summary", "av_info", "Leontis–Westhof families", "av_fams", "av_rows"]) {
-        assert.ok(html.includes(part), `the viewer has its ${part}: every pair on screen without a click`);
-    }
-
-    let none = await (await fetch(base + "/structure/4TNA")).text();
-    assert.ok(!none.includes("arc_viewer"), "no pairs, no viewer");
-    assert.equal((await fetch(base + "/arc_viewer.js")).status, 200);
 });
 
 test("each entry has a small arc picture for the Arcs view, kept by the browser for an hour", async () => {
@@ -1514,23 +1040,6 @@ test("each search result carries its card's arc numbers, null when nothing is dr
 
     assert.ok(entry && "arcs" in entry);
     assert.equal(entry.arcs, null, "the seed has no pairs");
-});
-
-test("the search page offers a Grid view, and an old Arcs link lands on it", async () => {
-    for (const view of ["grid", "arcs"]) {
-        let html = await (await fetch(base + "/search?view=" + view)).text();
-        assert.match(html, /data-view="grid"\s+aria-pressed="true">Grid</);
-        assert.ok(!html.includes("arc_viewer"), "the arc picture lives on the structure page only");
-    }
-    assert.match(await (await fetch(base + "/search?view=bogus")).text(), /data-view="cards"\s+aria-pressed="true"/);
-});
-
-test("every page has the footer, with Help and Contact", async () => {
-    for (const path of ["/", "/search", "/report", "/structure/4TNA", "/structure/ZZZZ"]) {
-        let html = await (await fetch(base + path)).text();
-        assert.match(html, /<footer class="site_footer">/, path);
-        assert.ok(html.includes('href="/help"') && html.includes('href="/contact"'), path);
-    }
 });
 
 test("the sequence map API: a 404 for an entry with no nucleic-acid chain, and for an unknown one", async () => {
@@ -1564,88 +1073,9 @@ test("the compare API takes two different chains as ENTRY:CHAIN", async () => {
     assert.equal((await get("?a=ZZZZ:A&b=4TNA:A")).status, 404);
 });
 
-test("the structure page has a Same sequence section after the Sequence map, drawn by its own script", async () => {
-    let html = await page_with_arcs(null, 1, 3);
-    let same = section(html, "same-sequence");
-    assert.match(same, /class="sameseq" data-entry="4TNA"/);
-    assert.match(html, /<script type="module" src="\/sameseq.js"><\/script>/);
-    assert.ok(html.indexOf('id="sequence-map"') < html.indexOf('id="same-sequence"') &&
-              html.indexOf('id="same-sequence"') < html.indexOf('id="citations"'));
-    assert.ok(!/\u2014/.test(same), "no em dash in what the section says");
-    let script = await (await fetch(base + "/sameseq.js")).text();
-    for (const part of ["ss_bar", "ss_swap", "ss_full", "ss_dialog", "ss_list", "ss_best",
-                        "Everything without a number is the same in both. Click a number to find it."]) {
-        assert.ok(script.includes(part), `the script draws ${part}`);
-    }
-    assert.ok(!/\u2014/.test(script), "no em dash anywhere the script writes");
-
-    let none = await (await fetch(base + "/structure/4TNA")).text();
-    assert.ok(section(none, "same-sequence").includes("No other entry has a chain with exactly this sequence."));
-    assert.ok(!none.includes("/sameseq.js"), "and no script for it");
-});
-
-test("Views opens the page: 1D, 2D and 3D tiles, the 1D dot-bracket open and drawn by its own script", async () => {
-    let html = await page_with_arcs(null, 2);
-    let views = section(html, "views");
-    assert.ok(html.indexOf('id="views"') < html.indexOf('id="overview"'), "Views comes first");
-    assert.match(html, /class="nav_item nav_solo[^"]*" href="#views"|href="#views" class="nav_item nav_solo/,
-                 "its own sidebar link, with no group label over it");
-    assert.ok(!views.includes('class="band_group"'), "and no group name over its title");
-
-    assert.match(views, /role="tablist"/);
-    let tabs = [...views.matchAll(/<button[^>]*role="tab"[^>]*>/g)].map((m) => m[0]);
-    assert.deepEqual(tabs.map((t) => t.match(/data-view="(\w+)"/)[1]), ["1d", "2d", "3d"]);
-    assert.deepEqual(tabs.map((t) => t.match(/aria-selected="(\w+)"/)[1]), ["true", "false", "false"]);
-    for (const v of ["1d", "2d", "3d"]) {
-        assert.match(views, new RegExp(`role="tabpanel"[^>]*aria-labelledby="view-${v}-tab"`), `${v} has its panel`);
-        assert.match(views, new RegExp(`id="view-${v}-tab"[^>]*aria-controls="view-${v}"`));
-    }
-    let panel = (v) => views.match(new RegExp(`<div[^>]*id="view-${v}"[^>]*>`))[0];
-    assert.ok(!/ hidden/.test(panel("1d")) && / hidden/.test(panel("2d")) && / hidden/.test(panel("3d")),
-              "1D open, the others closed");
-
-    assert.match(views, /class="lbn" data-entry="4TNA"/, "1D is the plain dot-bracket");
-    assert.ok(!views.includes('class="seqmap"') && !views.includes("sequence-map-guide"),
-              "the Sequence map, NtC bars and all, stays in its own section");
-    assert.match(views, /href="#sequence-map"/, "1D points to the full map");
-    assert.match(html, /<script type="module" src="\/views.js"><\/script>/);
-    assert.ok(!/\u2014/.test(views), "no em dash in what the section says");
-    let script = await (await fetch(base + "/views.js")).text();
-    assert.ok(!/\u2014/.test(script), "no em dash anywhere the script writes");
-
-    let none = await (await fetch(base + "/structure/4TNA")).text();
-    assert.ok(section(none, "views").includes("None recorded"), "no chains, nothing to draw");
-    assert.ok(!section(none, "views").includes('role="tablist"'), "and no tiles for nothing");
-    assert.ok(!none.includes("/views.js"), "and no script for it");
-});
-
-// MG3: the Views move beside the page on a wide screen and the page itself
-// stays as it was; the table of other pairs is linked to the 1D view.
-test("each other pair links to the 1D view by its two ends; wide, the Views take a column beside the sections", async () => {
-    let entry = await find_entry("4TNA");
-    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
-    let bp = (label_2, pos_2, copy_2, kind, family) => ({ label_1: "A", pos_1: 3, copy_1: "1", label_2, pos_2, copy_2,
-        chain_1: "A", chain_2: label_2, kind, family, bases: "CG", res_1: "G3", res_2: `C${pos_2}` });
-    let page = { entry, rows: detail_rows(entry), citation: null, molecules: molecule_groups(contents, residues),
-                 base_pairs: base_pair_section([bp("A", 9, "1", "wc", "cWW"), bp("B", 4, "2_755", "nc", "tWH")]),
-                 arcs: null, nucleic_chains: 2, same_entries: 0 };
-    let sections = structure_sections(page);
-    let html = await render("structure", { ...page, page: "search", sections, PAGE_GROUPS, rail_query: "" });
-    let pairs = pairs_section(html);
-
-    assert.match(pairs, /<tr data-a="A 3" data-b="B:2_755 4"><td>A \/ B<\/td><td><a class="pair_show" href="#views">G3 – C4<\/a><\/td>/,
-                 "the ends as the 1D view keys its columns, the copy's included; the pair's words unchanged");
-    assert.equal((pairs.match(/<tr data-a=/g) || []).length, 1, "only the other pairs: Watson–Crick ones have no row");
-    assert.match(pairs, /<p class="pair_hint">Select a pair to show it in the 1D view\.<\/p>/);
-
-    // The page keeps its order: Views first, then every section as before.
-    assert.ok(html.indexOf('<section id="views"') < html.indexOf('<section id="overview"'));
-    assert.match(html, new RegExp(`<div class="detail_body" style="--rows: ${sections.length - 1}">`),
-                 "one row per section beside the Views");
-
+test("wide, the Views take a column beside the sections", () => {
     let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
-    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
-    let side = js.match(/const SIDE = "([^"]+)"/)[1];
+    let side = readFileSync(new URL("./client/src/reading.js", import.meta.url), "utf8").match(/const SIDE = "([^"]+)"/)[1];
     let wide = css.slice(css.indexOf(`@media ${side} {`));
     assert.ok(css.includes(`@media ${side} {`), "the script and the page agree on when the Views sit beside");
     wide = wide.slice(0, wide.indexOf("\n}\n"));
@@ -1656,62 +1086,16 @@ test("each other pair links to the 1D view by its two ends; wide, the Views take
     assert.match(wide, /#views > \.section_body \{\s*max-height: calc\(100vh - 146px - var\(--footer-h\)\);\s*overflow-y: auto;/,
                  "never taller than the window, the band and its help note outside the scroll");
     assert.match(wide, /\.section_nav \.group_views \{ display: none; \}/);
-    assert.ok(!/\u2014/.test(pairs), "no em dash in the new words");
-});
-
-test("?view= opens that view; anything else opens 1D; the 3D slot is a place kept, linking nowhere", async () => {
-    let tab = (html, v) => section(html, "views").match(new RegExp(`<button[^>]*data-view="${v}"[^>]*>`))[0];
-    let panel = (html, v) => section(html, "views").match(new RegExp(`<div[^>]*id="view-${v}"[^>]*>`))[0];
-
-    let three = await page_with_arcs(null, 2, 0, "3d");
-    assert.match(tab(three, "3d"), /aria-selected="true"/);
-    assert.match(tab(three, "1d"), /aria-selected="false"/);
-    assert.ok(!/tabindex/.test(tab(three, "3d")) && /tabindex="-1"/.test(tab(three, "1d")), "Tab reaches the open one");
-    assert.ok(!/ hidden/.test(panel(three, "3d")) && / hidden/.test(panel(three, "1d")) && / hidden/.test(panel(three, "2d")));
-    let slot = section(three, "views").slice(section(three, "views").indexOf('id="view-3d"'));
-    // The professor's ask (C2): no viewers elsewhere; the place waits for our own.
-    assert.match(slot, /class="view_slot"/);
-    assert.match(slot, /will be shown here/);
-    assert.ok(!/<a |rcsb|pdbe|molstar/i.test(slot), "the 3D slot sends no one to another viewer");
-    assert.ok(!/\u2014/.test(slot));
-
-    let two = await page_with_arcs(null, 2, 0, "2d");
-    let kept = section(two, "views").slice(section(two, "views").indexOf('id="view-2d"'), section(two, "views").indexOf('id="view-3d"'));
-    assert.ok(!/ hidden/.test(panel(two, "2d")), "?view=2d opens 2D");
-    assert.match(kept, /class="view_slot"/, "2D is a place kept, like 3D");
-    assert.match(kept, /will be shown here/);
-    assert.ok(!/R2DT|not drawn yet|<a /.test(kept), "and promises no method and links nowhere yet");
-
-    assert.deepEqual(["1d", "2d", "3d"].map(asked_view), ["1d", "2d", "3d"]);
-    for (const asked of [undefined, "", "4d", "3D", "<b>", ["2d", "3d"]]) {
-        assert.equal(asked_view(asked), "1d", `${JSON.stringify(asked)} opens 1D`);
-    }
-    assert.equal((await fetch(base + "/structure/4TNA?view=%3Cb%3E")).status, 200, "a bad view is no error");
 });
 
 test("the 3D view frames our own viewer, lazily, and the page is isolated so coot can run", async () => {
-    // Rendered both ways round: a server with a viewer build in viewer/ and
-    // one without. page_with_arcs leaves `viewer` unset, which is the second
-    // of those, so the kept-place assertions above cover a bare checkout.
-    let entry = await find_entry("4TNA");
-    let [contents, residues] = await Promise.all([entry_contents("4TNA"), entry_residues("4TNA")]);
-    let page = { entry, rows: detail_rows(entry), citation: null, base_pairs: null, arcs: null,
-                 molecules: molecule_groups(contents, residues), nucleic_chains: 2, same_entries: 0 };
-    let with_viewer = await render("structure", { ...page, page: "search", sections: structure_sections(page),
-                                                 PAGE_GROUPS, rail_query: "", view: "3d", viewer: true });
-    let slot = section(with_viewer, "views");
-    slot = slot.slice(slot.indexOf('id="view-3d"'));
-
-    assert.match(slot, /<div class="view_3d" data-src="\/viewer\/\?embed=1&amp;id=4TNA" data-entry="4TNA">/,
+    let jsx = readFileSync(new URL("./client/src/components/View3D.jsx", import.meta.url), "utf8");
+    assert.match(jsx, /const src = `\/viewer\/\?embed=1&id=\$\{encodeURIComponent\(pdbId\)\}`;/,
                  "the frame's address is our own viewer, with the entry to show");
-    assert.ok(!/<iframe/.test(slot),
-              "and it is not in the HTML: the frame downloads and annotates the entry, so it waits for the tile");
-    assert.ok(!/<a |rcsb|pdbe|molstar/i.test(slot), "still sends no one to another viewer");
-    assert.ok(!/\u2014/.test(slot), "no em dash in the new words");
-
-    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
-    assert.match(js, /mount_3d/, "the script makes the frame");
-    assert.match(js, /box\.dataset\.mounted/, "once only, so a second click never restarts the run");
+    assert.match(jsx, /\{mounted && <iframe className="view_3d_frame"/,
+                 "the frame downloads and annotates the entry, so it waits until it is asked for");
+    assert.match(jsx, /<button type="button" className="view_3d_start"/, "selected by a scroll, 3D offers itself");
+    assert.ok(!/rcsb|pdbe|molstar/i.test(jsx), "it sends no one to another viewer");
 
     let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
     assert.match(css, /\.view_3d_frame \{[^}]*height: 100%/, "the frame fills the box it is given");
@@ -1723,28 +1107,15 @@ test("the 3D view frames our own viewer, lazily, and the page is isolated so coo
     assert.match(css, /height: calc\(100vh - 191px - var\(--footer-h\)\);/,
                  "and 45px less again where the sections list is a strip across the top");
 
-    // Selected by a scroll, 3D offers itself rather than starting: the page
-    // must not download and annotate an entry because someone read past
-    // Conformation on their way to the citations.
-    assert.match(slot, /<button type="button" class="view_3d_start">/);
-    assert.match(js, /view === "3d" && !auto/, "an automatic switch makes no frame");
-    assert.match(js, /document\.addEventListener\("na3db:section", \(e\) => \{\s*if \(chosen\) return;/,
-                 "a view the reader picked is never taken away; every width follows otherwise");
-    // The page's own scroll spy is the one that knows the section; both
-    // files have to name the same event or the Views never hear it.
-    let spy = readFileSync(new URL("./views/structure.ejs", import.meta.url), "utf8");
-    let event = js.match(/addEventListener\("(na3db:[a-z]+)"/)[1];
-    assert.ok(spy.includes(`new CustomEvent("${event}"`), "the spy announces what the Views listen for");
-
     // Moorhen's coot needs SharedArrayBuffer, which the browser grants only a
     // cross-origin-isolated page -- and a frame is isolated only when the
     // document around it is, so these are the structure page's own headers.
     let res = await fetch(base + "/structure/4TNA");
     assert.equal(res.headers.get("cross-origin-opener-policy"), "same-origin");
     assert.equal(res.headers.get("cross-origin-embedder-policy"), "require-corp");
-    // Not the whole site: require-corp would block any cross-origin image or
-    // script a page added later without CORS or CORP.
-    assert.equal((await fetch(base + "/search")).headers.get("cross-origin-embedder-policy"), null);
+    // Every page now: the app is one document, so a move from /search to a
+    // structure keeps the headers the first load came with.
+    assert.equal((await fetch(base + "/search")).headers.get("cross-origin-embedder-policy"), "require-corp");
 
     if (viewer_installed) {
         let frame = await fetch(base + "/viewer/?embed=1&id=4TNA");
@@ -1755,40 +1126,16 @@ test("the 3D view frames our own viewer, lazily, and the page is isolated so coo
         assert.match(await frame.text(), /<div id="root">/, "the viewer's own page");
         assert.equal((await fetch(base + "/viewer/napair.wasm")).headers.get("content-type"), "application/wasm");
     } else {
-        // No build installed: the 3D view says so rather than framing a 404.
-        let bare = await render("structure", { ...page, page: "search", sections: structure_sections(page),
-                                              PAGE_GROUPS, rail_query: "", view: "3d", viewer: false });
-        let kept = section(bare, "views");
-        assert.match(kept.slice(kept.indexOf('id="view-3d"')), /will be shown here/);
         assert.equal((await fetch(base + "/viewer/")).status, 404);
     }
 });
 
-test("one handle in the gutter swaps which column is the wide one", async () => {
-    let html = await page_with_arcs(null, 2);
-    let views = section(html, "views");
-
-    assert.match(views, /<button type="button" class="download download_small band_swap" aria-pressed="false">/,
-                 "the same button as the FASTA and CSV ones beside it, and off to begin with");
-    assert.equal((html.match(/class="download download_small band_swap"/g) || []).length, 1,
-                 "one of them on the page: the other sections share the row, they do not own it");
+test("one handle in the gutter swaps which column is the wide one", () => {
     let sheet = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
     assert.match(sheet, /\.band_swap::before \{[^}]*mask-image/,
                  "its own glyph in place of the download arrow");
-    assert.match(views, /<span class="band_swap_say">Enlarge views<\/span>/,
-                 "it says what the click does, so it is not a shape to work out");
-    assert.match(views, /band_tools[\s\S]{0,900}band_swap/, "in the Views band, with the other tools");
-
-    // Applied before the page is drawn, or the columns are laid out one way
-    // and swapped a frame later, in front of the reader.
-    assert.match(html, /localStorage\.getItem\("views_wide"\) === "on"/);
-    assert.ok(html.indexOf('localStorage.getItem("views_wide")') < html.indexOf('<div class="detail_body"'),
-              "the class is set above the body it changes");
-    assert.match(html, /localStorage\.setItem\("views_wide", on \? "on" : "off"\)/, "and remembered");
-
     let css = readFileSync(new URL("./public/style.css", import.meta.url), "utf8");
-    let js = readFileSync(new URL("./public/views.js", import.meta.url), "utf8");
-    let side = js.match(/const SIDE = "([^"]+)"/)[1];
+    let side = readFileSync(new URL("./client/src/reading.js", import.meta.url), "utf8").match(/const SIDE = "([^"]+)"/)[1];
     let wide = css.slice(css.indexOf(`@media ${side} {`));
     wide = wide.slice(0, wide.indexOf("\n}\n"));
 
@@ -1797,30 +1144,8 @@ test("one handle in the gutter swaps which column is the wide one", async () => 
                  "swapped, the two widths trade places and nothing moves sideways");
     assert.match(wide, /\.band_swap \{ display: inline-flex; \}/,
                  "shown only where there are two columns to swap");
-    let page = readFileSync(new URL("./views/structure.ejs", import.meta.url), "utf8");
-    assert.match(page, /textContent = on \? "Shrink views" : "Enlarge views"/, "and the words follow the state");
     assert.match(css, /\.band_swap \{[^}]*display: none;/, "and hidden everywhere else");
-    assert.ok(!/\u2014/.test(views), "no em dash in the new words");
 });
-
-test("the structure page has a Sequence map section after Conformation, drawn by its own script", async () => {
-    let html = await page_with_arcs(null, 2);
-    let map = section(html, "sequence-map");
-    assert.match(map, /class="seqmap" data-entry="4TNA"/);
-    assert.match(html, /href="#sequence-map"/);
-    assert.match(html, /<script type="module" src="\/seqmap.js"><\/script>/);
-    assert.ok(html.indexOf('id="base-pairs"') < html.indexOf('id="conformation"') &&
-              html.indexOf('id="conformation"') < html.indexOf('id="sequence-map"'));
-    let script = await (await fetch(base + "/seqmap.js")).text();
-    for (const part of ["seqmap_full", "seqmap_dialog", "smd_overview", "smd_strands", 'data-zoom="fit"', "seqmap_jump"]) {
-        assert.ok(script.includes(part), `the script draws the full-screen view's ${part}`);
-    }
-
-    let none = await (await fetch(base + "/structure/4TNA")).text();
-    assert.ok(section(none, "sequence-map").includes("None recorded"), "no chains, nothing to draw");
-    assert.ok(!none.includes("/seqmap.js"), "and no script for it");
-});
-
 
 // Em dashes read as machine-written; a blank cell says "none" instead.
 test("no em dash anywhere a structure page or an error page shows", async () => {
@@ -1831,18 +1156,9 @@ test("no em dash anywhere a structure page or an error page shows", async () => 
     }
 });
 
-test("the sequence map explains its bracket rows, and Conformation names its colours", async () => {
-    let html = await page_with_arcs(null, 2);
-    let map = section(html, "sequence-map");
-    assert.match(map, /<details class="guide" id="sequence-map-guide">/);
-    for (const part of ["((()))", "([)]", "GCUGAcGUAACAGC", "A nucleotide pairs once per row."]) {
-        assert.ok(map.includes(part), `the guide shows ${part}`);
-    }
-    assert.ok(!/\u2014/.test(map), "no em dash in the guide");
+test("Conformation names its colours from cana.js", async () => {
     let cana = await (await fetch(base + "/cana.js")).text();
     assert.ok(cana.includes("CANA_NAMES"));
-    let none = await (await fetch(base + "/structure/4TNA")).text();
-    assert.ok(!section(none, "sequence-map").includes("sequence-map-guide"), "no guide over an empty section");
 });
 
 // A search that finds nothing carries its "Did you mean" offers; one that
@@ -1861,18 +1177,10 @@ test("count and entries offer close searches only when nothing matched", async (
     assert.equal((await (await fetch(base + "/api/entries?q=ribosome")).json()).suggestions, undefined);
 });
 
-test("the results page has a place for the offers, hidden until needed", async () => {
-    let html = await (await fetch(base + "/search?q=ribozome")).text();
-    assert.match(html, /class="did_you_mean hidden"/);
-});
-
 test("the organism boxes have suggestions, each with its common names and count", async () => {
     for (const path of ["/api/source_organisms", "/api/expression_hosts"]) {
         let rows = await (await fetch(base + path)).json();
         assert.ok(rows.length > 0, path);
         assert.ok(rows.every((r) => typeof r.code === "string" && typeof r.entries === "number"), path);
     }
-    let html = await (await fetch(base + "/search")).text();
-    assert.match(html, /data-suggest="source_organisms"/);
-    assert.match(html, /data-suggest="expression_hosts"/);
 });

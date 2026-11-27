@@ -237,7 +237,7 @@ pairs = pd.read_csv("https://na3db.org/api/entries/1EHZ/base_pairs?format=csv")
 ## 7. Set it up in five commands
 
 You need **Node 24+** and **PostgreSQL 16+**. Everything else comes from npm
-(Express, EJS and `pg`).
+(Express and `pg`, and React and Vite for the pages).
 
 This gives a working copy with 120 sample entries. No structure files needed.
 
@@ -262,7 +262,8 @@ node --env-file-if-exists=.env.test db/migrate.mjs
 psql -h localhost -U na3db -d na3db      -f db/seed.sql
 psql -h localhost -U na3db -d na3db_test -f db/seed.sql
 
-# 5. Test, then run
+# 5. Build the pages, test, then run
+(cd client && npm install && npm run build)
 npm test
 npm run dev
 ```
@@ -388,9 +389,10 @@ at `napair_browser/dist` without copying anything.
   cross-origin-isolated page, and a frame counts as isolated only when the
   document around it is. **This is why a cross-origin image, script or font
   cannot be added to the structure page** unless it sends CORP or CORS: today
-  that page loads nothing but its own files. The rest of the site is not
-  isolated.
-- **The frame is made by `public/views.js` when the tile is first clicked**,
+  that page loads nothing but its own files. Every page sends the same two
+  headers: the site is one React document, so a page reached from another
+  inside it keeps the headers the first load came with.
+- **The frame is made by `useViewChoice` when the tile is first clicked**,
   never by the HTML, and once only. A reader who stays in 1D downloads none of
   it; a second click does not restart a run that is already under way.
 - **The open view follows the section being read**, at every width. Base pairs
@@ -398,9 +400,8 @@ at `napair_browser/dist` without copying anything.
   the view as it was. Below 1360px the Views are a section at the top rather
   than a panel beside the page, so the switch happens above the fold and is
   there when the reader scrolls back up.
-  `views/structure.ejs` already tracks the current section for the sidebar and
-  the `#section` in the address, so it announces it as `na3db:section` and
-  `public/views.js` decides what that means.
+  `useReading` already tracks the current section for the sidebar and the
+  `#section` in the address, and `useViewChoice` decides what that means.
 - **The 3D view is as tall as the reading area allows**, not a fixed box: the
   section body takes `100vh` less the chrome above it (and 45px less again
   below 1023px, where the sections list is a strip across the top), and a
@@ -450,31 +451,24 @@ the browser draws.** What counts as a match, the order, the page size: all in
 | `load_cif.py` | reads DNATCO CIF files into 39 tables |
 | `seed.sql` | the 120 sample entries, for development and tests. Made by `make_seed.mjs`. |
 
-**Pages**, in `views/` (built on the server, never downloadable):
+**Pages**, in `client/` (React, built by Vite into `client/dist`, which
+`server.js` serves for every page address):
 
-| file | page |
+| file | job |
 | --- | --- |
-| `landing.ejs` | the front page, `/` |
-| `search.ejs` | results and filters, `/search` |
-| `report.ejs` | choose columns and export, `/report` |
-| `structure.ejs` | one structure, `/structure/<id>` |
-| `error.ejs` | not found, and errors |
-| `includes/` | shared pieces: the sidebar, the footer, the full-screen arc viewer, the map guide |
+| `index.html` | the one page: sets the theme before it paints, then loads the app |
+| `src/routes.jsx` | which component draws which address |
+| `src/components/` | the pages and their parts |
+| `src/hooks/` | state and effects: fetching, folds, the reading position |
+| `src/*.js` | pure helpers, tested in `client/test/` |
 
 **Browser**, in `public/`:
 
 | file | job |
 | --- | --- |
 | `style.css` | every visual decision |
-| `app.js` | the search page |
-| `landing.js` | the count under the front-page box |
-| `report.js` | the report page |
-| `arc_viewer.js` | the full-screen arc picture |
-| `seqmap.js` | the sequence map |
-| `sameseq.js` | the Same sequence comparison |
-| `cana.js` | the 15 CANA colours and names, shared by the server and the browser |
-| `views.js` | the Views tiles: the 1D dot-bracket, and the frame the 3D view puts the viewer in |
-| `api.js`, `shared.js` | talking to the server, and small helpers |
+| `assets/` | fonts, icons, the favicon |
+| `cana.js` | the 15 CANA colours and names, shared by the server and the client |
 
 **The 3D viewer**, in `viewer/`: a build of the NAPAIR browser, gitignored and
 installed by hand (section 9). Served at `/viewer/`, cross-origin isolated.
@@ -619,5 +613,3 @@ The database takes 9.6 GB, 7.6 GB of it atom coordinates.
 - **The 3D viewer is light only**, so it stays white inside a dark page.
 - **The first arc picture of an entry takes about 18 ms to work out**, then it
   is cached for an hour.
-- **`public/app.js` is about 850 lines doing eight jobs.** It is the next file
-  to split.

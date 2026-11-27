@@ -1,19 +1,9 @@
-// zip.test.js - the browser's ZIP writer (public/zip.js), read back with
+// zip.test.js - the browser's ZIP writer (client/src/zip.js), read back with
 // Node's own zlib, so a file it makes is one any unzip tool opens.
 import test from "node:test";
 import assert from "node:assert";
-import { readFileSync } from "node:fs";
-import vm from "node:vm";
 import zlib from "node:zlib";
-
-// zip.js is a plain browser script: run it in a context with the browser
-// globals it uses, which Node has too.
-function load_zip(globals = {}) {
-    let context = vm.createContext({ TextEncoder, Blob, Response, DataView, ArrayBuffer, Uint8Array,
-                                     CompressionStream, Array, Date, ...globals });
-    vm.runInContext(readFileSync("public/zip.js", "utf8"), context);
-    return context;
-}
+import { makeZip } from "./client/src/zip.js";
 
 // Every file in a zip, by the central directory, as { name, method, text }.
 function unzip(buffer) {
@@ -52,9 +42,8 @@ const FILES = [
     { name: "empty.dbn", text: "" }
 ];
 
-test("make_zip writes files any unzip reads back exactly, deflated when that is smaller", async () => {
-    let zip = load_zip();
-    let blob = await zip.make_zip(FILES, new Date(2026, 10, 13, 12, 30, 10));
+test("makeZip writes files any unzip reads back exactly, deflated when that is smaller", async () => {
+    let blob = await makeZip(FILES, new Date(2026, 10, 13, 12, 30, 10));
     let files = unzip(Buffer.from(await blob.arrayBuffer()));
 
     assert.equal(blob.type, "application/zip");
@@ -64,24 +53,17 @@ test("make_zip writes files any unzip reads back exactly, deflated when that is 
     assert.ok(files.every((f) => f.utf8_flag));
 });
 
-test("make_zip still works where the browser has no CompressionStream", async () => {
-    let zip = load_zip({ CompressionStream: undefined });
-    let files = unzip(Buffer.from(await (await zip.make_zip(FILES)).arrayBuffer()));
+test("makeZip still works where the browser has no CompressionStream", async (t) => {
+    let real = globalThis.CompressionStream;
+    globalThis.CompressionStream = undefined;
+    t.after(() => { globalThis.CompressionStream = real; });
+    let files = unzip(Buffer.from(await (await makeZip(FILES)).arrayBuffer()));
 
     assert.deepEqual(files.map((f) => [f.name, f.method, f.text]), FILES.map((f) => [f.name, 0, f.text]));
 });
 
-test("zip_crc32 agrees with zlib", () => {
-    let zip = load_zip();
-    for (const text of ["", "a", "NA3DB", "é&()[]{}".repeat(99)]) {
-        let bytes = new TextEncoder().encode(text);
-        assert.equal(zip.zip_crc32(bytes), zlib.crc32(bytes), text.slice(0, 10));
-    }
-});
-
 test("the dates in the zip are the local time it was made", async () => {
-    let zip = load_zip();
-    let buffer = Buffer.from(await (await zip.make_zip(FILES.slice(1), new Date(2026, 10, 13, 12, 30, 10))).arrayBuffer());
+    let buffer = Buffer.from(await (await makeZip(FILES.slice(1), new Date(2026, 10, 13, 12, 30, 10))).arrayBuffer());
     let time = buffer.readUInt16LE(10);
     let date = buffer.readUInt16LE(12);
 

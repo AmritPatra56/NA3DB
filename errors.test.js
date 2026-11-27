@@ -54,15 +54,16 @@ test("an unknown API path answers in JSON", async () => {
     assert.match(res.headers.get("content-type"), /json/);
 });
 
+// The page itself, "Page not found" in the rail's frame, is React's
+// (client/test/route.test.js); the server's part is the status and the page.
 test("an unknown page answers with the styled page, not JSON", async () => {
     let res = await fetch(base + "/nonsense");
     let html = await res.text();
 
     assert.equal(res.status, 404);
     assert.match(res.headers.get("content-type"), /html/);
-    assert.match(html, /Page not found/);
-    assert.match(html, /nonsense/);
-    assert.match(html, /rail/, "the page keeps the sidebar");
+    assert.match(html, /<div id="root"><\/div>/, "the React page, which draws Page not found");
+    assert.match(html, /href="\/style\.css"/);
 });
 
 // fetch percent-encodes before sending, so a raw < never leaves it. This uses
@@ -80,14 +81,14 @@ function raw_get(port, path) {
     });
 }
 
-test("the error page escapes what it echoes back", async () => {
+// React writes the address as text (textContent), so the server must not
+// echo it into the page at all.
+test("the error page never echoes the address back", async () => {
     let port = server.address().port;
     let response = await raw_get(port, "/<script>alert(1)</script>");
 
-    assert.ok(!response.includes("<script>alert(1)"),
-        "a tag in the URL must never come back as a tag");
-    assert.match(response, /&lt;script&gt;/,
-        "it should come back escaped, and visible as text");
+    assert.match(response, /^HTTP\/1\.1 404/);
+    assert.ok(!response.includes("alert(1)"), "nothing from the URL comes back in the page");
 });
 
 test("an error message never leaks the connection details", async () => {

@@ -8,7 +8,7 @@ import { query, transaction, close } from "./db.js";
 import { entry_contents, entry_citation, find_entry, search_entries, build_where,
          missing_runs, entry_base_pairs, entry_residues } from "./search.js";
 import { COLUMNS, FILTERS, ENTITY_NAME_LIMIT, SORTS, columns_answering } from "./filters.js";
-import { detail_rows, molecule_groups, structure_sections, ntc_section, PAGE_GROUPS, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
+import { detail_rows, molecule_groups, ntc_section, species_case, source_section, FOLD_PROTEINS, POSITIONS_SHOWN,
          MODIFIED_ROWS_SHOWN,
          SOURCE_LISTED, base_pair_section, PAIR_LINKS_SHOWN, sequence_lines, SEQUENCE_LINE, fasta_of, base_pair_export, base_pairs_csv,
          entry_fasta, fasta_choices } from "./detail.js";
@@ -1403,37 +1403,7 @@ test("large counts on the page carry thousands separators, like Atoms", () => {
     assert.equal(shown.Atoms, "219,329");
 });
 
-
-// --- the sections of the structure page ---------------------------------
-const no_contents = { groups: [], summary: "", sources: null, fasta: { all: 0, na: 0 } };
-
-test("a section with nothing in it is listed as empty, not dropped", () => {
-    let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
-                                        base_pairs: null, citation: null });
-    let by_id = Object.fromEntries(sections.map((s) => [s.id, s]));
-
-    assert.equal(sections.length, 12, "every section stays in the list");
-    for (const id of ["molecules", "modified-nucleotides", "ligands", "sources",
-                      "base-pairs", "views", "sequence-map", "same-sequence", "conformation", "citations"]) {
-        assert.ok(by_id[id].empty, `${id} should be marked empty`);
-    }
-    assert.ok(!by_id.overview.empty && !by_id.links.empty, "the overview and links always have content");
-});
-
-test("a row the page shows another way is left out; the rest go where they belong", () => {
-    let rows = [{ key: "title" }, { key: "ligands" }, { key: "nonstandard_residue" },
-                { key: "monomer_flag" }, { key: "confal_score" }, { key: "assigned_ntc" },
-                { key: "ntc_classes" }, { key: "atom_count" }];
-    let sections = structure_sections({ entry: {}, rows, molecules: no_contents,
-                                        base_pairs: null, citation: null });
-    let keys = (id) => (sections.find((s) => s.id === id).rows ?? []).map((r) => r.key);
-
-    assert.deepEqual(keys("overview"), ["title", "atom_count"]);
-    assert.deepEqual(keys("ligands"), [], "the table lists every ligand code");
-    assert.deepEqual(keys("modified-nucleotides"), [], "the table lists every modified code");
-    assert.deepEqual(keys("conformation"), ["confal_score"], "NtC classes are counted, not listed twice");
-});
-
+// --- the NtC classes in Conformation --------------------------------------
 test("NtC steps are counted by CANA class, each class named, no class last and apart", () => {
     let t = ntc_section([{ ntc: "AA00", cana: "AAA", n: 31 }, { ntc: "AA08", cana: "AAw", n: 5 },
                          { ntc: "AA01", cana: "AAA", n: 31 }, { ntc: "BB00", cana: "BBB", n: 2 },
@@ -1459,13 +1429,3 @@ test("NtC steps are counted by CANA class, each class named, no class last and a
     assert.deepEqual(ntc_section([]).families, []);
 });
 
-test("the page groups its sections as the filter panel does", () => {
-    let sections = structure_sections({ entry: {}, rows: [], molecules: no_contents,
-                                        base_pairs: null, citation: null });
-    assert.deepEqual(sections.map((s) => s.id),
-                     ["views", "overview", "molecules", "sources", "modified-nucleotides", "ligands", "base-pairs",
-                      "conformation", "sequence-map", "same-sequence", "citations", "links"]);
-    assert.equal(PAGE_GROUPS.find((g) => g.key === "structure").label, "Structure");
-    assert.deepEqual(PAGE_GROUPS.map((g) => g.key), ["views", "overview", "composition", "structure", "references"],
-                     "Views leads, a group of its own");
-});

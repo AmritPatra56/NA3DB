@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import process from 'node:process'
 
 // The Express site the dev server forwards to. API_TARGET lets a second Vite
 // point at a spare server while checking a change (default: the :4000 one).
