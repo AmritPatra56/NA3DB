@@ -306,6 +306,25 @@ Every number the tests expect is counted from those 120 entries. Point the
 tests at the real data and most of them fail, because they would be
 measuring something else. The two files differ in one line, `DB_NAME`.
 
+### A read-only account for the website
+
+The website only ever reads. On na3db.org it logs in as `na3db_web`, an
+account that can read every table and change nothing, so a bug or an attack
+through a page cannot alter or delete data. The loader and `db/migrate.mjs`
+keep using the owner account.
+
+```bash
+# once per database, as a superuser (creating a role needs one)
+sudo -u postgres psql -d na3db < db/web_role.sql
+sudo -u postgres psql -d na3db -c '\password na3db_web'
+```
+
+Then set `DB_USER=na3db_web` and its `DB_PASSWORD` for the website only.
+Tables added by later migrations are readable without running it again.
+`db/web_role.test.js` checks the account reads everything and writes nothing;
+it runs when `.env.test` also has `WEB_DB_USER` and `WEB_DB_PASSWORD`, and is
+skipped otherwise.
+
 ## 8. Day to day
 
 **Run.** `npm run dev` restarts the server on every change; `npm start` runs
