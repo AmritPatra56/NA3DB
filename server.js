@@ -1,12 +1,13 @@
 import express from "express";
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { search_entries, export_entries, export_molecules, export_ligands, export_dot_brackets, find_entry, query_problem,
          count_entries, entry_citation, entry_contents, entry_base_pairs, entry_sequence_tracks,
          entry_residues, ligand_suggestions, nonstandard_suggestions, organism_suggestions, pill_counts, database_stats, browse_counts,
          same_sequence, same_sequence_count, compare_same_sequence, entry_ntc_classes, entry_assemblies } from "./search.js";
 import { query, DatabaseUnavailable } from "./db.js";
 import { gate } from "./gate.js";
+import { page_policy } from "./csp.js";
 import help from "./help_texts.js";
 import { citation_ris, citation_bibtex, citation_text, unpublished, short_name, full_name } from "./cite.js";
 import { did_you_mean, box_suggestions, warm_box_names } from "./suggest.js";
@@ -57,9 +58,13 @@ if (!existsSync(path.join(client_dir, "index.html"))) {
 
 app.use("/app", express.static(path.join(client_dir, "app"), { immutable: true, maxAge: "1y" }));
 
+// Read once: a new build means a new container, so a restart.
+export const PAGE_POLICY = page_policy(readFileSync(path.join(client_dir, "index.html"), "utf8"));
+
 // Every page is isolated: React moves to a structure in place.
 function send_app(res, status = 200) {
     isolate(res);
+    res.set("Content-Security-Policy", PAGE_POLICY);
     res.status(status).set("Cache-Control", "no-cache").sendFile(path.join(client_dir, "index.html"));
 }
 
