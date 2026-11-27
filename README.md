@@ -369,15 +369,24 @@ cd client && npm run lint    # ESLint
 are not in this repository.
 
 ```bash
-python3 db/load_cif.py --cif /path/to/1dn8.cif            # one file first, prints a check
-python3 db/load_cif.py --cif-dir /path/to/dnatco_files    # all of them, about 90 minutes
-python3 db/load_cif.py --reload --cif /path/to/6wlo.cif   # redo one finished file
+python3 db/load_cif.py --backup backups --cif /path/to/1dn8.cif            # one file first, prints a check
+python3 db/load_cif.py --backup backups --cif-dir /path/to/dnatco_files    # all of them, about 90 minutes
+python3 db/load_cif.py --backup backups --reload --cif /path/to/6wlo.cif   # redo one finished file
 ```
 
-It writes to `na3db` only, never `na3db_test`. **If a run stops, run it
-again:** finished files are skipped, half-loaded ones are redone. Use
-`--reload` to redo a finished file on purpose; running it plain would add its
-rows twice.
+It writes to `na3db` only, never `na3db_test`. **It dumps the database into
+the `--backup` folder before it changes anything**, and does not start if the
+dump fails; to undo a whole load, restore that dump. `--no-backup` skips it,
+for scratch databases only.
+
+**The site stays usable while it runs.** Each structure is saved in one go,
+together with its "finished" mark: visitors see a structure complete or not
+at all, and with `--reload` they keep seeing the old version until the new
+one is in. A run that stops leaves no half structure; run it again and
+finished files are skipped. Use `--reload` to redo a finished file on purpose;
+running it plain would add its rows twice. `db/test_load_safety.py` checks
+all of this against the test database
+(`python3 -m unittest db/test_load_safety.py`).
 
 After a load that brings new entries, refresh the files built from the data:
 
