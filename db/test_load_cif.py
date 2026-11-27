@@ -8,7 +8,12 @@ import sys
 import unittest
 import importlib.util
 
-sys.modules.setdefault("psycopg", type(sys)("psycopg"))
+# Parsing needs no database: a stand-in only where psycopg is not installed,
+# so the real one stays for db/test_load_safety.py in the same run.
+try:
+    import psycopg  # noqa: F401
+except ImportError:
+    sys.modules["psycopg"] = type(sys)("psycopg")
 _spec = importlib.util.spec_from_file_location(
     "load_cif", os.path.join(os.path.dirname(__file__), "load_cif.py"))
 lc = importlib.util.module_from_spec(_spec)

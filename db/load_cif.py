@@ -7,7 +7,7 @@ Usage:
     python3 db/load_cif.py --cif-dir <dir> --reload
 """
 
-import os, re, sys, logging, argparse, traceback
+import os, re, sys, time, logging, argparse, subprocess, traceback
 from pathlib import Path
 from datetime import date
 
@@ -62,6 +62,33 @@ def external_uri():
     )
 
 
+def backup_before_load(folder):
+    """A pg_dump of the database about to be loaded, so a bad load can be
+    undone as a whole. Written to a .part file first and renamed when done,
+    the same as deploy/backup.sh, so a failed dump never looks like a good one.
+    Returns the file, or stops the program if the dump fails.
+    """
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    name = os.environ.get("DB_NAME", "na3db")
+    target = folder / f"{name}-before-load-{time.strftime('%Y-%m-%d-%H%M%S')}.dump"
+    part = target.with_name(target.name + ".part")
+
+    log.info("Backing up %s to %s ...", name, target)
+    env = {**os.environ, "PGPASSWORD": os.environ.get("DB_PASSWORD", "")}
+    done = subprocess.run(
+        ["pg_dump", "-Fc", "-h", os.environ["DB_HOST"], "-p", os.environ.get("DB_PORT", "5432"),
+         "-U", os.environ["DB_USER"], "-d", name, "-f", str(part)],
+        env=env, capture_output=True, text=True)
+    if done.returncode != 0:
+        part.unlink(missing_ok=True)
+        log.error("Backup failed, nothing was loaded: %s", done.stderr.strip())
+        sys.exit(1)
+    part.rename(target)
+    log.info("  backup written (%.1f MB)", target.stat().st_size / 1e6)
+    return target
+
+
 def entry_id_from(path):
     """The PDB id a file holds, taken from its name. Checked against all 1,489
     files: the filename always matches the data_ block inside."""
@@ -101,11 +128,12 @@ def clean_partial_entries(conn):
 
 
 def mark_loaded(conn, cur, entry_id, path):
-    """Records that a file finished, and fills in the columns that are derived
-    from its rows rather than read from the file.
+    """Records that a file finished, fills in the columns that are derived
+    from its rows rather than read from the file, and saves the entry.
 
-    Until the loaded_entries row exists the entry counts as partial, which is
-    what makes an interrupted run safe to repeat.
+    This is the only save for an entry: its rows, a --reload's removal of the
+    old copy, and the loaded_entries row all become visible together, so a
+    reader sees the old version or the new one, never half of either.
     """
     # has_nonstandard_residue is stored (migrations 006, 010): nucleic-acid chains only.
     cur.execute("""
@@ -125,6 +153,29 @@ def mark_loaded(conn, cur, entry_id, path):
         ON CONFLICT (entry_id) DO UPDATE SET loaded_at = now()
     """, (entry_id, os.path.basename(path)))
     conn.commit()
+
+
+def load_one(conn, path, entry_id, reload=False):
+    """Loads one file as a single transaction and returns the row counts, or {}
+    if the entry could not be loaded (then nothing is saved).
+
+    With reload, the old copy is removed in the same transaction (or rows
+    would double in the tables with generated ids), so readers keep seeing it
+    until the new one is complete. An exception rolls everything back.
+    """
+    try:
+        with conn.cursor() as cur:
+            if reload:
+                cur.execute("DELETE FROM entry WHERE id = %s", (entry_id,))
+            S = process_cif(cur, conn, path)
+            if S:
+                mark_loaded(conn, cur, entry_id, path)
+            else:
+                conn.rollback()
+            return S
+    except BaseException:
+        conn.rollback()
+        raise
 
 
 ALL_TABLES = [
@@ -636,15 +687,15 @@ def load_atom_site(cur, conn, eid, text):
             _int(r.get("pdbx_formal_charge")),
             r.get("pdbx_pdb_ins_code"),
         ))
+        # Sent in batches to keep memory flat; nothing is saved until the
+        # whole entry is (mark_loaded), so no reader sees half the atoms.
         if len(batch) >= ATOM_BATCH:
             cur.executemany(sql, batch)
             total += len(batch)
-            conn.commit()
             batch = []
     if batch:
         cur.executemany(sql, batch)
         total += len(batch)
-        conn.commit()
     return total
 
 def load_atom_sites(cur, eid, sv):
@@ -1103,7 +1154,7 @@ def load_pdbx_validate_rmsd_angle(cur, eid, text):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def process_cif(cur, conn, filepath: str) -> dict:
-    text = open(filepath, encoding="utf-8", errors="replace").read()
+    text = Path(filepath).read_text(encoding="utf-8", errors="replace")
     m = re.search(r"^data_(\S+)", text, re.MULTILINE)
     if not m:
         log.warning("  No data_ block: %s", filepath); return {}
@@ -1136,7 +1187,6 @@ def process_cif(cur, conn, filepath: str) -> dict:
             S[t] = 0
         S["atom_sites"]         = run_table(cur, "atom_sites",         load_atom_sites,         cur, eid, sv)
         S["database_pdb_matrix"]= run_table(cur, "database_pdb_matrix",load_database_pdb_matrix,cur, eid, sv)
-        conn.commit()
         return S
 
     S["entity_poly"]         = run_table(cur, "entity_poly",         load_entity_poly,         cur, eid, text, sv)
@@ -1223,7 +1273,7 @@ def process_cif(cur, conn, filepath: str) -> dict:
     S["pdbx_validate_rmsd_bond"]  = run_table(cur, "pdbx_validate_rmsd_bond",  load_pdbx_validate_rmsd_bond,  cur, eid, text)
     S["pdbx_validate_rmsd_angle"] = run_table(cur, "pdbx_validate_rmsd_angle", load_pdbx_validate_rmsd_angle, cur, eid, text)
 
-    conn.commit()
+    # Not saved here: mark_loaded saves the entry and its "finished" row together.
     return S
 
 
@@ -1304,7 +1354,12 @@ def main():
                    help="File holding DB_HOST, DB_USER and friends (default: .env)")
     p.add_argument("--reload", action="store_true",
                    help="Load files even if they are already recorded as complete. "
-                        "Each one is deleted first, so nothing is duplicated.")
+                        "Each one is replaced in one step, so nothing is duplicated.")
+    p.add_argument("--backup", metavar="FOLDER",
+                   help="Dump the database into FOLDER before loading anything. "
+                        "Required for a real server unless --no-backup is given.")
+    p.add_argument("--no-backup", action="store_true",
+                   help="Load without a backup (test or scratch databases only)")
     args = p.parse_args()
 
     pgdata = Path(args.pgdata)
@@ -1356,8 +1411,8 @@ def main():
         log.error("No CIF files found"); sys.exit(1)
     log.info("Found %d CIF file(s)", len(cif_files))
 
+    # Partial entries are not in loaded_entries, so they count as pending.
     with psycopg.connect(db_uri) as conn:
-        clean_partial_entries(conn)
         done = set() if args.reload else already_loaded(conn)
 
     pending = [f for f in cif_files if entry_id_from(f) not in done]
@@ -1369,6 +1424,19 @@ def main():
         log.info("Nothing to do — every file is already loaded.")
         return
 
+    # A real server keeps real data: never load into it without a way back.
+    if os.environ.get("DB_HOST") and not args.no_backup:
+        if not args.backup:
+            log.error("Give --backup FOLDER to dump the database first, "
+                      "or --no-backup for a test database.")
+            sys.exit(1)
+        backup_before_load(args.backup)
+
+    # Repair what a previous run left half-written (only possible from runs
+    # before each entry became one transaction).
+    with psycopg.connect(db_uri) as conn:
+        clean_partial_entries(conn)
+
     # Load files
     totals = {t: 0 for t in ALL_TABLES}
     errors = []
@@ -1377,16 +1445,7 @@ def main():
         eid = entry_id_from(fp)
         try:
             with psycopg.connect(db_uri) as conn:
-                with conn.cursor() as cur:
-                    # --reload: drop the old copy, or rows double in tables with generated ids.
-                    if args.reload:
-                        cur.execute("DELETE FROM entry WHERE id = %s", (eid,))
-                        conn.commit()
-
-                    S = process_cif(cur, conn, fp)
-
-                    if S:
-                        mark_loaded(conn, cur, eid, fp)
+                S = load_one(conn, fp, eid, args.reload)
 
                 if not S:
                     errors.append(fp)
