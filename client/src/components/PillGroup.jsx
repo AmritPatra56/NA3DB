@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { number } from "../format.js";
 
-// One pill group. Its first options always show, the rest behind "N more"
-// (unfolded when the page opens with one of them picked; a picked one keeps
-// it unfolded). Bands are drawn too; the CSS shows them only while on.
-// pills: { options, bands } from pillsOf. picked: the values on, "any" too.
-// onPill(key, value): a pill clicked.
 function PillGroup({ filter, pills, picked, onPill }) {
   const extras = pills.options.filter((o) => o.extra);
   const extraPicked = extras.some((o) => picked.includes(o.value));

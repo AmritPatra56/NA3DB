@@ -2,9 +2,6 @@ import { Fragment } from "react";
 import MoleculeGroup from "./MoleculeGroup.jsx";
 import { groupAnchor } from "../structure.js";
 
-// The tables of one section (Molecules, Modified nucleotides or Ligands), one
-// per group, with Jump to links when there are several. summary: the line
-// Molecules has over its tables.
 function Molecules({ sectionId, pdbId, groups, summary }) {
   return (
     <>

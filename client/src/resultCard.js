@@ -1,8 +1,5 @@
-// What one result card says, worked out from an /api/entries result
-// (public/app.js card_html). Plain data; ResultCard only draws it.
 import { number } from "./format.js";
 
-// The long PDB method names, as the short labels shown on each result.
 export const METHOD_LABELS = {
   "X-RAY DIFFRACTION": "X-ray",
   "ELECTRON MICROSCOPY": "EM",
@@ -23,7 +20,6 @@ export const methodLabel = (method) => METHOD_LABELS[method] || method;
 export const resolutionText = (r) => (r == null ? null : Number(r).toFixed(2) + " Å");
 export const yearOf = (date) => (date ? String(date).slice(0, 4) : "");
 
-// Fields the card's head already says, so they are not repeated below it.
 const CARD_HEAD = new Set(["title", "method", "deposition_date", "resolution", "polymer_type"]);
 
 export function cardParts(entry) {
@@ -32,7 +28,6 @@ export function cardParts(entry) {
   const resolution = resolutionText(entry.resolution);
   const year = yearOf(entry.deposition_date);
 
-  // value: text, or { n, wc } for the base pairs, whose WC count is set small.
   const facts = [
     ["Method", [method, resolution].filter(Boolean).join(" · ")],
     ["Deposited", year || null],
@@ -42,8 +37,6 @@ export function cardParts(entry) {
     ["Strands", a ? number(a.strands) : null],
   ].filter(([, value]) => value);
 
-  // The phone card's short forms: first author, paper and organisms on one
-  // line, the modified residues as chips; the full fields wait behind More.
   const field = (key) => entry.card.find((row) => row.key === key)?.value ?? "";
   const authors = field("all_authors").split(/,\s*(?=[^,]+,)/);
   const first = authors[0] ? authors[0].replace(/,\s*/, " ").replace(/\.$/, "") + (authors.length > 1 ? " et al." : "") : "";
@@ -63,10 +56,8 @@ export function cardParts(entry) {
   };
 }
 
-// The structure page of one entry, for every view's link.
 export const entryHref = (id) => "/structure/" + encodeURIComponent(id);
 
-// What a line says (app.js row_html): the full deposition date, the resolution.
 export function lineParts(entry) {
   return {
     method: methodLabel(entry.method),
@@ -75,7 +66,6 @@ export function lineParts(entry) {
   };
 }
 
-// A grid tile's one line of facts (app.js tile_html): method, resolution, year.
 export function tileFacts(entry) {
   return [methodLabel(entry.method), resolutionText(entry.resolution), yearOf(entry.deposition_date) || null]
     .filter(Boolean).join(" · ");

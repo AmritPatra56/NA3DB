@@ -1,7 +1,6 @@
 import { test, expect } from "vitest";
 import { routeOf, isRouted, redirectOf, railOf } from "../src/route.js";
 
-// Each expected value is what :4000 answers for the address (200, 404 or 301).
 test("pages match in any case, with one slash at the end or none", () => {
   expect(routeOf("/").name).toBe("landing");
   expect(routeOf("/SEARCH/").name).toBe("search");

@@ -6,9 +6,6 @@ import { useRows } from "./useRows.js";
 import { useZip } from "./useZip.js";
 import { buildCsv, today, downloadBlob } from "../reportFiles.js";
 
-// The report page's state (report.js): the open table and its option come
-// from the address, the ticks are kept per table, the rows by useRows.
-// registry: /api/fields, never null here.
 export function useReport(registry) {
   const { search } = useLocation();
   const tables = registry.report_tables;
@@ -22,10 +19,8 @@ export function useReport(registry) {
     idField: registry.report_key,
     ticks: ticks[table.key],
     option: optionOn(table, search),
-    // The first table is the default and goes unsaid.
     onTable: (key) => replaceAddress(withParam(search, "table", key === tables[0].key ? null : key)),
     onOption: (on) => replaceAddress(withParam(search, table.option.key, on ? "1" : null)),
-    // The open table's ticked fields, every row.
     onCsv: () => downloadBlob(new Blob([buildCsv(chosenFields(table, ticks[table.key]), rows.data.results)], { type: "text/csv;charset=utf-8" }),
                               `na3db_${table.key}_${today()}.csv`),
     onTick: (field, on) => setTicks((was) => ({

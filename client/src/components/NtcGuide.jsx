@@ -1,6 +1,3 @@
-// How the colours work (structure.ejs): what the two halves of a chip mean,
-// every colour named, and where classes and colours come from. key: /pairs'
-// ntc.key, one swatch per conformer class.
 function NtcGuide({ ntcKey }) {
   return (
     <details className="guide">

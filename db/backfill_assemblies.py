@@ -1,12 +1,6 @@
-"""Fill the assembly tables (migration 016) for entries loaded before them.
+"""Fills the assembly tables (migration 016) for entries loaded before them.
 
-Reads only _pdbx_struct_assembly, _pdbx_struct_oper_list and
-_pdbx_struct_assembly_gen, with the same functions load_cif.py uses, so a
-backfilled entry matches a freshly loaded one. Nothing else is touched.
-
-Each entry is its own transaction: all four tables or none. Entries that
-already have assembly rows are skipped, so running it twice is harmless.
-Any failure is reported and the script exits 1.
+One transaction per entry; entries that already have assemblies are skipped.
 
 Run: python3 db/backfill_assemblies.py --cif-dir <dir> [--env-file .env] [--dry-run]
 """

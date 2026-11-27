@@ -1,15 +1,4 @@
-// filters.js - every question the search can answer and every column it can
-// return, as data. Server only: it holds the SQL. The browser gets the safe
-// fields from public_registry() via GET /api/fields.
 
-
-// Asked in the SELECT and in the WHERE, so a result cannot contradict its page.
-// One pass over the entry's entity_poly rows sets all four flags. Separate
-// EXISTS per flag cost 205 ms a search against 13 for the old two-way split.
-// A hybrid strand is both DNA and RNA, so it sets both.
-//
-// Protein with a nucleic acid is tested first: such an entry also has the
-// nucleic acid alone and would otherwise stop there.
 export const POLYMER_TYPE_SQL = `(
     SELECT CASE
                WHEN f.protein AND na.part IS NOT NULL THEN 'Protein/' || na.part
@@ -31,18 +20,15 @@ export const POLYMER_TYPE_SQL = `(
                                       WHEN f.rna           THEN 'RNA' END AS part) na
 )`;
 
-// The values links used before DNA and RNA were told apart. A bookmark must
-// keep finding what it found, so each old value stands for its new ones.
+// Old polymer_type values, kept so bookmarks still work.
 export const POLYMER_TYPE_ALIASES = {
     "Nucleic acid": ["DNA", "RNA", "DNA/RNA"],
     "Protein/NA":   ["Protein/DNA", "Protein/RNA", "Protein/DNA/RNA"]
 };
 
-// How many entity names a result shows before "+ N more".
 export const ENTITY_NAME_LIMIT = 5;
 
-// One row per distinct polymer description, ranked RNA, DNA, hybrid, then the
-// rest, and within a rank by entity id as a number (ids are text: "10" < "2").
+// Entity ids are text, so they are compared as numbers.
 const ENTITY_NAME_SQL = `(
     WITH names AS (
         SELECT en.pdbx_description AS name,
@@ -66,20 +52,9 @@ const ENTITY_NAME_SQL = `(
      WHERE n <= ${ENTITY_NAME_LIMIT}
 )`;
 
-// A pill option is {value, label}; a bare string means the two are the same.
 const option = (o) => (typeof o === "string" ? { value: o, label: o } : o);
 
-// The resolution of the entry e, picked as RCSB's resolution_combined does
-// (https://data.rcsb.org/rest/v1/schema/entry):
-//   EM           em_3d_reconstruction.resolution, the best FSC 0.143 value if
-//                there is one, else the best value (migration 015). Only EM
-//                entries have these rows. refine is not read for them: 441 of
-//                497 leave it empty, and the other 56 repeat the same number.
-//   diffraction  refine.ls_d_res_high, the resolution the model was refined
-//                to; reflns.d_resolution_high only when refine has none.
-//   NMR          none of the three, so NULL.
-// Scalar subqueries on e.id, so the cards, the sort and the range filter all
-// use this one expression and need no join. Each table is keyed on entry_id.
+// Same rule as RCSB's resolution_combined.
 export const RESOLUTION_SQL =
     `COALESCE((SELECT COALESCE(min(em.resolution) FILTER (WHERE em.resolution_method = 'FSC 0.143 CUT-OFF'),
                                min(em.resolution))
@@ -87,12 +62,6 @@ export const RESOLUTION_SQL =
               (SELECT rfn.ls_d_res_high FROM refine rfn WHERE rfn.entry_id = e.id),
               (SELECT rf.d_resolution_high FROM reflns rf WHERE rf.entry_id = e.id))`;
 
-// Resolution bands in Å, lower end in, upper end out, one set per method
-// the landing page offers them under. Chosen on the data in November 2026:
-// X-ray (865 entries) 52, 171, 229, 223, 163 and 27; EM (497) 36, 113, 147,
-// 101, 63 and 37. EM runs coarser, so its bands sit higher. A band is an
-// option of the method filter, "X-RAY DIFFRACTION:1.5-2", so a band of X-ray
-// and EM on its own are one either, as two methods are.
 const band = (method, short, lo, hi) => {
     let words = hi === null ? `${lo} Å or worse` : lo === 0 ? `better than ${hi} Å` : `${lo} to ${hi} Å`;
     return {
@@ -109,7 +78,6 @@ export const RESOLUTION_BANDS = {
 };
 const ALL_BANDS = Object.values(RESOLUTION_BANDS).flat();
 
-// The methods, as the method filter offers them.
 const METHOD_OPTIONS = [
     { value: "X-RAY DIFFRACTION",        label: "X-ray" },
     { value: "ELECTRON MICROSCOPY",      label: "EM" },
@@ -127,12 +95,9 @@ const METHOD_OPTIONS = [
 ].map(option);
 const METHOD_VALUES = METHOD_OPTIONS.map((o) => o.value);
 
-// The methods that measure a resolution: diffraction and electron microscopy.
 const RESOLUTION_METHODS = ["X-RAY DIFFRACTION", "ELECTRON MICROSCOPY", "NEUTRON DIFFRACTION",
                             "ELECTRON CRYSTALLOGRAPHY", "POWDER DIFFRACTION", "FIBER DIFFRACTION"];
 
-// The category boxes, in the order they appear down the form. A filter lands
-// in a box by its `group`. slug colours the dot (style.css); note is optional.
 export const GROUPS = [
     { name: "Demographics", slug: "demographics" },
     {
@@ -143,10 +108,6 @@ export const GROUPS = [
     { name: "Structure Components", slug: "components" }
 ];
 
-
-// The chemical modifications offered as pills in the panel, each by the PDB codes that are that modification on a nucleic acid
-// chain (chem_comp mon_nstd_flag 'n'). 7MG is how many tRNAs write m7G46
-// (1EHZ). 5MC is the RNA m5C; 5CM is DNA's 5-methyl-dC, kept apart.
 export const MODIFICATIONS = [
     { value: "Nm",            label: "2′-O-methyl (Nm)",         codes: ["OMG", "OMC", "OMU", "A2M"] },
     { value: "Pseudouridine", label: "Pseudouridine (Ψ)",        codes: ["PSU"] },
@@ -156,36 +117,12 @@ export const MODIFICATIONS = [
     { value: "5-methyl-dC",   label: "5-methyl-dC, in DNA",      codes: ["5CM"] }
 ];
 
-// The codes for chosen modifications. An unknown one adds none.
 export const modification_codes = (values) =>
     values.flatMap((v) => MODIFICATIONS.find((m) => m.value === v)?.codes ?? []);
 
-// The landing page's five ways in, one question each, laid out 2-1-2: the
-// molecule on the left (made of, modified), where it comes from in the
-// middle, the experiment on the right (method, what was modelled bound to
-// it). Cards facing each other share a row, so their tops line up. `area`
-// names each card's place in the .browse grid (style.css). Listed in reading
-// order, which is the order a phone stacks them in.
-// Every row is a filter link, counted with the very query the link runs
-// (search.js browse_counts), so a row and its results cannot disagree. Made
-// of and method each cover every entry once: an entry has one polymer type
-// and one method. The other cards can count an entry twice, and say so.
-// An option row is a plain filter link (browse_row); `say` is how it reads in
-// the landing page's bar when its label alone would not ("EM 3 to 3.5 Å").
-// `foot` is a line under the card.
 export const browse_row = (label, key, values, note = null, say = null) =>
     ({ label, note, say, params: { [key]: values },
        url: "/search?" + key + "=" + values.map(encodeURIComponent).join(",") });
-// A row of a card: its name, how many entries it finds, and two buttons.
-// Yes asks `yes`; No asks `no`, or else not_<key> of the same values (see
-// search.js NOT). `say_yes` and `say_no` are how each reads in the landing
-// page's bar. Once Yes is on, a row may offer options, narrower rows
-// that stand in for Yes once ticked: a kingdom's organisms (`within`, filled
-// by search.js browse_counts), the most frequent codes of a filter (`top`),
-// or a fixed list (`choices`). `params` is what Yes asks, so a row is counted
-// with the very query its Yes runs.
-// The bar reads as one sentence, "X-ray and not modified": a word, not a
-// name, starts in lower case there. Its first letter is raised by style.css.
 const in_sentence = (text) => text[0].toLowerCase() + text.slice(1);
 const browse_ask = (label, key, yes, more = {}) => {
     let no = more.no ? { key, values: more.no } : { key: "not_" + key, values: yes };
@@ -238,18 +175,10 @@ export const BROWSE = [
     ], foot: { text: "Manganese, spermine and more from the search box. An entry with several counts under each." } }
 ];
 
-
-// One object per searchable question. `kind` decides how the value is read and
-// drawn; `where` is SQL with ? for the value; `clause` is the escape hatch for
-// a filter whose SQL takes no parameter. Never rename a key: bookmarks use it.
-// The SQL half of the search box's loose matching: the same punctuation the
-// browser drops from what was typed, dropped from the column being searched.
-// Spaces are kept on both sides. See like_normalised in search.js.
+// Never rename a key: bookmarks use it.
 const normalised = (column) =>
     `regexp_replace(lower(${column}), '[^a-z0-9 ]', '', 'g')`;
 
-// Every source organism of an entry, whichever way each molecule was made
-// (db/migrations/012): name, taxon ID and entity, one row each.
 export const SOURCES_SQL = `(SELECT g.entry_id, g.entity_id, g.pdbx_gene_src_scientific_name AS organism,
                              g.pdbx_gene_src_ncbi_taxonomy_id AS taxid
                         FROM entity_src_gen g
@@ -260,11 +189,9 @@ export const SOURCES_SQL = `(SELECT g.entry_id, g.entity_id, g.pdbx_gene_src_sci
                       SELECT y.entry_id, y.entity_id, y.organism_scientific, y.ncbi_taxonomy_id
                         FROM pdbx_entity_src_syn y)`;
 
-// The source tables by the word the Source section uses for them.
 const SOURCE_TABLES = { Natural: "entity_src_nat", Expressed: "entity_src_gen",
                         Synthetic: "pdbx_entity_src_syn" };
 const has_source = (table) => `EXISTS (SELECT 1 FROM ${table} t WHERE t.entry_id = e.id)`;
-// A polymer with none of the three: 401 of 15,891, in 261 entries.
 const UNSOURCED_SQL = `EXISTS (SELECT 1 FROM entity en
                                WHERE en.entry_id = e.id AND en.type = 'polymer'
                                  AND NOT EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
@@ -272,43 +199,12 @@ const UNSOURCED_SQL = `EXISTS (SELECT 1 FROM entity en
                                                    AND s.entity_id = en.id))`;
 
 export const FILTERS = [
-    // One box for whatever the visitor already knows: an id, a molecule, a
-    // form, an organism, a person. Five ? marks and one value, because add()
-    // replaces every ? with the same $n.
-    //
-    // No index on struct.title on purpose: scanning 1,489 titles measures
-    // 2.9 ms, faster than the indexed lookups beside it, so an index here
-    // would be upkeep for nothing.
+    // No index on struct.title: a scan of 1,489 titles takes 2.9 ms.
     {
         key: "q", label: "Search", group: "Demographics", kind: "text",
-        // Drawn across the top of the page rather than inside the panel.
         prominent: true,
-        // `match` in the query says whether this clause is used or negated.
         negatable: "match",
-        // Matched word by word, each word in this clause: see search_units.
         words: true,
-        // Every field this searches is gathered into one row per entry by
-        // the doc materialized view, so this is one lookup rather than the
-        // five correlated subqueries it used to be. See db/migrations/007.
-        //
-        // Two kinds of field, matched two ways.
-        //
-        // The id and the entity description stay literal, because punctuation
-        // means something in both: 119D is an id, and an entity description
-        // is often a chemical name like 11,19-DIMETHYL..., which normalises
-        // to 1119dimethyl and would then answer a search for 119D.
-        //
-        // The prose column is already normalised in the view, so ?~ (the
-        // typed value with its punctuation dropped) is what it is matched
-        // against, and zdna finds Z-DNA.
-        //
-        // residues holds each non-standard residue's code and its chemical
-        // name, so PSU finds the 90 entries holding pseudouridine and so does
-        // pseudouridine. Matched loosely, not as a whole code: a whole-code
-        // match is a subset of a loose one, so pairing the two would add
-        // nothing, and loose is what makes the chemical names reachable.
-        // Measured: of nineteen ordinary searches only 5M moves much, 21 to
-        // 108, and those really are 5MU and 5MC structures.
         where: `AND EXISTS (SELECT 1 FROM doc d
                             WHERE d.id = e.id
                               AND (   d.id       ILIKE ?
@@ -319,16 +215,14 @@ export const FILTERS = [
                                                WHERE s.taxid = ANY(?@))))`
     },
 
-    // The only filter on a column of `entry` itself. ILIKE because plain LIKE
-    // and = are case-sensitive in PostgreSQL, unlike MySQL.
+    // ILIKE: LIKE is case-sensitive in PostgreSQL.
     {
         key: "entry_id", label: "Entry ID", group: "Demographics", kind: "text",
         where: `AND e.id ILIKE ?`
     },
 
     {
-        // Every word in one author's name, in any order: names are stored
-        // as "Sponer, J.", and people type "J. Sponer" or "Sponer J".
+        // Names are stored "Sponer, J."; people type "J. Sponer".
         key: "author_name", label: "Author name", group: "Demographics", kind: "text",
         each_word: true,
         where: `AND EXISTS (SELECT 1 FROM citation_author ca
@@ -337,14 +231,10 @@ export const FILTERS = [
                               AND ca.name ILIKE ALL (?))`
     },
 
-    // `first`: how many options are always shown. The rest wait behind a
-    // "more" button, since 99.9% of entries use the first four.
     {
         key: "experimental_method", label: "Experimental method",
         group: "Demographics", kind: "pills", any: true, first: 4,
         options: METHOD_OPTIONS.concat(ALL_BANDS.map(({ value, label }) => ({ value, label, band: true }))),
-        // Plain methods, and methods within resolution bands (RESOLUTION_BANDS),
-        // any of them. Only known values reach the SQL, so they are written in.
         clause: (v) => {
             if (v.length === 0) return null;
             let plain = METHOD_VALUES.filter((m) => v.includes(m));
@@ -360,10 +250,6 @@ export const FILTERS = [
         }
     },
 
-    // The resolution as the cards show it (RESOLUTION_SQL), between two
-    // values in Å, both ends included. The form shows it only once a method
-    // that reports a resolution is picked (`revealed_by`); NMR has none, so an
-    // NMR entry never passes a resolution range.
     {
         key: "resolution_min", label: "Resolution (Å)", group: "Demographics", kind: "range",
         answered_by: "resolution", placeholder: "from, e.g. 2.0", pair_with: "resolution_max",
@@ -376,8 +262,6 @@ export const FILTERS = [
         where: `AND ${RESOLUTION_SQL} <= ?`
     },
 
-    // Two filters, one control: pair_with tells the form to draw them together.
-    // An entry with no NtC row matches neither end.
     {
         key: "confal_min", label: "Confal score", group: "3D Features", kind: "range",
         answered_by: "confal_score",
@@ -397,9 +281,7 @@ export const FILTERS = [
     {
         key: "assigned_ntc", label: "Assigned NtC", group: "3D Features", kind: "text",
         answered_by: "assigned_ntc",
-        // A class is four characters (AA00, NANT). Anything much longer cannot
-        // match, and scanning a million steps to say so ran into the 15 s
-        // statement timeout for a pasted paragraph.
+        // Classes are four characters; a long value would scan every step and hit the 15 s timeout.
         max_length: 8,
         where: `AND EXISTS (SELECT 1 FROM ndb_struct_ntc_step_summary ss
                             WHERE ss.entry_id = e.id
@@ -414,18 +296,13 @@ export const FILTERS = [
                               AND ent.pdbx_description ILIKE ?)`
     },
 
-    // The organism a molecule comes from, never the host it was made in:
-    // Escherichia coli is a source in 189 entries and a host in 816.
     {
         key: "source_organism", label: "Source organism",
         group: "Structure Components", kind: "text", suggest: "source_organisms",
         placeholder: "e.g. mouse or Mus musculus",
         common_name_is_taxon: true,
-        // "Eukaryota,Bacteria" is either, as ticked on the landing page.
         taxon_list: true,
-        // Or any taxon the text names (taxonomy.js): mouse, E. coli, yeast.
-        // IN, not = ANY(ARRAY(...)): the ids are hashed once per search instead
-        // of scanned per entry: 12 ms rather than 185 for Bacteria.
+        // IN, not = ANY(ARRAY(...)): 12 ms rather than 185 for Bacteria.
         where: `AND (EXISTS (SELECT 1 FROM ${SOURCES_SQL} s
                              WHERE s.entry_id = e.id
                                AND s.organism ILIKE ?)
@@ -433,8 +310,6 @@ export const FILTERS = [
                                       WHERE s.taxid = ANY(?@)))`
     },
 
-    // Exact: 562 is Escherichia coli and not its strains, so 1OB5's host
-    // BL21(DE3), 469008, is not found by it. Nothing local knows the tree.
     {
         key: "taxonomy_id", label: "Taxonomy ID",
         group: "Structure Components", kind: "number", answered_by: "source_taxonomy",
@@ -443,8 +318,6 @@ export const FILTERS = [
                             WHERE s.entry_id = e.id AND s.taxid = ?)`
     },
 
-    // How the molecules were obtained. Any pill an entry has matches; an
-    // entry with a natural tRNA and an expressed protein answers both.
     {
         key: "source_kind", label: "Obtained", answered_by: "source_kind",
         group: "Structure Components", kind: "pills", any: true,
@@ -460,7 +333,6 @@ export const FILTERS = [
         key: "expression_host", label: "Expression host", answered_by: "expression_host",
         group: "Structure Components", kind: "text", suggest: "expression_hosts",
         placeholder: "e.g. E. coli or human",
-        // Or any taxon the text names, as for the source organism.
         where: `AND (EXISTS (SELECT 1 FROM entity_src_gen g
                              WHERE g.entry_id = e.id
                                AND g.pdbx_host_org_scientific_name ILIKE ?)
@@ -468,23 +340,13 @@ export const FILTERS = [
                                       WHERE g.pdbx_host_org_ncbi_taxonomy_id = ANY(?@)))`
     },
 
-    // Matches the residue code as well as its name, because a code is what
-    // people type. Nucleic acid chains only, like the monomer flag: MSE is a
-    // protein label. The codes each entry holds come ready made from the doc
-    // view (its residue_codes, the list the cards show), so this compares two
-    // short lists rather than reading 800,000 residue rows: 3 ms, not 400.
-    // Same answer as reading the residues for all 225 inputs tried.
+    // Nucleic acid chains only: MSE is a protein label.
     {
         key: "nonstandard_residue", label: "Non-standard residue",
         group: "Structure Components", kind: "text", suggest: "nonstandard_residues",
-        // "PSU,5MC" is either code, as ticked on the landing page.
         code_list: true,
         placeholder: "e.g. PSU or pseudouridine",
-        // A code is matched whole, so MA6 finds MA6 and not every code holding
-        // MA; a name loosely, from three letters up, but only when the text is
-        // not itself a code: PHA is one residue, not the 315 entries with
-        // "pha" in a name. So a picked suggestion finds what its count says.
-        // ? is %value%, so its length is the typed length plus two.
+        // Not when the text is itself a code: PHA is one residue.
         where: `AND EXISTS (SELECT 1 FROM doc d
                             WHERE d.id = e.id
                               AND string_to_array(d.residue_codes, ', ') && ARRAY(
@@ -497,17 +359,10 @@ export const FILTERS = [
                                                                AND upper(c2.id) = upper(substr(?, 2, length(?) - 2)))))))`
     },
 
-    // A code is matched whole, since one or two letters would otherwise find
-    // half the database: K is potassium, not every name holding a k. A name
-    // is matched loosely, from three letters up, so adenosyl finds SAM and SAH.
-    // Not when the text is itself a code: MET is methionine, not the 142
-    // entries with "met" in a ligand's name, so a picked suggestion finds
-    // what its count says.
-    // ? is %value%, so its length is the typed length plus two.
+    // Not when the text is itself a code: MET is methionine.
     {
         key: "ligand", label: "Ligand", answered_by: "ligands",
         group: "Structure Components", kind: "text", suggest: "ligands",
-        // "MG,ZN" is either code, as ticked on the landing page.
         code_list: true,
         placeholder: "e.g. SAM or adenosyl",
         where: `AND EXISTS (SELECT 1 FROM pdbx_entity_nonpoly n
@@ -521,8 +376,6 @@ export const FILTERS = [
                                                              WHERE upper(c2.id) = upper(substr(?, 2, length(?) - 2))))))))`
     },
 
-    // See MODIFICATIONS. The codes each entry holds come ready made from the
-    // doc view, as for the non-standard residue filter.
     {
         key: "modification", label: "Modification",
         group: "Structure Components", kind: "pills", any: true,
@@ -533,7 +386,6 @@ export const FILTERS = [
                               AND string_to_array(d.residue_codes, ', ') && ?::text[])`
     },
 
-    // Any ion or small molecule but water: 1,083 of 1,489 entries.
     {
         key: "has_ligand", label: "Ligands",
         group: "Structure Components", kind: "pills", any: false,
@@ -548,10 +400,6 @@ export const FILTERS = [
         }
     },
 
-    // Water is solvent, so it stays out of the ligand filters above, but some
-    // want structures with ordered water. 783 of 1,489 entries model it,
-    // nearly all X-ray: 99% of entries sharper than 2 Å, 5% beyond 4 Å.
-    // "Without water" means none was modelled, not that none was there.
     {
         key: "has_water", label: "Water",
         group: "Structure Components", kind: "pills", any: false,
@@ -566,10 +414,6 @@ export const FILTERS = [
         }
     },
 
-    // Chemically synthesised or not, as the landing page asks it. Obtained
-    // above can only say what an entry has, so it cannot ask "none of it
-    // synthesised": an entry with synthetic DNA and an expressed protein
-    // would still answer Natural or Expressed.
     {
         key: "synthetic", label: "Chemically synthesised",
         group: "Structure Components", kind: "pills", any: false,
@@ -590,13 +434,9 @@ export const FILTERS = [
                   "Protein", "Oligosaccharide", "Protein/Oligosaccharide", "Other"].map(option),
         expand: (values) => values.flatMap((v) => POLYMER_TYPE_ALIASES[v] || [v]),
         where: `AND (${POLYMER_TYPE_SQL}) = ANY(?)`,
-        // Each pill shows how many entries it finds; one that finds none is
-        // not drawn. Every entry holds a nucleic acid, so Protein alone is 0.
         count_by: POLYMER_TYPE_SQL
     },
 
-    // Reads the column stored by migration 006: 0.9 ms against 276 ms. Both
-    // pills selected is the same as neither, so nothing is excluded.
     {
         key: "monomer_flag", label: "Monomer standard flag",
         answered_by: "monomer_flag",
@@ -611,27 +451,15 @@ export const FILTERS = [
     }
 ];
 
-// A range value arrives from a URL as a single string, like a text one.
 const of_kind = (...kinds) =>
     FILTERS.filter((f) => kinds.includes(f.kind)).map((f) => f.key);
 
 export const TEXT_FILTERS = of_kind("text", "range", "number");
 export const PILL_FILTERS = of_kind("pills");
 
-
-// The orders the results can be put in. `join` is what the paging query needs
-// in scope to see the column, and `sql` is the ORDER BY. e.id is appended as a
-// tiebreaker: 1,489 entries share only 292 resolutions, and without a unique
-// last key a tied row can land on two pages or on none. `unique: true` says a
-// column is already unique and needs no tiebreaker.
-//
-// NULLS LAST in both directions, because a missing value is not a small one:
-// the 127 NMR structures have no resolution, and they belong at the end either way.
-// RESOLUTION_SQL is near the top, beside the resolution filter.
+// e.id breaks ties so a row cannot land on two pages. NULLS LAST: NMR entries have no resolution.
 
 export const SORTS = [
-    // Ranked by how well an entry answers the search box (search.js,
-    // best_match); with nothing typed every entry ties and it is id order.
     {
         key: "best", label: "Best match",
         join: "", sql: "e.id ASC", unique: true, ranked: true
@@ -667,7 +495,6 @@ export const SORTS = [
         sql: "ntc.confal_score ASC NULLS LAST"
     },
 
-    // On `entry` itself, so no join, and unique, so no tiebreaker.
     {
         key: "id_asc", label: "Entry ID, A to Z",
         join: "", sql: "e.id ASC", unique: true
@@ -678,19 +505,13 @@ export const SORTS = [
     }
 ];
 
-// The order used when the URL asks for nothing, or asks for something unknown.
-// By key and not by position, so reordering the dropdown cannot change it.
 export const DEFAULT_SORT = SORTS.find((s) => s.key === "best");
 
-// One sort by key, never a value from the URL reaching the SQL: an unknown key
-// falls back to the default rather than being interpolated.
+// Unknown keys fall back to the default, never interpolated.
 export function sort_by(key) {
     return SORTS.find((s) => s.key === key) || DEFAULT_SORT;
 }
 
-
-// What the search box means. "excludes" turns its clause into NOT (...), so
-// the two answers always add up to the whole database.
 export const MATCH_MODES = [
     { key: "contains", label: "Contains" },
     { key: "excludes", label: "Excludes" }
@@ -698,22 +519,15 @@ export const MATCH_MODES = [
 
 export const DEFAULT_MATCH = MATCH_MODES[0].key;
 
-// Looked up by key, so an unknown mode falls back rather than reaching the SQL.
 export function match_mode(value) {
     return MATCH_MODES.some((m) => m.key === value) ? value : DEFAULT_MATCH;
 }
 
-
-// How many results a page holds. Any whole number the visitor types, capped
-// so one request cannot ask for the whole database and every column with it.
-// The suggestions are what the control offers; they are not a restriction.
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 200;
 export const PAGE_SIZE_SUGGESTIONS = [20, 25, 50, 100];
 
-// A whole number between 1 and the cap, or the default. Safe to write into a
-// LIMIT because what comes back is always digits, the same guarantee as_page
-// gives the OFFSET beside it.
+// Always digits, so safe in LIMIT.
 export function page_size_from(value) {
     let asked = Math.floor(Number(value));
 
@@ -722,18 +536,7 @@ export function page_size_from(value) {
     return Math.min(asked, MAX_PAGE_SIZE);
 }
 
-
-// One object per returnable column. A separate list from FILTERS because the
-// two overlap without containing each other: `title` is shown and not searched.
-//
-// scope says which query fetches it: "entry" for every result, "detail" only
-// when one entry is asked for. show says where it is DISPLAYED, which is a
-// different question: "page" is the full structure page, "card" a result card.
-// Absent means ["page"] alone; an empty list means the column is fetched but
-// never shown.
 export const COLUMNS = [
-    // Fetched because the links are built from it, shown nowhere: the heading
-    // already says it.
     {
         key: "pdb_id", label: "Entry ID", group: "Demographics",
         scope: "entry", select: `e.id`,
@@ -752,25 +555,21 @@ export const COLUMNS = [
         show: ["page", "card"]
     },
 
-    // ::text, not the bare DATE: pg turns a DATE into a JS Date and Prague is
-    // ahead of UTC, which moved every deposition date back a day.
+    // ::text: a JS Date shifted every deposition date back a day.
     {
         key: "deposition_date", label: "Deposition date", group: "Demographics",
         scope: "entry", select: `ds.recvd_initial_deposition_date::text`,
         show: ["page", "card"]
     },
 
-    // 2.00 A and 2 A are different claims: the trailing digits say how
-    // precisely the resolution is known.
+    // Trailing digits matter: 2.00 Å and 2 Å are different claims.
     {
         key: "resolution", label: "Resolution", group: "Demographics",
         scope: "entry", select: RESOLUTION_SQL,
         decimals: 2, unit: "Å", show: ["page", "card"]
     },
 
-    // A scalar subquery, not a join: citation_author has a generated id, so two
-    // rows can share (entry_id, citation_id, ordinal) and a join would double
-    // the entry. The first author only, so all_authors covers it in the rows.
+    // Scalar subquery: citation_author rows can repeat, and a join would double the entry.
     {
         key: "author", label: "Author name", group: "Demographics",
         scope: "entry",
@@ -780,11 +579,6 @@ export const COLUMNS = [
                   ORDER BY ca.ordinal, ca.id LIMIT 1)`
     },
 
-    // Entry scope, not detail: every result card names its authors. The two
-    // subqueries cost 2-8 ms for a page of twenty.
-    //
-    // Falls back to `author`: some entries record only the first, and a missing
-    // list should not mean a missing author.
     {
         key: "all_authors", label: "Authors", group: "Citation",
         scope: "entry", fallback: "author", show: ["page", "card"],
@@ -807,21 +601,14 @@ export const COLUMNS = [
         show: ["page", "card"]
     },
 
-    // Every polymer, nucleic acids first: 1,406 entries have more than one,
-    // and in 786 entity 1 is a protein. Capped so a ribosome's 100 names do
-    // not fill the card; the molecule table lists them all.
     {
         key: "entity_name", label: "Entity name", group: "Structure Components",
         scope: "entry", select: ENTITY_NAME_SQL,
         show: ["card"]
     },
 
-    // A scalar subquery, and not hypothetical: 18 entries have several source
-    // rows for entity 1, which joined turned 1,489 into 1,512.
+    // Scalar subquery: 18 entries have several source rows for entity 1.
     {
-        // Every entity's organism, however it was made: 1OB5 is a yeast tRNA
-        // purified from cells on a Thermus protein. Names that differ only in
-        // case are one organism, spelt the way that is not all capitals.
         key: "source_organism", label: "Source organism", group: "Structure Components",
         scope: "entry", show: ["card"], empty: "Not recorded", species: true,
         select: `COALESCE((
@@ -837,7 +624,6 @@ export const COLUMNS = [
                  ), '')`
     },
 
-    // Shown on a card only when its filter was used, to say why it matched.
     {
         key: "source_taxonomy", label: "Taxonomy ID", group: "Structure Components",
         scope: "entry", show: [],
@@ -863,7 +649,6 @@ export const COLUMNS = [
                   WHERE g.entry_id = e.id AND trim(g.pdbx_host_org_scientific_name) <> '')`
     },
 
-    // Stored in doc by migration 011: worked out here it cost 1.6 s an export.
     {
         key: "nonstandard_residue", label: "Non-standard residues",
         group: "Structure Components", scope: "entry",
@@ -871,7 +656,6 @@ export const COLUMNS = [
         select: `COALESCE((SELECT d.residue_codes FROM doc d WHERE d.id = e.id), '')`
     },
 
-    // Water left out: it is in nearly every crystal and says nothing.
     {
         key: "ligands", label: "Ligands",
         group: "Structure Components", scope: "entry",
@@ -886,13 +670,10 @@ export const COLUMNS = [
         scope: "entry", select: `ntc.confal_score`
     },
 
-    // ORDER BY is not decoration: without it the order is not promised and the
-    // same entry could come back differently on different days.
     {
         key: "assigned_ntc", label: "Assigned NtC", group: "3D Features",
         scope: "entry",
-        // DISTINCT in a subquery, not inside string_agg: that one sorts every
-        // step (thousands per ribosome), this one hashes them. Twice as fast.
+        // DISTINCT in a subquery, not inside string_agg: twice as fast.
         select: `(SELECT string_agg(c, ', ' ORDER BY c)
                   FROM (SELECT DISTINCT ss.assigned_ntc AS c
                         FROM ndb_struct_ntc_step_summary ss
@@ -905,8 +686,6 @@ export const COLUMNS = [
         select: `CASE WHEN e.has_nonstandard_residue THEN 'Non-Standard' ELSE 'Standard' END`
     },
 
-    // Not on the page as text: the Citations list there links them, for every
-    // citation and not only the primary. Still in the report and the CSV.
     {
         key: "doi", label: "DOI", group: "Citation",
         scope: "detail", show: [],
@@ -931,17 +710,13 @@ export const COLUMNS = [
     {
         key: "chain_count", label: "Chains", group: "Contents",
         scope: "detail",
-        // Polymer chains only: struct_asym also has a row per ligand and per
-        // water, 77,095 of its 97,441 rows, so 2VON showed 8 chains for 4.
+        // Polymer chains only: struct_asym also lists ligands and water.
         select: `(SELECT count(*) FROM struct_asym a
                     JOIN entity en ON en.entry_id = a.entry_id AND en.id = a.entity_id
                    WHERE a.entry_id = e.id AND en.type = 'polymer')::int`
     },
 
-    // Per chain, from pdbx_poly_seq_scheme: entity_poly_seq has one row per
-    // residue per entity, so 2VON's two copies of each chain read 200 for 400.
-    // Distinct positions, because a microheterogeneous one has a row per
-    // alternative residue. The alias s shadows the outer struct s; legal.
+    // pdbx_poly_seq_scheme counts per chain; entity_poly_seq per entity.
     {
         key: "residue_count", label: "Residues", group: "Contents",
         scope: "detail", thousands: true,
@@ -950,12 +725,7 @@ export const COLUMNS = [
                                          WHERE s.entry_id = e.id) r)::int`
     },
 
-    // Residues counts protein too, which hides the nucleic acid: 2VON has 400
-    // residues and 14 nucleotides. Same rules, DNA, RNA and hybrid chains only.
-    //
-    // report_select is the report's way to the same number: each molecule's
-    // sequence length times its chains. Identical for all 1,489 entries, and
-    // a full report takes 0.4 s with it against 15 s with select.
+    // report_select gives the same number: 0.4 s against 15 s for a full report.
     {
         key: "nucleotide_count", label: "Nucleotides", group: "Contents",
         scope: "detail", thousands: true,
@@ -972,10 +742,7 @@ export const COLUMNS = [
                           WHERE ep.entry_id = e.id AND ep.type ILIKE '%nucleotide%')::int`
     },
 
-    // One copy of the structure: an NMR entry stores every model (136D has 14,
-    // 11,158 rows for 797 atoms), and water is solvent, not the molecule.
-    // Every entry's models start at 1; HOH is the only water code loaded, DOD
-    // covers neutron structures.
+    // Model 1 only, and no water.
     {
         key: "atom_count", label: "Atoms", group: "Contents",
         scope: "detail", thousands: true,
@@ -995,8 +762,6 @@ export const COLUMNS = [
         scope: "detail", select: `ntc.num_steps`
     },
 
-    // Same question as assigned_ntc without NANT, the marker for an
-    // unassigned step, which is not a conformer class.
     {
         key: "ntc_classes", label: "NtC classes", group: "3D Features",
         scope: "detail",
@@ -1006,9 +771,6 @@ export const COLUMNS = [
                         WHERE ss.entry_id = e.id AND ss.assigned_ntc <> 'NANT') d)`
     },
 
-    // Fetched by the report alone: the structure page shows the paper as its
-    // citation list and has no use for these as separate values. Journal and
-    // year apart, not "Published", so a spreadsheet can sort by year.
     {
         key: "paper_title", label: "Paper title", group: "Citation",
         scope: "report", show: [],
@@ -1030,9 +792,6 @@ export const COLUMNS = [
                   WHERE c.entry_id = e.id AND c.id = 'primary')`
     },
 
-    // From refine, which has one row per entry; NMR and EM entries leave it
-    // empty, as the PDB does. 35 older entries give only R observed, refined
-    // against every reflection with none set aside, which is their R-work.
     {
         key: "r_work", label: "R-work", group: "Demographics",
         scope: "report", show: [],
@@ -1048,20 +807,13 @@ export const COLUMNS = [
 
 ];
 
-
-// The Molecules table of the report: one row per polymer, aliases ep
-// (entity_poly) and en (entity). Separate from COLUMNS because a row here is a
-// molecule, not an entry.
 const SAME_ENTITY = (t) => `${t}.entry_id = ep.entry_id AND ${t}.entity_id = ep.entity_id`;
 
 export const MOLECULE_COLUMNS = [
     { key: "pdb_id", label: "Entry ID", select: `ep.entry_id` },
     { key: "molecule_id", label: "Molecule no.", select: `ep.entity_id` },
 
-    // Author chain ids, the ones papers and viewers use (A, B, 1A), not the
-    // label ids, upper case before lower as RCSB lists them (C, I, a, g: the
-    // database's own collation would mix them, a, C, g). One scheme row per chain by its index: grouping the scheme
-    // by molecule gives the same answer for every entry and took 12 s.
+    // Author chain ids, upper case before lower, as RCSB lists them.
     { key: "chains", label: "Chains",
       select: `(SELECT string_agg(c.auth, ', ' ORDER BY length(c.auth), c.auth COLLATE "C")
                   FROM (SELECT DISTINCT (SELECT s.pdb_strand_id FROM pdbx_poly_seq_scheme s
@@ -1074,8 +826,6 @@ export const MOLECULE_COLUMNS = [
 
     { key: "molecule_name", label: "Name", select: `en.pdbx_description` },
 
-    // The words the structure page uses. A "hybrid" in the PDB is one strand
-    // with both DNA and RNA residues.
     { key: "molecule_type", label: "Type",
       select: `CASE ep.type WHEN 'polyribonucleotide' THEN 'RNA'
                             WHEN 'polydeoxyribonucleotide' THEN 'DNA'
@@ -1087,18 +837,11 @@ export const MOLECULE_COLUMNS = [
     { key: "length", label: "Length",
       select: `length(regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g'))` },
 
-    // The whole sequence studied, residues missing from the model included,
-    // each modified residue as its parent (PSU as U), so it reads as a plain
-    // sequence and lines up with Length.
     { key: "sequence", label: "Sequence",
       select: `regexp_replace(ep.pdbx_seq_one_letter_code_can, '\\s', '', 'g')` },
 
-    // Where the sequence has a modified residue, by its position in Sequence:
-    // "PSU 39,55; 5MC 49". A position with alternative residues counts once.
-    // Read from mods, which export_molecules joins in (modified_sql).
     { key: "modified", label: "Modified residues", select: `mods.v` },
 
-    // A chimera has several source rows, one per stretch of sequence.
     { key: "organism", label: "Organism",
       select: `(SELECT string_agg(DISTINCT trim(s.organism), '; ')
                   FROM ${SOURCES_SQL} s
@@ -1121,10 +864,6 @@ export const MOLECULE_COLUMNS = [
                  WHERE ${SAME_ENTITY("g")} AND trim(g.pdbx_host_org_scientific_name) <> '')` }
 ];
 
-// Every modified residue of the molecules of the entries in $1, worked out
-// in one pass for all of them, joined to the Molecules rows as mods. One
-// lookup per molecule gave the same text and took three times as long.
-// nucleic_only leaves out the proteins when the table does.
 export const modified_sql = (nucleic_only) => `
     SELECT c.entry_id, c.entity_id, string_agg(c.mon_id || ' ' || c.nums, '; ' ORDER BY c.first) AS v
       FROM (SELECT p.entry_id, p.entity_id, p.mon_id, min(p.num) AS first,
@@ -1140,33 +879,20 @@ export const modified_sql = (nucleic_only) => `
              GROUP BY p.entry_id, p.entity_id, p.mon_id) c
      GROUP BY c.entry_id, c.entity_id`;
 
-// The Ligands table of the report: one row per ligand (non-polymer entity),
-// aliases n (pdbx_entity_nonpoly), en (entity) and cc (chem_comp, the PDB's
-// dictionary entry for the code). Water only when asked, by export_ligands.
 export const LIGAND_COLUMNS = [
     { key: "pdb_id", label: "Entry ID", select: `n.entry_id` },
     { key: "ligand_code", label: "Code", select: `n.comp_id` },
-    // The dictionary name, the same in every entry: an entry's own name for
-    // its ligand differs once in 2,415 rows.
     { key: "ligand_name", label: "Name", select: `cc.name` },
-    // The PDB writes a non-zero formal charge after the formula ("Mg 2",
-    // "O4 S -2"), which reads as Mg2. Split as RCSB shows it: Mg, charge 2.
+    // "Mg 2" is Mg with charge 2, as RCSB shows it.
     { key: "formula", label: "Formula", select: `regexp_replace(cc.formula, '\\s+[-+]?\\d+$', '')` },
     { key: "charge", label: "Charge",
       select: `CASE WHEN cc.formula IS NULL THEN NULL
                     ELSE COALESCE(substring(cc.formula from '\\s([-+]?\\d+)$')::int, 0) END` },
     { key: "weight", label: "Weight (Da)", select: `cc.formula_weight` },
-    // Equals the count of its struct_asym rows for every ligand but water,
-    // where one row holds all the waters.
     { key: "ligand_copies", label: "Copies", select: `en.pdbx_number_of_molecules` },
     { key: "synonyms", label: "Synonyms", select: `cc.pdbx_synonyms` }
 ];
 
-// The report's tables. Each row of a table is one thing, so a field about the
-// whole structure (its paper) and one about a part of it (a chain's sequence)
-// never share a table: a ribosome would repeat its paper fifty times. Entry ID
-// comes first in every table and cannot be unticked, so the tables join back
-// together.
 export const REPORT_TABLES = [
     {
         key: "structures", name: "Structures", row: "One row per structure",
@@ -1194,7 +920,6 @@ export const REPORT_TABLES = [
         ],
         defaults: ["pdb_id", "molecule_id", "chains", "molecule_name", "molecule_type",
                    "length", "sequence"],
-        // Nucleic acids unless asked: a ribosome has fifty proteins.
         option: { key: "proteins", label: "Include proteins" }
     },
     {
@@ -1205,15 +930,12 @@ export const REPORT_TABLES = [
             { name: "Chemistry", keys: ["formula", "charge", "weight", "synonyms"] }
         ],
         defaults: ["pdb_id", "ligand_code", "ligand_name", "formula", "ligand_copies"],
-        // Water is in most crystals and says little about the structure.
         option: { key: "water", label: "Include water" }
     }
 ];
 
-// The id column every table starts with.
 export const REPORT_KEY = "pdb_id";
 
-// A report table's fields in order, each with the label the file uses.
 export function report_fields(table) {
     return table.groups.flatMap((g) => g.keys.map((key) => {
         let column = (table.columns ?? COLUMNS).find((c) => c.key === key);
@@ -1221,17 +943,11 @@ export function report_fields(table) {
     }));
 }
 
-
-// The columns one view displays, in registry order. `also` names extra keys to
-// include, which is how a card gains a row for the thing that was searched on.
 export function columns_for(view, also = []) {
     return COLUMNS.filter((c) =>
         (c.show || ["page"]).includes(view) || also.includes(c.key));
 }
 
-
-// The columns that explain why a result matched this query: for every filter
-// in use that names one, and that is not on the card already.
 export function columns_answering(query) {
     let keys = new Set();
 
@@ -1245,9 +961,7 @@ export function columns_answering(query) {
     return [...keys];
 }
 
-
-// What the browser may see. A whitelist, not the object with `where` removed:
-// a field added later stays on the server unless it is named here.
+// A whitelist: a field added later stays on the server unless named here.
 export function public_registry() {
     return {
         groups: GROUPS,

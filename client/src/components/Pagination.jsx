@@ -1,8 +1,5 @@
 import { pageNumbers } from "../pages.js";
 
-// The arrows and page buttons under the results (app.js render_pagination).
-// page, pages: from the server's reply; pages null before the first one.
-// onPage(n): asks SearchPage for page n. One page or none hides the bar.
 function Pagination({ page, pages, onPage }) {
   if (pages === null) return <div className="pagination"></div>;
   if (pages <= 1) return <div className="pagination hidden"></div>;

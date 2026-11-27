@@ -1,8 +1,6 @@
 import { Fragment } from "react";
 import { noteParts } from "../searchNote.js";
 
-// How the box was read, one line per part, hidden when there is nothing to
-// say. reply: the answer on screen. onPhrase(phrase): search the exact phrase.
 function SearchNote({ reply, onPhrase }) {
   const parts = reply ? noteParts(reply) : [];
   return (

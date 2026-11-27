@@ -1,7 +1,5 @@
 import DownloadMenu from "./DownloadMenu.jsx";
 
-// Save the primary citation for a reference manager (cite_save.ejs). Two
-// places use it: beside Published at the top, and in the Citation section.
 function CiteSave({ pdbId, where }) {
   const file = `/structure/${pdbId}/citation?format=`;
   return (

@@ -1,6 +1,5 @@
 import ViewGlyph from "./ViewGlyph.jsx";
 
-// A view's place while it has nothing to draw: its glyph and a line saying why.
 function ViewSlot({ view, children }) {
   return (
     <div className="view_slot">

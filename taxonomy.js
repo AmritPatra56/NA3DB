@@ -1,18 +1,7 @@
-// taxonomy.js - which of our organisms a typed name means.
-//
-// The organism columns hold one scientific name per row, as the depositor
-// wrote it. People type "mouse", "E. coli" or "yeast", and depositors write
-// "Escherichiacoli 'BL21-Gold(DE3)pLysS AG'". taxonomy.json (made by
-// db/fetch_taxonomy.mjs from NCBI Taxonomy) holds the other names of every
-// taxon we have, so a typed name can be turned into taxonomy ids. RCSB and
-// PDBe search NCBI common names the same way.
-
 import { readFileSync } from "node:fs";
 
 const { taxa } = JSON.parse(readFileSync(new URL("./taxonomy.json", import.meta.url), "utf8"));
 
-// Lower case, accents and punctuation gone, single spaces: "E. coli" and
-// "e coli" are one name, and so are "brewer's yeast" and "brewers yeast".
 export function name_key(text) {
     return String(text).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
         .replace(/'/g, "")
@@ -21,32 +10,21 @@ export function name_key(text) {
 }
 const compact = (key) => key.replaceAll(" ", "");
 
-// Each taxon's names, keyed once at start-up.
 const NAMES = Object.values(taxa).map((t) => ({
     taxid: t.taxid,
-    // Matched whole or by their last words, where English puts the thing
-    // named: mouse finds "house mouse", yeast "baker's yeast", fly "fruit
-    // fly", but mouse does not find Arabidopsis, the "mouse-ear cress".
+    // By the last words: mouse finds "house mouse", not "mouse-ear cress".
     common: t.common.map(name_key),
-    // Matched whole or as the first word: HIV finds HIV-1 and HIV-2.
     acronyms: (t.acronyms ?? []).map(name_key),
-    // Matched whole: these are other scientific names, so part of one would
-    // drag in strangers. Mus alone must not find the rat, Mus norvegicus.
+    // Whole only: Mus alone must not find Mus norvegicus.
     whole: [t.name, ...t.synonyms].map(name_key),
-    // Matched whole, and this is the tree: Escherichia coli finds its
-    // strains, Saccharomyces its species, Bacteria every bacterium.
     lineage: t.lineage.map(name_key)
 }));
 
-// Shorter than this names too much: "e" or "co" would start a word in
-// half the common names.
 const MIN_LENGTH = 3;
 
 const cache = new Map();
 const CACHE_SIZE = 500;
 
-// The taxonomy ids a typed name means, as a sorted list. Empty when it
-// names none of ours, and then the text match alone decides, as before.
 export function taxa_named(text) {
     let key = name_key(text ?? "");
     if (key.length < MIN_LENGTH) return [];
@@ -61,8 +39,6 @@ export function taxa_named(text) {
             t.lineage.includes(key))
         .map((t) => t.taxid);
 
-    // A name covers what sits under it in the tree: E. coli its strains,
-    // mouse Mus musculus domesticus, as typing Escherichia coli already does.
     let named = new Set(found.map((id) => name_key(taxa[id].name)));
     found = NAMES
         .filter((t) => found.includes(t.taxid) || t.lineage.some((l) => named.has(l)))
@@ -74,10 +50,6 @@ export function taxa_named(text) {
     return found;
 }
 
-// For a quoted phrase: the taxa whose scientific name (or a synonym) is the
-// phrase, whole, and what sits under them in the tree. "Escherichia coli"
-// keeps the two entries whose depositors wrote "Escherichiacoli"; "coli",
-// "mouse" or "HIV" in quotes are text, and name no taxon here.
 export function taxa_exactly_named(text) {
     let key = name_key(text ?? "");
     if (key.length < MIN_LENGTH) return [];
@@ -91,23 +63,17 @@ export function taxa_exactly_named(text) {
         .sort((a, b) => a - b);
 }
 
-// True when the text is one of a taxon's common names or acronyms, whole:
-// "human", "mouse", "HIV". Such a word means the taxon, not every organism
-// whose written name contains it, so "human" leaves out Human adenovirus 2.
 export function is_common_name(text) {
     let key = name_key(text ?? "");
     if (key.length < MIN_LENGTH) return false;
     return NAMES.some((t) => t.common.includes(key) || t.acronyms.includes(key));
 }
 
-// A taxon's names for display: the scientific name and the common ones.
 export function taxon(taxid) {
     let t = taxa[taxid];
     return t ? { name: t.name, common: t.common } : null;
 }
 
-// The tree above a taxon, by its scientific name, as name keys: Homo sapiens
-// gives [..., "eukaryota", ..., "homo"]. Empty for a name NCBI does not know.
 const LINEAGES = new Map(Object.values(taxa).map((t) => [name_key(t.name), t.lineage.map(name_key)]));
 export function lineage_of(name) {
     return LINEAGES.get(name_key(name ?? "")) ?? [];

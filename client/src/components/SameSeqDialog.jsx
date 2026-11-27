@@ -1,11 +1,8 @@
 import { useEffect, useRef } from "react";
 
-// The comparison expanded in the page, right under its group (sameseq.js
-// open_full, expand.js): wide, scrolled into sight; Esc closes it, as Back does.
 function SameSeqDialog({ onCollapse, children }) {
   const box = useRef(null);
 
-  // show(), as expand.js does: the browser then focuses the first control inside.
   useEffect(() => {
     box.current.show();
     box.current.scrollIntoView({ block: "start", behavior: "smooth" });

@@ -2,8 +2,6 @@ import GlyphIcon from "./GlyphIcon.jsx";
 import { pairFacts } from "../arcView.js";
 import { number } from "../format.js";
 
-// The panel under the drawing: the pointed or picked pair (on), else how to
-// get one; or why there is no drawing (note).
 function ArcInfo({ d, L, on, note }) {
   let body;
   if (note) body = <span>{note}</span>;

@@ -17,7 +17,6 @@ test("a pill group takes the link's values it offers, Any when it names none", (
   const p = from("polymer_type=RNA,NOPE,DNA&has_water=With water");
   expect(p.values.polymer_type).toEqual(["DNA", "RNA"]);
   expect(p.values.experimental_method).toEqual(["any"]);
-  // A group with no Any pill starts with none on.
   expect(p.values.has_water).toEqual(["With water"]);
   expect(from("").values.has_water).toEqual([]);
 });

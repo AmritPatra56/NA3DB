@@ -3,16 +3,12 @@ import { WHO, familyWords } from "../sameSeqChart.js";
 
 export const HINT = "Hover or tap a column: what each chain has there shows here.";
 
-// One chain's step in words: [i, cana, confal, ntc], its NtC drawn small.
 function StepText({ s }) {
   if (!s) return <span className="ss_dim">no step</span>;
   if (!s[3]) return <><NtcSwatch ntc={null} /> <span className="ss_dim">no NtC class</span></>;
   return <><NtcSwatch ntc={s[3]} /> <b>{s[3]}</b> {s[1]} · confal {s[2] === null ? "?" : Math.round(s[2])}</>;
 }
 
-// The words under the picture (sameseq.js show): for the shown column, what
-// A and B each have there: the nucleotide, its pairs, the steps on either
-// side and the numbers of the differences at it. look: lookupOf(d).
 function SameSeqInfo({ d, look, shown }) {
   if (shown === null) return <div className="seqmap_info ss_info" aria-live="polite"><span className="seqmap_hint">{HINT}</span></div>;
   const c = d.cols[shown];

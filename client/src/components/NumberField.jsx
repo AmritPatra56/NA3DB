@@ -1,4 +1,3 @@
-// A whole-number box (the taxonomy id): a text box with the number keypad.
 function NumberField({ filter, value, onValue }) {
   return (
     <div className="field">

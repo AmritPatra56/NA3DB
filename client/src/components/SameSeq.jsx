@@ -4,10 +4,6 @@ import { useApi } from "../hooks/useApi.js";
 import { useNear } from "../hooks/useNear.js";
 import { NO_SAME_SEQUENCE } from "../constants.js";
 
-// The Same sequence section's body (sameseq.js load): asked for once the
-// section comes near, then a group per sequence shared with other entries.
-// expanded: the ref of the group whose comparison is expanded, or none;
-// onExpand(ref), onCollapse: the history mark that keeps it (pushMark).
 function SameSeq({ pdbId, expanded, onExpand, onCollapse }) {
   const box = useRef(null);
   const near = useNear(box);

@@ -1,13 +1,8 @@
-// download.test.js - the one download button: every link that saves a file
-// wears the .download class (or opens a menu that does), and the button's look
-// lives in one CSS rule. No database needed.
-
 import test from "node:test";
 import assert from "node:assert";
 import { readFileSync, readdirSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
-// The React pages' own code: every .js and .jsx under client/src.
 const sources = (dir = "client/src") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
     .flatMap((f) => f.isDirectory() ? sources(`${dir}/${f.name}`) : /\.jsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []);
 const SOURCES = sources().map((path) => [path, read(`./${path}`)]);
@@ -17,10 +12,7 @@ const ICON = "M12 4v11M7 10l5 5 5-5M5 20h14";
 test("every link that saves a file is the download button, or sits in its menu", () => {
     let found = 0;
     for (const [path, src] of SOURCES) {
-        // A menu of files counts as one button: DownloadMenu's summary is one.
         let menus = src.replace(/<DownloadMenu\b[\s\S]*?<\/DownloadMenu>/g, "");
-        // A JSX value in braces (a template's ${} inside too) can hold a > that is
-        // not the end of the <a>.
         for (const a of menus.match(/<a\b(?:\{(?:[^{}]|\{[^{}]*\})*\}|[^<>{}])*>/g) ?? []) {
             if (!/\sdownload[\s>=]/.test(a)) continue;
             found++;

@@ -1,12 +1,8 @@
-// db.js - the one place that knows how to reach PostgreSQL. Nothing else in
-// the project builds a connection or a connection string.
-
 import pg from "pg";
 
 const { Pool } = pg;
 
-// The database is unreachable or cannot accept work. Not a bug in our SQL, so
-// it gets a 503 rather than a 500.
+// Database unreachable: 503, not 500.
 export class DatabaseUnavailable extends Error {
     constructor(cause) {
         super("The database is unavailable");
@@ -15,13 +11,10 @@ export class DatabaseUnavailable extends Error {
     }
 }
 
-// Node's own network errors: the machine or the port is not answering.
 const UNREACHABLE = new Set(["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT",
                              "ECONNRESET", "EHOSTUNREACH", "EPIPE"]);
 
-// The first two characters of a PostgreSQL error code are its class: 08
-// connection, 28 authorization, 53 resources, 57 shutdown or cancel.
-// Anything else (42 undefined table, 22 bad data) is our own mistake.
+// PG error classes: 08 connection, 28 auth, 53 resources, 57 shutdown. Anything else is our bug.
 const UNAVAILABLE_CLASSES = new Set(["08", "28", "53", "57"]);
 
 function is_unavailable(err) {
@@ -30,8 +23,6 @@ function is_unavailable(err) {
     return /timeout exceeded when trying to connect/i.test(err.message || "");
 }
 
-// A pool, not one connection: a server answers several requests at once and a
-// connection runs one query at a time.
 const pool = new Pool({
     host:     process.env.DB_HOST,
     port:     Number(process.env.DB_PORT),
@@ -43,17 +34,12 @@ const pool = new Pool({
     idleTimeoutMillis: 30000,       // close one after 30s unused
     connectionTimeoutMillis: 5000,  // give up asking for one after 5s
 
-    // A runaway query fails after 15s instead of holding a connection forever.
     statement_timeout: 15000,
 
-    // Session settings only; nothing is changed in the database. JIT spent
-    // 2.9 s compiling the tRNA export, which then ran in 0.6 s: our queries
-    // are many small lookups, which JIT's cost estimate mistakes for big work.
+    // JIT spent 2.9 s compiling a query that ran in 0.6 s.
     options: "-c jit=off"
 });
 
-// One query, returning { rows, rowCount }. Values always go in the second
-// argument, never in the text, so a value can never be read as SQL.
 export async function query(text, values = []) {
     try {
         return await pool.query(text, values);
@@ -63,9 +49,7 @@ export async function query(text, values = []) {
     }
 }
 
-// Runs `work` in one transaction on one held connection, and hands it a query
-// function bound to that client. query() borrows a different connection each
-// call, so a BEGIN and COMMIT through it could land on different sessions.
+// One held connection: query() may send BEGIN and COMMIT to different sessions.
 export async function transaction(work) {
     const client = await pool.connect();
 
@@ -78,12 +62,10 @@ export async function transaction(work) {
         await client.query("ROLLBACK").catch(() => {});
         throw err;
     } finally {
-        // Without this the connection never goes back and the pool drains.
         client.release();
     }
 }
 
-// Closes every connection. Tests need this or the process never exits.
 export function close() {
     return pool.end();
 }

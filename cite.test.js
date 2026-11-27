@@ -1,10 +1,8 @@
-// cite.test.js - the primary citation as text, RIS and BibTeX.
 import test from "node:test";
 import assert from "node:assert";
 import { citation_text, citation_ris, citation_bibtex, clean_title, pdb_doi, unpublished,
          pdb_author, initials, short_name, full_name } from "./cite.js";
 
-// 7CCD from citations.json, trimmed to three authors and a short abstract.
 const PAPER = {
     source: "reference", type: "article",
     title: "DNA backbone interactions impact sulfur-binding domains.",
@@ -13,7 +11,6 @@ const PAPER = {
     page_first: "8755", page_last: "8766", year: 2020, issn: "0305-1048",
     doi: "10.1093/nar/gkaa574", pubmed: "32621606", abstract: "Sulfur binds.", keywords: null
 };
-// As search.js gives an entry the PDB has as "To be published".
 const UNPUBLISHED = {
     source: "pdb", type: "article",
     title: "Structure of Dpo4 across N7-methylguanine",

@@ -5,7 +5,6 @@ import { panelFromParams } from "../src/panelForm.js";
 
 const texts = (filters) => chipsOf(filters, registry).map((c) => c.text);
 
-// Texts as app.js chip_text writes them on :4000.
 test("one chip per value, named from the registry", () => {
   expect(texts({ experimental_method: ["X-RAY DIFFRACTION", "SOLUTION NMR"] })).toEqual(["Experimental method: X-ray", "Experimental method: NMR"]);
   expect(texts({ resolution_min: "1.5", resolution_max: "3" })).toEqual(["Resolution (Å) ≥ 1.5", "Resolution (Å) ≤ 3"]);

@@ -4,11 +4,6 @@ import { ARC_KINDS, strandMiddle } from "../structure.js";
 import ArcViewer from "./ArcViewer.jsx";
 import { number, counted } from "../format.js";
 
-// The base pairs drawn as arcs over their strands (structure.ejs arc_picture),
-// with the views it can show (an assembly or the asymmetric unit) and what
-// the picture leaves out or adds. view: /pairs' arc_view, its arcs present.
-// expanded: the full viewer is open under it; the picture and Expand open it,
-// Expand (then Collapse) or the picture again close it.
 function ArcPicture({ pdbId, view, expanded, onExpand, onCollapse }) {
   const a = view.arcs;
   const strands = a.chains.length;
@@ -30,7 +25,6 @@ function ArcPicture({ pdbId, view, expanded, onExpand, onCollapse }) {
         )}
         <button type="button" className="arc_zoom" data-arc-open={pdbId} data-arc-view={view.key} title="Expand" onClick={toggle}>
           <svg viewBox={`0 0 ${a.width} ${a.height}`} role="img" aria-label={label}>
-            {/* Strands are drawn once, in file order: their place is a safe key. */}
             {a.chains.map((c, i) => (
               <line key={i} className={`arc_strand${c.symmetry ? " arc_copy" : ""}`} x1={c.x1} y1={a.base} x2={c.x2} y2={a.base} />
             ))}

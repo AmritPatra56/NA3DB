@@ -4,8 +4,6 @@ import { renderHook, act } from "@testing-library/react";
 import { useApi } from "../src/hooks/useApi.js";
 import { getJSON } from "../src/api.js";
 
-// The landing count's race (landing.test.js before 8.17): replies are held
-// back and let go by hand, so a slow early one can land after a fast later one.
 vi.mock("../src/api.js", () => ({ getJSON: vi.fn() }));
 afterEach(() => {
   vi.useRealTimers();
@@ -14,7 +12,6 @@ afterEach(() => {
 
 function held() {
   const asked = [];
-  // As fetch does: an aborted request rejects, even when its reply comes later.
   vi.mocked(getJSON).mockImplementation((path, signal) => new Promise((resolve, reject) => {
     signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
     asked.push({ path, resolve });

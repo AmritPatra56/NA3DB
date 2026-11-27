@@ -1,15 +1,8 @@
-// pick.test.js - ticking rows on the landing page: every link asks one filter,
-// and style.css keeps the picking parts hidden until they are wanted. The
-// rules for how ticks become one search are the React client's now
-// (client/test/pick.test.js, answers.test.js).
-
 import test from "node:test";
 import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { BROWSE } from "./filters.js";
 
-// The landing reads each answer's filter from its link (client/src/answers.js), as the first and only
-// parameter. A link that asked two things would answer only half.
 test("every landing link asks one filter, which the script reads", () => {
     let one = (url, values, label) => {
         let params = [...new URL(url, "http://x").searchParams];
@@ -28,8 +21,6 @@ test("style.css keeps the picking parts hidden until they are wanted", () => {
     assert.match(css, /\n\.browse_yes \.arrow \{ display: none; \}/, "only a picking page promises options");
     assert.match(css, /\.picking \.browse_yes \.arrow \{/);
     assert.match(css, /\n\.picked_line\[hidden\] \{ display: none; \}/, "its display: flex would show it while hidden");
-    // Clear sits inside the form; unscoped, the box's Search style would make
-    // it a second blue button.
     assert.ok(!/\n\.landing_search button \{/.test(css),
               "the Search button's style must name the submit, or Clear takes it too");
     assert.match(css, /\n\.browse_tick \{ display: none; \}/, "no box shows until the page is picking");

@@ -4,7 +4,6 @@ import { render, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import LandingCount from "../src/components/LandingCount.jsx";
 
-// The line under the landing box (landing.test.js before 8.17).
 afterEach(cleanup);
 
 const line = (result) => {

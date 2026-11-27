@@ -1,8 +1,5 @@
 import DownloadMenu from "./DownloadMenu.jsx";
 
-// The Molecules band's FASTA (structure.ejs): one file, or, when the entry
-// has proteins too, a menu of the nucleic acids alone or every polymer.
-// fasta: {all, na}, how many sequences each file holds.
 function EntryFasta({ pdbId, fasta }) {
   const url = `/structure/${pdbId}/fasta`;
   if (fasta.na && fasta.na < fasta.all) {

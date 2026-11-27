@@ -8,8 +8,6 @@ import { useFieldsFold } from "../hooks/useFieldsFold.js";
 import { chosenFields } from "../report.js";
 import { number } from "../format.js";
 
-// The report (report.ejs). It waits for /api/fields, which the old page had
-// injected, then the Report draws with it.
 function ReportPage() {
   const fields = useApi("/api/fields");
   const help = useApi("/api/help");
@@ -21,14 +19,8 @@ function ReportPage() {
   return fields.data && <Report registry={fields.data} why={help.data?.["report-tables"]} />;
 }
 
-// The ZIP button's words in each state (download_all).
 const ZIP_SAY = { idle: "Download all (ZIP)", busy: "Preparing…", failed: "Download failed, try again" };
 
-// ReportPage            waits for the registry
-// └─ Report             the open table and its rows (useReport)
-//    ├─ ReportTabs      one tab per table
-//    ├─ ReportFields    the option and the checkboxes
-//    └─ ReportPreview   the first rows as the file has them
 function Report({ registry, why }) {
   const r = useReport(registry);
   const { table, rows } = r;

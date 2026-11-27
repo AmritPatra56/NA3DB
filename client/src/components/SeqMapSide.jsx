@@ -1,8 +1,5 @@
 import { quickPick, strandNote } from "../seqMap.js";
 
-// The strand list beside the expanded map (seqmap.js make_dialog): All,
-// Pairing with the ticked, a box per strand, and go › to a shown strand's 5′
-// end. The last box ticked cannot be unticked: the ruler is never empty.
 function SeqMapSide({ map, ticked, onStrands, onGo }) {
   function tick(key, on) {
     const keys = map.strands.map((s) => s.key).filter((k) => (k === key ? on : ticked.includes(k)));

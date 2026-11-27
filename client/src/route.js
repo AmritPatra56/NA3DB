@@ -1,11 +1,8 @@
 import { POLYMER_TYPE_ALIASES, DISPLAY_PARAMS, UNWRITTEN } from "./constants.js";
 
-// A page's path as Express matches it: any case, one slash at the end or none.
+// As Express matches: any case, trailing slash optional.
 const pageOf = (pathname) => pathname.toLowerCase().replace(/(.)\/$/, "$1");
 
-// Which page an address shows (routes.jsx): /structure/<id> that entry,
-// /search the full search, /report the report, /cite, /help and /contact the
-// footer's unwritten pages, / the landing page, anything else Page not found.
 export function routeOf(pathname) {
   const id = pathname.match(/^\/structure\/([^/]+)\/?$/i)?.[1];
   if (id) return { name: "structure", id: decodeURIComponent(id) };
@@ -17,14 +14,9 @@ export function routeOf(pathname) {
   return { name: "missing" };
 }
 
-// Whether the router draws this path in place; anything else (a FASTA
-// download, a server page) is loaded in full.
 export const isRouted = (pathname) => routeOf(pathname).name !== "missing";
 
-// Where the server would send an address instead (server.js), or null:
-// / with a search is an old bookmark for /search; an old polymer type is put
-// into its current values (current_polymer_types); /report with no search is
-// a wrong turn, sent to /search. Each is a 301 there, so a replace here.
+// The server's 301s, done here as a replace.
 export function redirectOf(pathname, search) {
   const params = new URLSearchParams(search);
   const page = pageOf(pathname);
@@ -39,18 +31,10 @@ export function redirectOf(pathname, search) {
   return null;
 }
 
-// The rail as rail.ejs draws it for a page: which section is lit (a structure
-// page counts as the search, as the server renders it with page "search"),
-// whether Report is offered (not before there is a search), and the query
-// both links carry (sync_rail_links; rail_query on a structure page).
-// An error page (route name "error" or "missing", page "none" on the server) lights
-// nothing and carries nothing.
-// search: the address's query now, which the search page keeps up to date.
 export function railOf(route, search) {
   if (route.name === "landing") return { active: null, report: false, carry: "" };
   if (route.name === "report") return { active: "report", report: true, carry: search };
   if (route.name === "error" || route.name === "missing" || route.name === "unwritten") return { active: null, report: true, carry: "" };
-  // The server writes the entry's pdb_id, upper case, whatever case the link used.
   if (route.name === "structure") return { active: "search", report: true, carry: "?entry_id=" + encodeURIComponent(route.id.toUpperCase()) };
   return { active: "search", report: true, carry: search };
 }

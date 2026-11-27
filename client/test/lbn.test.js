@@ -2,8 +2,6 @@ import { test, expect } from "vitest";
 import map from "./seqmap4opj.json" with { type: "json" };
 import { lbnLines, columnKey, columnWords, pairKey, pairColumns, strandsOf, scrollFor, rowsByPair, rowKey } from "../src/lbn.js";
 
-// seqmap4opj.json: :4000's /api/entries/4OPJ/sequence_map. The expected
-// values are what the old public/views.js gives for it.
 test("the 4OPJ lines", () => {
   expect(lbnLines(map)).toEqual(["       B′           D", "seq    CGCGAaTTCGCG&CGCGAaTTCGCG", "WC     .((((((((((.&.))))))))))."]);
 });
@@ -28,7 +26,6 @@ test("scrolling: both columns in sight when they fit, else the first in the midd
   expect(scrollFor(10, 20, ruler, 300)).toBe(10);
   expect(scrollFor(20, 10, ruler, 300)).toBe(10);
   expect(scrollFor(10, 90, ruler, 300)).toBe(-45);
-  // Fits the room, but not with a column to spare each side: the first in the middle.
   expect(scrollFor(10, 20, ruler, 125)).toBe(42.5);
 });
 

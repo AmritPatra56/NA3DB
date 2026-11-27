@@ -1,6 +1,3 @@
-// Which page buttons to show (app.js page_numbers): every page up to 7,
-// otherwise the first, the last, the current one and its neighbours, with
-// "..." for each gap.
 export function pageNumbers(page, totalPages) {
   if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
 

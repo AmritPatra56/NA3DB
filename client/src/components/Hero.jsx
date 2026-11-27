@@ -1,8 +1,5 @@
 import { LETTER } from "../logo.js";
 
-// The landing title (landing.ejs): the rail's five letters set on one line.
-// In the rail the 3, D and B sit on a second row, smaller; here each letter is
-// moved (and the second row scaled up) so all five stand side by side.
 const WORDMARK = [
   { letter: "N", move: "translate(-1237.0,-591.9) scale(1.00009)" },
   { letter: "A", move: "translate(-1235.9,-591.9) scale(1.00009)" },

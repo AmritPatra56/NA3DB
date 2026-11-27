@@ -1,7 +1,5 @@
 import BrowseRow from "./BrowseRow.jsx";
 
-// One question and its rows. Hands each row its own answer and the callbacks,
-// already told which row they are for.
 function BrowseCard({ card, answers, onAnswer, onTick }) {
   const { area, question, hint, rows, foot } = card;
   return (

@@ -16,8 +16,7 @@ import { detail_rows, molecule_groups, base_pair_section, fasta_of,
 
 const app = express();
 
-// Control characters out of every :id once, before any route reads it, so a
-// NUL never reaches PostgreSQL or comes back inside a 404 message.
+// Control characters stripped once, before any route reads :id.
 app.param("id", (req, res, next, id) => {
     req.params.id = id.replace(/[\x00-\x1f\x7f]/g, "");
     next();
@@ -25,26 +24,13 @@ app.param("id", (req, res, next, id) => {
 
 app.use(express.static(path.join(import.meta.dirname, "public")));
 
-// ------------------------------------------------------------- the 3D viewer
-// The 3D view of a structure page is the NAPAIR browser's Moorhen pane
-// (BASEPAIRING_WEB/napair_browser), built once and served here as static
-// files, framed by the structure page's 3D tile. It is not in git: coot, the
-// monomer dictionaries and the curated reference library come to 117 MB. The
-// README says how to put a build in viewer/; VIEWER_DIR names one elsewhere.
 const viewer_dir = process.env.VIEWER_DIR
     ? path.resolve(process.env.VIEWER_DIR)
     : path.join(import.meta.dirname, "viewer");
 
-// Looked for once, at boot. A build that appears later needs a restart, which
-// is no loss: the alternative is a file check on every structure page.
 export const viewer_installed = existsSync(path.join(viewer_dir, "index.html"));
 
-// Moorhen's coot build needs SharedArrayBuffer, which a browser hands only to
-// a cross-origin-isolated page -- and a frame counts as isolated only when
-// the page around it is isolated too, so the same two headers go on
-// /structure/:id. Everything that page loads is its own (fonts, CSS, scripts,
-// SVG), so require-corp costs it nothing; an image or script from another
-// origin added there later would be blocked unless it sends CORP or CORS.
+// Moorhen needs SharedArrayBuffer, so the page and its frame must be cross-origin isolated.
 function isolate(res) {
     res.set("Cross-Origin-Opener-Policy", "same-origin");
     res.set("Cross-Origin-Embedder-Policy", "require-corp");
@@ -54,45 +40,28 @@ if (viewer_installed) {
     app.use("/viewer", express.static(viewer_dir, {
         setHeaders: (res, file) => {
             isolate(res);
-            // The frame is a subresource of the structure page, and under
-            // require-corp a subresource has to agree to being embedded.
             res.set("Cross-Origin-Resource-Policy", "same-origin");
-            // Everything else is fingerprinted or never changes without a
-            // rebuild, but index.html is the one file that names the
-            // fingerprints -- held for an hour it sends readers to the chunks
-            // of the build before the last one, which are gone.
+            // index.html names the hashed chunks, so it must not be cached.
             if (file.endsWith(".html")) res.set("Cache-Control", "no-cache");
         },
-        // The wasm, the monomer dictionaries and the curated library are tens
-        // of megabytes that change only when the viewer is rebuilt.
         maxAge: "1h"
     }));
 }
 
-// ------------------------------------------------------------- the React app
-// Every page address answers with the React build's index.html and React draws
-// the page from /api. cd client && npm run build makes client/dist; CLIENT_DIR
-// names a build elsewhere.
 const client_dir = path.resolve(process.env.CLIENT_DIR ?? path.join(import.meta.dirname, "client", "dist"));
 
-// Checked at boot: without a build every page would be a bare 404 from sendFile.
 if (!existsSync(path.join(client_dir, "index.html"))) {
     throw new Error(`No React build in ${client_dir}: run npm run build in client/, or set CLIENT_DIR`);
 }
 
-// Vite names each chunk by its hash, so a chunk never changes under its name.
 app.use("/app", express.static(path.join(client_dir, "app"), { immutable: true, maxAge: "1y" }));
 
-// Every page is isolated, not just /structure/:id: React moves to a structure
-// in place, so the page first loaded is the one the 3D frame sits in.
-// no-cache because index.html names the chunks of the current build.
+// Every page is isolated: React moves to a structure in place.
 function send_app(res, status = 200) {
     isolate(res);
     res.status(status).set("Cache-Control", "no-cache").sendFile(path.join(client_dir, "index.html"));
 }
 
-// Whether the app can do its job, which means reaching the database. A server
-// that is up but cannot query is not healthy, it only looks it.
 app.get("/api/health", async (req, res) => {
     try {
         await query("SELECT 1");
@@ -103,14 +72,10 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
-// How many entries the database holds, asked fresh so a load shows up at once.
 app.get("/api/stats", async (req, res) => {
     res.json(await database_stats());
 });
 
-// The landing page's five questions with their counts, for a client that draws
-// them itself. Only the fields a card shows go out, so the server's own keys
-// (params, choices, within, top) can change without breaking a client.
 app.get("/api/browse", async (req, res) => {
     let groups = await browse_counts();
     let option = ({ label, note, url, say, count, share }) =>
@@ -126,29 +91,18 @@ app.get("/api/browse", async (req, res) => {
     })));
 });
 
-
-// What this API understands, so a client can discover it instead of hard-coding
-// it. public_registry picks the safe fields, so no SQL leaves the server.
 app.get("/api/fields", (req, res) => {
     res.json(public_registry());
 });
 
-// The "?" notes and the report's "Why three tables?", from help_texts.js, so
-// the React pages read the one file the wording is edited in.
 app.get("/api/help", (req, res) => {
     res.json(help);
 });
 
-// How many entries each pill finds, keyed by filter then value: the numbers
-// the search panel prints beside the pills.
 app.get("/api/pill_counts", async (req, res) => {
     res.json(await pill_counts());
 });
 
-
-// The front door. A bare visit gets the landing page; a visit carrying a
-// search is a bookmark from before the split, so it is sent to the page that
-// can answer it rather than being dropped on the floor.
 app.get("/", async (req, res) => {
     let query = req.originalUrl.split("?")[1];
 
@@ -159,20 +113,12 @@ app.get("/", async (req, res) => {
     send_app(res);
 });
 
-// The footer's pages, linked before they are written. A 200 that says so,
-// not a 404: the link is right, the page is what is missing.
 const UNWRITTEN = { cite: "How to cite", help: "Help", contact: "Contact" };
 
-for (const [path, heading] of Object.entries(UNWRITTEN)) {
+for (const path of Object.keys(UNWRITTEN)) {
     app.get("/" + path, (req, res) => send_app(res));
 }
 
-// The search page: the filter panel, the results and the sort control.
-//
-// The panel starts open, so every search lands beside the filters that can
-// refine it. ?panel=closed, written by the handle, keeps it folded.
-// A polymer type spelt the way links were before DNA and RNA were split, put
-// into its current values. null when there is nothing to rewrite.
 function current_polymer_types(original_url) {
     let params = new URLSearchParams(original_url.split("?")[1] || "");
     let values = params.getAll("polymer_type").flatMap((v) => v.split(","));
@@ -185,8 +131,7 @@ function current_polymer_types(original_url) {
 }
 
 app.get("/search", async (req, res) => {
-    // The page's script selects only the pills it knows, so an old value would
-    // be dropped and the search silently widened to every entry.
+    // An old value would be dropped, silently widening the search.
     let rewritten = current_polymer_types(req.originalUrl);
     if (rewritten !== null) {
         res.redirect(301, "/search?" + rewritten);
@@ -195,23 +140,13 @@ app.get("/search", async (req, res) => {
     send_app(res);
 });
 
-// The parameters that say how to show results rather than which ones. Both
-// the panel rule and the report gate have to ignore them, or a layout choice
-// would look like a search.
 const DISPLAY = ["page", "sort", "view", "per_page", "match", "fields", "panel", "table", "proteins", "water"];
 
 function filters_used(query) {
     return Object.keys(query).filter((k) => !DISPLAY.includes(k));
 }
 
-// The report page.
-//
-// A report is about a search, so arriving with no search at all is a wrong
-// turn rather than a request for everything. Those go to /search, where there
-// is something to do.
 app.get("/report", (req, res) => {
-    // Counted on the filters alone: ?fields=closed is a layout choice, not a
-    // search, and must not let anyone past the gate.
     if (filters_used(req.query).length === 0) {
         res.redirect("/search");
         return;
@@ -219,18 +154,13 @@ app.get("/report", (req, res) => {
     send_app(res);
 });
 
-// One structure's page. The id is in the path so the address can be cited.
-// An unknown id is a real 404, not a 200 that says "not found".
 app.get("/structure/:id", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
-    // React reads the entry itself; the lookup is only for the status.
     send_app(res, entry ? 200 : 404);
 });
 
-// Published and Authors at the top say what the Citation section says: from
-// the checked reference, when there is one, not the PDB's copy (which has 35
-// papers as "To be published" that are out, and some authors out of order).
+// From the checked reference: the PDB copy has 35 papers still "To be published".
 export function cited_rows(rows, c) {
     if (c?.source !== "reference") return rows;
     let published = [c.type === "preprint" ? `${c.journal} preprint` : c.journal_abbrev ?? c.journal, c.year]
@@ -241,14 +171,11 @@ export function cited_rows(rows, c) {
         : row);
 }
 
-// FASTA has no registered media type; plain text is what tools expect.
-// attachment() guesses one from the extension, so the type is set after it.
+// attachment() guesses a type from the extension, so it is set after.
 function send_fasta(res, filename, fasta) {
     res.attachment(filename).set("Content-Type", "text/plain; charset=utf-8").send(fasta);
 }
 
-// The primary citation as a file for a reference manager: ?format=ris for
-// EndNote, Zotero and Mendeley, ?format=bib for BibTeX. See cite.js.
 const CITATION_FORMATS = {
     ris: { build: citation_ris,    type: "application/x-research-info-systems; charset=utf-8" },
     bib: { build: citation_bibtex, type: "application/x-bibtex; charset=utf-8" }
@@ -269,7 +196,6 @@ app.get("/structure/:id/citation", async (req, res) => {
        .send(format.build(entry.pdb_id, citation));
 });
 
-// Every sequenced molecule in the entry; ?only=na keeps the nucleic acids.
 app.get("/structure/:id/fasta", async (req, res) => {
     let entry = await find_entry(req.params.id);
     let na_only = req.query.only === "na";
@@ -282,7 +208,6 @@ app.get("/structure/:id/fasta", async (req, res) => {
     send_fasta(res, `${entry.pdb_id}${na_only ? "_na" : ""}.fasta`, fasta);
 });
 
-// One molecule's sequence as a FASTA file, from the link under its sequence.
 app.get("/structure/:id/fasta/:entity", async (req, res) => {
     let entry = await find_entry(req.params.id);
     let entity = entry && (await entry_contents(entry.pdb_id)).entities
@@ -296,7 +221,6 @@ app.get("/structure/:id/fasta/:entity", async (req, res) => {
     send_fasta(res, `${entry.pdb_id}_${entity.id}.fasta`, fasta);
 });
 
-// The organisms the Source organism and Expression host boxes can suggest.
 app.get("/api/source_organisms", async (req, res) => {
     res.json(await organism_suggestions("source_organisms"));
 });
@@ -304,18 +228,14 @@ app.get("/api/expression_hosts", async (req, res) => {
     res.json(await organism_suggestions("expression_hosts"));
 });
 
-// The ligands the Ligand box can suggest, with how many entries hold each.
 app.get("/api/ligands", async (req, res) => {
     res.json(await ligand_suggestions());
 });
 
-// The non-standard nucleotides the Non-standard residue box can suggest.
 app.get("/api/nonstandard_residues", async (req, res) => {
     res.json(await nonstandard_suggestions());
 });
 
-// What the search box can offer as you type: authors, organisms, molecules
-// and ids the database holds, each with the count picking it returns.
 app.get("/api/box_suggestions", async (req, res) => {
     let problem = query_problem(req.query);
     if (problem) {
@@ -325,7 +245,6 @@ app.get("/api/box_suggestions", async (req, res) => {
     res.json(await box_suggestions(req.query));
 });
 
-// One page of entries, narrowed by whatever filters were passed.
 app.get("/api/entries", async (req, res) => {
     let problem = query_problem(req.query);
 
@@ -337,13 +256,6 @@ app.get("/api/entries", async (req, res) => {
     let found = await search_entries(req.query);
     if (found.total === 0) found.suggestions = await did_you_mean(req.query);
 
-    // The display rows travel with each result, the same way /api/entries/:id
-    // carries them: the formatting lives in detail.js and cannot cross JSON,
-    // so the finished list is built here rather than in the browser. No extra
-    // query - every field is already on the row.
-    // A card also shows whatever was searched on. Filter by NtC class and
-    // every card gains an Assigned NtC row, so a result never has to be taken
-    // on trust. No extra query: the field is already on the row.
     let answering = columns_answering(req.query);
 
     let summaries = await Promise.all(found.results.map((entry) => arc_numbers(entry.pdb_id)));
@@ -354,9 +266,6 @@ app.get("/api/entries", async (req, res) => {
     res.json(found);
 });
 
-// How many entries a search would return, and nothing else. Separate from
-// /api/entries because the landing page asks this on every keystroke and has
-// no use for the rows.
 app.get("/api/count", async (req, res) => {
     let problem = query_problem(req.query);
 
@@ -365,13 +274,10 @@ app.get("/api/count", async (req, res) => {
         return;
     }
 
-    // A search that finds nothing says what it might have meant, never more.
     let total = await count_entries(req.query);
     res.json(total === 0 ? { total, suggestions: await did_you_mean(req.query) } : { total });
 });
 
-// One entry by its PDB id. In the path, because it names which entry rather
-// than narrowing a list.
 app.get("/api/entries/:id", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -380,27 +286,17 @@ app.get("/api/entries/:id", async (req, res) => {
         return;
     }
 
-    // The raw fields and the display rows, never one instead of the other:
-    // entry.resolution stays 2.2, rows has it as "2.20 Å".
-    // Rows as the structure page has them: Published and Authors from the
-    // checked reference (cited_rows), so the page shows the checked reference.
     let [contents, citation, same_entries] = await Promise.all([entry_contents(entry.pdb_id), entry_citation(entry.pdb_id),
                                                                  same_sequence_count(entry.pdb_id)]);
     res.json({ ...entry, rows: cited_rows(detail_rows(entry), citation),
-               // How many other entries share a chain's sequence: the page's Same sequence count.
                same_entries,
                entities: contents.entities, modified_nucleotides: contents.modified, citation,
-               // What the Citation section works out from it.
                cite_text: citation && citation_text(entry.pdb_id, citation),
                cite_unpublished: citation && unpublished(citation),
                cite_authors: citation?.authors.map(full_name).join(", "),
-               // Whether /viewer/ is served, so the page offers the 3D view only then.
                viewer: viewer_installed });
 });
 
-// The structure page's Molecules, Modified nucleotides and Ligands tables,
-// finished: modelled counts, numbering and sequence lines need the residues,
-// and the formatting lives in detail.js, so a client draws what arrives.
 app.get("/api/entries/:id/molecules", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -413,10 +309,6 @@ app.get("/api/entries/:id/molecules", async (req, res) => {
     res.json(molecule_groups(contents, residues));
 });
 
-// The structure page's Base pairs section, its arc picture (assembly 1 unless
-// ?assembly= names another view) and the NtC families of Conformation, as the
-// page draws them. The arc layout and the asymmetric unit's own arcs stay out:
-// the full-screen viewer asks /arcs for the layout when it opens.
 app.get("/api/entries/:id/pairs", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -432,16 +324,12 @@ app.get("/api/entries/:id/pairs", async (req, res) => {
     res.json(pairs_reply(pairs, view, ntc_classes));
 });
 
-// What /pairs sends: the sections as the page has them, the arc view without
-// its layout and the asymmetric unit's arcs, which only the viewer needs.
 export function pairs_reply(pairs, { au, arcs, ...view }, ntc_classes) {
     let { layout, ...picture } = arcs ?? {};
     return { base_pairs: base_pair_section(pairs), arc_view: { ...view, arcs: arcs ? picture : null },
              ntc: ntc_section(ntc_classes) };
 }
 
-// Every base pair of one entry, first model, as the page lists them.
-// ?format=csv gives a file to open in a spreadsheet or pandas.
 app.get("/api/entries/:id/base_pairs", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -461,9 +349,6 @@ app.get("/api/entries/:id/base_pairs", async (req, res) => {
     res.json(base_pair_export(entry.pdb_id, pairs));
 });
 
-// One entry's arc picture: assembly 1 unless asked for another view (see
-// arc_views). The numbers on a result card count the deposited pairs, the
-// asymmetric unit's, so symmetry copies never double them.
 async function arcs_of(id, asked) {
     let [contents, residues, pairs, assemblies] = await Promise.all([entry_contents(id), entry_residues(id),
                                                                      entry_base_pairs(id), entry_assemblies(id)]);
@@ -472,9 +357,6 @@ async function arcs_of(id, asked) {
     return view;
 }
 
-// The numbers a result card shows beside its picture. About 18 ms an entry
-// (0.5 s at worst), so they are kept for an hour, as long as the browser keeps
-// the picture they describe; a new load shows up within that hour.
 const ARC_NUMBERS = new Map();
 const HOUR = 3600 * 1000;
 
@@ -484,8 +366,6 @@ async function arc_numbers(id) {
     return ARC_NUMBERS.get(id).value;
 }
 
-// The arc picture as a small image for the Arcs view. The browser asks for one
-// only as a tile scrolls into view, and keeps it for an hour.
 app.get("/structure/:id/arcs.svg", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -499,8 +379,6 @@ app.get("/structure/:id/arcs.svg", async (req, res) => {
        .send(arc_thumbnail((await arcs_of(entry.pdb_id)).arcs, entry.pdb_id));
 });
 
-// The arc picture as numbers, for the full-screen viewer. Fetched only when
-// someone opens it, so a ribosome's 4,000 pairs never weigh down the page.
 app.get("/api/entries/:id/arcs", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -514,9 +392,6 @@ app.get("/api/entries/:id/arcs", async (req, res) => {
                ...(view.arcs?.layout ?? { strands: [], pairs: [] }) });
 });
 
-// The sequence map of the strands in ?strands=A,B (a symmetry copy as
-// A:2_755), or of the first chain with pairs and its partners. ?format=text
-// gives the layered dot-bracket file, NtC steps in its # lines.
 app.get("/api/entries/:id/sequence_map", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -544,8 +419,6 @@ app.get("/api/entries/:id/sequence_map", async (req, res) => {
     res.json({ pdb_id: entry.pdb_id, ...map });
 });
 
-// Every entry with a chain of this entry's sequence, letter for letter, and
-// how each chain compares to this entry's first one.
 app.get("/api/entries/:id/same_sequence", async (req, res) => {
     let entry = await find_entry(req.params.id);
 
@@ -556,8 +429,6 @@ app.get("/api/entries/:id/same_sequence", async (req, res) => {
     res.json({ pdb_id: entry.pdb_id, groups: await same_sequence(entry.pdb_id) });
 });
 
-// Two chains of one sequence side by side: ?a=1B23:A&b=9MTP:CB, each an
-// entry and a chain's label id.
 app.get("/api/same_sequence/compare", async (req, res) => {
     let [a, b] = [String(req.query.a ?? ""), String(req.query.b ?? "")];
 
@@ -581,7 +452,6 @@ app.get("/api/same_sequence/compare", async (req, res) => {
     res.json(result);
 });
 
-// Returns every matching entry for the report page, not just one page.
 app.get("/api/export", async (req, res) => {
     let problem = query_problem(req.query);
 
@@ -593,7 +463,6 @@ app.get("/api/export", async (req, res) => {
     res.json(await export_entries(req.query));
 });
 
-// The report's Molecules table for the same search; ?proteins=1 adds proteins.
 app.get("/api/export/molecules", async (req, res) => {
     let problem = query_problem(req.query);
 
@@ -605,7 +474,6 @@ app.get("/api/export/molecules", async (req, res) => {
     res.json(await export_molecules(req.query));
 });
 
-// The report's Ligands table for the same search; ?water=1 adds water.
 app.get("/api/export/ligands", async (req, res) => {
     let problem = query_problem(req.query);
 
@@ -617,7 +485,6 @@ app.get("/api/export/ligands", async (req, res) => {
     res.json(await export_ligands(req.query));
 });
 
-// The base_pairs.dbn of the report's ZIP for the same search.
 app.get("/api/export/dbn", async (req, res) => {
     let problem = query_problem(req.query);
 
@@ -629,19 +496,14 @@ app.get("/api/export/dbn", async (req, res) => {
     res.json(await export_dot_brackets(req.query));
 });
 
-// Anything under /api that got this far matched no route above.
 app.use("/api", (req, res) => {
     res.status(404).json({ error: `No such endpoint: ${req.method} ${req.originalUrl}` });
 });
 
-// Any page that matched nothing. Below the /api catch-all so API paths still
-// get JSON, above the error handler so Express does not mistake it for one.
 app.use((req, res) => send_app(res, 404));
 
-// Anything that threw above lands here; four arguments is what marks it as an
-// error handler. 503 when the database is away, 500 when our SQL is wrong.
+// Four arguments mark an error handler.
 app.use((err, req, res, next) => {
-    // Logged first, so a failure sending the page keeps the cause.
     console.error(err);
 
     if (res.headersSent) return next(err);
@@ -657,16 +519,13 @@ app.use((err, req, res, next) => {
         return;
     }
 
-    // A page keeps the status; React then asks /api and shows the same message.
     send_app(res, status);
 });
 
 export default app;
 
-// Only listen when run directly: a test imports this and starts its own
-// server on a free port, so importing must have no side effects.
+// Only listen when run directly, so tests can import it.
 if (import.meta.main) {
-    // The host decides the port, not the code.
     const port = Number(process.env.PORT) || 4000;
 
     let server = app.listen(port, () => {
@@ -674,9 +533,7 @@ if (import.meta.main) {
         warm_box_names();
     });
 
-    // In a container node is process 1, which ignores SIGTERM unless told
-    // otherwise: podman stop would wait 10 s and then kill mid-request.
-    // Finish the requests in flight, then exit.
+    // Node as PID 1 ignores SIGTERM unless handled.
     process.on("SIGTERM", () => {
         server.close(() => process.exit(0));
     });

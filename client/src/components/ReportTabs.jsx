@@ -1,7 +1,5 @@
 import { useRef } from "react";
 
-// One tab per table (report.ejs), as the ARIA tabs pattern has them: arrows
-// wrap, Home and End go to the ends, and the tab that opens takes the focus.
 function ReportTabs({ tables, current, onTable }) {
   const tabs = useRef([]);
   const key = (e, at) => {

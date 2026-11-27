@@ -1,6 +1,3 @@
-// errors.test.js - what the app says when something is broken. 503 when the
-// database is away, 500 when our SQL is wrong, and a page or JSON to match.
-
 import test, { before, after } from "node:test";
 import assert from "node:assert";
 import { once } from "node:events";
@@ -23,10 +20,6 @@ after(async () => {
     await close_db();
 });
 
-
-// --- classifying a failure ----------------------------------------------
-// These build their own throwaway pools, so nothing here touches the app.
-
 test("a port with nothing on it is unavailable, not a bug", async () => {
     let pool = new pg.Pool({ host: "localhost", port: 9999,
                              connectionTimeoutMillis: 2000 });
@@ -35,7 +28,6 @@ test("a port with nothing on it is unavailable, not a bug", async () => {
 });
 
 test("our own query function turns that into DatabaseUnavailable", async () => {
-    // Same classification our db.js applies, exercised directly.
     let err = new DatabaseUnavailable(new Error("connect ECONNREFUSED"));
 
     assert.ok(err instanceof Error, "it is still an Error");
@@ -44,9 +36,6 @@ test("our own query function turns that into DatabaseUnavailable", async () => {
     assert.ok(err.cause, "the original failure is kept for the log");
 });
 
-
-// --- what the client is told --------------------------------------------
-
 test("an unknown API path answers in JSON", async () => {
     let res = await fetch(base + "/api/nonsense");
 
@@ -54,8 +43,6 @@ test("an unknown API path answers in JSON", async () => {
     assert.match(res.headers.get("content-type"), /json/);
 });
 
-// The page itself, "Page not found" in the rail's frame, is React's
-// (client/test/route.test.js); the server's part is the status and the page.
 test("an unknown page answers with the styled page, not JSON", async () => {
     let res = await fetch(base + "/nonsense");
     let html = await res.text();
@@ -66,9 +53,6 @@ test("an unknown page answers with the styled page, not JSON", async () => {
     assert.match(html, /href="\/style\.css"/);
 });
 
-// fetch percent-encodes before sending, so a raw < never leaves it. This uses
-// a plain socket to send the path exactly as written, which is what a hostile
-// client would do.
 function raw_get(port, path) {
     return new Promise((resolve, reject) => {
         let socket = net.connect(port, "localhost", () => {
@@ -81,8 +65,6 @@ function raw_get(port, path) {
     });
 }
 
-// React writes the address as text (textContent), so the server must not
-// echo it into the page at all.
 test("the error page never echoes the address back", async () => {
     let port = server.address().port;
     let response = await raw_get(port, "/<script>alert(1)</script>");
@@ -94,7 +76,6 @@ test("the error page never echoes the address back", async () => {
 test("an error message never leaks the connection details", async () => {
     let body = await (await fetch(base + "/api/nonsense")).text();
 
-    // The real password comes from the environment, never written down here.
     let secrets = ["5432", "localhost", "password", process.env.DB_PASSWORD];
 
     for (const secret of secrets) {

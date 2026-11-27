@@ -2,7 +2,6 @@ import { test, expect } from "vitest";
 import map from "./seqmap4opj.json" with { type: "json" };
 import { W, prepare, drawingOf, fitWidth, zoomed, viewBox, strandNote, strandsAfter, quickPick, classKey } from "../src/seqMap.js";
 
-// The expected numbers are the ones in the svg :4000 draws for 4OPJ's map.
 const p = prepare(map);
 const dr = drawingOf(map, p, W);
 
@@ -37,9 +36,7 @@ test("the pair row", () => {
 });
 
 test("between the section width and letters giving way: bars narrow, numbers keep off the strand names", () => {
-  // Under 14 the bars shrink with the column (seqmap.js draw_map).
   expect(drawingOf(map, p, 10).bars[1].rects[0].width).toBeCloseTo(10 * 10 / 14);
-  // A number stays 56 px clear of the strand's name: at 3.6 px a column, 10 is too close.
   expect(drawingOf(map, p, 3.6).ruler.map((r) => r.strand ?? r.num)).toEqual(["B′ 5′", "D 5′"]);
 });
 
@@ -65,7 +62,6 @@ test("the strand chips", () => {
   expect(strandsAfter(map, map.strands[0])).toEqual(["A", ...map.shown]);
   expect(strandsAfter(map, b2)).toEqual(map.shown.filter((k) => k !== "A:2"));
   expect(quickPick(map, "all")).toEqual(map.strands.map((s) => s.key));
-  // The key names the classes the steps use, as the old class_key does.
   expect(classKey(["NANT"]).map((k) => k.code)).toEqual(["N"]);
   expect(classKey(map.steps.map((s) => s.ntc).filter(Boolean)).map((k) => k.code)).toEqual(["A", "B", "miB"]);
 });

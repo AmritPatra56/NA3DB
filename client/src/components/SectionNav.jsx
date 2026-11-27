@@ -1,11 +1,7 @@
 import { useEffect } from "react";
 import { PAGE_GROUPS } from "../structure.js";
 
-// The sidebar: each group's sections, a group of one section being its own
-// link. current: the section being read, marked with aria-current.
 function SectionNav({ sections, current, inert }) {
-  // Where the nav is a strip wider than the screen, the marked item is
-  // scrolled to its middle: the nav's own scroll, outside React, so an effect.
   useEffect(() => {
     const nav = document.getElementById("section_nav");
     const item = nav?.querySelector('[aria-current="true"]');

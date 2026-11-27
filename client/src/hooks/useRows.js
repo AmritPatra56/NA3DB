@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getJSON } from "../api.js";
 
-// Each report table's rows, kept while switching tabs (report.js rows,
-// totals, asking). The open table is fetched the first time it opens and
-// again when its request changes (an option ticked); a slow answer for a tab
-// already left is kept for when it opens. Only the latest request of a table
-// counts. load(k, p) gives table k's reply for request p, fetching it only if
-// it is not here or on its way (Download all); a failed one is asked again.
 export function useRows(key, path) {
   const [got, setGot] = useState({});
   const asking = useRef({});
@@ -25,7 +19,6 @@ export function useRows(key, path) {
       throw error;
     });
     asking.current[k] = { path: p, promise };
-    // Loading again: what was shown for this table goes (load_table).
     setGot((was) => {
       if (!(k in was)) return was;
       const rest = { ...was };

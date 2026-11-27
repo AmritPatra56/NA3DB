@@ -1,10 +1,6 @@
 import { Fragment } from "react";
 import { HINT, columnKey, pairKey } from "../lbn.js";
 
-// The words under the 1D lines: the nucleotide on show and what it pairs
-// with. A partner whose pair the table lists links to its row, and a pair
-// shown from the table can be gone back to (back: its row). tableRows: the
-// table's rows by pair (lbn.js rowsByPair). infoRef: the line, to scroll to.
 function LbnInfo({ infoRef, map, shown, words, back, missing, tableRows, onFindRow }) {
   const find = (row) => (e) => {
     e.preventDefault();
@@ -16,7 +12,6 @@ function LbnInfo({ infoRef, map, shown, words, back, missing, tableRows, onFindR
     body = (
       <>
         {words.head} · {words.items.length ? "pairs with " : "not paired"}
-        {/* A column's partners, in the order its rows list them: fixed for this map. */}
         {words.items.map((p, n) => {
           const row = tableRows.get(pairKey(columnKey(map, shown), columnKey(map, p.col)));
           return (

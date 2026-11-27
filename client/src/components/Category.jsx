@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-// One folding section of the panel (search.ejs category). Its header folds it
-// by click, Enter or Space; aria-expanded turns the arrow.
 function Category({ group, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const toggle = () => setCollapsed(!collapsed);

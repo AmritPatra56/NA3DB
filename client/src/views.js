@@ -1,5 +1,3 @@
-// The Views' tiles and how they are picked (views.ejs, views.js), as plain data
-// and functions. Each tile's drawing is ViewGlyph.
 import { here, replaceAddress } from "./address.js";
 
 export const TILES = [
@@ -9,13 +7,11 @@ export const TILES = [
 ];
 export const FIRST = TILES[0].key;
 
-// ?view= in the address picks the open tile, as server.js asked_view does.
 export function askedView() {
   const asked = new URLSearchParams(here().search).get("view");
   return TILES.some((t) => t.key === asked) ? asked : FIRST;
 }
 
-// The tile an arrow key moves to (views.js next_tile): arrows wrap, Home and End go to the ends.
 export function nextTile(key, at) {
   switch (key) {
     case "ArrowRight": return (at + 1) % TILES.length;
@@ -26,8 +22,6 @@ export function nextTile(key, at) {
   }
 }
 
-// Keep the open view in the address, so a reload or a shared link opens it
-// too. The first view is the default and leaves no ?view=.
 export function keepView(view) {
   const { path, search, hash } = here();
   const params = new URLSearchParams(search);
@@ -37,8 +31,6 @@ export function keepView(view) {
   replaceAddress(path + (query ? "?" + query : "") + hash);
 }
 
-// The view a section is about (views.js view_for_section): the 1D lines for
-// Base pairs and the Sequence map, the model for Conformation, none otherwise.
 export function viewForSection(id) {
   if (id === "base-pairs" || id === "sequence-map") return "1d";
   if (id === "conformation") return "3d";

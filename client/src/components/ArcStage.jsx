@@ -2,10 +2,6 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import LwGlyph from "./LwGlyph.jsx";
 import { drawing, endsOf, letters, nearestPair, pictureOf, ruler, strokeOf } from "../arcView.js";
 
-// The expanded drawing (arc_viewer.js draw): the ruler, the strands, every
-// arc with the Others' symbols, the letters and the ends of the pointed pair.
-// Dragging moves it, the wheel zooms, pointing at an arc points at its pair.
-// view: useArcView's; svgRef: the svg, measured by the viewer.
 function ArcStage({ d, view, svgRef, onPointed }) {
   const { f, L, z, on, fam, lit } = view;
   const drag = useRef(null);
@@ -14,8 +10,7 @@ function ArcStage({ d, view, svgRef, onPointed }) {
   const point = (ev) => pictureOf(svgRef.current.getBoundingClientRect(), f, ev);
   const nearest = (ev) => nearestPair(d, f, L, z, fam, point(ev));
 
-  // The wheel zooms around the pointer; React's onWheel is passive, so it
-  // could not keep the page from scrolling.
+  // A native listener: React's onWheel is passive and cannot stop the page scrolling.
   useEffect(() => {
     const svg = svgRef.current;
     if (!f) return;
@@ -47,7 +42,7 @@ function ArcStage({ d, view, svgRef, onPointed }) {
   if (f) {
     const { strands, arcs } = drawing(d, f, L, z);
     const low = f.base + f.depth;
-    // The pointed pair is drawn last, on top of the others.
+    // The pointed pair last, so it is drawn on top.
     const order = arcs.map((_, i) => i).filter((i) => i !== on);
     if (on != null) order.push(on);
     const lift = (i) => (lit?.(i) ? " av_on" : "");
@@ -67,7 +62,6 @@ function ArcStage({ d, view, svgRef, onPointed }) {
             </Fragment>
           ))}
         </g>
-        {/* Strands come once, in file order: their place is a safe key. */}
         {d.strands.map((s, j) => (
           <line key={j} y1={f.base} y2={f.base} className={`arc_strand${s.symmetry ? " arc_copy" : ""}`} x1={strands[j][0]} x2={strands[j][1]} />
         ))}
@@ -86,7 +80,6 @@ function ArcStage({ d, view, svgRef, onPointed }) {
                 {m.mod && <circle cx={m.x} cy={f.base + 12} r={6.5} className="av_mod" />}
                 <text x={m.x} y={f.base + 15.5} className={`av_letter${m.mod ? " av_letter_mod" : ""}`}>{m.letter}</text>
               </Fragment>))}
-          {/* A pair's two ends, always two: their place is a safe key. */}
           {on != null && endsOf(d, L, z, on).map((x, k) => <circle key={k} cx={x} cy={f.base} r={5.5} className="av_end" />)}
         </g>
       </>

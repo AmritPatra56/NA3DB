@@ -25,7 +25,6 @@ import { usePairLink } from "../hooks/usePairLink.js";
 import { rowsByPair } from "../lbn.js";
 import { pushMark, back } from "../address.js";
 
-// help: the "?" notes from /api/help, or null until they come.
 function Structure({ entry, molecules, pairs, expanded, help }) {
   const [navFolded, toggleNav] = useRemembered("section_nav", "folded", "open");
   const [viewsWide, toggleWide] = useRemembered("views_wide", "on", "off");
@@ -35,32 +34,24 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
   const link = usePairLink();
   const note = useHelp();
   const folds = useFolds();
-  // A row of the other pairs, selected: the 1D view opens on its pair.
   const showPair = (a, b, row) => {
     choice.onShow("1d");
     link.onShowPair(a, b, row);
   };
 
-  // Out of sight, the nav's links leave the tab order. Only beside the page:
-  // on a narrow screen the nav is a strip that never folds.
   const navInert = navFolded && !narrow;
   const navLabel = navFolded ? "Show the sections" : "Hide the sections";
 
   const shown = entry.rows.filter((row) => !SHOWN_ELSEWHERE.has(row.key));
   const conformation = shown.filter((row) => CONFORMATION.has(row.key));
 
-  // One list drives both the nav and the page. JSX is a value, so each
-  // section's body can sit in the list like any other field.
   const nucleicChains = entry.entities
     .filter((e) => NUCLEIC_KINDS.has(e.kind))
     .reduce((n, e) => n + e.chains.length, 0);
 
   const groups = groupsBySection(molecules);
   const sections = [
-    // Without nucleic chains the Views stay listed, marked empty, with no tiles (structure.ejs).
     { id: "views", title: "Views", group: "views", empty: nucleicChains === 0,
-      // Which column is the wide one. The words say what the click does, not
-      // what is on screen; style.css shows it only where there are two columns.
       tools: (
         <button type="button" className="download download_small band_swap" aria-pressed={viewsWide} onClick={toggleWide}>
           <span className="band_swap_say">{viewsWide ? "Shrink views" : "Enlarge views"}</span>
@@ -95,7 +86,7 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
     { id: "same-sequence", title: "Same sequence", group: "structure", empty: !entry.same_entries, none: NO_SAME_SEQUENCE,
       body: entry.same_entries > 0 && <SameSeq pdbId={entry.pdb_id} expanded={expanded?.sameseq}
                                                onExpand={(ref) => pushMark({ sameseq: ref })} onCollapse={back} /> },
-    // The id stays "citations" so old #citations links still land here.
+    // Kept as "citations" so old #citations links still work.
     { id: "citations", title: "Citation", group: "references", empty: !entry.citation,
       body: entry.citation && <Citation pdbId={entry.pdb_id} c={entry.citation} text={entry.cite_text}
                                         unpublished={entry.cite_unpublished} authors={entry.cite_authors} /> },
@@ -111,14 +102,12 @@ function Structure({ entry, molecules, pairs, expanded, help }) {
       <div className="results_area_body">
         <div className={`structure_page${navFolded ? " nav_folded" : ""}${viewsWide ? " views_wide" : ""}`}>
           <SectionNav sections={sections} current={reading} inert={navInert} />
-          {/* The fold handle: the sidebar slides away and the handle stays on the edge. */}
           <div className="nav_edge">
             <button type="button" className="panel_handle nav_handle" aria-controls="section_nav"
                     aria-expanded={!navFolded} aria-label={navLabel} title={navLabel} onClick={toggleNav}>
               <i className="arrow arrow_side" aria-hidden="true"></i>
             </button>
           </div>
-          {/* --rows: how many grid rows the sections take on a wide screen (style.css). */}
           <div className="detail_body" style={{ "--rows": sections.length }}>
             {sections.map((s) => (
               <Section key={s.id} id={s.id} title={s.title} group={s.group} empty={s.empty} none={s.none} tools={s.tools}

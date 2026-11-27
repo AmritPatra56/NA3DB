@@ -1,4 +1,3 @@
-// build_citations.test.js - the rules that pick each field of a reference.
 import test from "node:test";
 import assert from "node:assert";
 import { expand_pages, clean_crossref_title, restore_angstrom, plain, key, publisher_text, similar,
@@ -41,7 +40,6 @@ test("the comparison key spells out Greek and drops accents", () => {
 });
 
 test("the publisher's text only when it is PubMed's title word for word", () => {
-    // (PubMed, Crossref)
     assert.ok(publisher_text("Cys-tRNACys-EF-Tu-GDPNP reveals", "Cys-tRNACys–EF-Tu–GDPNP reveals"));
     assert.ok(publisher_text("Structure of a dna duplex", "Structure of a DNA Duplex"));
     assert.ok(!publisher_text("Structure of PAX", "Structure of pax"), "a capital lost");

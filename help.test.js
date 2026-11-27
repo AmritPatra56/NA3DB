@@ -1,15 +1,9 @@
-// help.test.js - the one "?" help component and the "How to ..." guides:
-// every help text lives in help_texts.js, every "?" is drawn by
-// client/src/components/HelpNote.jsx, and every guide shares one look. No
-// database needed.
-
 import test from "node:test";
 import assert from "node:assert";
 import { readFileSync, readdirSync } from "node:fs";
 import help from "./help_texts.js";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
-// The React pages' own code: every .js and .jsx under client/src.
 const sources = (dir = "client/src") => readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
     .flatMap((f) => f.isDirectory() ? sources(`${dir}/${f.name}`) : /\.jsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []);
 const CSS = read("./public/style.css");

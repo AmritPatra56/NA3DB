@@ -5,11 +5,6 @@ import { useApi } from "../hooks/useApi.js";
 import { useNear } from "../hooks/useNear.js";
 import { fileUrl, strandNote, strandsAfter } from "../seqMap.js";
 
-// The Sequence map section's map (seqmap.js draw): strand chips, Expand and
-// the download, then the map. Asked for once the section comes near; a chip
-// asks again for the strands it leaves on the ruler, the old map staying
-// meanwhile. expanded: the full screen is open under it (a history mark, so
-// Back closes it); onExpand, onCollapse ask for it to open or close.
 function SeqMap({ pdbId, expanded, onExpand, onCollapse }) {
   const box = useRef(null);
   const near = useNear(box);
@@ -45,7 +40,6 @@ function SeqMap({ pdbId, expanded, onExpand, onCollapse }) {
         </div>
         <SeqMapView key={map.shown.join(",")} map={map} />
       </div>
-      {/* After the section's box, as expand.js puts it. */}
       {expanded && <SeqMapFull first={map} onCollapse={onCollapse} />}
     </>
   );

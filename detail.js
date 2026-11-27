@@ -1,14 +1,7 @@
-// detail.js - turns one entry into the rows a human reads.
-// Server only, and the display counterpart to search.js: filters.js holds the
-// facts, search.js makes SQL from them, this makes rows. It runs here so the
-// detail panel and the structure page cannot format the same field differently.
-
 import { columns_for } from "./filters.js";
 import { CANA_NAMES, NTC_CLASS_COLOURS, NTC_CLASS_NAMES, ntc_background } from "./public/cana.js";
 
-// One value as display text, or null when there is nothing to show.
-// The locale is pinned: toLocaleString() with none uses the viewer's machine,
-// so 10,000 would read 10.000 in Germany.
+// Pinned locale, or 10,000 reads 10.000 on a German machine.
 function display(value, column) {
     if (value === null || value === undefined || value === "") return null;
 
@@ -22,12 +15,6 @@ function display(value, column) {
     return column.unit ? `${text} ${column.unit}` : text;
 }
 
-// The rows a view shows, in registry order. An empty value is dropped rather
-// than drawn blank, unless the column names what to say instead. The view names come from each column's `show` list, so
-// adding a place to display columns in means naming it there, not here.
-//
-// `also` names extra column keys for this one render: a card shows the field
-// that was searched on even when it is not normally on the card.
 export function detail_rows(entry, view = "page", also = []) {
     let rows = [];
 
@@ -38,10 +25,7 @@ export function detail_rows(entry, view = "page", also = []) {
             raw = entry[column.fallback];
         }
 
-        // `empty` says a blank is a fact about the entry, not a gap in ours.
         let value = display(raw, column) ?? column.empty ?? null;
-        // key lets a card pick its rows by name; searched marks the rows that
-        // answer the search, which a phone card keeps when it drops the rest.
         if (value !== null) rows.push({ key: column.key, label: column.label, value,
                                         searched: also.includes(column.key) });
     }
@@ -49,16 +33,8 @@ export function detail_rows(entry, view = "page", also = []) {
     return rows;
 }
 
-// --- the Molecules section of the structure page ------------------------
-// Groups in the order entry_contents sorts them, nucleic acids first. Water
-// is left out: it is solvent, not part of the molecule. A protein group past
-// FOLD_PROTEINS starts closed, so a ribosome's RNA is not buried under it.
-
 export const FOLD_PROTEINS = 10;
-// 8G61 has 224 modified positions; a row shows this many, the rest on a click.
 export const POSITIONS_SHOWN = 5;
-// 1OB5 lists 36 modified rows (12 codes in 3 tRNA copies); the first few show,
-// the rest wait behind a button.
 export const MODIFIED_ROWS_SHOWN = 6;
 const MISSING_RUNS_SHOWN = 4;
 const UNIT = { "RNA": "nt", "DNA": "nt", "DNA/RNA hybrid": "nt", "Protein": "aa" };
@@ -67,7 +43,6 @@ function residue(mon, num) {
     return num === null || num === undefined ? mon : `${mon}${num}`;
 }
 
-// 1L9A: "A173, G174". A long gap is a range with its size instead.
 function run_text(run) {
     if (run.count === 1) return residue(run.from_mon, run.from);
     if (run.count === 2) return `${residue(run.from_mon, run.from)}, ${residue(run.to_mon, run.to)}`;
@@ -84,8 +59,6 @@ function chain_name(chain) {
     return chain.auth || chain.label;
 }
 
-// One polymer as a table row. Copies of one entity usually share their
-// numbering; when they do not, each chain says its own.
 function polymer_row(entity, residues) {
     let unit = UNIT[entity.kind] || "";
     let chains = entity.chains;
@@ -113,10 +86,6 @@ function polymer_row(entity, residues) {
     };
 }
 
-// The sequence in lines of SEQUENCE_LINE letters, blocks of 10, as runs of
-// plain letters and marked ones: a modified nucleotide (shown as its parent's
-// letter, the code on hover) or a position no chain has in the model.
-// residues come from entry_residues, in the same order as the letters.
 export const SEQUENCE_LINE = 60;
 
 export function sequence_lines(sequence, residues = []) {
@@ -124,8 +93,6 @@ export function sequence_lines(sequence, residues = []) {
     let at = (r) => r?.auth ? `${r.code}${r.auth}` : r?.code;
     let lines = [];
     for (let start = 0; start < sequence.length; start += SEQUENCE_LINE) {
-        // A stretch of unmodelled positions is one span, block spaces and
-        // all: 9MU2 has 88,856 of them. A modified residue is one span each.
         let runs = [];
         let open = null;          // the unmodelled run being extended, with its first residue
         for (let i = start; i < Math.min(start + SEQUENCE_LINE, sequence.length); i++) {
@@ -166,14 +133,7 @@ export function sequence_lines(sequence, residues = []) {
     return { lines, length: sequence.length, modified: marks.has("modified"), unmodelled: marks.has("unmodelled") };
 }
 
-// --- the Source section of the structure page --------------------------
-// Where each polymer came from, in its own table so that how it was obtained,
-// the organism and the expression host are three columns and not one line to
-// untangle. Polymers with the same source share a row: 6SGB has 103 molecules
-// purified from one organism.
-
 const SYNTHETIC_CONSTRUCT = 32630;
-// Up to this many molecules are named in their row; more fold behind a count.
 export const SOURCE_LISTED = 3;
 const taxon_url = (id) => `https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${id}`;
 
@@ -183,14 +143,10 @@ export const SOURCE_LEGEND = [
     { kind: "Synthetic", text: "made chemically; the organism is where the sequence comes from" }
 ];
 
-// 408 natural rows are in capitals; "SACCHAROMYCES CEREVISIAE (STRAIN S288C)"
-// reads "Saccharomyces cerevisiae (STRAIN S288C)": a strain's capitals may be
-// its own, so only the first two words are recased.
+// Only genus and species are recased; a strain's capitals may be its own.
 export function species_case(name) {
     if (!name || name !== name.toUpperCase() || !/[A-Z]/.test(name)) return name;
     let words = name.split(" ");
-    // Genus and species, then nothing or a strain. Anything else is left in
-    // capitals: "HEPATITIS C VIRUS" cannot be recased without knowing virology.
     let plain = (w) => /^[A-Z]{2,}$/.test(w ?? "");
     if (!plain(words[0]) || !plain(words[1]) || plain(words[2])) return name;
     words[0] = words[0][0] + words[0].slice(1).toLowerCase();
@@ -211,8 +167,6 @@ function organism_cell(o) {
 
 const taxon = (id) => (id ? { id, url: taxon_url(id) } : null);
 
-// 3WFR files the gene and strain of its Aquifex segment on the synthetic
-// linkers too, and names the strain inside the organism; neither is repeated.
 function notes_of(seg) {
     let construct = is_construct(seg);
     let strain = !construct && seg.strain
@@ -307,28 +261,19 @@ function modified_row(m) {
     };
 }
 
-// --- the Base pairs section of the structure page ----------------------
-// One bar of four groups (cWW A–U, cWW G–C, cWW G–U, Others), the
-// Leontis–Westhof families of the Others, which chains pair with which, and
-// the Others themselves. Pairs come from entry_base_pairs.
-
 export const PAIR_LINKS_SHOWN = 5;
 const PAIR_GROUPS = [["au", "cWW A–U"], ["gc", "cWW G–C"], ["gu", "cWW G–U"], ["nc", "Others"]];
-// A–U for RNA, A–T for DNA, A–U/T when an entry has both kinds of pair.
 const au_label = (a_with) => "cWW A–" + (a_with.has("T") ? (a_with.has("U") ? "U/T" : "T") : "U");
 const EDGE = { W: "Watson–Crick", H: "Hoogsteen", S: "sugar" };
 
 const by_chain = (a, b) => a.length - b.length || a.localeCompare(b);
 const and_list = (xs) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`;
 
-// "tWH" → "trans Watson–Crick / Hoogsteen", for a tooltip.
 export function family_name(family) {
     let [ct, e1, e2] = family;
     return `${ct === "c" ? "cis" : "trans"} ${EDGE[e1]} / ${EDGE[e2]}`;
 }
 
-// A sentence when every chain pairs only with itself, which is the common
-// case (a folded RNA, or copies of one); otherwise null and the links are listed.
 function self_paired(links) {
     if (!links.every((l) => l.a === l.b)) return null;
     let chains = links.map((l) => l.a).sort(by_chain);
@@ -372,29 +317,12 @@ export function base_pair_section(pairs) {
         noncanonical: pairs.filter((p) => p.kind === "nc").map((p) => ({
             chain: p.chain_1 === p.chain_2 ? p.chain_1 : `${p.chain_1} / ${p.chain_2}`,
             pair: `${p.res_1} – ${p.res_2}`, family: p.family, name: family_name(p.family),
-            // Each end as the 1D view keys its columns ("A:2_755 12"), so a
-            // row and its two columns can find each other.
             ends: [[p.label_1, p.copy_1, p.pos_1], [p.label_2, p.copy_2, p.pos_2]]
                 .map(([label, copy, pos]) => `${strand_token(label, String(copy ?? IDENTITY))} ${pos}`)
         }))
     };
 }
 
-// --- the arc picture ------------------------------------------------------
-// The base pairs as an arc diagram, the way R-chie draws them
-// (doi:10.1093/nar/gks241): each paired nucleic-acid chain is a line, 5' on
-// the left, chains side by side; each pair is an arc between its two
-// nucleotides, taller the further apart they are. A tRNA comes out as its
-// cloverleaf seen from the side, a duplex as a rainbow.
-//
-// Only chains that take part in a pair are drawn, so a ribosome's 60 chains
-// do not crowd the line. Each kind is a single path, so the 3,953 pairs of
-// the largest entry are still three small elements. A pair listed twice
-// (alternate locations) is drawn once.
-//
-// A crystal often holds one strand of a duplex and makes the other by
-// symmetry: 1D26's A1 pairs with A8 of copy 2. That copy is drawn as its own
-// strand, A′, so the duplex shows as two strands and not as a hairpin in A.
 export const ARC_WIDTH = 300;
 export const ARC_HEIGHT = 170;
 export const ARC_HOVER_MAX = 500;   // above this, one path per kind and no hover text
@@ -409,8 +337,7 @@ const IDENTITY = "1";    // struct_oper_id of the copy in the file
 const by_copy = (a, b) => (b === IDENTITY) - (a === IDENTITY) || a.localeCompare(b, "en", { numeric: true });
 const round1 = (v) => Math.round(v * 10) / 10;
 
-// --- biological assemblies --------------------------------------------------
-// An operator is [r11, r12, r13, t1, r21, ..., t3]: x' = R·x + t.
+// Operator: [r11, r12, r13, t1, r21, ..., t3], x' = R·x + t.
 const compose = (a, b) => {            // a after b
     let m = [];
     for (let i = 0; i < 3; i++) {
@@ -431,15 +358,11 @@ const invert = (m) => {
 const same_op = (a, b) => a.every((v, k) => Math.abs(v - b[k]) <= 1e-3 * Math.max(1, Math.abs(v)));
 const ONE = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
 
-// The operator ids of one oper_expression group: "1,2", "1-60", "X0".
 const group_ids = (g) => g.split(",").flatMap((part) => {
     let m = /^(\d+)-(\d+)$/.exec(part);
     return m ? Array.from({ length: m[2] - m[1] + 1 }, (_, k) => String(Number(m[1]) + k)) : [part];
 });
 
-// Each operator an oper_expression makes, as { key, m }. "(X0)(1-3)" is a
-// product: every operator of the right group, then X0 (the mmCIF reading),
-// keyed "X0×1".
 export function expression_ops(expr, opers) {
     let groups = expr.includes("(") ? [...expr.matchAll(/\(([^()]*)\)/g)].map((g) => g[1]) : [expr];
     let out = [{ key: "", m: ONE }];
@@ -453,17 +376,11 @@ export function expression_ops(expr, opers) {
     return out;
 }
 
-// The operator that leaves a chain where the file has it. Usually "1", but not
-// always: in 4NH6 operator 1 is a crystal symmetry and 2 the identity.
+// Usually "1", but in 4NH6 operator 2 is the identity.
 export const identity_op = (opers) =>
     [...(opers ?? new Map())].find(([, m]) => same_op(m, ONE))?.[0] ?? IDENTITY;
 
-// The pairs of one assembly, ready for pair_arcs. Each chain is in it once per
-// operator that the assembly applies to it. A pair listed between copy a of X
-// and copy b of Y holds in every copy g of X, with the copy of Y that g·a⁻¹·b
-// makes, when that copy is in the assembly too; so a duplex half built by
-// symmetry gets both its strands paired, and pairs to a chain the assembly
-// leaves out are dropped.
+// A pair between copy a of X and copy b of Y holds in every copy g of X with the copy g·a⁻¹·b of Y.
 export function assembly_pairs(assembly, opers, pairs) {
     let members = new Map();    // chain -> [{ key, m }] in file order
     for (const gen of assembly.gens) {
@@ -473,7 +390,6 @@ export function assembly_pairs(assembly, opers, pairs) {
             for (const op of ops) if (!list.some((o) => o.key === op.key)) list.push(op);
         }
     }
-    // Pairs share a few copy combinations, so each is worked out once.
     let images = new Map();
     let images_of = (label_1, a_id, label_2, b_id) => {
         let key = `${label_1} ${a_id} ${label_2} ${b_id}`;
@@ -497,7 +413,6 @@ export function assembly_pairs(assembly, opers, pairs) {
             out.push({ ...p, copy_1: g, copy_2: h });
         }
     }
-    // A chain's own copy is the identity one; failing that, its first.
     let own = new Map([...members].map(([chain, list]) =>
         [chain, (list.find((o) => same_op(o.m, ONE)) ?? list[0]).key]));
     let rank = new Map([...members].flatMap(([chain, list]) => list.map((o, k) => [`${chain} ${o.key}`, k])));
@@ -505,17 +420,7 @@ export function assembly_pairs(assembly, opers, pairs) {
              rank: (label, copy) => rank.get(`${label} ${copy}`) ?? Infinity };
 }
 
-// --- which arcs go above the line ------------------------------------------
-// Arcs that cross each other cannot share a side. The ones that do not cross
-// (nested or side by side) go above the line, so a tRNA's cloverleaf reads as
-// four stems, and the pairs that cross them, its tertiary pairs, go below.
-// Of all sets that do not cross, the one of most weight: weight(k) is 2 for a
-// Watson–Crick or G–U pair, 1 for the others, so stems win over a pseudoknot.
-// arcs are [i, j], i <= j; two arcs may share an end. Returns the kept indices.
-//
-// Exact: an arc's inside is solved before any arc that holds it, as weighted
-// interval scheduling over the arcs within it (Kleinberg and Tardos,
-// Algorithm Design, 6.1). 3,693 pairs (9GFT) take about 0.15 s.
+// Non-crossing arcs of most weight go above (weighted interval scheduling); WC and G-U weigh 2, others 1.
 export function nested_set(arcs, weight) {
     let n = arcs.length;
     let by_end = arcs.map((_, k) => k).sort((x, y) => arcs[x][1] - arcs[y][1] || arcs[y][0] - arcs[x][0] || x - y);
@@ -526,8 +431,6 @@ export function nested_set(arcs, weight) {
         return lo;
     };
     let inner = new Float64Array(n), pick = new Array(n);
-    // The best chain of arcs side by side among cands (ordered by end), each
-    // worth its weight and its inside.
     let schedule = (cands) => {
         let best = [0], from = [], end_at = [];
         for (let c = 0; c < cands.length; c++) {
@@ -546,7 +449,6 @@ export function nested_set(arcs, weight) {
         }
         return [best[cands.length], chosen];
     };
-    // Shortest first; of two equal arcs the later one holds the earlier.
     let order = arcs.map((_, k) => k).sort((x, y) => (arcs[x][1] - arcs[x][0]) - (arcs[y][1] - arcs[y][0]) || x - y);
     let done = new Uint8Array(n);
     for (const k of order) {
@@ -569,10 +471,6 @@ export function nested_set(arcs, weight) {
     return keep;
 }
 
-// view says which copy of a chain is the chain itself (own) and how its
-// copies are ordered (rank); by default the identity operator's copy, then
-// the rest by number. view.flat draws every arc above the line, for a view
-// only counted or compared, not shown.
 export function pair_arcs(entities, residues, pairs, view = {}) {
     let own = view.own ?? (() => view.identity ?? IDENTITY);
     let rank = view.rank ?? ((label, copy) => copy);
@@ -591,7 +489,6 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
         }
     }
 
-    // One end of a pair: a chain, which copy of it, and a position.
     let ends_of = (p) => [{ label: p.label_1, copy: String(p.copy_1 ?? own(p.label_1)), pos: p.pos_1 },
                           { label: p.label_2, copy: String(p.copy_2 ?? own(p.label_2)), pos: p.pos_2 }];
     let fits = ({ label, pos }) => {
@@ -612,8 +509,6 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
     }
     if (!drawn.length) return null;
 
-    // Strands in the page's order (nucleic acids by entity, then chain), each
-    // chain's own copy before its symmetry copies.
     let strands = new Map();
     for (const e of drawn.flatMap((p) => p.ends)) {
         let key = `${e.label} ${e.copy}`;
@@ -642,8 +537,6 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
     }
     let at = (e) => start.get(`${e.label} ${e.copy}`) + (e.pos - 0.5) * step;
 
-    // The same picture as numbers, for the full-screen viewer to draw at any
-    // size: strands end to end, nucleotide i of the whole line at index i.
     let first = new Map();
     let n = 0;
     let on_line = line.map((c) => {
@@ -659,9 +552,7 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
     let above = view.flat ? new Set(spans.keys()) : nested_set(spans, (k) => (drawn[k].kind === "nc" ? 1 : 2));
     drawn.forEach((p, k) => { p.below = !above.has(k); });
 
-    // A cubic curve peaks at 3/4 of its control height. Under the line the
-    // arcs are shallower, so the crossing pairs do not take as much room as
-    // the structure above them.
+    // A cubic curve peaks at 3/4 of its control height.
     let reach = ARC_BASE - ARC_TOP - 3;
     let peak = (p) => {
         let [a, b] = p.ends.map(at).sort((u, v) => u - v);
@@ -673,12 +564,9 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
         return `M${round1(a)} ${ARC_BASE}C${round1(a)} ${y} ${round1(b)} ${y} ${round1(b)} ${ARC_BASE}`;
     };
     let depth = Math.ceil(drawn.reduce((m, p) => (p.below ? Math.max(m, peak(p)[2]) : m), 0));
-    // One path per kind, coloured as in the Base pairs section.
     let paths = { wc: "", gu: "", nc: "" };
     for (const p of drawn) paths[p.kind] += arc(p);
 
-    // Few enough pairs to give each its own arc, named on hover as the Base
-    // pairs table names it; a copy's end carries its prime.
     let shown = new Map(line.map((c) => [`${c.label} ${c.copy}`, c.shown]));
     let named = (e, res) => `${shown.get(`${e.label} ${e.copy}`)}:${res ?? e.pos}`;
     let label = (p) => `${named(p.ends[0], p.res_1)} – ${named(p.ends[1], p.res_2)} · ${p.family}`;
@@ -687,9 +575,7 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
 
     let layout = {
         strands: on_line,
-        // [5′-most end, other end, kind, hover label, LW family, the two ends
-        // named in the same order as the positions], and 1 after them for a
-        // pair drawn under the line.
+        // [5′ end, other end, kind, label, LW family, name a, name b, 1 if under the line]
         pairs: drawn.map((p) => {
             let ends = [[p.ends[0], p.res_1], [p.ends[1], p.res_2]]
                 .map(([e, res]) => ({ i: index(e), name: named(e, res) }))
@@ -705,14 +591,11 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
     }));
 
     return {
-        // Strand names sit under the arcs below the line, if there are any.
         width: ARC_WIDTH, height: ARC_HEIGHT + (depth && depth + 4), base: ARC_BASE,
         bottom: ARC_BASE + (depth && depth + 4), below: drawn.filter((p) => p.below).length,
         chains: line.map(({ label, copy, symmetry, shown, length, x1, x2 }) =>
             ({ label, copy, symmetry, name: shown, length, x1, x2 })),
         paths, each, layout,
-        // Bold for a duplex, fine for a ribosome, so neither looks empty nor
-        // turns into a blob.
         stroke: Math.round(Math.max(0.4, 1.7 * Math.min(1, Math.sqrt(40 / drawn.length))) * 100) / 100,
         dot_path: dots.join(""),
         counts: { drawn: drawn.length,
@@ -721,11 +604,7 @@ export function pair_arcs(entities, residues, pairs, view = {}) {
     };
 }
 
-// --- the arc picture of one view -------------------------------------------
-// An entry is drawn as one of its biological assemblies, "1" unless asked,
-// or as the asymmetric unit ("au"), the chains as deposited. Above
-// ARC_PAIR_MAX pairs an assembly is not drawn: 4V3P's assembly 1 has 37,145,
-// ten times the largest asymmetric unit, 5 MB of picture.
+// 4V3P's assembly 1 has 37,145 pairs (5 MB of SVG), so large views are not drawn.
 export const ARC_PAIR_MAX = 10000;
 export const ARC_MANY_STRANDS = 24;
 export const AU = "au";
@@ -734,10 +613,6 @@ const ASSEMBLY_TITLE = "The molecule as it works in the cell, as the depositors 
 const AU_TITLE = "The chains exactly as stored in the file";
 const strand_count = (n) => (n === 1 ? "1 strand" : `${n} strands`);
 
-// One line each on what the picture shows that the file alone would not: an
-// assembly that keeps only some of the file's strands (1TTT: one tRNA of
-// three), or builds more by symmetry (1EN9: the duplex's other strand), and
-// pairs drawn under the line.
 function view_about(chosen, arcs, au) {
     let about = [];
     if (chosen.key !== AU) {
@@ -752,8 +627,6 @@ function view_about(chosen, arcs, au) {
 }
 
 export function arc_views(entities, residues, pairs, { assemblies = [], opers = new Map() } = {}, asked) {
-    // Every view is laid out flat to compare them; only the one shown is
-    // sorted into above and below the line (0.1 s for a ribosome).
     let identity = identity_op(opers);
     let views = [];
     for (const a of assemblies) {
@@ -785,14 +658,10 @@ export function arc_views(entities, residues, pairs, { assemblies = [], opers = 
                                                              title: key === AU ? AU_TITLE : ASSEMBLY_TITLE })),
         note,
         about: arcs ? view_about(chosen, arcs, views.at(-1).arcs) : [],
-        // Counts stay those of the deposited pairs, so copies never double them.
         au: views.at(-1).arcs
     };
 }
 
-// --- the arc picture as a few numbers ------------------------------------
-
-// What a result card says beside its picture. Null when nothing is drawn.
 export function arc_summary(arcs) {
     if (!arcs) return null;
     return { strands: arcs.chains.length, nucleotides: arcs.counts.nucleotides,
@@ -800,16 +669,10 @@ export function arc_summary(arcs) {
              wc: arcs.layout.pairs.filter((p) => p[2] === "wc").length };
 }
 
-// --- the arc picture as a small image ------------------------------------
-
 const THUMB_COLOURS = { wc: "#139068", gu: "#e0a030", nc: "#7f77dd" };
 const xml = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
-// One entry's picture as a standalone SVG for the Arcs view: no labels, bolder
-// lines, its own colours (an <img> does not see the page's stylesheet). The
-// light colours are attributes; the dark ones a media query, which inside an
-// <img> follows the color-scheme of the page around it, so the one cached file
-// serves both themes. Same values as the tokens in style.css.
+// An <img> does not see the page CSS; the media query follows the surrounding page's color-scheme.
 const THUMB_DARK = `<style>@media (prefers-color-scheme: dark) {`
     + `.s{stroke:#85858a}.wc{stroke:#1d9e75}.nc{stroke:#afa9ec}.m{fill:#cecbf6}.e{fill:#85858a}}</style>`;
 export function arc_thumbnail(arcs, pdb_id) {
@@ -830,10 +693,7 @@ export function arc_thumbnail(arcs, pdb_id) {
          + `</svg>`;
 }
 
-// --- FASTA ---------------------------------------------------------------
-// One polymer in the header layout RCSB uses, so files from both sites look
-// alike: >1OB5_2|Chains B, D, F|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932).
-// Lines of 80. A chimera's organisms are joined; none is left out.
+// RCSB's header layout: >1OB5_2|Chains B, D, F|TRANSFER-RNA, PHE|Saccharomyces cerevisiae (4932)
 export const FASTA_LINE = 80;
 
 export function fasta_of(entry_id, entity) {
@@ -850,9 +710,6 @@ export function fasta_of(entry_id, entity) {
     return `>${header}\n${lines.join("\n")}\n`;
 }
 
-// Every molecule with a sequence in one file, in the page's order (nucleic
-// acids first). Ligands and water have no sequence, so they drop out.
-// Sequences are PDB's own: 1OB5's charged tRNA ends in F, as at RCSB.
 export function entry_fasta(entry_id, entities, { na_only = false } = {}) {
     let records = entities
         .filter((e) => !na_only || NUCLEIC_KINDS.has(e.kind))
@@ -861,17 +718,12 @@ export function entry_fasta(entry_id, entities, { na_only = false } = {}) {
     return records.length ? records.join("") : null;
 }
 
-// How many records each download would hold, so the page offers a choice
-// only when the two differ.
 export function fasta_choices(entities) {
     let sequenced = entities.filter((e) => e.sequence);
     return { all: sequenced.length,
              na: sequenced.filter((e) => NUCLEIC_KINDS.has(e.kind)).length };
 }
 
-// --- base pairs for scripts ---------------------------------------------
-// The same rows the page draws, so the API and the page cannot disagree.
-// The model sits once at the top: every pair comes from the same one.
 const PAIR_FIELDS = ["chain_1", "res_1", "chain_2", "res_2", "family", "kind"];
 
 export function base_pair_export(entry_id, pairs) {
@@ -886,7 +738,6 @@ export function base_pair_export(entry_id, pairs) {
     };
 }
 
-// A comma, quote or line break means the whole cell is quoted, quotes doubled.
 const csv_cell = (v) => (/[",\r\n]/.test(String(v ?? "")) ? `"${String(v).replaceAll('"', '""')}"` : String(v ?? ""));
 
 export function base_pairs_csv(pairs) {
@@ -894,13 +745,6 @@ export function base_pairs_csv(pairs) {
         .map((row) => row.map(csv_cell).join(",")).join("\n") + "\n";
 }
 
-// The NtC classes of an entry's steps, counted and grouped by CANA class,
-// so each colour sits beside its name. A-form, B-form and transitions are a
-// family each; the few-member classes share "Other shapes"; steps with no
-// class (NtC code NANT) come last, apart, as they are not a shape. Within a family the commonest class leads, and within
-// a class the commonest NtC. Each NtC carries `background`, CSS drawing the
-// same two halves as the sequence map's bar in DNATCO's colours; `key` is
-// DNATCO's nine conformer classes, for the colour fold-out.
 const NTC_FAMILIES = [
     ["A-form family", ["AAA", "AAw", "AAu"]],
     ["B-form family", ["BBB", "BBw", "miB", "BB2"]],
@@ -932,12 +776,6 @@ export function ntc_section(classes) {
     return { families, assigned, unassigned, key };
 }
 
-// ---- Sequence map ----------------------------------------------------------
-// One ruler per set of strands: the sequence, the NtC step between each two
-// nucleotides, and every base pair in layered dot-bracket rows (one row per
-// Leontis–Westhof family, a base that pairs twice in one family spilling to
-// another row). The notation is the one from the NA hackathon 2026
-// (ws2 layered-bp-notation); its text round-trips back to the pairs.
 const LBN_BRACKETS = ["()", "[]", "{}", "<>", "Aa", "Bb", "Cc", "Dd"];
 const LBN_FAMILIES = ["cWH", "cWS", "cHW", "cHH", "cHS", "cSW", "cSH", "cSS",
                       "tWW", "tWH", "tWS", "tHW", "tHH", "tHS", "tSW", "tSH", "tSS"];
@@ -946,19 +784,13 @@ export const flip_lw = (f) => f[0] + f[2] + f[1];
 const crosses = ([i, j], [k, l]) => (i < k && k < j && j < l) || (k < i && i < l && l < j);
 const strand_token = (label, copy) => (copy === IDENTITY ? label : `${label}:${copy}`);
 
-// A, C, G, U or T; a modified nucleotide is its parent in lower case, and
-// one with no known parent is n.
 export function nucleotide_letter(r) {
     let base = String(r.parent ?? r.code ?? "").replace(/^D(?=[ACGTU]$)/, "");
     let letter = /^[ACGTUI]$/.test(base) ? base : "N";
     return r.modified ? letter.toLowerCase() : letter;
 }
 
-// One dot-bracket line: brackets of a deeper kind for a pair that crosses one
-// already drawn in the same row. Pairs come in by their first base, and the
-// pairs of one level never cross, so the ones still open there are nested:
-// p crosses one of them exactly when the innermost closes before p does.
-// One stack of open pairs per level keeps this linear, not quadratic.
+// One stack of open pairs per level keeps this linear.
 export function bracket_line(width, seps, pairs) {
     let chars = Array.from({ length: width }, (_, i) => (seps.has(i) ? LBN_SEP : "."));
     let open = [];
@@ -976,10 +808,6 @@ export function bracket_line(width, seps, pairs) {
     return chars.join("");
 }
 
-// One row per family in a fixed order; a base already used in its row goes
-// to an overflow row of the same family, packed as tightly as fits. Each
-// placed pair is { i, j, family, row } with i < j; any other field it has
-// stays on it, so a caller can mark pairs and still read the mark back.
 export function layer_rows(placed, width, seps = new Set()) {
     let rows = [];
     let overflow = [];
@@ -1008,8 +836,6 @@ export function layer_rows(placed, width, seps = new Set()) {
     return rows;
 }
 
-// The strands a map can show: every nucleic-acid chain as it is in the file,
-// and every symmetry copy that pairs with one. Each knows whom it pairs with.
 function map_strands(entities, by_chain, pairs) {
     let strands = new Map();
     let order = 0;
@@ -1045,12 +871,8 @@ function map_strands(entities, by_chain, pairs) {
     return list;
 }
 
-// The most strands the map shows unasked: a ribosome links dozens.
 export const MAP_STRANDS = 8;
 
-// The first chain with pairs and every strand linked to it through pairs,
-// partners of partners too (1P8K: B pairs only with C, C with A), nearest
-// first up to MAP_STRANDS, then in file order.
 function linked_strands(strands) {
     let by_key = new Map(strands.map((s) => [s.key, s]));
     let first = strands.find((s) => s.partners.size) ?? strands[0];
@@ -1063,8 +885,6 @@ function linked_strands(strands) {
     return reached;
 }
 
-// The map for the strands asked for (tokens such as A or A:2_755), or, when
-// none are, the first chain with pairs and the strands linked to it.
 export function sequence_map(entities, tracks, pairs, wanted = []) {
     let by_chain = new Map();
     for (const r of tracks.residues) {
@@ -1079,7 +899,6 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
     if (!chosen.length) chosen = linked_strands(strands);
     let shown = strands.filter((s) => chosen.includes(s.key));
 
-    // The ruler: strands end to end, a separator column between two.
     let cols = [];
     let at = new Map();
     let seps = new Set();
@@ -1092,7 +911,6 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
         }
     });
 
-    // Each pair once, lower column first, its family read from that side.
     let seen = new Set();
     let placed = [];
     for (const p of pairs) {
@@ -1110,8 +928,6 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
     let rows = layer_rows(placed, cols.length, seps);
     for (const r of rows) r.pairs = r.pairs.map((p) => [p.i, p.j]);
 
-    // The step from each nucleotide to the next one on the ruler; symmetry
-    // copies share their chain's steps.
     let steps = [];
     for (const t of tracks.steps) {
         for (const [n, s] of shown.entries()) {
@@ -1138,8 +954,6 @@ export function sequence_map(entities, tracks, pairs, wanted = []) {
     };
 }
 
-// The map as the notation's text file: a header naming the strands, the rows
-// under one ruler, and the NtC steps as # comments, which readers skip.
 export function sequence_map_text(pdb_id, map) {
     let lines = [`>${[pdb_id, ...map.shown].join("|")}`,
                  `# strands: ${map.names.join(", ")}; '${LBN_SEP}' separates strands`];
@@ -1151,13 +965,7 @@ export function sequence_map_text(pdb_id, map) {
     return lines.join("\n") + "\n";
 }
 
-// ---- Dot-bracket for the report's ZIP ---------------------------------------
-// One record per entry: every nucleic-acid chain of the file joined by &, and
-// the canonical pairs (cWW A-U, G-C, G-U) between them, the 2D structure most
-// tools read. Pairs with a symmetry copy are left out: the file is the
-// asymmetric unit. A base in two such pairs keeps the first along the
-// sequence; a pair that crosses another takes [] or {} (bracket_line).
-// chains: [{ asym, auth, sequence }] in order; pairs: [{ asym_1, pos_1, asym_2, pos_2 }].
+// Canonical pairs only (cWW A-U, G-C, G-U); pairs with a symmetry copy are left out.
 export function dot_bracket_record(pdb_id, chains, pairs) {
     let start = new Map();
     let width = 0;
@@ -1170,8 +978,6 @@ export function dot_bracket_record(pdb_id, chains, pairs) {
     let length = new Map(chains.map((c) => [c.asym, c.sequence.length]));
     let at = (asym, pos) => (pos >= 1 && pos <= (length.get(asym) ?? 0) ? start.get(asym) + pos - 1 : undefined);
 
-    // Along the ruler, so "the first" of two pairs on one base is the one
-    // that starts sooner, whatever order the pairs came in.
     let placed = pairs.map((p) => [at(p.asym_1, p.pos_1), at(p.asym_2, p.pos_2)])
         .filter(([i, j]) => i !== undefined && j !== undefined && i !== j)
         .map(([i, j]) => (i < j ? [i, j] : [j, i]))

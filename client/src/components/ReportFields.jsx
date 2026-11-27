@@ -1,7 +1,5 @@
 import { fieldGroups } from "../report.js";
 
-// The open table's checkboxes, one block per group (fields_html), with the
-// table's option above them. Entry ID is ticked for good: it joins the tables.
 function ReportFields({ table, ticks, idField, option, onOption, onTick }) {
   return (
     <div className="query_panel_body" id="report_fields" role="tabpanel" aria-labelledby={`table-${table.key}`}>

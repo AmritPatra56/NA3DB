@@ -1,7 +1,5 @@
 import { classKey } from "../seqMap.js";
 
-// DNATCO's classes that the given steps use, then how to read a bar
-// (seqmap.js class_key, KEY_NOTE): one key for the sequence map and the comparison.
 function NtcClassKey({ ntcs }) {
   return (
     <>

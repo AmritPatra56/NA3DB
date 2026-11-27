@@ -1,8 +1,6 @@
 import { countsOf } from "../arcView.js";
 import { number } from "../format.js";
 
-// The counts above the drawing: pairs by kind, nucleotides, strands, one
-// box each.
 function ArcSummary({ d }) {
   const c = countsOf(d);
   const strands = d.strands.length;

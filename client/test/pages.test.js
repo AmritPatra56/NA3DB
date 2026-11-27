@@ -1,7 +1,6 @@
 import { test, expect } from "vitest";
 import { pageNumbers } from "../src/pages.js";
 
-// Values from app.js page_numbers on :4000.
 test("up to 7 pages, every one is a button", () => {
   expect(pageNumbers(1, 0)).toEqual([]);
   expect(pageNumbers(1, 1)).toEqual([1]);

@@ -12,7 +12,6 @@ test("a plain address is the default search", () => {
 test("what the page has no control for falls back to the default", () => {
   const q = queryFromAddress("?page=-2&per_page=abc&match=nope&view=tiles", registry);
   expect([q.page, q.perPage, q.match, q.view]).toEqual([1, 20, "contains", "cards"]);
-  // A sort the menu does not offer is sent as none, and read back the same.
   expect(queryFromAddress("?sort=nope", registry).sort).toBe("");
   expect(queryFromAddress("?view=arcs", registry).view).toBe("grid");
 });
@@ -49,7 +48,6 @@ test("small readers", () => {
   expect(filtersToParams({ a: "", b: [], c: "x", d: ["1", "2"] }).toString()).toBe("c=x&d=1%2C2");
   expect(panelOpenOf("?panel=closed")).toBe(false);
   expect(panelOpenOf("?panel=open")).toBe(true);
-  // Open unless the handle folded it (server.test.js PANEL_CASES before 8.17).
   expect(["", "?q=tRNA", "?q=tRNA&page=3&sort=confal_desc", "?entry_id=tna", "?q=", "?q=tRNA&panel=closed", "?panel=closed"]
     .map(panelOpenOf)).toEqual([true, true, true, true, true, false, false]);
   expect(askedValues("?a=1,2&b=3")).toEqual(["1", "2", "3"]);

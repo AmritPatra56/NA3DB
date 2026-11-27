@@ -1,5 +1,3 @@
-// The filters in use above the results (search.ejs active_filters), one
-// button per chip (chips.js); a click removes it. onRemove(chip).
 function ChipsBar({ chips, onRemove }) {
   return (
     <div className="active_filters" role="group" aria-label="Filters in use">

@@ -4,10 +4,6 @@ import { exportParams, rowsPath, optionOn } from "../report.js";
 import { buildCsv, fastaText, readmeText, excelIds, today, downloadBlob } from "../reportFiles.js";
 import { makeZip } from "../zip.js";
 
-// Download all (report.js download_all): every table with every field,
-// whatever is ticked, plus the sequences as FASTA, the base pairs as
-// dot-bracket and a README. The options in the address decide the rows.
-// state: "idle", "busy" (Preparing…) or "failed" (Download failed, try again).
 export function useZip({ registry, tables, search, load }) {
   const [state, setState] = useState("idle");
 

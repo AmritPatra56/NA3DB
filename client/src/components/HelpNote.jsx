@@ -1,10 +1,5 @@
 import { useEffect, useRef } from "react";
 
-// The one "?" on the site (views/includes/help.ejs): a round button that
-// opens a short note from help_texts.js. Its owner keeps which note is open,
-// so only one is at a time. While open, a click outside it or Escape closes
-// it (structure.ejs); Escape puts focus back on its "?". name: which note,
-// passed back to onToggle and onClose.
 function HelpNote({ name, text, open, onToggle, onClose }) {
   const box = useRef(null);
   const button = useRef(null);

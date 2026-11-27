@@ -1,13 +1,4 @@
-// NtC colours and CANA class names, shared by the sequence map in the
-// browser and the Conformation section the server renders.
-//
-// The colours are DNATCO's own, as its live site draws them
-// (https://dnatco.datmos.org, its NtC class palette, checked 2026-11-17).
-// The older copy in Mol* (packages/extensions/dnatco/src/color.ts) still has
-// the earlier A (#FFC1C1) and SYN (#FFFF01); follow DNATCO, not that copy.
-// Each NtC is drawn in two halves, the 5′ nucleotide's side and the 3′ one,
-// and each half takes the colour of its conformer class. AB01 is A then B,
-// BB07 is BII on both sides.
+// DNATCO's own palette (dnatco.datmos.org, checked 2026-11-17), not Mol*'s older copy.
 export const NTC_CLASS_COLOURS = {
     A: "#FFEBA1", B: "#C8CFFF", BII: "#0059DA", miB: "#3BE8FB", Z: "#01F60E",
     IC: "#FA5CFB", OPN: "#E90000", SYN: "#FF8222", N: "#F2F2F2"
@@ -17,7 +8,6 @@ export const NTC_CLASS_NAMES = {
     IC: "intercalated", OPN: "opened", SYN: "syn base", N: "no NtC class"
 };
 
-// Each NtC's classes, 5′ half / 3′ half; one name when both halves agree.
 const HALVES = {
     NANT: "N", AA00: "A", AA02: "A", AA03: "A", AA04: "A", AA08: "A", AA09: "A", AA01: "A",
     AA05: "A", AA06: "A", AA10: "A", AA11: "A", AA07: "A", AA12: "A", AA13: "A", AB01: "A/B",
@@ -36,8 +26,6 @@ const HALVES = {
     ZZS2: "SYN/Z"
 };
 
-// The two classes of a step, 5′ then 3′. A step with no NtC (null or NANT)
-// is N on both sides; so is a code this table does not know.
 export function ntc_classes(ntc) {
     let h = (ntc && HALVES[ntc]) || "N";
     let [a, b = a] = h.split("/");
@@ -45,15 +33,12 @@ export function ntc_classes(ntc) {
 }
 export const ntc_fill = (ntc) => ntc_classes(ntc).map((c) => NTC_CLASS_COLOURS[c]);
 
-// CSS drawing the same two halves as a bar.
 export function ntc_background(ntc) {
     let [a, b] = ntc_fill(ntc);
     return a === b ? a : `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
 }
 
-// The CANA classes: names only, for the words beside a step. What each is,
-// in plain words, from DNATCO's definitions (Černý et al. 2020, NAR 48:6367,
-// Table 1).
+// From Černý et al. 2020, NAR 48:6367, Table 1.
 export const CANA_NAMES = {
     AAA: "A-form", AAw: "A-like, α/γ switched", AAu: "A-like, bases apart",
     BBB: "B-form (BI)", BBw: "B-like, lesser BI", miB: "minor B", BB2: "BII form",

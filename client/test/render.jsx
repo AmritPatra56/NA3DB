@@ -1,8 +1,3 @@
-// Draws the whole app (rail, page, footer) at an address in jsdom, as
-// main.jsx does in the browser, with fetch answered from replies.json: the
-// replies :4000 gave for these pages. A path not in it is a 404.
-// Refresh replies.json the way its paths were recorded: fetch each key from
-// :4000 and save the bodies, keyed by path.
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
@@ -14,8 +9,6 @@ import fields from "./fields.json" with { type: "json" };
 
 const ANSWERS = { ...replies, "/api/fields": fields };
 
-// What jsdom lacks and the pages ask for: no screen, so nothing is narrow and
-// everything is in view at once.
 class Watch {
   constructor(cb) { this.cb = cb; }
   observe(target) { this.cb([{ isIntersecting: true, target, contentRect: { width: 1000, height: 600 } }], this); }
