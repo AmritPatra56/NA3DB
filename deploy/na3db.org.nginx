@@ -5,6 +5,17 @@
 # port-80 block below is kept exactly as certbot left it, default_server
 # included, because it is the server's fallback for unknown plain-http names.
 
+# Per-visitor speed limits, keyed by address. These lines sit outside the
+# server block because nginx only accepts them there; the names start with
+# na3db_ so they cannot clash with another site on this machine.
+#   na3db_api     every /api call: 20 a second, bursts of 40. One search page
+#                 sends about 5 at once and a structure page about 10.
+#   na3db_export  downloads: 2 a second, bursts of 10. A zip asks for 4.
+#   na3db_conn    downloads running at once from one address: 4.
+limit_req_zone  $binary_remote_addr zone=na3db_api:10m    rate=20r/s;
+limit_req_zone  $binary_remote_addr zone=na3db_export:10m rate=2r/s;
+limit_conn_zone $binary_remote_addr zone=na3db_conn:10m;
+
 server {
     server_name na3db.org www.na3db.org;
 
@@ -13,18 +24,41 @@ server {
         return 301 https://na3db.org$request_uri;
     }
 
+    # Shared by the three locations below.
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # The app's slowest page is under 2 s; the database gives up at 15 s.
+    proxy_read_timeout 30s;
+
+    # Says which framework runs behind us; nobody needs to know.
+    proxy_hide_header X-Powered-By;
+
+    # Over a limit: 429 with a short message, never reaching the app.
+    limit_req_status  429;
+    limit_conn_status 429;
+    error_page 429 = @too_many;
+
     location / {
         proxy_pass http://127.0.0.1:4100;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-        # The app's slowest page is under 2 s; the database gives up at 15 s.
-        proxy_read_timeout 30s;
+    location /api/ {
+        limit_req zone=na3db_api burst=40 nodelay;
+        proxy_pass http://127.0.0.1:4100;
+    }
 
-        # Says which framework runs behind us; nobody needs to know.
-        proxy_hide_header X-Powered-By;
+    location /api/export {
+        limit_req  zone=na3db_export burst=10 nodelay;
+        limit_conn na3db_conn 4;
+        proxy_pass http://127.0.0.1:4100;
+    }
+
+    location @too_many {
+        default_type application/json;
+        return 429 '{"error":"Too many requests. Please wait a few seconds and try again."}';
     }
 
     # nginx.conf compresses only HTML by default; CSS, scripts, JSON and the
