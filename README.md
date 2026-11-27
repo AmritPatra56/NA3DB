@@ -102,7 +102,7 @@ Works the same on a laptop and a phone.
 
 ## 3. The structure page
 
-`/structure/4TNA` holds everything about one entry, in four coloured groups.
+`/structure/1B23` holds everything about one entry, in four coloured groups.
 
 | group | section | what is there |
 | --- | --- | --- |
@@ -120,7 +120,7 @@ Works the same on a laptop and a phone.
 
 - **The sidebar** lists the sections and marks the one you are reading. On a
   phone it becomes a row of chips under the top bar.
-- **Every section has its own link**, like `/structure/4TNA#base-pairs`, to put
+- **Every section has its own link**, like `/structure/1B23#base-pairs`, to put
   in a paper or an email.
 - **An empty section stays in the list, greyed out.** "None recorded" is a
   fact about the entry too.
@@ -210,7 +210,7 @@ difference.
 
 | word | what it means |
 | --- | --- |
-| **PDB id** | The four-character name a structure was published under, like `4TNA`. Permanent and citable. |
+| **PDB id** | The four-character name a structure was published under, like `1B23`. Permanent and citable. |
 | **Resolution** | How much detail was measured, in ångström. **Lower is better**: 1.5 Å shows single atoms, 3.5 Å little more than the shape. |
 | **Experimental method** | How the shape was measured: X-ray diffraction, NMR or electron microscopy. |
 | **Polymer type** | What the entry is made of: `DNA`, `RNA`, `DNA/RNA`, or one of those with a protein, such as `Protein/RNA`. |
@@ -238,7 +238,7 @@ From Python:
 
 ```python
 import pandas as pd
-pairs = pd.read_csv("https://na3db.org/api/entries/1EHZ/base_pairs?format=csv")
+pairs = pd.read_csv("https://na3db.org/api/entries/119D/base_pairs?format=csv")
 ```
 
 ---
@@ -615,10 +615,10 @@ Examples:
 ```
 /api/entries?q=tRNA
 /api/entries?polymer_type=RNA&page=2
-/api/entries/4TNA
+/api/entries/1B23
 /api/entries?ligand=SAM
-/api/entries/1EHZ/base_pairs?format=csv
-/structure/1EHZ/fasta?only=na
+/api/entries/119D/base_pairs?format=csv
+/structure/119D/fasta?only=na
 ```
 
 Searching for a list and finding nothing is a `200` with no results. Asking
