@@ -424,11 +424,33 @@ new one instead.
 | file | what it does |
 | --- | --- |
 | `deploy/update.sh` | the update above |
-| `deploy/backup.sh` | a nightly database dump, keeping the last 7 days |
+| `deploy/backup.sh` | a database dump on the server, by hand, keeping the last 7 days |
+| `deploy/pull_copy.sh` | run on the laptop: a copy of what only the server has |
+| `deploy/restore_drill.sh` | run on the laptop: proves a dump restores, and how fast |
 | `deploy/na3db.org.nginx` | the web server in front of the app |
 | `Containerfile` | how the app image is built: the pages first, then the server |
 
 Passwords live only on the server, never in git.
+
+### A copy off the server
+
+The server's disk holds things that are nowhere else: the password files in
+`/opt/na3db/main/env`, the 3D viewer build and the live nginx file. About once
+a week, on the laptop:
+
+```bash
+deploy/pull_copy.sh                                   # into ~/na3db-server-copies/<date>/
+deploy/restore_drill.sh ~/na3db-server-copies/<date>/na3db.dump
+```
+
+`pull_copy.sh` only reads on the server. Each copy is one dated folder that
+only you can read, because it holds passwords; the last 4 are kept, and a copy
+that fails half way is removed. `restore_drill.sh` loads the dump into a new,
+empty database, says how long it took, compares every table's row count with
+the laptop's `na3db`, and removes the database again (`--keep` leaves it).
+
+There is no nightly backup on the server: its database only changes when we
+ship data from the laptop, which holds the master copy.
 
 ### The 3D viewer
 
